@@ -63,13 +63,51 @@ body.fallback .fb{display:block;position:fixed;top:50%;left:50%;
 /* SETTINGS PILL - qi 07:36 "can I put like a subtle settings pill where it simply
    lets me upload any image and it automatically makes it a good panorama".
    Subtle is the operative word: a small glass dot, top-right, out of the orb's way. */
+/* ⭐⭐ HYPER-REALISTIC GLASS — qi 08:02: "when I was bringing up the glass, I was
+   talking about the BUTTON." The orb is a liquid mirror; this is the only glass
+   on the page. Real glass is not a blur — a blur is frosting. Glass is FIVE
+   things stacked, and leaving any one out is what makes CSS glass look cheap:
+     1  refraction  - the backdrop is blurred AND bent, so saturation/contrast lift
+     2  a body      - a faint vertical gradient, brighter at the top where light enters
+     3  a rim       - bright on the upper edge, DARK on the lower: light enters top,
+                      exits bottom, and the exit edge is always darker
+     4  a caustic   - light that passed through pools on the inside of the far wall
+     5  a specular  - one small hard highlight with a real position, not a sheen */
 .cog{position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:7;
-  width:38px;height:38px;border:0;border-radius:999px;cursor:pointer;
+  width:42px;height:42px;border:0;border-radius:999px;cursor:pointer;
   display:grid;place-items:center;gap:0;
-  background:rgba(196,176,234,.10);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  box-shadow:inset 0 0 0 1px rgba(196,176,234,.22);
-  transition:background .25s ease,transform .2s ease}
-.cog:active{transform:scale(.94)}
+  -webkit-tap-highlight-color:transparent;
+  /* 1 - refraction: bend, do not merely blur */
+  backdrop-filter:blur(11px) saturate(190%) brightness(1.10) contrast(1.06);
+  -webkit-backdrop-filter:blur(11px) saturate(190%) brightness(1.10) contrast(1.06);
+  /* 2 - the body of the glass */
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.05) 34%,
+                            rgba(255,255,255,0) 55%, rgba(146,122,196,.07) 100%);
+  box-shadow:
+    /* 3 - rim: bright above, dark below */
+    inset 0 1.1px 0.6px rgba(255,255,255,.62),
+    inset 0 -1.1px 0.8px rgba(46,32,74,.55),
+    inset 1px 0 0.6px rgba(255,255,255,.16),
+    inset -1px 0 0.6px rgba(46,32,74,.28),
+    /* thickness: the glass has a wall */
+    inset 0 0 0 .5px rgba(214,198,246,.30),
+    /* 4 - caustic pooling on the inside of the lower wall */
+    inset 0 -7px 11px -7px rgba(214,190,255,.42),
+    /* the shadow it casts, and its own bounce */
+    0 6px 18px rgba(0,0,0,.42),
+    0 1px 2px rgba(0,0,0,.30);
+  transition:transform .18s cubic-bezier(.2,.9,.25,1), backdrop-filter .25s ease}
+/* 5 - specular: a real highlight with a POSITION, upper-left, where the light is */
+.cog::before{content:"";position:absolute;inset:0;border-radius:inherit;
+  background:
+    radial-gradient(38% 30% at 28% 18%, rgba(255,255,255,.80), rgba(255,255,255,0) 70%),
+    radial-gradient(60% 44% at 74% 92%, rgba(196,176,234,.30), rgba(196,176,234,0) 72%);
+  pointer-events:none}
+.cog:active{transform:scale(.93);
+  backdrop-filter:blur(15px) saturate(230%) brightness(1.18) contrast(1.10);
+  -webkit-backdrop-filter:blur(15px) saturate(230%) brightness(1.18) contrast(1.10)}
+.cog i{position:relative;z-index:1}
 .cog i{display:block;width:3.5px;height:3.5px;border-radius:50%;
   background:#c4b0ea;box-shadow:0 -6px 0 #c4b0ea,0 6px 0 #c4b0ea;opacity:.8}
 
@@ -209,6 +247,8 @@ uniform sampler2D envMap; // supplied 360 equirectangular environment
 uniform float hasEnv;    // 1 when a panorama has loaded
 uniform float envMode;   // 0 = true equirectangular, 1 = flat photo mirror-wrap
 uniform vec2  look;      // yaw, pitch in radians - gyro or drag
+uniform vec2  touchUV;   // where he last touched, in the same units as uv
+uniform float touchAge;  // seconds since that touch; large = inert
 
 const float PI = 3.14159265;
 
@@ -398,13 +438,18 @@ vec3 env(vec3 dir){
         vec3 me = texture2D(camF, clamp(uv, 0.001, 0.999)).rgb;
         // ── the subject mask: keep the middle, drop the room
         vec2 fc = uv - 0.5;
-        float subj = smoothstep(0.46, 0.17, length(vec2(fc.x*1.25, fc.y*0.92)));
+        float subj = smoothstep(0.50, 0.10, length(vec2(fc.x*1.18, fc.y*0.88)));
         // brightness helps too — a lit face beats a dim wall behind it
         float lum = dot(me, vec3(0.299,0.587,0.114));
         subj *= smoothstep(0.05, 0.24, lum);
         // he is a presence IN the world, not a replacement for it
-        me = pow(me, vec3(1.04)) * vec3(0.96,0.95,1.03);
-        base = mix(base, me, clamp(subj, 0.0, 1.0) * 0.88);
+        // ⭐ "it doesn't look like a realistic reflection of me" (08:00). It was
+        // diluted three times over: a soft mask, then 0.88, then the fresnel wash
+        // of a transparent body. The body is metal now, so this is the last one -
+        // raise the gain and add contrast so a FACE reads as a face, not a smudge.
+        me = pow(me, vec3(0.95)) * vec3(1.06,1.03,1.10);
+        me = clamp((me - 0.5) * 1.22 + 0.5, 0.0, 1.6);   // contrast, so features hold
+        base = mix(base, me, clamp(subj, 0.0, 1.0) * 0.97);
       }
     }
   }
@@ -493,6 +538,27 @@ void main(){
     vec3 n = nrm(q, r);
     vec3 v = normalize(ro - q);
 
+    // ⭐⭐ LIQUID, NOT A PULSE — qi 2026-08-23 08:01, verbatim:
+    //   "the orb needs to be reactive to touch as well, not just the voice"
+    //   "but in a LIQUID manner, like not the normal pulse shit you did last time"
+    // A pulse scales the whole body at once, which is why it reads mechanical.
+    // Liquid is a travelling CREST: one ring leaves the point of contact, crosses
+    // the surface, and settles. The body never changes size — the NORMAL tilts
+    // along the wavefront, so the specular highlight SLIDES across it, which is
+    // what the eye actually reads as fluid.
+    float td = length(uv - touchUV);
+    float wave = 0.0;
+    if(touchAge < 2.8){
+      float front = touchAge * 1.05;                    // the crest travels outward
+      float band  = td - front;
+      wave = sin(band * 15.0)
+           * exp(-abs(band) * 4.0)                      // localized to the crest
+           * exp(-touchAge * 0.95);                     // and it settles, not stops
+    }
+    // tilt the normal ALONG the wavefront - displacement, not brightness
+    vec2 gd = (uv - touchUV) / max(td, 0.0008);
+    n = normalize(n + vec3(gd, 0.0) * wave * 0.62);
+
     // ⛔ 06:16, qi: it read as a MIRROR BALL — a decoration, not something alive.
     // A gazing ball is static: its reflection never moves, so the eye files it
     // as an ornament. Life comes from the reflection SLIDING. So the environment
@@ -504,32 +570,38 @@ void main(){
     refl = vec3(cs*refl.x + sn*refl.z, refl.y, -sn*refl.x + cs*refl.z);
     vec3 mir  = env(refl);
 
-    // ⭐ qi 2026-08-23 06:24: "it is to be kinda transparent."
-    // So it is GLASS, not solid chrome. Two rays now: the reflection off the
-    // front face, and a REFRACTED ray that passes through the body and picks up
-    // the environment on the far side. Fresnel decides the mix — edge-on you see
-    // the mirror, face-on you see through it. That is what glass does.
-    vec3 thru = refract(-v, n, 1.0/1.46);          // ~crown glass
-    if(length(thru) < 0.001) thru = refl;          // total internal reflection
-    thru = vec3(cs*thru.x + sn*thru.z, thru.y, -sn*thru.x + cs*thru.z);
-    vec3 behind = env(thru);
-    // slight chromatic split on the way through — real glass disperses
-    vec3 thruR = refract(-v, n, 1.0/1.44);
-    vec3 thruB = refract(-v, n, 1.0/1.49);
-    if(length(thruR) > 0.001 && length(thruB) > 0.001){
-      behind = vec3(env(thruR).r, behind.g, env(thruB).b);
-    }
+    // ⭐⭐ METAL, NOT GLASS — qi 2026-08-23 08:00, verbatim:
+    //   "my reflection in the orb is too see-through"
+    //   "it needs to be more of a metallic reflective shine so it's more realistic"
+    //   "it doesn't look like a realistic reflection of me"
+    // He is describing the physics exactly. DIELECTRIC glass reflects only ~4%
+    // head-on and transmits the rest, so anything mirrored in it is washed out by
+    // whatever lies behind — which is why his face read as a ghost. A CONDUCTOR
+    // reflects 70-95% at EVERY angle and transmits nothing. So the refracted ray
+    // is GONE, not reduced: there is no behind any more.
+    // ⛔ The earlier "kinda transparent" (06:24) is SUPERSEDED by this. Do not
+    // reintroduce refract() here — transparency is what he came back and rejected.
+    float ct = max(dot(n,v), 0.0);
 
-    // thin-film iridescence at the edge: glass plus a living skin
-    float ir = pow(1.0 - max(dot(n,v),0.0), 3.2);
+    // Conductor fresnel: high base reflectance, tinted, rising to white at grazing.
+    // A metal's reflectance is COLOURED at normal incidence and neutral at the
+    // edge — that colour shift is most of what reads as "real metal".
+    vec3 F0 = vec3(0.86, 0.84, 0.95);              // faintly amethyst chrome
+    vec3 fres = F0 + (vec3(1.0) - F0) * pow(1.0 - ct, 5.0);
+
+    vec3 c = mir * fres;
+
+    // anisotropic sheen: a brushed-metal band that slides as the orb turns.
+    // Metal is not a perfect mirror - this is the "shine over" he asked for.
+    float sheen = pow(max(dot(reflect(-v,n), normalize(vec3(-0.40,0.80,0.45))), 0.0), 10.0);
+    c += vec3(0.30,0.27,0.40) * sheen * 0.55;
+
+    // a thin coloured edge, kept because polished metal really does fringe
+    float ir = pow(1.0 - ct, 3.4);
     vec3 tint = 0.5 + 0.5*cos(6.28318*(vec3(0.00,0.33,0.67) + ir*1.7 + t*0.09));
-    mir = mix(mir, mir*tint*1.25, ir*0.55);
+    c = mix(c, c*tint*1.18, ir*0.30);
 
-    // fresnel: a chrome ball goes near-perfect mirror at grazing angles
-    float f = pow(1.0 - max(dot(n,v),0.0), 4.0);
-
-    // the sphere is a mirror, so the reflection IS the colour
-    vec3 c = mir * (0.80 + 0.20*f);
+    float f = pow(1.0 - ct, 4.0);
 
     // amethyst rim, driven by voice — this is the "it heard you" signal
     float rim = pow(1.0 - max(dot(n,v),0.0), 2.6);
@@ -559,6 +631,25 @@ let prog, aP, uRes, uT, uAmp, uHasCam, uCamAsp, uCam, tex;
 let uHasCamF, uCamAspF, uCamF;
 let uEnvMap, uHasEnv, envTex, envLoaded = false;
 let uEnvMode, uLook, envMode = 0;
+let uTouchUV, uTouchAge;
+
+// LIQUID MIRROR, TOUCH LEG. qi 08:01 - "reactive to touch as well, not just the
+// voice... but in a LIQUID manner, not the normal pulse."
+// Record WHERE he touched in the shader's own uv units, and WHEN. The shader
+// sends one crest out from that point. A tap anywhere feeds it; a drag re-seeds
+// it continuously, so dragging trails ripples the way a finger through water does.
+const touch = {x:0, y:0, at:-999};
+function seedTouch(e){
+  const p = e.touches ? e.touches[0] : e;
+  const w = cv.clientWidth || 1, h = cv.clientHeight || 1;
+  const m = Math.min(w, h);
+  // must match the shader exactly: (frag - 0.5*res) / min(res)
+  touch.x = (p.clientX - w*0.5) / m;
+  touch.y = -(p.clientY - h*0.5) / m;      // GL y is up, CSS y is down
+  touch.at = performance.now();
+}
+addEventListener('pointerdown', seedTouch, {passive:true});
+addEventListener('pointermove', e => { if(e.buttons || e.pointerType === 'touch') seedTouch(e); }, {passive:true});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LOOK AROUND.  qi 07:34 - "it either needs to follow the movement of the phone
@@ -665,6 +756,8 @@ function initGL(){
   uHasEnv=gl.getUniformLocation(prog,'hasEnv');
   uEnvMode=gl.getUniformLocation(prog,'envMode');
   uLook=gl.getUniformLocation(prog,'look');
+  uTouchUV=gl.getUniformLocation(prog,'touchUV');
+  uTouchAge=gl.getUniformLocation(prog,'touchAge');
 
   tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -807,6 +900,8 @@ function frame(ts){
   look.yaw += (look.tYaw - look.yaw) * k;
   look.pit += (look.tPit - look.pit) * k;
   gl.uniform2f(uLook, look.yaw, look.pit);
+  gl.uniform2f(uTouchUV, touch.x, touch.y);
+  gl.uniform1f(uTouchAge, (ts - touch.at) / 1000);
   gl.uniform1f(uEnvMode, envMode);
   gl.uniform1f(uHasEnv, envLoaded ? 1 : 0);
   gl.uniform1f(uHasCam, 0);                       // no rear camera in use
