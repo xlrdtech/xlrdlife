@@ -304,7 +304,8 @@ uniform sampler2D envMap; // supplied 360 equirectangular environment
 uniform float hasEnv;    // 1 when a panorama has loaded
 uniform float envMode;   // 0 = true equirectangular, 1 = flat photo mirror-wrap
 uniform float flipY;     // 1 flips the uploaded environment vertically
-uniform float zoomF;     // pinch zoom: focal multiplier, 1.0 = default framing
+uniform float zoomF;     // focal multiplier (wheel/trackpad), 1.0 = default framing
+uniform float dist;      // camera orbit radius - two-finger pinch dolly (restored)
 uniform float travelK;   // press-and-hold travel: forward push through the world
 vec3 gTravel = vec3(0.0);  // set in main once zAx exists; read by world()
 uniform vec2  look;      // yaw, pitch in radians - gyro or drag
@@ -831,7 +832,7 @@ void main(){
   float cp = cos(pit), sp = sin(pit);
 
   vec3 out3 = vec3(sy*cp, sp, cy*cp);        // orb -> camera
-  vec3 ro   = out3 * 2.9;
+  vec3 ro   = out3 * dist;
   vec3 zAx  = -out3;                                       // camera forward
   vec3 xAx  = normalize(cross(vec3(0.0,1.0,0.0), zAx));
   vec3 yAx  = cross(zAx, xAx);
@@ -1281,6 +1282,8 @@ let uEnvMap, uHasEnv, envTex, envLoaded = false;
 let uEnvMode, uLook, envMode = 0;
 let uFlipY, envFlip = 0;
 let uZoomF, zoomF = 1.0;
+let uDist, camDist = 2.9, tCamDist = 2.9;   // eased radius, and its target
+function clampDist(v){ return Math.max(1.25, Math.min(7.0, v)); }
 let uOverlay, overlayMode = new URLSearchParams(location.search).has('overlay') ? 1 : 0;
 let uTravel, travelK = 0;
 let uTouchUV, uTouchAge, uTouchHeld, uRelAge;
@@ -1367,22 +1370,22 @@ function clampPit(v){ return Math.max(-1.15, Math.min(1.15, v)); }
 // difference from the gyro-vs-drag bug: there, BOTH inputs wrote the same flag.
 const pinch = {on:false, pts:new Map(), d0:0, z0:1};
 (function(){
-  const dist = () => {
+  const pdist = () => {           // finger separation; NOT the camera radius
     const a = [...pinch.pts.values()];
     return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
   };
   addEventListener('pointerdown', e => {
     pinch.pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
-    if(pinch.pts.size === 2){ pinch.on = true; pinch.d0 = dist(); pinch.z0 = zoomF; }
+    if(pinch.pts.size === 2){ pinch.on = true; pinch.d0 = pdist(); pinch.z0 = tCamDist; }
   }, {passive:true});
   addEventListener('pointermove', e => {
     if(!pinch.pts.has(e.pointerId)) return;
     pinch.pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
     if(!pinch.on || pinch.pts.size < 2) return;
-    const d = dist();
+    const d = pdist();
     if(pinch.d0 > 8){
-      // spreading fingers -> longer focal -> narrower cone -> zoomed IN
-      zoomF = Math.max(0.55, Math.min(4.0, pinch.z0 * (d / pinch.d0)));
+      // spreading fingers -> camera moves IN, so the orb genuinely enlarges
+      tCamDist = clampDist(pinch.z0 * (pinch.d0 / d));
     }
     if(e.cancelable) e.preventDefault();
   }, {passive:false});
@@ -1540,6 +1543,7 @@ function initGL(){
   uEnvMode=gl.getUniformLocation(prog,'envMode');
   uFlipY=gl.getUniformLocation(prog,'flipY');
   uZoomF=gl.getUniformLocation(prog,'zoomF');
+  uDist=gl.getUniformLocation(prog,'dist');
   uOverlay=gl.getUniformLocation(prog,'overlayMode');
   uTravel=gl.getUniformLocation(prog,'travelK');
   uLook=gl.getUniformLocation(prog,'look');
@@ -1722,6 +1726,8 @@ function frame(ts){
   gl.uniform1f(uEnvMode, envMode);
   gl.uniform1f(uFlipY, envFlip);
   gl.uniform1f(uZoomF, zoomF);
+  camDist += (tCamDist - camDist) * 0.18;   // their easing, kept verbatim
+  gl.uniform1f(uDist, camDist);
   gl.uniform1f(uOverlay, overlayMode);
   gl.uniform1f(uTravel, travelK);
   gl.uniform1f(uHasEnv, envLoaded ? 1 : 0);
