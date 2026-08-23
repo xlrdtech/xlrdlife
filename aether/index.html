@@ -195,10 +195,10 @@ body.fallback .fb{display:block;position:fixed;top:50%;left:50%;
   <div class="row" style="margin-top:14px;align-items:center;gap:12px">
     <label for="sens" style="font:500 12px/1 inherit;color:rgba(236,236,240,.62);
       white-space:nowrap">Voice sensitivity</label>
-    <input type="range" id="sens" min="0.4" max="6" step="0.1" value="2.4"
+    <input type="range" id="sens" min="0.4" max="9" step="0.1" value="4.2"
       style="flex:1 1 120px;accent-color:#e8e8ea;background:transparent">
     <span id="sensV" style="font:500 12px/1 inherit;color:rgba(236,236,240,.48);
-      min-width:26px;text-align:right">2.4</span>
+      min-width:26px;text-align:right">4.2</span>
   </div>
   <p class="note" id="envNote">Drag to look around. Move the phone if it has a gyroscope.</p>
 </div>
@@ -729,7 +729,7 @@ float hitSphere(vec3 ro, vec3 rd, float r){
 // surface normal, plus a living wobble so it is not a dead billiard ball
 vec3 nrm(vec3 q, float r){
   vec3 n = q / r;
-  float w = 0.030 + amp*0.16;
+  float w = 0.030 + amp*0.34;
   vec3 d = vec3(
     sin(q.y*4.3 + t*1.15),
     sin(q.z*3.9 - t*0.95),
@@ -763,7 +763,7 @@ void main(){
   vec3 yAx  = cross(zAx, xAx);
   vec3 rd   = normalize(xAx*uv.x + yAx*uv.y + zAx*1.35);
 
-  float r = 0.86 + amp*0.05;
+  float r = 0.86 + amp*0.11;
 
   // ⭐⭐ qi 2026-08-23 06:26: "I wanted it to be in a 3D IMMERSIVE ENVIRONMENT."
   // That is the whole reframe. Not a sphere on a black page — a sphere standing
@@ -798,7 +798,7 @@ void main(){
   // how far apart is it right now? sound and touch both pull it open.
   float held  = touchHeld > 0.5 ? smoothstep(0.0, 0.30, touchAge) : 0.0;
   float letgo = touchHeld > 0.5 ? 0.0 : exp(-relAge * 2.0);
-  float sound = smoothstep(0.16, 0.85, amp);          // his voice, above room noise
+  float sound = smoothstep(0.06, 0.55, amp);   // his voice pulls it apart sooner          // his voice, above room noise
   float apart = clamp(max(max(held, letgo), sound), 0.0, 1.0);
 
   // analytic hit, then refine against the displaced surface. At apart == 0 the
@@ -906,7 +906,7 @@ void main(){
     // as an ornament. Life comes from the reflection SLIDING. So the environment
     // is slowly rotated under the sphere, and voice spins it faster — the orb
     // looks like it is turning toward you when you speak.
-    float spin = t*0.085 + amp*0.9;
+    float spin = t*0.085 + amp*2.2;
     float cs = cos(spin), sn = sin(spin);
     vec3 refl = reflect(-v, n);
     refl = vec3(cs*refl.x + sn*refl.z, refl.y, -sn*refl.x + cs*refl.z);
@@ -975,7 +975,7 @@ void main(){
     // the "it heard you" rim. Still voice-driven, but it glows in the
     // environment's OWN colour, sampled from what the rim is reflecting.
     float rim = pow(1.0 - max(dot(n,v),0.0), 2.6);
-    c += mir * rim * (0.22 + amp*0.95);
+    c += mir * rim * (0.18 + amp*2.1);
 
     // a single specular highlight so the form reads as solid
     vec3 L = normalize(vec3(-0.45, 0.75, 0.62));
@@ -1000,8 +1000,8 @@ void main(){
     // behind it, which is what makes a thing disappear. Presence is earned by VOICE:
     // brightness and opacity both climb only while he is talking, and settle back to
     // invisible when he stops. ⛔ Never give it resting prominence again.
-    float voice = smoothstep(0.05, 0.60, amp);          // 0 silent, 1 speaking
-    c *= clamp((envHere * (1.0 + voice*0.85)) / max(orbHere, 0.004), 0.0, 1.0);
+    float voice = smoothstep(0.02, 0.42, amp);   // triggers sooner, saturates sooner          // 0 silent, 1 speaking
+    c *= clamp((envHere * (1.0 + voice*1.9)) / max(orbHere, 0.004), 0.0, 1.0);
     col = c;
     // ⭐⭐⭐ THE BODY ITSELF IS SEE-THROUGH — qi 2026-08-23 08:46-08:47:
     //   "the sphere is TOO PROMINENT… I need to be able to see DIRECTLY THROUGH it.
@@ -1020,7 +1020,7 @@ void main(){
     // ⛔ Never raise the centre alpha back up. Prominence is the defect.
     // opacity follows the same rule: nearly gone at rest, present when he speaks.
     // The rim always carries a little more than the centre, which is how glass reads.
-    alphaOut = mix(0.34, 0.10, ct) + voice * mix(0.34, 0.26, ct);
+    alphaOut = mix(0.30, 0.08, ct) + voice * mix(0.52, 0.44, ct);
   } else {
     // ground glow the sphere casts into the space beneath it
     float g = smoothstep(0.95, 0.0, length(uv - vec2(0.0,-0.55)));
@@ -1057,10 +1057,10 @@ let uEnvMap, uHasEnv, envTex, envLoaded = false;
 let uEnvMode, uLook, envMode = 0;
 let uTouchUV, uTouchAge, uTouchHeld, uRelAge;
 
-let micGain = 2.4;
+let micGain = 4.2;                 // qi 08:58: "a LOT more reaction to my voice"
 try {                                        // storage throws in some contexts
   const st = localStorage.getItem('aether.micGain');
-  if(st) micGain = Math.max(0.4, Math.min(6, parseFloat(st) || 2.4));
+  if(st) micGain = Math.max(0.4, Math.min(9, parseFloat(st) || 4.2));
 } catch(_) {}
 addEventListener('DOMContentLoaded', () => {
   const sl = document.getElementById('sens'), lab = document.getElementById('sensV');
