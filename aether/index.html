@@ -269,6 +269,24 @@ uniform float relAge;    // seconds since he lifted; huge while still held
 
 const float PI = 3.14159265;
 
+// ⭐⭐⭐ DOUBLE GAMMA WAS TURNING HIS BLACK INTO LAVENDER GREY.
+// qi 2026-08-23 08:11, with a screenshot: "I put in an image that definitely has
+// like an ALL JET BLACK background, but when it showed up it's showing up all like
+// purple and stuff instead of the colours that [I uploaded]."
+// Measured from his screenshot (IMG_1841): the glyph environment loads correctly
+// and wraps the sphere correctly — but its black ground renders as a grey-violet
+// haze. The cause is not a hue anywhere in the code. It is COLOUR SPACE:
+//   his JPG/PNG is already sRGB-ENCODED. The shader was sampling it raw, doing all
+//   its lighting maths on those encoded values, and then applying the final
+//   pow(col, 1.0/2.2) display transform — gamma-correcting his photo A SECOND TIME.
+//   A double-corrected 0.02 black lands near 0.20, which is exactly the lifted,
+//   milky, low-contrast grey he is looking at. The violet then comes from the sky
+//   extension tinting that grey, which would have been invisible against true black.
+// ⛔ EVERY texture read must be decoded to LINEAR here, once, at the sample.
+// ⛔ Never "fix" a washed-out photo by adding contrast downstream — that treats the
+//    symptom and keeps the wrong maths.
+vec3 srgb2lin(vec3 c){ return pow(max(c, 0.0), vec3(2.2)); }
+
 // The resting environment, used wherever no camera covers a direction.
 // ⭐⭐⭐ THE ENVIRONMENT — qi 2026-08-23 06:26, three lines that settled it:
 //   "it needs an environment to be floating in"
@@ -353,7 +371,7 @@ vec3 equirect(vec3 dir){
   vec3 d = normalize(dir);
   vec2 uv = vec2(atan(d.z, d.x) / 6.2831853 + 0.5, acos(clamp(d.y,-1.0,1.0)) / 3.14159265);
   uv.y = 1.0 - uv.y;
-  return texture2D(envMap, uv).rgb;
+  return srgb2lin(texture2D(envMap, uv).rgb);
 }
 
 // FLAT PHOTO -> USABLE WORLD.  qi 07:36 "can you make anything a panorama...
@@ -382,14 +400,17 @@ vec3 photoWrap(vec3 dir){
   float v  = el / (PI*0.5);                  // -1 down .. +1 up
   float vv = clamp(v/band*0.5 + 0.5, 0.0, 1.0);
 
-  vec3 c    = texture2D(envMap, vec2(u, 1.0 - vv)).rgb;
-  vec3 skyC = texture2D(envMap, vec2(u, 0.03)).rgb;   // its own top row
-  vec3 gndC = texture2D(envMap, vec2(u, 0.97)).rgb;   // its own bottom row
+  vec3 c    = srgb2lin(texture2D(envMap, vec2(u, 1.0 - vv)).rgb);
+  vec3 skyC = srgb2lin(texture2D(envMap, vec2(u, 0.03)).rgb);   // its own top row
+  vec3 gndC = srgb2lin(texture2D(envMap, vec2(u, 0.97)).rgb);   // its own bottom row
 
   float tS = smoothstep(band*0.78, band*1.04,  v);
   float tG = smoothstep(-band*0.78, -band*1.04, v);
-  c = mix(c, skyC * vec3(1.03,1.05,1.14) + 0.015, tS);   // lifts toward sky
-  c = mix(c, gndC * 0.44, tG);                           // falls into ground
+  // ⛔ no lift and no tint here. The old "+ 0.015" and vec3(1.03,1.05,1.14) were
+  // invisible against a true black but became a visible violet cast once double
+  // gamma had lifted his blacks to grey. If his sky is black, it stays black.
+  c = mix(c, skyC, tS);
+  c = mix(c, gndC * 0.55, tG);
   return c;
 }
 
@@ -418,8 +439,7 @@ vec3 sampleCam(sampler2D tex, vec3 dir, float asp, float mir, out float outside)
   uv = uv * 0.5 + 0.5;
   vec2 e = max(abs(uv - 0.5) - 0.5, 0.0);
   outside = clamp(length(e) * 14.0, 0.0, 1.0);
-  vec3 c = texture2D(tex, clamp(uv, 0.001, 0.999)).rgb;
-  c = pow(c, vec3(1.06)) * vec3(0.94, 0.93, 1.03);   // chrome is not neutral
+  vec3 c = srgb2lin(texture2D(tex, clamp(uv, 0.001, 0.999)).rgb);
   return c;
 }
 
@@ -452,7 +472,7 @@ vec3 env(vec3 dir){
       uv.x /= max(camAspF, 0.0001);
       uv = uv * 0.5 + 0.5;
       if(uv.x > -0.25 && uv.x < 1.25 && uv.y > -0.25 && uv.y < 1.25){
-        vec3 me = texture2D(camF, clamp(uv, 0.001, 0.999)).rgb;
+        vec3 me = srgb2lin(texture2D(camF, clamp(uv, 0.001, 0.999)).rgb);
 
         // ⭐⭐⭐ NOT A CUTOUT, NOT A SLIT — qi 2026-08-23 08:07-08:08, verbatim:
         //   "the reflection of me through the camera isn't real enough, because I
@@ -495,7 +515,9 @@ vec3 env(vec3 dir){
         // So: crush his floor to true black, THEN raise it to this world's floor.
         // Different uploads have different floors, which is exactly his "different
         // vibes, not all one time of day".
-        me = max(me - vec3(0.055), vec3(0.0)) / 0.945;     // his floor -> true black
+        me = max(me - vec3(0.006), vec3(0.0)) / 0.994;     // his floor -> true black
+                                                          // (linear space: a 0.055
+                                                          // sRGB lift is ~0.006 here)
         float wFloor = bl * 0.20;                          // this world's floor, here
         me = me * (1.0 - wFloor) + wFloor;                 // -> sit on the world's floor
 
@@ -949,7 +971,26 @@ function initGL(){
 let W=0,H=0;
 function size(){
   const dpr = Math.min(devicePixelRatio||1, 2);
-  const w = Math.round(innerWidth*dpr), h = Math.round(innerHeight*dpr);
+  // ⭐ BLACK STRIP IN THE PWA - qi 2026-08-23 08:12: "I'm having a black strip
+  // when I open it as a PWA." In a standalone/fullscreen window innerHeight can
+  // report SHORT of the real screen (the UA reserves the status-bar band before
+  // the page is told about it), and any row the canvas does not cover falls
+  // through to body's black. So take the largest honest measure of the viewport,
+  // and re-measure on visualViewport changes, which is the event that actually
+  // fires when that band is released.
+  const vh = Math.max(
+    innerHeight,
+    document.documentElement.clientHeight || 0,
+    (window.visualViewport && window.visualViewport.height) || 0
+  );
+  const vw = Math.max(
+    innerWidth,
+    document.documentElement.clientWidth || 0,
+    (window.visualViewport && window.visualViewport.width) || 0
+  );
+  cv.style.height = vh + 'px';
+  cv.style.width  = vw + 'px';
+  const w = Math.round(vw*dpr), h = Math.round(vh*dpr);
   if(w===W && h===H) return;
   W=w; H=h; cv.width=w; cv.height=h;
   gl.viewport(0,0,w,h);
@@ -1142,6 +1183,11 @@ document.getElementById('bReset').addEventListener('click', () => {
   closeSheet();
 });
 addEventListener('resize', size, {passive:true});
+addEventListener('orientationchange', () => setTimeout(size, 60), {passive:true});
+if(window.visualViewport){
+  visualViewport.addEventListener('resize', size, {passive:true});
+  visualViewport.addEventListener('scroll', size, {passive:true});
+}
 </script>
 </body>
 </html>
