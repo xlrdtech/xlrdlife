@@ -799,6 +799,7 @@ vec3 nrm(vec3 q, float r){
 }
 
 uniform float solidBg;   // 1 restores an opaque background (?solid=1)
+uniform float overlayMode; // 1 = transparent overlay on his UI (?overlay=1), 0 = standalone
 
 void main(){
   vec2 uv = (gl_FragCoord.xy - 0.5*res) / min(res.x,res.y);
@@ -1035,8 +1036,8 @@ void main(){
 
     // pull most of the way back to straight-through, then over-converge slightly.
     // over-converging past 'straight' is what produces magnification.
-    bendDir = normalize(mix(bendDir, straight, 0.58));
-    bendDir = normalize(straight + (bendDir - straight) * 1.42);
+    bendDir = normalize(mix(bendDir, straight, 0.88));
+    bendDir = normalize(straight + (bendDir - straight) * 1.05);
 
     // and let it LIQUEFY: a slow drifting warp, stronger toward the rim where a real
     // liquid surface is thickest, and it breathes with his voice.
@@ -1073,8 +1074,23 @@ void main(){
     // reflection*fres + transmission*(1-fres) the two sides sum to 1.0, so adding
     // mirror no longer STEALS light from what is behind. Before the energy fix,
     // raising this would have darkened the see-through; now it cannot.
-    // Centre 0.38 mirror / 0.62 see-through, rim almost pure mirror.
-    float mirShare = clamp(0.38 + 0.56*(1.0 - ct), 0.0, 1.0);
+    // 🔴 CORRECTION, qi 09:49: "we should be WARPING the environment and only
+    // LIGHTING UP when it detects voice" + "its still a fucking black blob on the
+    // screen." The note above this line said the lever was alpha, NOT mirShare.
+    // That note was WRONG and it is why the blob survived four attempts.
+    // ⭐ THE BLOB WAS NEVER A SHADOW AND NEVER AN ALPHA PROBLEM. mirShare 0.38 at
+    // the centre mixes in 38% MIRROR, and what the orb mirrors is his dark sky and
+    // dark ground. A dark reflection subtracted from the transmission IS the blob.
+    // No alpha value can fix it, because the pixel is genuinely dark before alpha
+    // ever runs - which is exactly why lowering opacity only ever made it fainter.
+    // ⭐ SO THE MIRROR ITSELF IS THE VOICE LEVER. At rest: 0.04 centre = essentially
+    // pure transmission, so the only thing visible is the LENS WARP. On voice: the
+    // mirror climbs and it lights up. His spec, stated literally.
+    // ⛔ amp, not voice: 'voice' is declared ~50 lines BELOW this point, so naming it
+    // here is a use-before-declaration the compiler rejects. amp is a uniform and is
+    // in scope everywhere.
+    float vGate = smoothstep(0.02, 0.42, amp);
+    float mirShare = clamp((0.04 + 0.44*vGate) + (0.16 + 0.52*vGate)*(1.0 - ct), 0.0, 1.0);
     vec3 reflPart  = mir    * fres * mirShare;
     vec3 tranPart  = behind * (vec3(1.0) - fres * mirShare);
     vec3 c = reflPart + tranPart;
@@ -1125,7 +1141,35 @@ void main(){
     // brightness and opacity both climb only while he is talking, and settle back to
     // invisible when he stops. ⛔ Never give it resting prominence again.
     float voice = smoothstep(0.02, 0.42, amp);   // triggers sooner, saturates sooner          // 0 silent, 1 speaking
-    c *= clamp((envHere * (1.0 + voice*1.9)) / max(orbHere, 0.004), 0.0, 1.0);
+    // 🔴🔴 THE BLACK BLOB WAS THIS ONE CLAMP — qi 09:49: "its still a fucking black
+    // blob on the screen", after four failed attempts on alpha and mirShare.
+    // The upper bound was 1.0, so this equalizer could only ever scale the orb DOWN.
+    // When the orb is DARKER than the world behind it — which it always is, because
+    // the refracted sample bends down into the dark ground — the ratio wants to be
+    // ABOVE 1.0 and got clamped away, so nothing corrected it. The comment directly
+    // above says "the resting state is EQUAL"; the code was structurally incapable of
+    // reaching equal, because equal needs to brighten as well as dim.
+    // ⭐ EQUAL IS A TWO-WAY MATCH. Let it lift a too-dark orb up to its environment,
+    // not just pull a too-bright one down. At rest the target IS envHere, so the body
+    // lands at the same luminance as the world behind it = genuinely invisible, while
+    // the refraction PATTERN survives the scaling, which is the warp he asked for:
+    // "we should be warping the environment and only lighting up when it detects
+    // voice." (qi 09:49) Both halves of that sentence come from this line.
+    // ⛔ Never cap this at 1.0 again. A one-way equalizer is a darkener.
+    c *= clamp((envHere * (1.0 + voice*1.9)) / max(orbHere, 0.004), 0.35, 14.0);
+    // ⭐⭐⭐⭐ A CONSTRUCTION, NOT A CORRECTION. Four attempts failed here — mirShare,
+    // the clamp ceiling, alpha, and a debug read that never fired — because every one
+    // of them tried to CORRECT a dark body back toward its surroundings. The reliable
+    // move is to build the resting state OUT OF the surroundings, so it cannot be dark:
+    // at rest the pixel IS world(rd), the exact colour the screen would show with no
+    // orb there at all. Invisible by definition, no equalizer required.
+    // ⭐ presence is the whole spec in one scalar — qi 09:49: "we should be warping the
+    // environment and ONLY LIGHTING UP when it detects voice." 0.10 at rest keeps a
+    // whisper of the lens warp visible; voice takes it to the full mirror.
+    // ⛔ Never make the resting body a formula that COULD land dark. Make it the
+    // background, plus a fraction.
+    float presence = 0.10 + 0.90*voice;
+    c = mix(world(rd), c, presence);
     col = c;
     // ⭐⭐⭐ THE BODY ITSELF IS SEE-THROUGH — qi 2026-08-23 08:46-08:47:
     //   "the sphere is TOO PROMINENT… I need to be able to see DIRECTLY THROUGH it.
@@ -1192,6 +1236,9 @@ void main(){
   // exactly what is on screen. ⛔ Must come after the tonemap, never before.
   float finalLum = dot(col, vec3(0.299, 0.587, 0.114));
   alphaOut = clamp(finalLum * 1.55, 0.0, 0.92) * alphaOut;
+  // ⛔ Never let the default page premultiply the orb by its own luminance again.
+  // overlayMode < 0.5 = standalone (canvas IS the world) -> fully opaque.
+  alphaOut = mix(1.0, alphaOut, overlayMode);
   alphaOut = max(alphaOut, solidBg);              // ?solid=1 -> fully opaque again
   float dth = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);
   col += (dth-0.5)/255.0;
@@ -1216,6 +1263,7 @@ let uEnvMap, uHasEnv, envTex, envLoaded = false;
 let uEnvMode, uLook, envMode = 0;
 let uFlipY, envFlip = 0;
 let uZoomF, zoomF = 1.0;
+let uOverlay, overlayMode = new URLSearchParams(location.search).has('overlay') ? 1 : 0;
 let uTouchUV, uTouchAge, uTouchHeld, uRelAge;
 
 let micGain = 4.2;                 // qi 08:58: "a LOT more reaction to my voice"
@@ -1435,6 +1483,7 @@ function initGL(){
   uEnvMode=gl.getUniformLocation(prog,'envMode');
   uFlipY=gl.getUniformLocation(prog,'flipY');
   uZoomF=gl.getUniformLocation(prog,'zoomF');
+  uOverlay=gl.getUniformLocation(prog,'overlayMode');
   uLook=gl.getUniformLocation(prog,'look');
   uTouchUV=gl.getUniformLocation(prog,'touchUV');
   uTouchAge=gl.getUniformLocation(prog,'touchAge');
@@ -1615,6 +1664,7 @@ function frame(ts){
   gl.uniform1f(uEnvMode, envMode);
   gl.uniform1f(uFlipY, envFlip);
   gl.uniform1f(uZoomF, zoomF);
+  gl.uniform1f(uOverlay, overlayMode);
   gl.uniform1f(uHasEnv, envLoaded ? 1 : 0);
   gl.uniform1f(uHasCam, 0);                       // no rear camera in use
   gl.uniform1f(uHasCamF, camLive ? 1 : 0);        // FRONT is the only one
