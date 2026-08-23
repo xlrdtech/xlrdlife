@@ -191,6 +191,7 @@ body.fallback .fb{display:block;position:fixed;top:50%;left:50%;
     <button class="act" id="bPick">Use a photo</button>
     <button class="act ghost" id="bUrl">Paste a link</button>
     <button class="act ghost" id="bSite">Load a website</button>
+    <button class="act ghost" id="bFlip">Flip</button>
     <button class="act ghost" id="bReset">Back to dusk</button>
   </div>
   <div class="row" style="margin-top:14px;align-items:center;gap:12px">
@@ -284,6 +285,7 @@ uniform sampler2D camF; // front
 uniform sampler2D envMap; // supplied 360 equirectangular environment
 uniform float hasEnv;    // 1 when a panorama has loaded
 uniform float envMode;   // 0 = true equirectangular, 1 = flat photo mirror-wrap
+uniform float flipY;     // 1 flips the uploaded environment vertically
 uniform vec2  look;      // yaw, pitch in radians - gyro or drag
 uniform vec2  touchUV;   // where he last touched, in the same units as uv
 uniform float touchAge;  // seconds since touchdown
@@ -309,6 +311,21 @@ const float PI = 3.14159265;
 // ⛔ Never "fix" a washed-out photo by adding contrast downstream — that treats the
 //    symptom and keeps the wrong maths.
 vec3 srgb2lin(vec3 c){ return pow(max(c, 0.0), vec3(2.2)); }
+
+// ⭐ SOMETIMES HIS UPLOADS COME IN UPSIDE DOWN — qi 2026-08-23 09:21: "sometimes I
+// upload upside down for some reason though." Recurring, and the cause is EXIF
+// orientation: a phone photo carries a rotation flag and browsers apply it
+// inconsistently when an <img> goes straight into texImage2D. I already route
+// stills through a canvas to normalise it, which fixes most - this is the manual
+// override for the rest, because I cannot see his photo library from here.
+// ⭐ ONE CHOKE POINT: every environment read goes through envRead(), so the flip is
+// applied exactly once however many call sites exist. ⛔ Never flip at a call site;
+// with 6+ of them you get double-flips that cancel and look like the button is dead.
+vec3 envRead(vec2 uv){
+  if(flipY > 0.5) uv.y = 1.0 - uv.y;
+  vec4 tap = texture2D(envMap, uv);
+  return srgb2lin(tap.rgb);
+}
 
 // The resting environment, used wherever no camera covers a direction.
 // ⭐⭐⭐ THE ENVIRONMENT — qi 2026-08-23 06:26, three lines that settled it:
@@ -394,7 +411,7 @@ vec3 equirect(vec3 dir){
   vec3 d = normalize(dir);
   vec2 uv = vec2(atan(d.z, d.x) / 6.2831853 + 0.5, acos(clamp(d.y,-1.0,1.0)) / 3.14159265);
   uv.y = 1.0 - uv.y;
-  return srgb2lin(texture2D(envMap, uv).rgb);
+  return envRead(uv);
 }
 
 // FLAT PHOTO -> USABLE WORLD.  qi 07:36 "can you make anything a panorama...
@@ -423,7 +440,7 @@ vec3 photoWrap(vec3 dir){
   float v  = el / (PI*0.5);                  // -1 down .. +1 up
   float vv = clamp(v/band*0.5 + 0.5, 0.0, 1.0);
 
-  vec3 c = srgb2lin(texture2D(envMap, vec2(u, 1.0 - vv)).rgb);
+  vec3 c = envRead(vec2(u, 1.0 - vv));
 
   // ⭐⭐ THE SKY — qi 2026-08-23 08:25: "the way it depicts the sky when I upload
   // the images, that could be improved as well."
@@ -453,19 +470,19 @@ vec3 photoWrap(vec3 dir){
   // part that actually IS sky — stays overhead where it belongs. The pole average
   // then carries the rest of the way. Same logic mirrored for the ground.
   float mAbove = clamp(vAbove * 0.26, 0.0, 1.0);
-  vec3 skyC = srgb2lin(texture2D(envMap, vec2(u, mAbove)).rgb);
+  vec3 skyC = envRead(vec2(u, mAbove));
   float mBelow = clamp(1.0 - vBelow * 0.26, 0.0, 1.0);
-  vec3 gndC = srgb2lin(texture2D(envMap, vec2(u, mBelow)).rgb);
+  vec3 gndC = envRead(vec2(u, mBelow));
 
   // the pole average — four columns is enough to kill the spokes
-  vec3 topAvg = (srgb2lin(texture2D(envMap, vec2(0.12, 0.02)).rgb)
-               + srgb2lin(texture2D(envMap, vec2(0.37, 0.02)).rgb)
-               + srgb2lin(texture2D(envMap, vec2(0.63, 0.02)).rgb)
-               + srgb2lin(texture2D(envMap, vec2(0.88, 0.02)).rgb)) * 0.25;
-  vec3 botAvg = (srgb2lin(texture2D(envMap, vec2(0.12, 0.98)).rgb)
-               + srgb2lin(texture2D(envMap, vec2(0.37, 0.98)).rgb)
-               + srgb2lin(texture2D(envMap, vec2(0.63, 0.98)).rgb)
-               + srgb2lin(texture2D(envMap, vec2(0.88, 0.98)).rgb)) * 0.25;
+  vec3 topAvg = (envRead(vec2(0.12, 0.02))
+               + envRead(vec2(0.37, 0.02))
+               + envRead(vec2(0.63, 0.02))
+               + envRead(vec2(0.88, 0.02))) * 0.25;
+  vec3 botAvg = (envRead(vec2(0.12, 0.98))
+               + envRead(vec2(0.37, 0.98))
+               + envRead(vec2(0.63, 0.98))
+               + envRead(vec2(0.88, 0.98))) * 0.25;
 
   // ⭐⭐ "IT'S LIKE IT DOESN'T HAVE A SKY" — qi 2026-08-23 08:32-08:33:
   //   "gotta get this sky better… when I look all the way UP into the sky it doesn't
@@ -492,11 +509,11 @@ vec3 photoWrap(vec3 dir){
   // grain it has. So FIND his image's own brightest column along the top band and
   // put a soft glow there. It is his light, derived from his picture, not invented —
   // which keeps the whole thing colour-agnostic.
-  vec3 s0 = srgb2lin(texture2D(envMap, vec2(0.07, 0.14)).rgb);
-  vec3 s1 = srgb2lin(texture2D(envMap, vec2(0.29, 0.14)).rgb);
-  vec3 s2 = srgb2lin(texture2D(envMap, vec2(0.52, 0.14)).rgb);
-  vec3 s3 = srgb2lin(texture2D(envMap, vec2(0.74, 0.14)).rgb);
-  vec3 s4 = srgb2lin(texture2D(envMap, vec2(0.93, 0.14)).rgb);
+  vec3 s0 = envRead(vec2(0.07, 0.14));
+  vec3 s1 = envRead(vec2(0.29, 0.14));
+  vec3 s2 = envRead(vec2(0.52, 0.14));
+  vec3 s3 = envRead(vec2(0.74, 0.14));
+  vec3 s4 = envRead(vec2(0.93, 0.14));
   float l0=dot(s0,vec3(0.34)), l1=dot(s1,vec3(0.34)), l2=dot(s2,vec3(0.34));
   float l3=dot(s3,vec3(0.34)), l4=dot(s4,vec3(0.34));
   float bestU = 0.07; float bestL = l0; vec3 bestC = s0;
@@ -510,7 +527,7 @@ vec3 photoWrap(vec3 dir){
   skyC += bestC * glow * 0.20 * smoothstep(0.0, 0.25, bestL);   // was 0.42 - too hot
 
   // large-scale drift, sampled from the image so it stays in its palette
-  vec3 drift = srgb2lin(texture2D(envMap, vec2(fract(u*0.31 + 0.17), 0.10)).rgb);
+  vec3 drift = envRead(vec2(fract(u*0.31 + 0.17), 0.10));
   skyC = mix(skyC, drift, 0.14 * smoothstep(0.15, 0.95, vAbove));
 
   // (c) grain, scaled to how much contrast HIS image actually has — a flat image
@@ -1186,6 +1203,7 @@ let prog, aP, uRes, uT, uAmp, uHasCam, uCamAsp, uCam, tex;
 let uHasCamF, uCamAspF, uCamF;
 let uEnvMap, uHasEnv, envTex, envLoaded = false;
 let uEnvMode, uLook, envMode = 0;
+let uFlipY, envFlip = 0;
 let uTouchUV, uTouchAge, uTouchHeld, uRelAge;
 
 let micGain = 4.2;                 // qi 08:58: "a LOT more reaction to my voice"
@@ -1365,6 +1383,7 @@ function initGL(){
   uEnvMap=gl.getUniformLocation(prog,'envMap');
   uHasEnv=gl.getUniformLocation(prog,'hasEnv');
   uEnvMode=gl.getUniformLocation(prog,'envMode');
+  uFlipY=gl.getUniformLocation(prog,'flipY');
   uLook=gl.getUniformLocation(prog,'look');
   uTouchUV=gl.getUniformLocation(prog,'touchUV');
   uTouchAge=gl.getUniformLocation(prog,'touchAge');
@@ -1519,7 +1538,7 @@ function frame(ts){
     camAsp = vid.videoWidth / vid.videoHeight;
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,vid); }catch(e){}
   }
 
@@ -1543,6 +1562,7 @@ function frame(ts){
   gl.uniform1f(uTouchHeld, touch.held);
   gl.uniform1f(uRelAge, touch.held ? 9999 : (ts - touch.rel) / 1000);
   gl.uniform1f(uEnvMode, envMode);
+  gl.uniform1f(uFlipY, envFlip);
   gl.uniform1f(uHasEnv, envLoaded ? 1 : 0);
   gl.uniform1f(uHasCam, 0);                       // no rear camera in use
   gl.uniform1f(uHasCamF, camLive ? 1 : 0);        // FRONT is the only one
@@ -1597,7 +1617,8 @@ function applyEnvImage(img, label){
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   try{
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
     envLoaded = true;
   }catch(err){
     fail('<b>That image could not be read.</b> ' + (err && err.message ? err.message : ''));
@@ -1715,6 +1736,7 @@ function pumpMotion(){
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, src);
     gl.activeTexture(gl.TEXTURE0);
   } catch(_) { envMotion = null; }                  // never let this kill the loop
@@ -1772,6 +1794,11 @@ document.getElementById('bSite').addEventListener('click', () => {
   } catch(_) {}
 })();
 
+document.getElementById('bFlip').addEventListener('click', () => {
+  envFlip = envFlip > 0.5 ? 0 : 1;
+  const n = document.getElementById('envNote');
+  if(n) n.textContent = envFlip ? 'Flipped.' : 'Normal orientation.';
+});
 document.getElementById('bReset').addEventListener('click', () => {
   envLoaded = false; envMode = 0;
   const n = document.getElementById('envNote');
