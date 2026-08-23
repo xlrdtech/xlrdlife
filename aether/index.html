@@ -954,10 +954,18 @@ void main(){
     // not make the body transparent to it. A small refracted world sample warps what
     // is behind the glass so the shape announces itself, while the reflection stays
     // fully intact on top. See through it, and still see it.
-    vec3 bendDir = refract(-v, n, 1.0/1.12);          // gentle - a thick lens, not a prism
+    vec3 bendDir = refract(-v, n, 1.0/1.22);          // a stronger bend so the shape announces itself
     if(length(bendDir) < 0.001) bendDir = reflect(-v, n);
     vec3 behind = world(bendDir);
-    vec3 c = mix(behind, mir, clamp(0.52 + 0.44*(1.0 - ct), 0.0, 1.0)) * fres;
+    // ⭐ "I'm still not seeing what's behind it" (qi 08:59). I had the dead centre at
+    // 52% mirror, which is half a mirror — too much to look through. Real glass is
+    // mostly TRANSMISSION face-on and mostly REFLECTION at the grazing rim, so the
+    // weighting inverts: you look THROUGH the middle and the rim carries the shine.
+    // ⛔ Do not raise the centre's mirror share again; looking through is the point.
+    vec3 c = mix(behind, mir, clamp(0.16 + 0.78*(1.0 - ct), 0.0, 1.0)) * fres;
+    // and a real lens magnifies/displaces more toward the edge, which is the cue
+    // that says "solid transparent object" rather than "hole"
+    c = mix(c, behind, 0.30 * ct);
 
     // anisotropic sheen: a brushed-metal band that slides as the orb turns.
     // Metal is not a perfect mirror - this is the "shine over" he asked for.
@@ -1531,7 +1539,22 @@ function useVideo(url, label){
 }
 
 function useGif(url, label){
-  const im = new Image();
+  // ⭐⭐ A DETACHED GIF DOES NOT ANIMATE — qi 2026-08-23 08:59: "the GIF images
+  // aren't doing the motion." Not a cache problem, a real bug of mine.
+  // Browsers PAUSE animated-image playback for an <img> that is not being rendered:
+  // one created with new Image() and never attached, or attached with display:none,
+  // sits frozen on frame one. My canvas was then faithfully copying that one frame
+  // every tick — which looks exactly like the feature was never built.
+  // ⭐ So attach it and keep it RENDERED but invisible: 1px, opacity 0, off in the
+  // corner. ⛔ display:none re-freezes it. Never use display:none here.
+  const im = document.getElementById('gifSrc') || (() => {
+    const e = new Image();
+    e.id = 'gifSrc';
+    e.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:1px;' +
+                      'opacity:0.01;pointer-events:none;z-index:-1';
+    document.body.appendChild(e);
+    return e;
+  })();
   im.crossOrigin = 'anonymous';
   im.onload = () => {
     const cv2 = document.getElementById('gifCv');
