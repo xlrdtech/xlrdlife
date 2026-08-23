@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>AETHER</title>
+  <!-- ⭐ "I RELOADED AND IT DID NOT CHANGE" - qi 09:38, on the CORRECT host.
+       No service worker exists here; the culprit is the plain HTTP cache. GitHub
+       Pages serves cache-control: max-age=600, so his browser answers every reload
+       from its own copy for ten minutes and a fix that IS live looks like a fix
+       that never shipped. ⛔ A query string does NOT bust the Pages CDN cache -
+       measured today - but it DOES bust the browser's, and these directives stop
+       the browser from holding the document at all. -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b0812">
 <meta name="mobile-web-app-capable" content="yes">
@@ -286,6 +296,7 @@ uniform sampler2D envMap; // supplied 360 equirectangular environment
 uniform float hasEnv;    // 1 when a panorama has loaded
 uniform float envMode;   // 0 = true equirectangular, 1 = flat photo mirror-wrap
 uniform float flipY;     // 1 flips the uploaded environment vertically
+uniform float zoomF;     // pinch zoom: focal multiplier, 1.0 = default framing
 uniform vec2  look;      // yaw, pitch in radians - gyro or drag
 uniform vec2  touchUV;   // where he last touched, in the same units as uv
 uniform float touchAge;  // seconds since touchdown
@@ -811,7 +822,7 @@ void main(){
   vec3 zAx  = -out3;                                       // camera forward
   vec3 xAx  = normalize(cross(vec3(0.0,1.0,0.0), zAx));
   vec3 yAx  = cross(zAx, xAx);
-  vec3 rd   = normalize(xAx*uv.x + yAx*uv.y + zAx*1.35);
+  vec3 rd   = normalize(xAx*uv.x + yAx*uv.y + zAx*(1.35*zoomF));
 
   float r = 0.86 + amp*0.11;
 
@@ -915,7 +926,7 @@ void main(){
     // the world around.
 
     // where on the sphere did he touch? cast that pixel's ray and intersect.
-    vec3 crd  = normalize(xAx*touchUV.x + yAx*touchUV.y + zAx*1.35);
+    vec3 crd  = normalize(xAx*touchUV.x + yAx*touchUV.y + zAx*(1.35*zoomF));
     float cth = hitSphere(ro, crd, r);
     vec3 cdir = cth > 0.0 ? normalize(ro + crd*cth) : normalize(-out3);
     vec3 pn   = normalize(q);
@@ -1204,6 +1215,7 @@ let uHasCamF, uCamAspF, uCamF;
 let uEnvMap, uHasEnv, envTex, envLoaded = false;
 let uEnvMode, uLook, envMode = 0;
 let uFlipY, envFlip = 0;
+let uZoomF, zoomF = 1.0;
 let uTouchUV, uTouchAge, uTouchHeld, uRelAge;
 
 let micGain = 4.2;                 // qi 08:58: "a LOT more reaction to my voice"
@@ -1283,6 +1295,43 @@ const D2R = Math.PI/180;
 
 function clampPit(v){ return Math.max(-1.15, Math.min(1.15, v)); }
 
+// ── PINCH TO ZOOM. Two fingers = zoom, one finger = look. Exactly one writer
+// touches pinch.on (the pinch handler); the drag only READS it. That is the
+// difference from the gyro-vs-drag bug: there, BOTH inputs wrote the same flag.
+const pinch = {on:false, pts:new Map(), d0:0, z0:1};
+(function(){
+  const dist = () => {
+    const a = [...pinch.pts.values()];
+    return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+  };
+  addEventListener('pointerdown', e => {
+    pinch.pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pinch.pts.size === 2){ pinch.on = true; pinch.d0 = dist(); pinch.z0 = zoomF; }
+  }, {passive:true});
+  addEventListener('pointermove', e => {
+    if(!pinch.pts.has(e.pointerId)) return;
+    pinch.pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(!pinch.on || pinch.pts.size < 2) return;
+    const d = dist();
+    if(pinch.d0 > 8){
+      // spreading fingers -> longer focal -> narrower cone -> zoomed IN
+      zoomF = Math.max(0.55, Math.min(4.0, pinch.z0 * (d / pinch.d0)));
+    }
+    if(e.cancelable) e.preventDefault();
+  }, {passive:false});
+  const drop = e => {
+    pinch.pts.delete(e.pointerId);
+    if(pinch.pts.size < 2) pinch.on = false;
+  };
+  addEventListener('pointerup', drop, {passive:true});
+  addEventListener('pointercancel', drop, {passive:true});
+  // desktop: wheel / trackpad pinch
+  addEventListener('wheel', e => {
+    zoomF = Math.max(0.55, Math.min(4.0, zoomF * (e.deltaY < 0 ? 1.06 : 0.943)));
+    if(e.cancelable) e.preventDefault();
+  }, {passive:false});
+})();
+
 // ── drag: always available, desktop and phone alike
 (function(){
   let down=false, lx=0, ly=0;
@@ -1290,6 +1339,7 @@ function clampPit(v){ return Math.max(-1.15, Math.min(1.15, v)); }
   const move =e=>{
     if(!down) return;
     const p=e.touches?e.touches[0]:e;
+    if(pinch.on){ lx=p.clientX; ly=p.clientY; return; }   // re-baseline, never jump
     // dragging LEFT should sweep the world left, so the sign follows the finger
     look.dYaw += (p.clientX-lx) * 0.0055;
     look.dPit = clampPit(look.dPit + (p.clientY-ly) * 0.0040);
@@ -1384,6 +1434,7 @@ function initGL(){
   uHasEnv=gl.getUniformLocation(prog,'hasEnv');
   uEnvMode=gl.getUniformLocation(prog,'envMode');
   uFlipY=gl.getUniformLocation(prog,'flipY');
+  uZoomF=gl.getUniformLocation(prog,'zoomF');
   uLook=gl.getUniformLocation(prog,'look');
   uTouchUV=gl.getUniformLocation(prog,'touchUV');
   uTouchAge=gl.getUniformLocation(prog,'touchAge');
@@ -1563,6 +1614,7 @@ function frame(ts){
   gl.uniform1f(uRelAge, touch.held ? 9999 : (ts - touch.rel) / 1000);
   gl.uniform1f(uEnvMode, envMode);
   gl.uniform1f(uFlipY, envFlip);
+  gl.uniform1f(uZoomF, zoomF);
   gl.uniform1f(uHasEnv, envLoaded ? 1 : 0);
   gl.uniform1f(uHasCam, 0);                       // no rear camera in use
   gl.uniform1f(uHasCamF, camLive ? 1 : 0);        // FRONT is the only one
