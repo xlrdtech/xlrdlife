@@ -1,0 +1,93 @@
+<title>Swipe Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- SWIPE TEST — built 2026-08-23 for qi's own question.
+     He found that opening links from a plain directory index keeps them in the
+     same document, so iOS edge-swipe navigates back to the directory and NO
+     back/close chrome appears. His words: "it might be the cheat code, it might
+     be exactly what I needed to keep it all inside."
+     His one open unknown: does that hold for EXTERNAL sites?
+
+     ⚠️ WHY THIS IS A PAGE AND NOT A REPORT: iOS edge-swipe in standalone PWA mode
+     is UNOBSERVABLE from a headless Chrome on macOS. There is no swipe gesture and
+     no iOS navigation model to drive. Guessing at his handset from here is the same
+     mistake as reasoning about env(safe-area-inset-*), which resolves to 0 in every
+     browser this stack can drive. So: build the instrument, let him read it.
+
+     ⛔ NO IFRAME ANYWHERE IN HERE. Iframes are canon-banned — they cost the flagship
+     _SelfOwn eighteen months. Every row below is a plain anchor.
+-->
+<style>
+  :root{
+    --ink:#a8c0a4; --bright:#d8f0d4; --rim:rgba(176,255,200,.12);
+    --bg:#060b07; --card:#0e1711; --card2:#0a110c;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --warn:#ffc247;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);
+    min-height:100vh;padding:28px 18px calc(34px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{font-size:11px;letter-spacing:2.2px;text-transform:uppercase;opacity:.75;margin:0 0 6px}
+  .sub{font-size:10px;line-height:1.7;opacity:.5;margin:0 0 26px}
+  .grp{margin:0 0 24px}
+  .lbl{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;opacity:.45;margin:0 0 9px}
+  a.row{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:15px 17px;margin:0 0 8px;border-radius:14px;text-decoration:none;
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--rim);color:var(--bright);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.045);
+    font-size:13.5px;letter-spacing:.3px;
+  }
+  a.row:active{border-color:rgba(176,255,200,.3)}
+  a.row .t{font-size:8.5px;letter-spacing:1.2px;text-transform:uppercase;opacity:.42}
+  .note{
+    font-size:9.5px;line-height:1.85;opacity:.5;border-left:1px solid var(--rim);
+    padding-left:13px;margin:22px 0 0;
+  }
+  .note b{color:var(--bright);font-weight:600}
+  .q{color:var(--warn);opacity:.9}
+</style>
+
+<h1>Swipe Test · same-origin vs external</h1>
+<p class="sub">Tap a row, then swipe from the left edge. Note whether you land back
+here, and whether a back/close bar appeared at the top.</p>
+
+<div class="grp">
+  <div class="lbl">Control — same origin (should already work)</div>
+  <a class="row" href="/glass/"><span>hitthe.link /glass/</span><span class="t">same origin</span></a>
+  <a class="row" href="/xos/"><span>hitthe.link /xos/</span><span class="t">same origin</span></a>
+</div>
+
+<div class="grp">
+  <div class="lbl">The actual test — external, plain anchor, same tab</div>
+  <a class="row" href="https://example.com/"><span>example.com</span><span class="t">external</span></a>
+  <a class="row" href="https://developer.mozilla.org/en-US/docs/Web/API"><span>MDN Web API</span><span class="t">external</span></a>
+  <a class="row" href="https://www.meta.ai/"><span>meta.ai</span><span class="t">external</span></a>
+</div>
+
+<div class="grp">
+  <div class="lbl">Comparison — external forced into a new tab</div>
+  <!-- rel=noopener is not optional: without it the opened page gets a handle on
+       window.opener and can navigate this one. -->
+  <a class="row" href="https://example.com/" target="_blank" rel="noopener"><span>example.com</span><span class="t">target=_blank</span></a>
+</div>
+
+<div class="note">
+  <b>What each result means.</b><br><br>
+  <b>Swipe returns you here, no chrome</b> — externals stay in the same history
+  stack. The directory really is the whole shell, and it works for the open web
+  too, not just your own pages.<br><br>
+  <b>Swipe returns you here, but a bar appeared</b> — iOS handed the external URL
+  to a system view. Navigation survives; the furniture is back.<br><br>
+  <b>Swipe does nothing / you're stranded</b> <span class="q">← the outcome to watch for.</span>
+  The external navigation replaced the document and left your app. This is the case
+  that decides whether externals need a different route.<br><br>
+  <b>The new-tab row is the fallback</b>, and its trade is explicit: your directory
+  stays alive underneath, but back-swipe belongs to the new tab, not to you.<br><br>
+  No iframes in this page — canon-banned, and not a candidate.
+</div>
