@@ -190,6 +190,7 @@ body.fallback .fb{display:block;position:fixed;top:50%;left:50%;
   <div class="row">
     <button class="act" id="bPick">Use a photo</button>
     <button class="act ghost" id="bUrl">Paste a link</button>
+    <button class="act ghost" id="bSite">Load a website</button>
     <button class="act ghost" id="bReset">Back to dusk</button>
   </div>
   <div class="row" style="margin-top:14px;align-items:center;gap:12px">
@@ -1611,6 +1612,44 @@ document.getElementById('bUrl').addEventListener('click', () => {
   const u = prompt('Paste an image or 360 panorama link');
   if(u) loadEnvFromSrc(u.trim(), '', false);
 });
+// ⭐⭐⭐ A WEBSITE AS THE ENVIRONMENT — qi 2026-08-23 08:38: "even a website… that
+// shit can render a website as a 3D environment that it's sitting in. That should
+// be next level. That's never been done before." Then 08:53: "we might win an
+// award if we can load websites into the environment." Then 09:01, correctly:
+// "you ain't say you got the website loading in there yet."
+// He is right — I had VERIFIED the path and not built it. Now it is built.
+// ⭐ WHY IT HAS TO GO THROUGH A RENDERER: a page cannot read another origin's
+// pixels. That is the browser security model, not a gap — and the iframe route is
+// banned by his own decree. So the URL is rendered to an IMAGE server-side and
+// that image becomes the panorama. MEASURED 2026-08-23 08:44:
+//   thum.io          -> 200, image/png, access-control-allow-origin: *   ✅ usable
+//   s.wordpress.com  -> 403                                             ❌ blocked
+// The CORS header is the whole reason this works: without it the texture upload is
+// tainted and WebGL refuses it.
+// ⚠️ This is a LOOK, not a USE. The site is a picture — he cannot click it. Making
+// it interactive needs the engine host, which is a different build.
+function loadWebsite(u){
+  let t = (u||'').trim();
+  if(!t) return;
+  if(!/^https?:\/\//i.test(t)) t = 'https://' + t;
+  const shot = 'https://image.thum.io/get/width/2400/noanimate/' + t;
+  const n = document.getElementById('envNote');
+  if(n) n.textContent = 'Rendering ' + t.replace(/^https?:\/\//,'') + '…';
+  envMotion = null;
+  loadEnvFromSrc(shot, t.replace(/^https?:\/\//,''), false);
+}
+document.getElementById('bSite').addEventListener('click', () => {
+  const u = prompt('Which website should become the environment?', 'https://');
+  if(u) loadWebsite(u);
+});
+// ?site=<url> loads one straight from the address bar
+(() => {
+  try {
+    const q = new URLSearchParams(location.search).get('site');
+    if(q) loadWebsite(q);
+  } catch(_) {}
+})();
+
 document.getElementById('bReset').addEventListener('click', () => {
   envLoaded = false; envMode = 0;
   const n = document.getElementById('envNote');
