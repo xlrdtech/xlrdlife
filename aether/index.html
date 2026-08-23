@@ -305,6 +305,8 @@ uniform float hasEnv;    // 1 when a panorama has loaded
 uniform float envMode;   // 0 = true equirectangular, 1 = flat photo mirror-wrap
 uniform float flipY;     // 1 flips the uploaded environment vertically
 uniform float zoomF;     // pinch zoom: focal multiplier, 1.0 = default framing
+uniform float travelK;   // press-and-hold travel: forward push through the world
+vec3 gTravel = vec3(0.0);  // set in main once zAx exists; read by world()
 uniform vec2  look;      // yaw, pitch in radians - gyro or drag
 uniform vec2  touchUV;   // where he last touched, in the same units as uv
 uniform float touchAge;  // seconds since touchdown
@@ -574,6 +576,8 @@ vec3 photoWrap(vec3 dir){
 
 // the environment the sphere is standing in: supplied panorama, else dusk
 vec3 world(vec3 dir){
+  if(gTravel.x != 0.0 || gTravel.y != 0.0 || gTravel.z != 0.0)
+    dir = normalize(dir + gTravel);
   if(hasEnv > 0.5){
     if(envMode > 0.5) return photoWrap(dir);
     return equirect(dir);
@@ -831,6 +835,7 @@ void main(){
   vec3 zAx  = -out3;                                       // camera forward
   vec3 xAx  = normalize(cross(vec3(0.0,1.0,0.0), zAx));
   vec3 yAx  = cross(zAx, xAx);
+  gTravel = zAx * travelK;      // forward is -out3; zAx IS that, measured not guessed
   vec3 rd   = normalize(xAx*uv.x + yAx*uv.y + zAx*(1.35*zoomF));
 
   float r = 0.86 + amp*0.11;
@@ -1277,6 +1282,7 @@ let uEnvMode, uLook, envMode = 0;
 let uFlipY, envFlip = 0;
 let uZoomF, zoomF = 1.0;
 let uOverlay, overlayMode = new URLSearchParams(location.search).has('overlay') ? 1 : 0;
+let uTravel, travelK = 0;
 let uTouchUV, uTouchAge, uTouchHeld, uRelAge;
 
 let micGain = 4.2;                 // qi 08:58: "a LOT more reaction to my voice"
@@ -1393,6 +1399,43 @@ const pinch = {on:false, pts:new Map(), d0:0, z0:1};
   }, {passive:false});
 })();
 
+// ── PRESS AND HOLD TO TRAVEL. qi 09:26: "if I press and hold... it should be able to
+// travel through the 3D environment that its in, like back and forth."
+// Hold past 320ms to engage, then slide up to go forward and down to come back -
+// that is his "back and forth" on one finger. Position PERSISTS on release, because
+// travelling somewhere and being yanked back is not travelling. Back to dusk resets.
+// ⛔ Never engage on a plain tap: a tap is how he wakes the mic, and stealing it
+// would cost him the one control he uses most.
+let travelHeld = () => false;
+(function(){
+  let held=false, timer=null, y0=0, base=0;
+  travelHeld = () => held;
+  const start = e => {
+    if(pinch.on) return;
+    const p0 = e.touches ? e.touches[0] : e;
+    // the orb sits centred at ~0.45 of viewport height; inside that disc is HIS
+    // avatar and belongs to the deform, not to travel.
+    const m = Math.min(innerWidth, innerHeight);
+    const dx = (p0.clientX - innerWidth  * 0.5) / m;
+    const dy = (p0.clientY - innerHeight * 0.45) / m;
+    if(Math.sqrt(dx*dx + dy*dy) < 0.46) return;      // on the orb: deform owns it
+    y0 = p0.clientY;
+    base = travelK;
+    timer = setTimeout(() => { held = true; }, 320);
+  };
+  const move = e => {
+    if(!held) return;
+    const y = (e.touches ? e.touches[0] : e).clientY;
+    travelK = Math.max(-0.42, Math.min(0.72, base + (y0 - y) * 0.0022));
+    if(e.cancelable) e.preventDefault();
+  };
+  const end = () => { held = false; if(timer){ clearTimeout(timer); timer = null; } };
+  addEventListener('pointerdown', start, {passive:true});
+  addEventListener('pointermove', move, {passive:false});
+  addEventListener('pointerup', end, {passive:true});
+  addEventListener('pointercancel', end, {passive:true});
+})();
+
 // ── drag: always available, desktop and phone alike
 (function(){
   let down=false, lx=0, ly=0;
@@ -1401,6 +1444,7 @@ const pinch = {on:false, pts:new Map(), d0:0, z0:1};
     if(!down) return;
     const p=e.touches?e.touches[0]:e;
     if(pinch.on){ lx=p.clientX; ly=p.clientY; return; }   // re-baseline, never jump
+    if(travelHeld()){ lx=p.clientX; ly=p.clientY; return; }  // travel owns the gesture
     // dragging LEFT should sweep the world left, so the sign follows the finger
     look.dYaw += (p.clientX-lx) * 0.0055;
     look.dPit = clampPit(look.dPit + (p.clientY-ly) * 0.0040);
@@ -1497,6 +1541,7 @@ function initGL(){
   uFlipY=gl.getUniformLocation(prog,'flipY');
   uZoomF=gl.getUniformLocation(prog,'zoomF');
   uOverlay=gl.getUniformLocation(prog,'overlayMode');
+  uTravel=gl.getUniformLocation(prog,'travelK');
   uLook=gl.getUniformLocation(prog,'look');
   uTouchUV=gl.getUniformLocation(prog,'touchUV');
   uTouchAge=gl.getUniformLocation(prog,'touchAge');
@@ -1678,6 +1723,7 @@ function frame(ts){
   gl.uniform1f(uFlipY, envFlip);
   gl.uniform1f(uZoomF, zoomF);
   gl.uniform1f(uOverlay, overlayMode);
+  gl.uniform1f(uTravel, travelK);
   gl.uniform1f(uHasEnv, envLoaded ? 1 : 0);
   gl.uniform1f(uHasCam, 0);                       // no rear camera in use
   gl.uniform1f(uHasCamF, camLive ? 1 : 0);        // FRONT is the only one
@@ -1970,6 +2016,7 @@ document.getElementById('bSite').addEventListener('click', () => {
   } catch(_) {}
 })();
 
+document.getElementById('bReset').addEventListener('click', () => { travelK = 0; });
 document.getElementById('bFlip').addEventListener('click', () => {
   envFlip = envFlip > 0.5 ? 0 : 1;
   const n = document.getElementById('envNote');
