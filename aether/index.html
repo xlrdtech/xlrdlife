@@ -660,10 +660,29 @@ vec3 env(vec3 dir){
         // ⭐ No floor, and a HARD CAP at the local environment level: he can never be
         // brighter than the place he is reflected in, so a black world hides him
         // completely and a bright world shows him. ⛔ Never add a constant here.
+        // ⭐⭐⭐ THE WHITE SPOT WAS HIS AC, NOT HIS REFLECTION — qi 2026-08-23 09:06:
+        //   "the white spot is the AC."
+        //   "the issue with my reflection WAS THE WHITE SPOT ITSELF."
+        //   "my reflection greatly improved… I haven't seen my reflection at all [now]."
+        // Both of my previous passes were wrong in opposite directions:
+        //   the +0.08 FLOOR   -> a black world could never dim him            (too bright)
+        //   the HARD CAP      -> crushed his whole reflection to nothing      (too dark)
+        // The real problem was never his overall level. It was ONE HOT OBJECT in his
+        // room — an air conditioner — blowing out while everything else was fine.
+        // ⭐ A single blown highlight calls for a HIGHLIGHT ROLLOFF, not a cap on the
+        // whole image. Match the midtones so he belongs in the world, then soft-clip
+        // only the top end, so the AC compresses into a soft glint while his face
+        // keeps every bit of its detail.
+        // ⛔ Never clamp the whole frame to fix one bright pixel. That is the mistake
+        //    I just made, and it removed him entirely.
         ml = dot(me, vec3(0.299, 0.587, 0.114));
-        me *= clamp(bl / max(ml, 0.02), 0.0, 1.6);
-        float mlAfter = dot(me, vec3(0.299, 0.587, 0.114));
-        if(mlAfter > bl) me *= bl / max(mlAfter, 0.0001);   // hard cap, no exceptions
+        me *= clamp((bl * 1.15) / max(ml, 0.02), 0.05, 1.9);   // midtones match the world
+
+        // Reinhard-style rolloff referenced to the world's own level: values below it
+        // pass through nearly untouched, values above it compress toward it and can
+        // never bloom. knee scales with the environment, so it works on any upload.
+        float knee = max(bl * 1.7, 0.05);
+        me = me / (1.0 + me / knee);
         vec3 envCast = base / max(bl, 0.02);   // 'cast' is a GLSL RESERVED WORD - never use it                  // the world's hue, unit-luma
         me = mix(me, me * envCast, 0.62);
 
@@ -976,10 +995,25 @@ void main(){
     // mostly TRANSMISSION face-on and mostly REFLECTION at the grazing rim, so the
     // weighting inverts: you look THROUGH the middle and the rim carries the shine.
     // ⛔ Do not raise the centre's mirror share again; looking through is the point.
-    vec3 c = mix(behind, mir, clamp(0.16 + 0.78*(1.0 - ct), 0.0, 1.0)) * fres;
-    // and a real lens magnifies/displaces more toward the edge, which is the cue
-    // that says "solid transparent object" rather than "hole"
-    c = mix(c, behind, 0.30 * ct);
+    // ⭐⭐⭐ LOOKING THROUGH IT MUST NOT DARKEN IT — qi 2026-08-23 09:07:
+    //   "when I see through it, it SHOULDN'T BE DARKER in order for it [to be
+    //    see-through]… it looked like it got darker."
+    // He caught a physics error. I was multiplying the WHOLE mix — reflection AND
+    // transmission together - by fres. But fres is REFLECTANCE: it belongs only on
+    // ^^^^ NO BACKTICKS. A markdown backtick in a GLSL comment CLOSES the JS
+    // template literal holding the shader, and the page dies with a parse error
+    // ('Unexpected identifier'), not a shader error. THIRD time today.
+    // the reflected term. What passes THROUGH is transmittance, which is (1 - fres).
+    // Multiplying the see-through part by the reflectance dims exactly the thing he
+    // is trying to look through, and the dimming gets worse the clearer the glass is.
+    // ⭐ Energy where it belongs: reflection * fres + transmission * (1 - fres). Now
+    // the sum stays at 1.0, so the middle is as bright as the world behind it and
+    // "see-through" costs him no light at all.
+    // ⛔ Never apply fres to the transmitted term again.
+    float mirShare = clamp(0.16 + 0.78*(1.0 - ct), 0.0, 1.0);
+    vec3 reflPart  = mir    * fres * mirShare;
+    vec3 tranPart  = behind * (vec3(1.0) - fres * mirShare);
+    vec3 c = reflPart + tranPart;
 
     // anisotropic sheen: a brushed-metal band that slides as the orb turns.
     // Metal is not a perfect mirror - this is the "shine over" he asked for.
