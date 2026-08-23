@@ -1130,19 +1130,40 @@ void main(){
     // reflection he just told me he'd lost (09:11); lowering ALPHA costs nothing but
     // presence. ⭐ Two different knobs for two different complaints - never trade one
     // for the other.
-    alphaOut = mix(0.20, 0.03, ct) + voice * mix(0.16, 0.09, ct);
+    // ⭐⭐⭐ IT WAS A SHADOW BECAUSE ALPHA CANNOT FIX A DARK COLOUR — qi 09:17:
+    //   "it's still like a shadow, it's darkened, so darkening won't make it able for
+    //    somebody to READ it… if I'm not speaking then it's dark, that's still
+    //    BLOCKING it. It shouldn't be a shadow. IT SHOULD BE GLASS."
+    // Every alpha value I tried failed for the same reason: the orb's COLOUR is dark
+    // (it reflects a dark world), so compositing it at ANY opacity lays dark pixels
+    // over his page. 0.30 was a shadow; 0.03 was a fainter shadow. There is no
+    // number that makes a dark colour not darken.
+    // ⭐ THE FIX IS NOT A NUMBER, IT IS THE FORMULA: derive alpha from BRIGHTNESS.
+    // A dark pixel gets alpha 0 and is literally absent. Only the bright parts — the
+    // specular, the rim, the lit reflection — carry any alpha at all. That makes the
+    // orb ADDITIVE in effect: it can only ever put light ON his screen, never take
+    // any away. Which is exactly what glass does, and exactly "invisible until it
+    // lights up."
+    // ⛔ Never go back to a geometric alpha here. Geometry cannot know if a pixel is
+    //    dark, and a dark pixel with opacity is a shadow by definition.
+    float lum = dot(col, vec3(0.299, 0.587, 0.114));
+    alphaOut = clamp(lum * 1.55, 0.0, 0.90) * (0.62 + 0.38*voice);
   } else {
     // ground glow the sphere casts into the space beneath it
     float g = smoothstep(0.95, 0.0, length(uv - vec2(0.0,-0.55)));
     col += col * g * (0.08 + amp*0.22);            // the ground bounce, env-coloured
     // OFF the sphere there is nothing to see but the light it casts. Everything
     // else is fully transparent, which is what lets it sit over a page.
-    alphaOut = clamp(dot(col, vec3(0.34)) * 2.6, 0.0, 0.92);
+    alphaOut = 1.0;   // brightness gate at the end handles it; nothing dark survives
   }
 
   // filmic-ish shoulder, then dither to kill banding in the dark falloff
   col = col/(col+0.85);
   col = pow(col, vec3(0.4545));
+  // brightness-derived alpha, computed on the FINAL tonemapped colour so it matches
+  // exactly what is on screen. ⛔ Must come after the tonemap, never before.
+  float finalLum = dot(col, vec3(0.299, 0.587, 0.114));
+  alphaOut = clamp(finalLum * 1.55, 0.0, 0.92) * alphaOut;
   alphaOut = max(alphaOut, solidBg);              // ?solid=1 -> fully opaque again
   float dth = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);
   col += (dth-0.5)/255.0;
