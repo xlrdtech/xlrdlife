@@ -215,7 +215,15 @@ body.fallback .fb{display:block;position:fixed;top:50%;left:50%;
   <p class="note" id="envNote">Drag to look around. Move the phone if it has a gyroscope.</p>
 </div>
 <input type="file" id="pick" accept="image/*,video/*">
-<video id="envVid" playsinline muted loop autoplay style="display:none"></video>
+<!-- ⛔ NEVER display:none ON A VIDEO OR GIF SOURCE. qi 09:50: "and video still not
+     working." Desktop Chrome decodes a hidden video anyway, which is exactly why it
+     passed my test and his first try; iOS Safari SUSPENDS it, so readyState never
+     reaches 2, the per-frame texImage2D bails every frame, and nothing errors.
+     ⭐ Same bug I already fixed for the GIF <img> and then left on the <video>: an
+     element must be ATTACHED AND RENDERED for the browser to keep decoding it.
+     1px at 0.01 opacity is rendered; display:none is not. -->
+<video id="envVid" playsinline muted loop autoplay
+       style="position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1"></video>
 <canvas id="gifCv" style="display:none"></canvas>
 <div class="err" id="err"></div>
 
