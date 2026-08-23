@@ -943,7 +943,21 @@ void main(){
 
     // with the body this transparent the reflection reads against whatever is
     // behind it, so keep the mirror but let the page carry the low end
-    vec3 c = mir * fres;
+    // ⭐⭐⭐ THE BEND IS HOW YOU KNOW IT IS THERE — qi 2026-08-23 08:56:
+    //   "you can see everything that you're looking at BEHIND it, but you can still
+    //    see it… the BENT-like reflection on it, so you know it's there."
+    // That is a LENS, not a mirror, and it is the piece I removed at 08:00 when he
+    // said the body was too see-through. I over-corrected: I deleted refraction
+    // entirely, which took the bend with it. But the bend was never the problem —
+    // the problem was that refraction at full weight WASHED HIM OUT.
+    // ⭐ The distinction that makes both true at once: bend the WORLD BEHIND IT, do
+    // not make the body transparent to it. A small refracted world sample warps what
+    // is behind the glass so the shape announces itself, while the reflection stays
+    // fully intact on top. See through it, and still see it.
+    vec3 bendDir = refract(-v, n, 1.0/1.12);          // gentle - a thick lens, not a prism
+    if(length(bendDir) < 0.001) bendDir = reflect(-v, n);
+    vec3 behind = world(bendDir);
+    vec3 c = mix(behind, mir, clamp(0.52 + 0.44*(1.0 - ct), 0.0, 1.0)) * fres;
 
     // anisotropic sheen: a brushed-metal band that slides as the orb turns.
     // Metal is not a perfect mirror - this is the "shine over" he asked for.
@@ -967,6 +981,27 @@ void main(){
     vec3 L = normalize(vec3(-0.45, 0.75, 0.62));
     c += vec3(1.0) * pow(max(dot(n, normalize(L+v)),0.0), 82.0) * 0.50;
 
+    // ⭐⭐ IT WAS BRIGHTER THAN ITS OWN WORLD — qi 2026-08-23 08:56:
+    //   "the reason the avatar is standing out more than it's supposed to is because
+    //    it seems to be BRIGHTER than the environment."
+    // Physically impossible, and my fault. A mirror's reflectance is BELOW 1 — it
+    // always returns less light than it receives. But I was stacking an anisotropic
+    // sheen, a voice rim and a specular ON TOP of the reflection, so the orb emitted
+    // more than the world it reflects. That is why it pops off the background instead
+    // of belonging to it. ⛔ The orb's total output must never exceed its environment.
+    float envHere = dot(world(rd), vec3(0.34));       // the world directly behind it
+    float orbHere = dot(c, vec3(0.34));
+    // ⭐⭐⭐ NOT THERE UNTIL YOU SPEAK — qi 2026-08-23 08:56, the whole spec in a line:
+    //   "it doesn't seem to be EQUAL to the environment, so it almost feels like
+    //    it's NOT THERE UNTIL YOU SPEAK."
+    //   "it's supposed to be invisibility… an avatar that can be directly in the
+    //    screen but is STILL NOT BLOCKING THE SCREEN."
+    // So the resting state is EQUAL — not a hair above, exactly level with the world
+    // behind it, which is what makes a thing disappear. Presence is earned by VOICE:
+    // brightness and opacity both climb only while he is talking, and settle back to
+    // invisible when he stops. ⛔ Never give it resting prominence again.
+    float voice = smoothstep(0.05, 0.60, amp);          // 0 silent, 1 speaking
+    c *= clamp((envHere * (1.0 + voice*0.85)) / max(orbHere, 0.004), 0.0, 1.0);
     col = c;
     // ⭐⭐⭐ THE BODY ITSELF IS SEE-THROUGH — qi 2026-08-23 08:46-08:47:
     //   "the sphere is TOO PROMINENT… I need to be able to see DIRECTLY THROUGH it.
@@ -983,7 +1018,9 @@ void main(){
     // fresnel reflectance climbs as the surface turns away. So the centre opens up
     // and the rim holds the form. He can read straight through the middle of it.
     // ⛔ Never raise the centre alpha back up. Prominence is the defect.
-    alphaOut = mix(0.62, 0.20, ct);      // rim 0.62, dead centre 0.20
+    // opacity follows the same rule: nearly gone at rest, present when he speaks.
+    // The rim always carries a little more than the centre, which is how glass reads.
+    alphaOut = mix(0.34, 0.10, ct) + voice * mix(0.34, 0.26, ct);
   } else {
     // ground glow the sphere casts into the space beneath it
     float g = smoothstep(0.95, 0.0, length(uv - vec2(0.0,-0.55)));
