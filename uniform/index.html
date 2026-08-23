@@ -1,0 +1,161 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Uniform UI across logged-in web apps — what actually works</title>
+<style>
+:root{--bg:#0a0a0e;--panel:#12121a;--line:#23232f;--text:#e8e8ef;--dim:#9a9aab;
+  --jade:#3cff96;--red:#ff6b6b;--amber:#ffc860;
+  --mono:ui-monospace,"JetBrains Mono",SFMono-Regular,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.65 ui-sans-serif,system-ui,-apple-system,sans-serif;
+  padding:32px 18px 90px;display:flex;flex-direction:column;align-items:center}
+main{width:100%;max-width:820px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px;letter-spacing:-.02em}
+.sub{color:var(--dim);font-size:13px;margin:0 0 30px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.09em;color:var(--jade);
+  margin:38px 0 12px;font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:18px 20px;margin:0 0 14px}
+.verdict{border-color:rgba(60,255,150,.4)}
+.verdict b{color:var(--jade)}
+code,.m{font-family:var(--mono);font-size:.9em;background:rgba(255,255,255,.05);
+  padding:1px 5px;border-radius:5px}
+.wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+td:first-child{white-space:nowrap;font-family:var(--mono);font-size:12.5px}
+.dead{color:var(--red)}.ok{color:var(--jade)}.warn{color:var(--amber)}
+pre{background:#08080c;border:1px solid var(--line);border-radius:10px;padding:14px;
+  overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55;margin:0 0 14px}
+ul{padding-left:20px;margin:0}li{margin:0 0 8px}
+.foot{color:var(--dim);font-size:12px;margin-top:44px;border-top:1px solid var(--line);
+  padding-top:16px}
+@media (max-width:520px){h1{font-size:21px}body{padding:22px 14px 70px}}
+</style></head><body><main>
+
+<h1>Wrapping logged-in web apps in one uniform UI</h1>
+<p class="sub">What survives adversarial verification, and what only looks like it does.
+14 agents · 6 independent lenses · 10 disqualifying refutations · measured 2026-08-22 against Chrome 151.</p>
+
+<div class="card verdict">
+<b>THE VERDICT — a Manifest V3 extension, installed on the profile that already holds your sessions.</b><br>
+One measured fact decides it: <b>extension install is the only CSP-exempt injection path.</b>
+Tested against a page served <code>Content-Security-Policy: default-src 'none'; style-src 'none'</code>
+— the theme still applied. Nothing else clears that bar.
+</div>
+
+<h2>Ruled out by measurement</h2>
+<div class="card wrap"><table>
+<tr><th>approach</th><th>why it is dead</th></tr>
+<tr><td class="dead">CDP injection</td><td><b>Chromium 136+ refuses remote debugging on the default profile.</b>
+The gate ships in the binaries verbatim: <span class="m">DevTools remote debugging requires a non-default data directory.</span>
+Since sessions live in the default profile, <code>Page.addScriptToEvaluateOnNewDocument</code> can only ever
+reach a profile that has none of them. A second string — <span class="m">disallowed by the system admin</span>
+— is an MDM kill switch that can retire the rail silently.</td></tr>
+<tr><td class="dead">--load-extension</td><td>Not an install path. Adding a flag to a running browser means
+<b>quitting it</b> — killing the process holding every live session. And probes that use it run in throwaway
+profiles, i.e. a browser logged into nothing. Every "it works" result obtained that way is worthless.</td></tr>
+<tr><td class="dead">--user-stylesheet</td><td>Removed from Chrome. Verified against the 151 binary, not from memory.</td></tr>
+<tr><td class="dead">Arc Boosts</td><td>Technically the exact feature — on an abandoned browser.</td></tr>
+<tr><td class="dead">CSS.createStyleSheet</td><td>Works live, <b>dies on reload.</b> Both halves measured.</td></tr>
+<tr><td class="dead">filter: invert()</td><td>Measured damage to images, video and shadows. Not a dark mode.</td></tr>
+<tr><td class="dead">el.style on React nodes</td><td>Re-render stomps it. Unusable.</td></tr>
+<tr><td class="dead">declarativeNetRequest CSP strip</td><td>Unnecessary — extension CSS is already exempt.</td></tr>
+<tr><td class="warn">Safari / Firefox / Vivaldi user CSS</td><td>All genuinely work. All in a browser that does
+not hold the logins. A working mechanism in the wrong browser is not a solution.</td></tr>
+</table></div>
+
+<h2>The cascade trap that breaks the obvious build</h2>
+<div class="card">
+<b>CSS Cascade 5 reverses <code>@layer</code> order for <code>!important</code></b>, so an
+<i>unlayered</i> <code>!important</code> is the <b>weakest</b> author-origin important — not the strongest.
+Measured against an app rule <code>@layer appcomp{#t{color:rgb(1,1,1)!important}}</code>, a theme lost
+<b>all three ways</b>: unlayered <code>!important</code>, <code>adoptedStyleSheets</code> +
+<code>!important</code>, and its own later <code>@layer</code> + <code>!important</code>.
+Real apps ship <b>30 <code>@layer</code> rules and 62 <code>!important</code></b> declarations.
+<br><br>
+✅ <b>The fix:</b> <code>chrome.scripting.insertCSS({origin:'USER'})</code>. USER-origin CSS outranks
+every author-origin rule — layered or not, important or not. The manifest <code>css[]</code> array is
+AUTHOR origin; keep it only for instant <code>document_start</code> paint, then re-deliver at USER origin
+from a service worker to win collisions.
+<br><br>
+⚠️ Unlayered still wins for <b>plain</b> token bindings. Both halves were measured; neither generalises,
+and a recommendation that states only one of them is wrong half the time.
+</div>
+
+<h2>Traps that cost real time</h2>
+<div class="card"><ul>
+<li><b>Bare HSL triplets.</b> Some apps store colours as <code>0 0% 14.9%</code> consumed via
+<code>hsl(var(--t))</code>. Writing a hex into one paints <code>rgba(0,0,0,0)</code> — fully transparent.
+Ship every colour twice: as hex <i>and</i> as channel triplet.</li>
+<li><b>Read computed style, never stylesheet text.</b> Most of an app's sheets are cross-origin unreadable
+— 8 of 11 in one measured case.</li>
+<li><b>Relative <code>url()</code> resolves against the page origin</b>, not the extension. Fonts and images
+need <code>web_accessible_resources</code> plus <code>chrome.runtime.getURL()</code>.</li>
+<li>The manifest <code>css[]</code> array is <b>not resolved</b> at the instant <code>document_start</code>
+JS runs. A boot script must read tokens lazily, never assume.</li>
+<li><b>Shared chrome without an iframe:</b> a closed-shadow custom element in the top layer via
+<code>popover</code>. Custom properties inherit <i>through</i> a closed shadow boundary, so one
+<code>:root</code> block themes the page and your bar while nothing leaks either way.</li>
+<li><b>Durable selectors, in order:</b> <code>[data-testid]</code> → <code>[role]</code> +
+<code>[aria-label]</code> → semantic id → structural. Hashed class names rot every deploy.</li>
+<li><b>Never filter a live feed by walking the DOM.</b> An unthrottled <code>MutationObserver</code> that
+re-queries the whole container on every mutation is <code>O(feed × dom)</code> — on a streaming page that
+is not slow, it is a locked main thread. Classify each row once, cache it on the node, process only
+<i>added</i> nodes, and coalesce bursts through <code>requestAnimationFrame</code>.</li>
+<li><b>One human tap remains:</b> "Allow User Scripts" is per-extension and defaults off. Policy pre-grant
+is <b>unverified</b> — do not promise it.</li>
+</ul></div>
+
+<h2>Two verification lessons, both learned the hard way</h2>
+<div class="card">
+<b>1. Confirm you measured the product, not a challenge page.</b> One research lens reported a theme applied
+across <b>"580 nodes"</b> of a major app. Its own artifacts showed <b>35 nodes of a Cloudflare challenge
+page</b>. It had measured the interstitial and called it the app — falling into a trap it documented itself
+one lens earlier.
+<br><br>
+<b>2. Byte-identical delivery is not working software.</b> A page can serve exactly the bytes you published,
+byte-for-byte verified, and the feature still do nothing — because nobody clicked it. A control that renders
+is not a control that works. The cheapest honest test is to drive the real surface and assert on the
+<i>outcome</i>: element count, computed value, and whether the page still answers afterwards.
+</div>
+
+<h2>Minimum manifest</h2>
+<pre>{
+  "manifest_version": 3,
+  "name": "Uniform",
+  "version": "0.1.0",
+  "host_permissions": ["&lt;all_urls&gt;"],
+  "permissions": ["scripting", "storage", "tabs"],
+  "background": { "service_worker": "sw.js" },
+  "content_scripts": [{
+    "matches": ["&lt;all_urls&gt;"],
+    "run_at": "document_start",
+    "world": "ISOLATED",
+    "css": ["tokens.css", "adapters.css"],
+    "js":  ["chrome.js"]
+  }],
+  "web_accessible_resources": [
+    { "resources": ["fonts/*.woff2"], "matches": ["&lt;all_urls&gt;"] }
+  ]
+}</pre>
+
+<div class="card">
+<b>Prove it in three steps</b> — step 1 produces visible evidence:
+<ul>
+<li><code>chrome://extensions</code> → Developer mode → <b>Load unpacked</b>. The card appears with an id.</li>
+<li>Open a logged-in app. The injected bar renders, and you are <b>still logged in</b>.</li>
+<li>Console: <code>getComputedStyle(document.documentElement).getPropertyValue('--x-bg')</code>.
+A non-empty value proves the token layer is <b>live</b>, not merely present.</li>
+</ul>
+Add <code>"key"</code> to the manifest to pin the extension id — without it an unpacked extension's id
+changes with its path. And note <code>--load-extension</code> does not persist across a profile relaunch;
+load once through the UI.
+</div>
+
+<p class="foot">Findings only. No machine paths, profile locations, ports, domains or account details are
+published here. Every claim above was measured against a real browser, and the ones that failed adversarial
+verification were removed rather than softened.</p>
+</main></body></html>
