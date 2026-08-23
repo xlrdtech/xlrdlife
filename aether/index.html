@@ -1116,7 +1116,15 @@ void main(){
     // ⛔ Never raise the centre alpha back up. Prominence is the defect.
     // opacity follows the same rule: nearly gone at rest, present when he speaks.
     // The rim always carries a little more than the centre, which is how glass reads.
-    alphaOut = mix(0.30, 0.08, ct) + voice * mix(0.52, 0.44, ct);
+    // ⭐⭐ VOICE CHANGES BRIGHTNESS, NEVER OPACITY — qi 2026-08-23 09:12:
+    //   "now I see what you were trying to do about having it light up. That's cool,
+    //    BUT NO, you gotta be able to SEE RIGHT THROUGH."
+    // I had voice pushing the centre alpha to ~0.52 - half solid the moment he speaks,
+    // which is exactly when he most needs to keep reading. Presence has to be carried
+    // on the BRIGHTNESS/reflection axis (which it already is, envHere * (1+voice)),
+    // and opacity must stay low at all times. ⛔ Never let voice raise alpha much.
+    // Centre tops out near 0.15 even mid-sentence; the rim carries the form.
+    alphaOut = mix(0.26, 0.07, ct) + voice * mix(0.15, 0.08, ct);
   } else {
     // ground glow the sphere casts into the space beneath it
     float g = smoothstep(0.95, 0.0, length(uv - vec2(0.0,-0.55)));
