@@ -21,10 +21,20 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%239b7ddb'/%3E%3C/svg%3E">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;background:#000;color:#efeaf7;
+/* ⭐ transparent ground so the orb can sit over anything behind it. ?solid=1 and the
+   .solid class put the black back for the standalone view. */
+html,body{height:100%;overflow:hidden;background:transparent;color:#efeaf7;
   font:400 15px/1.5 ui-sans-serif,-apple-system,"SF Pro Text",system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;overscroll-behavior:none}
-#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+/* ⭐ THE BLACK LINE — qi 08:30 said "that black LINE", not a band. One word, and it
+   changes the whole diagnosis: I had already MEASURED gapAtBottom = 0, so there is
+   no layout hole — but a viewport height is often FRACTIONAL (844.33), and setting
+   the canvas height in whole pixels leaves a sub-pixel row where body black shows
+   through. A thin line is a rounding artifact, never a missing element.
+   Fix: OVERSCAN. Bleed the canvas a couple of pixels past every edge so no rounding
+   can ever expose the ground beneath it. Costs nothing — the orb is centred. */
+#gl{position:fixed;top:-2px;left:-2px;width:calc(100% + 4px);height:calc(100% + 4px);
+  display:block;touch-action:none}
 
 /* CSS-only orb — the floor under everything. Visible only when WebGL cannot
    deliver, so "nothing on screen" stops being a possible outcome. */
@@ -182,6 +192,14 @@ body.fallback .fb{display:block;position:fixed;top:50%;left:50%;
     <button class="act ghost" id="bUrl">Paste a link</button>
     <button class="act ghost" id="bReset">Back to dusk</button>
   </div>
+  <div class="row" style="margin-top:14px;align-items:center;gap:12px">
+    <label for="sens" style="font:500 12px/1 inherit;color:rgba(236,236,240,.62);
+      white-space:nowrap">Voice sensitivity</label>
+    <input type="range" id="sens" min="0.4" max="6" step="0.1" value="2.4"
+      style="flex:1 1 120px;accent-color:#e8e8ea;background:transparent">
+    <span id="sensV" style="font:500 12px/1 inherit;color:rgba(236,236,240,.48);
+      min-width:26px;text-align:right">2.4</span>
+  </div>
   <p class="note" id="envNote">Drag to look around. Move the phone if it has a gyroscope.</p>
 </div>
 <input type="file" id="pick" accept="image/*">
@@ -222,7 +240,9 @@ const hint = document.getElementById('hint');
 const errBox = document.getElementById('err');
 
 // ⚠️ 'high-performance' can be refused outright on iOS. Ask for nothing special.
-const glOpts = {alpha:false, antialias:false, depth:false, stencil:false,
+// ⭐ alpha:true is the context half of "you should be able to see right through"
+// (qi 08:31). premultipliedAlpha matches the shader, which now emits col*a.
+const glOpts = {alpha:true, premultipliedAlpha:true, antialias:false, depth:false, stencil:false,
                 preserveDrawingBuffer:false, failIfMajorPerformanceCaveat:false};
 const gl = cv.getContext('webgl2', glOpts) || cv.getContext('webgl', glOpts)
         || cv.getContext('experimental-webgl', glOpts);
@@ -421,11 +441,18 @@ vec3 photoWrap(vec3 dir){
   float vAbove = clamp((v - band) / max(1.0 - band, 0.001), 0.0, 1.0);   // 0 at band, 1 at zenith
   float vBelow = clamp((-v - band) / max(1.0 - band, 0.001), 0.0, 1.0);  // 0 at band, 1 at nadir
 
-  // mirror-continue: reflect back INTO the image so the sky keeps real structure
-  float mAbove = clamp(1.0 - vAbove * 0.85, 0.0, 1.0);   // walks back down the photo
-  vec3 skyC = srgb2lin(texture2D(envMap, vec2(u, 1.0 - mAbove)).rgb);
-  float mBelow = clamp(vBelow * 0.85, 0.0, 1.0);
-  vec3 gndC = srgb2lin(texture2D(envMap, vec2(u, 1.0 - mBelow)).rgb);
+  // ⭐⭐ "IT'S NOT THE IMAGE I CHOSE" — qi 2026-08-23 08:34. A real bug, and mine.
+  // The mirror-continue was walking **85%** of the way back down into his photo as
+  // the view rose, so at the ZENITH he was looking at his image's LOWER content —
+  // which in most photographs is ground. Looking straight up showed him dirt, and
+  // it genuinely did not look like the picture he picked.
+  // ⭐ Walk back only a LITTLE (0.26), so the top band of his image — which is the
+  // part that actually IS sky — stays overhead where it belongs. The pole average
+  // then carries the rest of the way. Same logic mirrored for the ground.
+  float mAbove = clamp(vAbove * 0.26, 0.0, 1.0);
+  vec3 skyC = srgb2lin(texture2D(envMap, vec2(u, mAbove)).rgb);
+  float mBelow = clamp(1.0 - vBelow * 0.26, 0.0, 1.0);
+  vec3 gndC = srgb2lin(texture2D(envMap, vec2(u, mBelow)).rgb);
 
   // the pole average — four columns is enough to kill the spokes
   vec3 topAvg = (srgb2lin(texture2D(envMap, vec2(0.12, 0.02)).rgb)
@@ -437,8 +464,58 @@ vec3 photoWrap(vec3 dir){
                + srgb2lin(texture2D(envMap, vec2(0.63, 0.98)).rgb)
                + srgb2lin(texture2D(envMap, vec2(0.88, 0.98)).rgb)) * 0.25;
 
-  skyC = mix(skyC, topAvg, smoothstep(0.35, 1.0, vAbove));
-  gndC = mix(gndC, botAvg, smoothstep(0.35, 1.0, vBelow));
+  // ⭐⭐ "IT'S LIKE IT DOESN'T HAVE A SKY" — qi 2026-08-23 08:32-08:33:
+  //   "gotta get this sky better… when I look all the way UP into the sky it doesn't
+  //    look real… it's like SKYLESS… it doesn't have a real sky."
+  // This is MY previous fix overcorrecting. I killed the radial pole streaks by
+  // converging to a flat azimuth average — and a flat average is, precisely, a sky
+  // with nothing in it. Uniformity solved the artifact and destroyed the thing.
+  // A real sky at the zenith has three properties the flat wash had none of:
+  //   (a) it DARKENS overhead — less atmosphere to scatter through than at the
+  //       horizon, which is what gives a sky its dome
+  //   (b) it keeps LARGE-SCALE variation, just no hard detail
+  //   (c) it has fine GRAIN — grade, dust, stars, sensor noise
+  // So: converge only PARTWAY, then add the dome and the grain.
+  float kSky = smoothstep(0.30, 1.0, vAbove) * 0.70;   // 0.70, never 1.0 — keep structure
+  float kGnd = smoothstep(0.30, 1.0, vBelow) * 0.70;
+  skyC = mix(skyC, topAvg, kSky);
+  gndC = mix(gndC, botAvg, kGnd);
+
+  // (a) the dome: darken toward the zenith, in the image's own colour
+  skyC *= mix(1.0, 0.72, smoothstep(0.0, 1.0, vAbove));
+
+  // ⭐ A LIGHT SOURCE — qi 08:34: "it doesn't look like it's coming from a specific
+  // light source." Right: a sky with no anchor reads as a flat panel however much
+  // grain it has. So FIND his image's own brightest column along the top band and
+  // put a soft glow there. It is his light, derived from his picture, not invented —
+  // which keeps the whole thing colour-agnostic.
+  vec3 s0 = srgb2lin(texture2D(envMap, vec2(0.07, 0.14)).rgb);
+  vec3 s1 = srgb2lin(texture2D(envMap, vec2(0.29, 0.14)).rgb);
+  vec3 s2 = srgb2lin(texture2D(envMap, vec2(0.52, 0.14)).rgb);
+  vec3 s3 = srgb2lin(texture2D(envMap, vec2(0.74, 0.14)).rgb);
+  vec3 s4 = srgb2lin(texture2D(envMap, vec2(0.93, 0.14)).rgb);
+  float l0=dot(s0,vec3(0.34)), l1=dot(s1,vec3(0.34)), l2=dot(s2,vec3(0.34));
+  float l3=dot(s3,vec3(0.34)), l4=dot(s4,vec3(0.34));
+  float bestU = 0.07; float bestL = l0; vec3 bestC = s0;
+  if(l1 > bestL){ bestL=l1; bestU=0.29; bestC=s1; }
+  if(l2 > bestL){ bestL=l2; bestU=0.52; bestC=s2; }
+  if(l3 > bestL){ bestL=l3; bestU=0.74; bestC=s3; }
+  if(l4 > bestL){ bestL=l4; bestU=0.93; bestC=s4; }
+  // angular distance to that column, wrapped, and a soft falloff around it
+  float du = abs(u - bestU); du = min(du, 1.0 - du);
+  float glow = exp(-du*du*11.0) * exp(-vAbove*1.7);
+  skyC += bestC * glow * 0.42 * smoothstep(0.0, 0.25, bestL);
+
+  // large-scale drift, sampled from the image so it stays in its palette
+  vec3 drift = srgb2lin(texture2D(envMap, vec2(fract(u*0.31 + 0.17), 0.10)).rgb);
+  skyC = mix(skyC, drift, 0.14 * smoothstep(0.15, 0.95, vAbove));
+
+  // (c) grain, scaled to how much contrast HIS image actually has — a flat image
+  // gets almost none, a punchy one gets more, so it never looks like added noise
+  float contrastOfImage = clamp(length(topAvg - skyC) * 2.2, 0.02, 0.35);
+  float gr = hash(vec2(floor(u*420.0), floor(vAbove*260.0)));
+  skyC += (gr - 0.5) * contrastOfImage * 0.16 * smoothstep(0.1, 1.0, vAbove);
+  skyC = max(skyC, vec3(0.0));
 
   float tS = smoothstep(band*0.80, band*1.03,  v);
   float tG = smoothstep(-band*0.80, -band*1.03, v);
@@ -592,10 +669,28 @@ vec3 env(vec3 dir){
         // deletes the other. So the mirrored world stays 100% intact and he is
         // layered over it with SCREEN, the blend that brightens without replacing.
         // ⛔ Never use mix() to composite him again. mix is a hole.
-        // "it's not blended enough" (08:10) - so it sits lighter still, and the
-        // border fade is wider. He should read as a presence, not a passenger.
-        float k = edge * 0.40;
-        base = vec3(1.0) - (vec3(1.0) - base) * (vec3(1.0) - clamp(me,0.0,1.0)*k);
+        // ⭐ "it's not blended enough" (08:10) then "the reflection was really for it
+        // to be like INVISIBLE" (08:30). Both point the same way and I had it far too
+        // strong. A real reflection of a person in a dim mirror is a GHOST — you
+        // notice it only because it moves when you do. So: barely there.
+        // ⭐⭐⭐ NOT A HOLE, NOT A BLEACH SPOT — the third and correct operator.
+        // qi 2026-08-23 08:34-08:35: "it got a WHITE SPOT in there… it looked like
+        // somebody took a FEATHERED BRUSH in Photoshop and ERASED some of my avatar
+        // out. So that's not good."
+        // He is right again, and this was my own overcorrection. The history:
+        //   mix() at 0.86, exposures unmatched  -> deleted the world = a HOLE
+        //   SCREEN                              -> brightens, so a lit face washes
+        //                                          the orb toward white = an ERASE
+        // Screen can only ever add light, and adding light to a mirror bleaches it.
+        // ⭐ THE REASON A WEAK mix() IS NOW CORRECT: the hole was never mix's fault
+        // by itself — it was mix PLUS an exposure mismatch. The black point and the
+        // exposure are matched to this world before we get here, so at low strength
+        // the two layers are already at the same level: nothing is deleted, and
+        // nothing is brightened. He layers ON, which is what he asked for.
+        // ⛔ Never use SCREEN or any additive operator for his reflection.
+        // ⛔ Never raise this above ~0.25 — that is where the hole came back.
+        float k = edge * 0.20;
+        base = mix(base, clamp(me, 0.0, 1.6), k);
       }
     }
   }
@@ -621,8 +716,11 @@ vec3 nrm(vec3 q, float r){
   return normalize(n + d*w);
 }
 
+uniform float solidBg;   // 1 restores an opaque background (?solid=1)
+
 void main(){
   vec2 uv = (gl_FragCoord.xy - 0.5*res) / min(res.x,res.y);
+  float alphaOut = 1.0;
 
   // LOOK AROUND.  qi 07:34 - "it either needs to follow the movement of the phone
   // to navigate the environment, or it needs to be 360 and rotate", and 07:36
@@ -803,19 +901,37 @@ void main(){
     c += vec3(1.0) * pow(max(dot(n, normalize(L+v)),0.0), 82.0) * 0.50;
 
     col = c;
+    // a mirrored body is close to opaque, but the very rim of a real reflective
+    // sphere goes translucent as it turns away — keep a little of that.
+    alphaOut = mix(0.94, 1.0, ct);
   } else {
     // ground glow the sphere casts into the space beneath it
     float g = smoothstep(0.95, 0.0, length(uv - vec2(0.0,-0.55)));
     col += col * g * (0.08 + amp*0.22);            // the ground bounce, env-coloured
+    // OFF the sphere there is nothing to see but the light it casts. Everything
+    // else is fully transparent, which is what lets it sit over a page.
+    alphaOut = clamp(dot(col, vec3(0.34)) * 2.6, 0.0, 0.92);
   }
 
   // filmic-ish shoulder, then dither to kill banding in the dark falloff
   col = col/(col+0.85);
   col = pow(col, vec3(0.4545));
+  alphaOut = max(alphaOut, solidBg);              // ?solid=1 -> fully opaque again
   float dth = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);
   col += (dth-0.5)/255.0;
 
-  gl_FragColor = vec4(col,1.0);
+  // ⭐⭐⭐ SEE RIGHT THROUGH IT — qi 2026-08-23 08:31, the full sentence at last:
+  //   "the goal was to make it reflective, but the reflective was really for it to be
+  //    like INVISIBLE — so if we got it loaded up on a browser on any web page you
+  //    should be able to SEE RIGHT THROUGH."
+  // So the reflectivity was never the point; it was the MEANS. The orb is meant to
+  // have no backdrop of its own and sit over whatever is behind it. That means this
+  // frame cannot be opaque: everything the orb does not occupy must be ALPHA 0, and
+  // the orb itself carries only as much alpha as a real reflection would.
+  // ⛔ Never write vec4(col, 1.0) here again — an opaque frame cannot float.
+  // ?solid=1 restores an opaque background for anyone who wants the standalone view.
+  float a = alphaOut;
+  gl_FragColor = vec4(col * a, a);        // premultiplied, matches the context below
 }`;
 
 let prog, aP, uRes, uT, uAmp, uHasCam, uCamAsp, uCam, tex;
@@ -823,6 +939,22 @@ let uHasCamF, uCamAspF, uCamF;
 let uEnvMap, uHasEnv, envTex, envLoaded = false;
 let uEnvMode, uLook, envMode = 0;
 let uTouchUV, uTouchAge, uTouchHeld, uRelAge;
+
+let micGain = 2.4;
+try {                                        // storage throws in some contexts
+  const st = localStorage.getItem('aether.micGain');
+  if(st) micGain = Math.max(0.4, Math.min(6, parseFloat(st) || 2.4));
+} catch(_) {}
+addEventListener('DOMContentLoaded', () => {
+  const sl = document.getElementById('sens'), lab = document.getElementById('sensV');
+  if(!sl) return;
+  sl.value = micGain; if(lab) lab.textContent = micGain.toFixed(1);
+  sl.addEventListener('input', () => {
+    micGain = parseFloat(sl.value);
+    if(lab) lab.textContent = micGain.toFixed(1);
+    try { localStorage.setItem('aether.micGain', String(micGain)); } catch(_) {}
+  }, {passive:true});
+});
 
 // LIQUID MIRROR, TOUCH LEG. qi 08:01 - "reactive to touch as well, not just the
 // voice... but in a LIQUID manner, not the normal pulse."
@@ -865,7 +997,22 @@ addEventListener('blur', release, {passive:true});
 // Both, because they are the same mechanism: a yaw/pitch pair that the shader
 // orbits the camera by. The gyroscope drives it where there is one, a drag
 // drives it everywhere, and neither is required for the page to work.
-const look = {yaw:0, pit:0, tYaw:0, tPit:0, gyro:false, a0:null, b0:null};
+// ⭐⭐ DRAG AND GYRO ARE ADDITIVE, NOT RIVALS — qi 2026-08-23 08:33:
+//   "I still want to be able to travel and rotate even when I'm in [voice] mode,
+//    because every time I start the voice mode, THAT'S when it goes into gyroscope
+//    mode."
+// He found a real bug and it is in my own logic. I had drag set gyro=false so a
+// deliberate drag would win — but onOrient sets gyro=true again on the very NEXT
+// sensor tick, which is milliseconds later. So the gyro stole the view back the
+// instant his finger lifted, every time, and arming the mic is what armed the gyro.
+// ⭐ THE FIX IS TO STOP MAKING THEM COMPETE. Drag accumulates a PERSISTENT OFFSET;
+// the gyro reports a DELTA from its own baseline; the view is offset + delta. Both
+// inputs are live at once, forever, and neither can overwrite the other.
+// ⛔ Never gate one input on a boolean the other input also writes.
+const look = {yaw:0, pit:0,
+              dYaw:0, dPit:0,      // his drag - persistent, never reset by the sensor
+              gYaw:0, gPit:0,      // the gyro's delta from its own baseline
+              gyro:false, a0:null, b0:null};
 const D2R = Math.PI/180;
 
 function clampPit(v){ return Math.max(-1.15, Math.min(1.15, v)); }
@@ -878,10 +1025,11 @@ function clampPit(v){ return Math.max(-1.15, Math.min(1.15, v)); }
     if(!down) return;
     const p=e.touches?e.touches[0]:e;
     // dragging LEFT should sweep the world left, so the sign follows the finger
-    look.tYaw += (p.clientX-lx) * 0.0055;
-    look.tPit = clampPit(look.tPit + (p.clientY-ly) * 0.0040);
+    look.dYaw += (p.clientX-lx) * 0.0055;
+    look.dPit = clampPit(look.dPit + (p.clientY-ly) * 0.0040);
     lx=p.clientX; ly=p.clientY;
-    look.gyro=false;                       // a deliberate drag wins over the gyro
+    // ⛔ do NOT touch look.gyro here. Suppressing the sensor was the bug: it came
+    // straight back on the next tick and the drag was lost.
     if(e.cancelable) e.preventDefault();
   };
   const end=()=>{ down=false; };
@@ -900,11 +1048,11 @@ function onOrient(e){
   let da = a - look.a0;
   if(da >  180) da -= 360;                 // the compass wraps; the view must not
   if(da < -180) da += 360;
-  look.tYaw = -da * D2R;
-  look.tPit = clampPit((b - look.b0) * D2R * 0.9);
+  look.gYaw = -da * D2R;
+  look.gPit = (b - look.b0) * D2R * 0.9;
   look.gyro = true;
   const n = document.getElementById('envNote');
-  if(n && !n.dataset.gyro){ n.dataset.gyro='1'; n.textContent='Move the phone to look around. Drag also works.'; }
+  if(n && !n.dataset.gyro){ n.dataset.gyro='1'; n.textContent='Move the phone to look around. Drag works at the same time.'; }
 }
 
 // iOS 13+ gates the sensor behind a permission that MUST come from a gesture.
@@ -1123,11 +1271,17 @@ function frame(ts){
 
   gl.uniform2f(uRes, cv.width, cv.height);
   gl.uniform1f(uT, (ts-t0)/1000);
-  gl.uniform1f(uAmp, ampS);
-  // ease toward the target so neither a flick nor sensor jitter snaps the view
+  // ⭐ SENSITIVITY — qi 08:30: "increase the sensitivity to the sound, like, or
+  // give me a control for sensitivity." Both: the default gain is raised AND he
+  // gets the slider, because the right value depends on his room and his wearable,
+  // which I cannot know from here. Persisted per-device.
+  gl.uniform1f(uAmp, Math.min(1.0, ampS * micGain));
+  // BOTH inputs, summed. He can drag while the gyroscope is live and the drag holds.
+  const tYaw = look.dYaw + look.gYaw;
+  const tPit = clampPit(look.dPit + look.gPit);
   const k = look.gyro ? 0.16 : 0.22;
-  look.yaw += (look.tYaw - look.yaw) * k;
-  look.pit += (look.tPit - look.pit) * k;
+  look.yaw += (tYaw - look.yaw) * k;
+  look.pit += (tPit - look.pit) * k;
   gl.uniform2f(uLook, look.yaw, look.pit);
   gl.uniform2f(uTouchUV, touch.x, touch.y);
   gl.uniform1f(uTouchAge, (ts - touch.at) / 1000);
