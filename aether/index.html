@@ -507,7 +507,7 @@ vec3 photoWrap(vec3 dir){
   // angular distance to that column, wrapped, and a soft falloff around it
   float du = abs(u - bestU); du = min(du, 1.0 - du);
   float glow = exp(-du*du*11.0) * exp(-vAbove*1.7);
-  skyC += bestC * glow * 0.42 * smoothstep(0.0, 0.25, bestL);
+  skyC += bestC * glow * 0.20 * smoothstep(0.0, 0.25, bestL);   // was 0.42 - too hot
 
   // large-scale drift, sampled from the image so it stays in its palette
   vec3 drift = srgb2lin(texture2D(envMap, vec2(fract(u*0.31 + 0.17), 0.10)).rgb);
@@ -649,8 +649,21 @@ vec3 env(vec3 dir){
         me = me * (1.0 - wFloor) + wFloor;                 // -> sit on the world's floor
 
         // then exposure, then the world's colour cast
+        // ⭐⭐ THE LIGHT SPOT IS THE CAMERA, NOT A HIGHLIGHT — qi 2026-08-23 09:03,
+        // with a screenshot (IMG_1863): a large soft blob below-left of centre. That
+        // is not a specular shape (small, sharp, and it would sit where the light is)
+        // — it is the size and softness of a lit face.
+        // The cause: my exposure match had an ADDITIVE FLOOR, (bl + 0.08). Against a
+        // near-black environment bl is ~0, so the floor alone keeps his frame at 0.08
+        // — a permanent glow that a black world can never suppress. A floor is exactly
+        // the wrong shape of correction here: it guarantees a minimum brightness.
+        // ⭐ No floor, and a HARD CAP at the local environment level: he can never be
+        // brighter than the place he is reflected in, so a black world hides him
+        // completely and a bright world shows him. ⛔ Never add a constant here.
         ml = dot(me, vec3(0.299, 0.587, 0.114));
-        me *= clamp((bl + 0.08) / max(ml, 0.02), 0.20, 2.20);
+        me *= clamp(bl / max(ml, 0.02), 0.0, 1.6);
+        float mlAfter = dot(me, vec3(0.299, 0.587, 0.114));
+        if(mlAfter > bl) me *= bl / max(mlAfter, 0.0001);   // hard cap, no exceptions
         vec3 envCast = base / max(bl, 0.02);   // 'cast' is a GLSL RESERVED WORD - never use it                  // the world's hue, unit-luma
         me = mix(me, me * envCast, 0.62);
 
@@ -972,7 +985,7 @@ void main(){
     // Metal is not a perfect mirror - this is the "shine over" he asked for.
     float sheen = pow(max(dot(reflect(-v,n), normalize(vec3(-0.40,0.80,0.45))), 0.0), 10.0);
     // the sheen borrows the ENVIRONMENT's own colour rather than inventing one
-    c += mir * sheen * 0.42;
+    c += mir * sheen * 0.20;
 
     // the rim brightens, achromatically. The old rainbow cos() cycle here is what
     // produced the teal he called out - a hue the environment never contained.
@@ -988,7 +1001,11 @@ void main(){
 
     // a single specular highlight so the form reads as solid
     vec3 L = normalize(vec3(-0.45, 0.75, 0.62));
-    c += vec3(1.0) * pow(max(dot(n, normalize(L+v)),0.0), 82.0) * 0.50;
+    // ⛔ NEVER a white specular. qi 09:03: "still seeing this damn light spot."
+    // A vec3(1.0) highlight is a white blowout no matter how the body is scaled
+    // afterwards, because the clamp is proportional. Tint it to what the orb is
+    // actually reflecting, keep it broad and low, and it reads as sheen not a lamp.
+    c += mir * pow(max(dot(n, normalize(L+v)),0.0), 34.0) * 0.16;
 
     // ⭐⭐ IT WAS BRIGHTER THAN ITS OWN WORLD — qi 2026-08-23 08:56:
     //   "the reason the avatar is standing out more than it's supposed to is because
