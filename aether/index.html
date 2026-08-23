@@ -202,7 +202,9 @@ body.fallback .fb{display:block;position:fixed;top:50%;left:50%;
   </div>
   <p class="note" id="envNote">Drag to look around. Move the phone if it has a gyroscope.</p>
 </div>
-<input type="file" id="pick" accept="image/*">
+<input type="file" id="pick" accept="image/*,video/*">
+<video id="envVid" playsinline muted loop autoplay style="display:none"></video>
+<canvas id="gifCv" style="display:none"></canvas>
 <div class="err" id="err"></div>
 
 <script>
@@ -697,6 +699,25 @@ vec3 env(vec3 dir){
   return base;
 }
 
+// ⭐⭐⭐ VENOM — qi 2026-08-23 08:42, and it is the clearest brief he has given:
+//   "my go-to to explain how it should react to touch and sound is like VENOM.
+//    When Venom hears the high-pitched sound it kind of expands out, kinda FALLS
+//    APART… but then when the sound goes away, it REFORMS."
+// Earlier (08:39): "when I touch the avatar it should NOT have to maintain that
+// sphere shape — it can expand amorphically and DISASSEMBLE, and when I lift my
+// finger it can reassemble."
+// So the body's SILHOUETTE has to break, not just its surface normal. Denting the
+// normal was never going to read as falling apart, because the outline stayed a
+// perfect circle and the eye reads the outline first.
+// TWO DRIVERS, one field: his TOUCH and the SOUND. Loud voice or finger down ->
+// it comes apart. Silence and release -> it reassembles. That is Venom exactly.
+// ⛔ This must cost nothing at rest: when the field is zero the refinement loop
+// below collapses to the plain analytic hit, which is what it was before.
+float lobes(vec3 d, float ti){
+  return sin(d.x*4.3 + ti*1.15) * sin(d.y*3.9 - ti*0.95) * sin(d.z*4.7 + ti*0.80)
+       + 0.55 * sin(d.x*8.1 - ti*1.7) * sin(d.z*7.3 + ti*1.3);
+}
+
 float hitSphere(vec3 ro, vec3 rd, float r){
   float b = dot(ro, rd);
   float c = dot(ro, ro) - r*r;
@@ -774,13 +795,57 @@ void main(){
   // warm upload glows warm and a cold one glows cold - never a fixed violet.
   col += col * (0.22 + amp*0.75) * exp(-rad*2.9) * 0.55;
 
-  // analytic hit — no loop, constant cost
-  float th = hitSphere(ro, rd, r);
+  // how far apart is it right now? sound and touch both pull it open.
+  float held  = touchHeld > 0.5 ? smoothstep(0.0, 0.30, touchAge) : 0.0;
+  float letgo = touchHeld > 0.5 ? 0.0 : exp(-relAge * 2.0);
+  float sound = smoothstep(0.16, 0.85, amp);          // his voice, above room noise
+  float apart = clamp(max(max(held, letgo), sound), 0.0, 1.0);
+
+  // analytic hit, then refine against the displaced surface. At apart == 0 the
+  // displacement is 0 and this is exactly the old constant-cost intersection.
+  // ⭐⭐⭐ IT WAS CONTAINED BY MY OWN CODE — qi 2026-08-23 08:49:
+  //   "outwardly, right now, it's CONTAINED. It shouldn't be contained like that."
+  // A real bug, not a taste. I tested the ray against the BASE sphere and only
+  // refined from that hit — so every ray that missed the base radius was thrown
+  // away before refinement ran, and any material the displacement pushed OUTWARD
+  // could never be seen. The silhouette could dent inward but could never grow
+  // past the original ball. Containment was structural, built into the algorithm.
+  // ⭐ FIX: test against a BOUNDING hull big enough to hold the worst-case
+  // displacement, then walk inward to the real surface. Outward lobes now exist.
+  // ⛔ BOUND must always exceed MAXD's largest value or outward material silently
+  //    vanishes again — which is exactly the bug this replaces.
+  // "I keep saying I need this thing to be MORE AMORPHIC" (08:45): 0.52, plus a
+  // permanent 0.055 so it is never a perfect ball even at rest.
+  float MAXD  = 0.52 * apart + 0.055;
+  float BOUND = r * (1.0 + MAXD * 1.40);
+
+  float th = hitSphere(ro, rd, BOUND);
+  if(th > 0.0){
+    for(int i = 0; i < 5; i++){          // walk in from the hull to the surface
+      vec3 pp = normalize(ro + rd*th);
+      float rr = r * (1.0 + lobes(pp, t) * MAXD);
+      float t2 = hitSphere(ro, rd, rr);
+      if(t2 <= 0.0){ th = -1.0; break; } // a genuine gap - the ray passes through
+      th = t2;
+    }
+  }
   bool hit = th > 0.0;
   vec3 q = ro + rd*max(th, 0.0);
 
   if(hit){
     vec3 n = nrm(q, r);
+    // tilt the normal along the displacement gradient so the light agrees with the
+    // broken shape. Finite differences on the lobe field, cheap and stable.
+    {
+      vec3 pn0 = normalize(q);
+      float e = 0.035;
+      float l0 = lobes(pn0, t);
+      vec3 gradL = vec3(
+        lobes(normalize(pn0 + vec3(e,0.0,0.0)), t) - l0,
+        lobes(normalize(pn0 + vec3(0.0,e,0.0)), t) - l0,
+        lobes(normalize(pn0 + vec3(0.0,0.0,e)), t) - l0);
+      n = normalize(n - gradL * (1.4 * apart + 0.30));
+    }
     vec3 v = normalize(ro - q);
 
     // ⭐⭐⭐ A SPLASH WITH TIME FROZEN — qi 2026-08-23 08:01-08:05, verbatim:
@@ -876,6 +941,8 @@ void main(){
     vec3 F0 = vec3(0.90);                          // neutral, achromatic
     vec3 fres = F0 + (vec3(1.0) - F0) * pow(1.0 - ct, 5.0);
 
+    // with the body this transparent the reflection reads against whatever is
+    // behind it, so keep the mirror but let the page carry the low end
     vec3 c = mir * fres;
 
     // anisotropic sheen: a brushed-metal band that slides as the orb turns.
@@ -901,9 +968,22 @@ void main(){
     c += vec3(1.0) * pow(max(dot(n, normalize(L+v)),0.0), 82.0) * 0.50;
 
     col = c;
-    // a mirrored body is close to opaque, but the very rim of a real reflective
-    // sphere goes translucent as it turns away — keep a little of that.
-    alphaOut = mix(0.94, 1.0, ct);
+    // ⭐⭐⭐ THE BODY ITSELF IS SEE-THROUGH — qi 2026-08-23 08:46-08:47:
+    //   "the sphere is TOO PROMINENT… I need to be able to see DIRECTLY THROUGH it.
+    //    It does need to reflect, but I need to be able to see through it."
+    //   "anything that is overlay is supposed to be able to go on any screen, and no
+    //    matter where it is on the screen you can still see right through it SO IT
+    //    DOESN'T INTERFERE WITH ANY WORK."
+    // That last clause is the whole spec and it is a product requirement, not a
+    // look: this thing lives on top of what he is doing, so it must never cost him
+    // a single pixel of legibility. I had the body at 0.94 alpha — effectively
+    // opaque, effectively in the way.
+    // ⭐ Real glass is inverted from what I built: it is MOST transparent looking
+    // straight through the middle and most visible at the grazing rim, because
+    // fresnel reflectance climbs as the surface turns away. So the centre opens up
+    // and the rim holds the form. He can read straight through the middle of it.
+    // ⛔ Never raise the centre alpha back up. Prominence is the defect.
+    alphaOut = mix(0.62, 0.20, ct);      // rim 0.62, dead centre 0.20
   } else {
     // ground glow the sphere casts into the space beneath it
     float g = smoothstep(0.95, 0.0, length(uv - vec2(0.0,-0.55)));
@@ -1058,15 +1138,21 @@ function onOrient(e){
 // iOS 13+ gates the sensor behind a permission that MUST come from a gesture.
 // There is no way around that, so it rides along with the mic/camera grant and
 // a refusal costs nothing: the drag still works.
+let gyroArmed = false;
 function armGyro(){
+  if(gyroArmed) return;          // idempotent: it is now called from three places
   try{
     const DOE = window.DeviceOrientationEvent;
     if(!DOE) return;
     if(typeof DOE.requestPermission === 'function'){
       DOE.requestPermission().then(r=>{
-        if(r === 'granted') addEventListener('deviceorientation', onOrient, {passive:true});
-      }).catch(()=>{});
+        if(r === 'granted'){
+          gyroArmed = true;
+          addEventListener('deviceorientation', onOrient, {passive:true});
+        }
+      }).catch(()=>{});        // a refusal costs nothing - drag still works
     } else {
+      gyroArmed = true;         // no gate on this platform: live immediately
       addEventListener('deviceorientation', onOrient, {passive:true});
     }
   }catch(_){}
@@ -1283,6 +1369,7 @@ function frame(ts){
   look.yaw += (tYaw - look.yaw) * k;
   look.pit += (tPit - look.pit) * k;
   gl.uniform2f(uLook, look.yaw, look.pit);
+  pumpMotion();                       // a moving environment needs a fresh upload
   gl.uniform2f(uTouchUV, touch.x, touch.y);
   gl.uniform1f(uTouchAge, (ts - touch.at) / 1000);
   gl.uniform1f(uTouchHeld, touch.held);
@@ -1305,9 +1392,18 @@ if(gl && initGL()){
 }
 document.getElementById('go').addEventListener('click', start, {once:false});
 
-// the mic/camera grant is the only user gesture on this page, so the iOS gyro
-// permission has to ride along with it - there is no second tap to spend
+// ⭐⭐ ARMED THE MOMENT THE PAGE OPENS — qi 2026-08-23 08:39: "as soon as the
+// website is visited, the gyroscope should ALREADY be working."
+// Correct, and it was only gated because of ONE platform. iOS 13+ requires a user
+// gesture for DeviceOrientationEvent.requestPermission(); ANDROID and desktop do
+// not gate it at all. I had applied the strictest platform's rule everywhere, so
+// his Android phone was waiting on a tap it never needed.
+// So: try immediately on load — where no permission is required it just works —
+// and keep two more chances for the platforms that do gate it: the mic grant, and
+// the FIRST TOUCH ANYWHERE. Any gesture will do; it never had to be that button.
+armGyro();                                             // Android/desktop: live at once
 document.getElementById('go').addEventListener('click', armGyro, {once:true});
+addEventListener('pointerdown', armGyro, {once:true}); // iOS: the first touch, any touch
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ANY IMAGE -> AN ENVIRONMENT.  qi 07:36 "lets me upload any image and it
@@ -1340,6 +1436,7 @@ function applyEnvImage(img, label){
     return;
   }
   gl.activeTexture(gl.TEXTURE0);
+  envMotion = null;                   // a still replaces any running video/GIF
 
   const n = document.getElementById('envNote');
   if(n) n.textContent = (trueSphere ? 'Real 360 detected (' : 'Wrapped from a flat photo (')
@@ -1366,11 +1463,88 @@ document.getElementById('cog').addEventListener('click', () => {
 document.getElementById('bPick').addEventListener('click', () => {
   document.getElementById('pick').click();
 });
+// ⭐⭐ A LIVING ENVIRONMENT — qi 2026-08-23 08:35 and again 08:41: "if I use a GIF,
+// would it give the panoramic environment live motion as well?… is it possible to
+// upload GIF images or videos for the environment AND the reflection?"
+// Yes, with one non-obvious step. A WebGL texture is a SNAPSHOT: texImage2D copies
+// the pixels once, so a GIF handed straight to a texture is frozen on frame one.
+// The fix is to re-upload every frame from a source that is itself animating:
+//   VIDEO -> upload the <video> element directly each frame (cheapest, best quality)
+//   GIF   -> an animated GIF DOES advance inside an <img>, but an <img> cannot be
+//            re-read directly, so draw it to a 2D canvas each frame and upload that
+// Video is the better choice of the two: smaller, smoother, and it can run minutes.
+let envMotion = null;        // {kind:'video'|'gif', el, cv, ctx}
+
+function useVideo(url, label){
+  const v = document.getElementById('envVid');
+  v.crossOrigin = 'anonymous';
+  v.src = url; v.muted = true; v.loop = true; v.playsInline = true;
+  v.play().catch(()=>{});               // autoplay needs muted, which it is
+  v.addEventListener('loadeddata', () => {
+    envMode = (v.videoWidth / Math.max(v.videoHeight,1) > 1.88 &&
+               v.videoWidth / Math.max(v.videoHeight,1) < 2.18) ? 0 : 1;
+    envMotion = {kind:'video', el:v};
+    envLoaded = true;
+    const n = document.getElementById('envNote');
+    if(n) n.textContent = 'Live video environment (' + v.videoWidth + ' by ' +
+                          v.videoHeight + '). ' + (label||'');
+    closeSheet();
+  }, {once:true});
+  v.addEventListener('error', () => fail('<b>That video could not be read.</b>'), {once:true});
+}
+
+function useGif(url, label){
+  const im = new Image();
+  im.crossOrigin = 'anonymous';
+  im.onload = () => {
+    const cv2 = document.getElementById('gifCv');
+    cv2.width = im.naturalWidth; cv2.height = im.naturalHeight;
+    const ctx = cv2.getContext('2d');
+    envMode = (im.naturalWidth / Math.max(im.naturalHeight,1) > 1.88 &&
+               im.naturalWidth / Math.max(im.naturalHeight,1) < 2.18) ? 0 : 1;
+    envMotion = {kind:'gif', el:im, cv:cv2, ctx:ctx};
+    envLoaded = true;
+    const n = document.getElementById('envNote');
+    if(n) n.textContent = 'Animated environment (' + im.naturalWidth + ' by ' +
+                          im.naturalHeight + '). ' + (label||'');
+    closeSheet();
+  };
+  im.onerror = () => fail('<b>That image could not be read.</b>');
+  im.src = url;
+}
+
+// re-upload the moving source every frame. This is the whole trick.
+function pumpMotion(){
+  if(!envMotion || !envTex) return;
+  try {
+    let src = null;
+    if(envMotion.kind === 'video'){
+      const v = envMotion.el;
+      if(v.readyState < 2) return;                  // nothing decoded yet
+      src = v;
+    } else {
+      envMotion.ctx.drawImage(envMotion.el, 0, 0);  // the GIF has advanced by itself
+      src = envMotion.cv;
+    }
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, envTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, src);
+    gl.activeTexture(gl.TEXTURE0);
+  } catch(_) { envMotion = null; }                  // never let this kill the loop
+}
+
 document.getElementById('pick').addEventListener('change', e => {
   const f = e.target.files && e.target.files[0];
   if(!f) return;
-  // read locally - no upload, no server, no CORS, and the photo never leaves the phone
-  loadEnvFromSrc(URL.createObjectURL(f), f.name || '', true);
+  const url = URL.createObjectURL(f);
+  envMotion = null;
+  if((f.type||'').indexOf('video/') === 0)      useVideo(url, f.name || '');
+  else if((f.type||'') === 'image/gif')          useGif(url, f.name || '');
+  else loadEnvFromSrc(url, f.name || '', true);   // a still, as before
   e.target.value = '';
 });
 document.getElementById('bUrl').addEventListener('click', () => {
