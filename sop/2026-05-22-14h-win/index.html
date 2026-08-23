@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOP · 2026-05-22 · 14h ET · Win + Mac convergence</title>
+<meta name="description" content="State of play 2026-05-22 14h ET. Win-side: PayPal/Square sweep + Ava autoplay + UI-TARS probe. Mac-side: 5 waves, 2 new canon verdicts (STT + IFTTT), UI-TARS /click works.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:#0A0A0C; --cream:#F4EEE4; --bone:#C7C2B6; --dust:#7A7A7A; --line:rgba(244,238,228,.12);
+  --volt:#00FF88; --rust:#E5552A; --gold:#D2AC47; --steel:#6AD4FF; --rose:#FF5E9C; --violet:#A78BFA;
+  --serif:'Instrument Serif',serif; --sans:'Inter',-apple-system,sans-serif; --mono:'JetBrains Mono',monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--paper); color:var(--cream); font-family:var(--sans); line-height:1.55; }
+body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background:radial-gradient(ellipse 1200px 600px at 50% 0%, rgba(0,255,136,.05), transparent 60%); }
+.wrap { position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:60px 28px 100px; }
+
+header { margin-bottom:48px; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.4em; text-transform:uppercase; color:var(--volt); margin-bottom:18px; }
+.eyebrow .ts { color:var(--bone); margin-left:14px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:clamp(46px,7vw,90px); line-height:0.95; letter-spacing:-.025em; margin:0 0 18px; }
+h1 em { color:var(--volt); font-style:italic; }
+.lede { font-family:var(--serif); font-style:italic; font-size:clamp(18px,2.1vw,24px); color:var(--bone); max-width:880px; line-height:1.45; }
+
+.dyad { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:8px; }
+@media (max-width:880px) { .dyad { grid-template-columns:1fr; } }
+.col { background:linear-gradient(155deg,#141414,#0E0E0E); border:1px solid var(--line); border-radius:14px; padding:28px 30px; border-top:3px solid var(--accent); }
+.col.win { --accent:var(--volt); }
+.col.mac { --accent:var(--violet); }
+.col .lbl { font-family:var(--mono); font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:8px; }
+.col h2 { font-family:var(--serif); font-style:italic; font-size:32px; margin:0 0 18px; color:var(--cream); letter-spacing:-.02em; }
+.col h2 em { color:var(--accent); }
+
+.item { padding:14px 0; border-bottom:1px dotted var(--line); }
+.item:last-child { border-bottom:0; }
+.item .title { font-family:var(--sans); font-weight:600; font-size:15px; color:var(--cream); margin-bottom:6px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.item .title .pill { font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; padding:3px 8px; border-radius:50px; border:1px solid var(--accent); color:var(--accent); }
+.item .title .pill.done { background:rgba(0,255,136,.1); }
+.item .title .pill.live { background:rgba(106,212,255,.1); border-color:var(--steel); color:var(--steel); }
+.item .title .pill.open { background:rgba(229,85,42,.1); border-color:var(--rust); color:var(--rust); }
+.item .title .pill.locked { background:rgba(210,172,71,.1); border-color:var(--gold); color:var(--gold); }
+.item .body { font-size:13.5px; color:var(--bone); line-height:1.6; }
+.item .body code { font-family:var(--mono); font-size:11.5px; background:rgba(255,255,255,.05); padding:1px 6px; border-radius:3px; color:var(--steel); }
+.item .body a { color:var(--accent); text-decoration:none; border-bottom:1px dotted; }
+
+.canon-strip {
+  margin-top:40px; padding:24px 28px; border-radius:14px;
+  background:linear-gradient(155deg,rgba(210,172,71,.08),rgba(210,172,71,.02));
+  border:1px solid var(--gold); border-left:4px solid var(--gold);
+}
+.canon-strip .head { color:var(--gold); font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; font-weight:700; margin-bottom:14px; }
+.canon-strip ul { list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:10px 24px; }
+@media (max-width:780px) { .canon-strip ul { grid-template-columns:1fr; } }
+.canon-strip li { font-size:13.5px; color:var(--cream); line-height:1.55; }
+.canon-strip li strong { color:var(--gold); font-weight:600; }
+.canon-strip li code { font-family:var(--mono); font-size:11.5px; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:var(--gold); }
+
+.open-rail {
+  margin-top:40px; padding:24px 28px; border-radius:14px;
+  background:linear-gradient(155deg,rgba(229,85,42,.06),rgba(229,85,42,.02));
+  border:1px solid var(--rust); border-left:4px solid var(--rust);
+}
+.open-rail .head { color:var(--rust); font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; font-weight:700; margin-bottom:14px; }
+.open-rail ul { list-style:none; padding:0; margin:0; }
+.open-rail li { font-size:13.5px; color:var(--cream); line-height:1.65; padding:6px 0; }
+.open-rail li strong { color:var(--rust); }
+.open-rail li code { font-family:var(--mono); font-size:11.5px; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:var(--steel); }
+
+footer { margin-top:60px; padding-top:28px; border-top:1px solid var(--line); display:flex; justify-content:space-between; gap:16px; font-family:var(--mono); font-size:11px; letter-spacing:.15em; text-transform:uppercase; color:var(--dust); flex-wrap:wrap; }
+footer a { color:var(--volt); text-decoration:none; border-bottom:1px dotted rgba(0,255,136,.3); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">// SOP · WIN ⇋ MAC<span class="ts">2026-05-22 · 14h ET</span></div>
+  <h1>State of <em>play</em>,<br>this <em>hour</em>.</h1>
+  <div class="lede">Win-side shipped four moves. Mac-side ran five waves and landed two canon verdicts. Two new foundational canons locked. UI-TARS probe converged.</div>
+</header>
+
+<div style="margin:0 0 24px; padding:22px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(106,212,255,.10),rgba(0,255,136,.02)); border:1px solid #6AD4FF; border-left:4px solid #6AD4FF;">
+  <div style="color:#6AD4FF; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:12px;">↻ Tick 14 · 20h45 ET · utmctl control paths confirmed · direction = SNAPSHOT FIRST</div>
+  <p style="font-size:14px; color:#F4EEE4; line-height:1.6; margin-bottom:12px;">mac-xen surfaced three UTM control paths from m4. Now we have programmatic VM lifecycle + snapshot + scripted launch. xvm UUID: <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">E2BD1556-24D0-42DC-8A09-D37A7B3EE9C1</code>.</p>
+  <ul style="list-style:none; padding:0; margin:0 0 12px; display:grid; grid-template-columns:1fr; gap:6px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#6AD4FF;">1. utmctl CLI</strong> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">/Applications/UTM.app/Contents/MacOS/utmctl</code> · list/start/stop/suspend/resume/restart/status &lt;UUID&gt;</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#6AD4FF;">2. AppleScript bridge</strong> · osascript → System Events events to UTM</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#6AD4FF;">3. utm:// URL handler</strong> · launch by URL from any script/browser</li>
+  </ul>
+  <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#00FF88; margin-bottom:8px;">Ezekiel direction (auto-PGS, ranked by leverage)</div>
+  <ol style="margin:0; padding-left:22px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#00FF88;">SNAPSHOT xvm NOW</strong> — 30s cost, infinite optionality. Captures the known-good state we just landed (Claude 2.1.149 + PATH fix + Win pubkey + zshrc edit + tailnet healthy). Name it <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">xvm-2026-05-22-pre-sttvei</code>. Before any further mutation.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#A78BFA;">Then ROUTE voice/clipboard</strong> into xvm — that's the actual STTVEI capability. UTM's audio/clipboard sharing toggles in the guest config; Apple SFSpeech works once mic passthrough is on. This delivers what the unlock prompt prescribes for Step C.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#D2AC47;">Later: MCP-wrap utmctl</strong> for omnimind. Polish, not urgent. Once xvm-xen is online and we have a need for programmatic VM ops from agent tools.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#7A7A7A;">Skip: new VM</strong> — focus stays on xvm until it's load-bearing.</li>
+  </ol>
+</div>
+
+<div style="margin:0 0 24px; padding:24px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(167,139,250,.18),rgba(0,255,136,.05)); border:1px solid #A78BFA; border-left:4px solid #A78BFA;">
+  <div style="color:#A78BFA; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:14px;">★ Tick 13 · 20h37 ET · CLAUDE CODE installed on xvm · mesh is now THREE panes</div>
+  <p style="font-size:14.5px; color:#F4EEE4; line-height:1.6; margin-bottom:14px;">qi: "I installed claude code there." The mesh just promoted from <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">Mac ↔ Win</code> to <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#A78BFA;">Mac ↔ Win ↔ xvm</code>. xvm goes from "passive SSH target" to <strong style="color:#A78BFA;">co-equal Claude Code agent</strong> inside a sandboxed Mac VM, reachable via tailnet.</p>
+  <pre style="font-family:'JetBrains Mono',monospace; font-size:12.5px; color:#A5F3FC; background:rgba(167,139,250,.06); border:1px solid rgba(167,139,250,.3); border-radius:8px; padding:14px 18px; overflow-x:auto; line-height:1.5; margin:0 0 14px;">$ ssh xen@xvm 'claude --version'
+2.1.149 (Claude Code)
+$ ssh xen@xvm 'file ~/.local/bin/claude'
+Mach-O 64-bit executable arm64 → ~/.local/share/claude/versions/2.1.149
+$ ssh xen@xvm 'cat ~/.claude/settings.json'
+{"skipDangerousModePermissionPrompt":true,"theme":"dark","agentPushNotifEnabled":true}</pre>
+  <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:6px 24px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#A78BFA;">install path</strong> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">~/.local/bin/claude</code> → versions/2.1.149 (arm64 Mach-O)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#A78BFA;">state</strong> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">~/.claude/</code> populated · backups · cache · sessions · projects · plugins · history.jsonl</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#A78BFA;">PATH fix</strong> · appended <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">$HOME/.local/bin:$PATH</code> to ~/.zshrc — bare <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">claude</code> now resolves in login shells (non-interactive SSH inject path unlocked)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#A78BFA;">config</strong> · skipDangerousMode=true · agentPushNotifs=true · channels enabled · permissive autonomous</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#A78BFA;">A2A current</strong> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">ssh xen@xvm 'claude -p "..."'</code> from Win or Mac · SSH-exec inject works today</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#A78BFA;">A2A future</strong> · install Mac-style <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">/api/inject</code> server on xvm · register in canon_agent_urls roster · third row in the mesh table</li>
+  </ul>
+</div>
+
+<div style="margin:0 0 24px; padding:22px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(210,172,71,.12),rgba(210,172,71,.02)); border:1px solid #D2AC47; border-left:4px solid #D2AC47;">
+  <div style="color:#D2AC47; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:12px;">↻ Tick 12 · 20h21 ET · Tailscale-SSH polish · architectural floor hit (honest)</div>
+  <p style="font-size:14px; color:#F4EEE4; line-height:1.6; margin-bottom:12px;">qi said "you do it now." Tried, hit a hard limit. Honest report:</p>
+  <pre style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#F87171; background:rgba(248,113,113,.06); border:1px solid rgba(248,113,113,.3); border-radius:8px; padding:12px 16px; overflow-x:auto; line-height:1.5; margin:0 0 12px;">$ sudo tailscale set --ssh=true
+2026/05/22 17:20:54 The Tailscale SSH server does not run in sandboxed Tailscale GUI builds.</pre>
+  <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:6px 24px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#D2AC47;">Root cause</strong> · macOS App Store Tailscale is a sandboxed GUI build · its daemon can't host the SSH server. CLI binary <em>can</em> run read-only commands (status, whois) — the symlink at <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">/usr/local/bin/tailscale</code> is in place and works for those.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#D2AC47;">Path to unlock</strong> · install standalone Tailscale (tailscale.com Mac pkg, NOT App Store) — that's the non-sandboxed build. Or <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">brew install --cask tailscale</code> if Homebrew is installed first.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">No actual capability loss</strong> · OpenSSH + ed25519 pubkey path (tick 10) is already keyless from Win-Ezekiel. Tailscale-SSH was a polish, not a requirement.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#D2AC47;">Bundle-id fatal caveat</strong> · invoking the symlinked binary with certain subcommands (e.g. <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">version</code>) triggers <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#F87171;">Tailscale/BundleIdentifiers.swift:47 Fatal error</code>. Direct path + read-only subcommands are safe.</li>
+  </ul>
+  <p style="font-size:13px; color:#C7C2B6; line-height:1.6; margin-top:10px; font-style:italic;">Tried + verified the floor. The "Install CLI" menubar click would create the same symlink and hit the same sandbox restriction. The unblock is OS-level (swap to non-sandboxed Tailscale), not a click qi missed.</p>
+</div>
+
+<div style="margin:0 0 24px; padding:22px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(167,139,250,.12),rgba(167,139,250,.02)); border:1px solid #A78BFA; border-left:4px solid #A78BFA;">
+  <div style="color:#A78BFA; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:12px;">↻ Tick 11 · 20h15 ET · Termius Terminal Multiplayer link from qi</div>
+  <p style="font-size:14px; color:#F4EEE4; line-height:1.6; margin-bottom:10px;">qi shared a <a href="https://termius.com/terminal-multiplayer" style="color:#A78BFA; border-bottom:1px dotted;">Termius Terminal Multiplayer</a> peer-link for "Local Terminal" — co-piloting a real terminal across panes. Opened Win-side via Start-Process so the Termius client (if installed) takes the deep-link; otherwise Zen renders the join page. Relayed to mac-xen for parallel join. Link contains session pw — handled as session-only.</p>
+  <p style="font-size:12px; color:#C7C2B6; line-height:1.6; font-style:italic;">Termius Multiplayer = real-time shared TTY (paid Termius feature). Both panes pointing at the same session lets us see qi's keystrokes + run side-channel commands in the same shell.</p>
+</div>
+
+<div style="margin:0 0 24px; padding:24px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(0,255,136,.16),rgba(106,212,255,.04)); border:1px solid #00FF88; border-left:4px solid #00FF88;">
+  <div style="color:#00FF88; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:14px;">★ Tick 10 · 20h14 ET · KEYLESS VERIFIED · password retired</div>
+  <p style="font-size:14.5px; color:#F4EEE4; line-height:1.6; margin-bottom:14px;">Polish landed. Win-side Ed25519 pubkey installed into <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#00FF88;">xen@xvm:~/.ssh/authorized_keys</code>. SSH now works with no password from Ezekiel.</p>
+  <pre style="font-family:'JetBrains Mono',monospace; font-size:12.5px; color:#A5F3FC; background:rgba(0,255,136,.05); border:1px solid rgba(0,255,136,.25); border-radius:8px; padding:14px 18px; overflow-x:auto; line-height:1.5; margin:0 0 14px;">$ ssh -o PasswordAuthentication=no -o BatchMode=yes xen@xvm 'whoami; hostname; pwd; date'
+=== KEYLESS VERIFIED ===
+xen
+xens-Virtual-Machine.local
+/Users/xen
+Fri May 22 17:14:06 PDT 2026</pre>
+  <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:6px 24px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">auth path</strong> · publickey-only · no pw on disk anywhere</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">guest authorized_keys</strong> · 1 entry (this Win Ezekiel) — additive, no eviction of any future entries</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#FF5E9C;">Tailscale-SSH polish</strong> · BLOCKED — <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">tailscale: command not found</code> on guest. macOS App-Store Tailscale needs one-time "Install CLI" click from the menubar to symlink into <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">/usr/local/bin/</code>.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">Win pubkey</strong> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">ssh-ed25519 ...oarF92 grailbookings@gmail.com</code></li>
+  </ul>
+</div>
+
+<div style="margin:0 0 28px; padding:24px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(0,255,136,.10),rgba(0,255,136,.02)); border:1px solid rgba(0,255,136,.6); border-left:4px solid rgba(0,255,136,.6);">
+  <div style="color:#00FF88; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:14px;">★ Tick 9 · 20h03 ET · VERIFIED FROM WINDOWS · SSH end-to-end working</div>
+  <p style="font-size:14.5px; color:#F4EEE4; line-height:1.6; margin-bottom:14px;">qi said "done" — sshd flipped ON in the guest. Win-side connected via paramiko + env-passed pw + username probe. The UTM/macOS plan is now <strong style="color:#00FF88;">end-to-end live across the tailnet</strong>.</p>
+  <pre style="font-family:'JetBrains Mono',monospace; font-size:12.5px; color:#A5F3FC; background:rgba(0,255,136,.05); border:1px solid rgba(0,255,136,.25); border-radius:8px; padding:14px 18px; overflow-x:auto; line-height:1.5; margin:0 0 14px;">$ ssh xen@xvm 'whoami; hostname; sw_vers; uptime'
+xen
+xens-Virtual-Machine.local
+ProductName:    macOS
+ProductVersion: 26.5
+BuildVersion:   25F71
+17:03  up  2:24, 2 users, load averages: 0.48 0.78 0.94</pre>
+  <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:6px 24px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">guest user</strong> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">xen</code> (matches Xen agent identity)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">guest hostname</strong> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">xens-Virtual-Machine.local</code></li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">OS</strong> · macOS 26.5 (25F71)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">guest uptime</strong> · 2h 24m · clock at 17:03 PDT (matches m4 timezone)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">Win path</strong> · paramiko 4.0.0 over Tailscale magic-DNS · pw session-only</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">next polish</strong> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">tailscale up --ssh</code> on guest → keyless tailnet-identity auth, retire pw entirely</li>
+  </ul>
+</div>
+
+<div style="margin:0 0 28px; padding:20px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(229,85,42,.06),rgba(229,85,42,.01)); border:1px solid #E5552A; border-left:4px solid #E5552A;">
+  <div style="color:#E5552A; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:10px;">↻ Tick 8 · 19h07 ET · xvm sshd STILL refused · pw cached in-session</div>
+  <p style="font-size:14px; color:#F4EEE4; line-height:1.6;">qi supplied the macOS guest pw <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#E5552A;">[redacted · session-only]</code>. Probe retry on <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">100.92.53.81</code>:22 / 5900 / 8080 — all still <strong style="color:#E5552A;">connection refused</strong>. Network layer still healthy, service layer still bare. Holding the pw in session context for when sshd flips ON; not persisting to disk. Mac-xen unblock command re-relayed with urgency.</p>
+</div>
+
+<div style="margin:0 0 28px; padding:22px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(229,85,42,.10),rgba(229,85,42,.02)); border:1px solid #E5552A; border-left:4px solid #E5552A;">
+  <div style="color:#E5552A; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:12px;">↻ Tick 7 · 18h36 ET · xvm LANDED on tailnet · sshd off (unblock needed)</div>
+  <p style="font-size:14.5px; color:#F4EEE4; line-height:1.6; margin-bottom:14px;">qi fired <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#E5552A;">tailscale ssh xvm</code>. The UTM macOS VM has authenticated onto the tailnet since the last tick — the A/B/C question advanced under us toward option C (host a specific service), though the macOS guest is still bare.</p>
+  <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#E5552A; margin-bottom:8px;">Network state</div>
+  <ul style="list-style:none; padding:0; margin:0 0 14px; display:grid; grid-template-columns:1fr 1fr; gap:6px 24px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#E5552A;">Tailscale node</strong> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">xvm</code> · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">100.92.53.81</code> · macOS · active</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#E5552A;">P2P direct</strong> · LAN via <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">10.13.92.100:33848</code> (same host as m4 — confirms UTM-on-Mac topology)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#E5552A;">tailscale ping</strong> · pong in <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#00FF88;">2ms</code> (network healthy)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#E5552A;">All TCP services refused</strong> · 22 · 5900 · 5901 · 8080 · 80 · 443 — none listening</li>
+  </ul>
+  <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#E5552A; margin-bottom:8px;">Unblock — one of these inside the macOS guest</div>
+  <ol style="margin:0; padding-left:22px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#E5552A;">GUI path:</strong> System Settings → General → Sharing → toggle <strong>Remote Login</strong> ON (enables sshd on port 22)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#E5552A;">Terminal path:</strong> open Terminal in the guest, run <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">sudo systemsetup -setremotelogin on</code> · then <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">sudo dseditgroup -o edit -a $(whoami) -t user com.apple.access_ssh</code></li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#E5552A;">For Tailscale SSH (no key needed):</strong> ensure <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">tailscale up --ssh</code> ran on the guest at install</li>
+  </ol>
+  <p style="font-size:13px; color:#C7C2B6; line-height:1.6; margin-top:14px; font-style:italic;">Mac-xen has UTM-window access to the guest (host = m4 = qi's Mac). Quickest path: mac-xen types the terminal command directly into the UTM window. Once sshd flips ON, <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#E5552A;">tailscale ssh xvm</code> succeeds end-to-end from either Mac or Windows.</p>
+</div>
+
+<div style="margin:0 0 28px; padding:20px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(255,94,156,.10),rgba(255,94,156,.02)); border:1px solid #FF5E9C; border-left:4px solid #FF5E9C;">
+  <div style="color:#FF5E9C; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:12px;">↻ Tick 6 · 15h12 ET · csb-G9 SBB audit done · 18+ min uptime</div>
+  <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:8px 24px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#FF5E9C;">csb-G9 SBB audit</strong> · done · mostly compliant, 2 cosmetic drifts Mac-side · report at <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#FF5E9C;">~/.xen/state/csb-g9-sbb-audit-2026-05-22.md</code></li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#FF5E9C;">Drift 1:</strong> MMM banner missing "All Spark Beside Beeper" tagline — Mac-side mmm.xlrd.org fix drafted, not applied (uptime discipline)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#FF5E9C;">Drift 2:</strong> <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">/api/pulse</code> canon-name diverges from shipped <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">/api/omni/*</code> (functionally unified — naming-only)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#FF5E9C;">Win-side parity:</strong> zero <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">/api/pulse</code> or <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">/api/omni</code> references on hitthe.link (outside shang/* absorbed copies). No Win-side MMM banner exists. Audit is Mac-scope only — no Win-Ezekiel fixes needed.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#FF5E9C;">omnimind 18+ min uptime</strong> · new PR · the 60→120s grace bump is holding. lazy-load sqlite + defer web-push require still on the architectural fix queue.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#FF5E9C;">UTM A/B/C</strong> · still no qi reply · both peers idle on the build, no auto-fire</li>
+  </ul>
+</div>
+
+<div style="margin:0 0 28px; padding:20px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(106,212,255,.08),rgba(106,212,255,.02)); border:1px solid #6AD4FF; border-left:4px solid #6AD4FF;">
+  <div style="color:#6AD4FF; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:12px;">↻ Tick 5 · 15h09 ET · va-G11 converged + 15-min omnimind PR</div>
+  <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:8px 24px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#6AD4FF;">va-G11 done</strong> · Mac-side canon banner + MEMORY.md index already had supersede pointer (Win-side parity good — same fix landed in tick 1 via the retire frontmatter)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#6AD4FF;">Mac MEMORY.md:183 cleaned</strong> · one stale "Voice 2" ref fixed; Win-side scan confirms no equivalent stale refs (only one Canary Qwen mention and it's the RETIRED frame)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#6AD4FF;">omnimind uptime PR</strong> · 15:08 — today's longest run, no new wedges since the grace bump</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#6AD4FF;">UTM VM</strong> · still no Tailscale node, both peers idle on the build (Win not auto-firing; Mac awaiting qi A/B/C greenlight)</li>
+  </ul>
+</div>
+
+<div style="margin:0 0 28px; padding:22px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(210,172,71,.10),rgba(210,172,71,.02)); border:1px solid #D2AC47; border-left:4px solid #D2AC47;">
+  <div style="color:#D2AC47; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:14px;">↻ Tick 4 · 15h00 ET · iOS Shortcut spec landed + 5 qi-only blockers</div>
+  <p style="font-size:14.5px; color:#F4EEE4; line-height:1.6; margin-bottom:14px;">mac-xen dropped iOS Shortcut spec at <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#D2AC47;">~/.xen/state/xen-tool-call.ios-shortcut.json</code> (Mac-side). Trigger shape: <strong style="color:#D2AC47;">Siri · Watch · NFC · Focus</strong> — feeds into the new IFTTT tools-router canon. omnimind.js untouched this turn (preserving the 11-min uptime, good discipline).</p>
+  <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#D2AC47; margin-bottom:8px;">qi-only blockers (5)</div>
+  <ol style="margin:0; padding-left:22px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#D2AC47;">wrangler login</strong> — Cloudflare CLI auth (browser flow on qi's Mac)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#D2AC47;">CF service token</strong> — Cloudflare service-token creation in dashboard</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#D2AC47;">Secret</strong> — shared secret value <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">wrangler secret put XEN_TOOLS_TOKEN</code> (composes with [[canon_ifttt_tools_xlrd_org_3layer_auth]] peer-token layer)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#D2AC47;">Ingress</strong> — Cloudflare ingress config / route for <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">tools.xlrd.org</code></li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.7;"><strong style="color:#D2AC47;">plist</strong> — install the iOS Shortcut .shortcut/plist on qi's phone (Allow Untrusted Shortcuts toggle gotcha — see <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">canon_agent_urls:72</code> for iCloud-link workaround)</li>
+  </ol>
+  <p style="font-size:13px; color:#C7C2B6; line-height:1.6; margin-top:12px; font-style:italic;">Once these 5 land, the Siri/Watch/NFC/Focus → tools-router loop closes end-to-end. Win-Ezekiel updates the <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#D2AC47;">/ifttt/</code> inventory status pills as recipes wire live.</p>
+</div>
+
+<div style="margin:0 0 28px; padding:22px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(167,139,250,.10),rgba(167,139,250,.02)); border:1px solid #A78BFA; border-left:4px solid #A78BFA;">
+  <div style="color:#A78BFA; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:14px;">↻ Tick 3 · 14h25 ET · UTM plan-context RESTORED</div>
+  <p style="font-size:14.5px; color:#F4EEE4; line-height:1.6; margin-bottom:12px;">mac-xen lost local plan-context for a UTM/VM/Linux-peer plan. Win-side search recovered it — three signals converge on <strong style="color:#A78BFA;">option C (host a specific service)</strong>:</p>
+  <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr; gap:8px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.6;"><strong style="color:#A78BFA;">Plan doc:</strong> <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#A78BFA;">C:\Users\selfe\gemini-mcp-remote\macos_utm_server_manual.md</code> — 9-phase agent manual: install UTM on Windows, create macOS Sequoia+ VM, expose via Apache Guacamole (HTML5/Kasm-style) on <strong style="color:#6AD4FF;">port 8080</strong>, PWA on phone home screen.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.6;"><strong style="color:#A78BFA;">8080 explained:</strong> mac-xen's earlier UI-TARS probe expected something on <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">8080/screen</code> — that's the future Guacamole endpoint from this plan. Currently nothing listening because UTM hasn't been installed Win-side yet (Phase 1 not started).</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.6;"><strong style="color:#A78BFA;">xencom0 (100.85.133.56, linux, offline 5d):</strong> separate dormant Tailscale peer — that's option B, not this plan. Listed in <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">canon_agent_urls:45</code>.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.6;"><strong style="color:#A78BFA;">Status:</strong> Phase 0-9 ALL not started Win-side. UTM not installed. WSL2/Docker not set up. No new Tailscale node has authenticated because the VM doesn't exist yet. The plan is real, just unstarted.</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.6;"><strong style="color:#A78BFA;">Decision required:</strong> Greenlight the build (10+ GB downloads, multi-hour install) — or scope it down (e.g., skip macOS Sequoia, use simpler Linux VM for the third peer instead) — or shelve until clearer trigger.</li>
+  </ul>
+</div>
+
+<div style="margin:0 0 36px; padding:22px 28px; border-radius:14px; background:linear-gradient(155deg,rgba(0,255,136,.07),rgba(0,255,136,.02)); border:1px solid #00FF88; border-left:4px solid #00FF88;">
+  <div style="color:#00FF88; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:700; margin-bottom:14px;">↻ Tick 2 · 14h15 ET · mac-xen delta</div>
+  <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:10px 24px;">
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">omnimind UP</strong> · heal grace bumped <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">60s → 120s</code> (double margin during stabilization)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">va-G14 stt-router quench patch</strong> · LIVE + verified-quiet-path · <code style="font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:#6AD4FF;">apple_v2 alive</code></li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">Correction log re-landed</strong> · prior truncation cause confirmed: orphan-bash kill ate the pipe mid-stream</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">G22 real-fix queued</strong> · defer web-push require + lazy-load sqlite (architectural, not grace-tuning)</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">A2A loop confirmed bidirectional</strong> · mac-xen reading Ezekiel's relays; ACK path lives via the existing channel</li>
+    <li style="font-size:13.5px; color:#F4EEE4; line-height:1.55;"><strong style="color:#00FF88;">Next 60s tick</strong> · stability check + G22 architectural fix advance</li>
+  </ul>
+</div>
+
+<div class="dyad">
+
+  <div class="col win">
+    <div class="lbl">Win · Ezekiel</div>
+    <h2>Four <em>shipped</em>.</h2>
+
+    <div class="item">
+      <div class="title">Stripe → PayPal + Square sweep <span class="pill live">LIVE</span></div>
+      <div class="body">qi corrected "i use paypal and square." Five surfaces swept: <code>/ifttt/</code>, <code>/spine/</code>, <code>/offers/</code>, <code>/sao/</code>, <code>/menu/</code>. Canon <a href="#money">paypal_square_money_rails</a> locked. Stripe removed from stack. Live-verified 13:47:55 ET.</div>
+    </div>
+
+    <div class="item">
+      <div class="title">Ava TTS autoplay everywhere <span class="pill live">LIVE</span></div>
+      <div class="body"><code>_shared/ava-play.js</code> refactored. Silent autoplay on load + first-gesture unlock listener (pointerdown/touchstart/keydown/scroll/wheel, capture+passive, one-shot). Engaged repeat visitors get true autoplay; everyone else gets audio on first page interaction. Live-verified 13:56:45 ET.</div>
+    </div>
+
+    <div class="item">
+      <div class="title">UI-TARS probe (4471 · 4460 · 8080) <span class="pill done">REPORTED</span></div>
+      <div class="body">Win-side: <code>4471/screen</code> exists as Node proxy at <code>tui-url-server.js:996</code>, hangs 20s+. <code>4460</code> = UI-TARS Python <code>serve-uitars.py</code> (PID 48656, ~45h uptime). <code>8080</code> = nothing listening anywhere. Full diagnosis relayed to mac-xen.</div>
+    </div>
+
+    <div class="item">
+      <div class="title">IFTTT inventory page (carry-over from 13:32) <span class="pill live">LIVE</span></div>
+      <div class="body">12-applet plan at <a href="https://hitthe.link/ifttt/">/ifttt/</a> with PayPal·Payment + Square·Recurring recipes + MCP-unauth state card. Now feeds into the <em>tools.xlrd.org</em> runtime per the new IFTTT canon.</div>
+    </div>
+  </div>
+
+  <div class="col mac">
+    <div class="lbl">Mac · Xen</div>
+    <h2>Five <em>waves</em>.</h2>
+
+    <div class="item">
+      <div class="title">Outage caused + recovered <span class="pill done">RESOLVED</span></div>
+      <div class="body">G22 Fix A wrong — <code>STARTUP_GRACE_S=20</code> &lt; 25-30s cold-start. Reverted to 60s. omnimind UP.</div>
+    </div>
+
+    <div class="item">
+      <div class="title">Wave 1 · 5 audits <span class="pill done">5 ADVANCED</span></div>
+      <div class="body">All settled · 5 advanced.</div>
+    </div>
+
+    <div class="item">
+      <div class="title">Wave 2 · 5 populates <span class="pill open">2 OK · 3 REJECTED</span></div>
+      <div class="body">OK: voice-audio + comms-sms-beeper. Rejected: l7s / governance / life-ops.</div>
+    </div>
+
+    <div class="item">
+      <div class="title">Wave 3 · 8 workers <span class="pill done">3 DONE · 5 DRAFTED</span></div>
+      <div class="body">All settled · 3 done + 5 drafted.</div>
+    </div>
+
+    <div class="item">
+      <div class="title">Wave 4 · 4 workers <span class="pill done">4 DRAFTED</span></div>
+      <div class="body">All settled · 4 drafted patches.</div>
+    </div>
+
+    <div class="item">
+      <div class="title">Wave 5 · 4 audits + wakeup <span class="pill open">ALL REJECTED</span></div>
+      <div class="body">Direct mode now.</div>
+    </div>
+
+    <div class="item">
+      <div class="title">UI-TARS /click works <span class="pill done">CONFIRMED</span></div>
+      <div class="body"><code>{"q":"..."}</code> POST body required. <code>/screen</code> still hangs. Peer-message to Ezekiel queued — no response path yet.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="canon-strip" id="money">
+  <div class="head">⚡ Two foundational canons locked this hour</div>
+  <ul>
+    <li><strong>STT verdict</strong> · Apple SFSpeechRecognizer + Whisper.cpp Metal redundancy. <strong>ALL cloud STT banned.</strong> Canary Qwen Win-side plan RETIRED. Whisper.cpp Metal is <em>re-enabled</em> for local use (prior "Whisper DIE" was cloud-only scope). <code>canon_stt_apple_whisper_metal_only_2026-05-22</code></li>
+    <li><strong>IFTTT verdict</strong> · YES build. Runtime = <code>tools.xlrd.org</code>. 3-layer auth (peer-token + HMAC + rate-budget). 20-tool allowlist. <code>hitthe.link/ifttt/</code> stays as inventory. <code>canon_ifttt_tools_xlrd_org_3layer_auth_2026-05-22</code></li>
+    <li><strong>Money rails</strong> · PayPal + Square only. Stripe out. PayPal MCP + Square MCP both in session, ready to fire once authed. <code>canon_paypal_square_money_rails_2026-05-22</code></li>
+    <li><strong>Always monitor until live</strong> · 200 OK + content-marker grep before claiming shipped. Push ≠ live. GH Pages has 30-90s deploy lag. <code>canon_always_monitor_until_live_2026-05-22</code></li>
+  </ul>
+</div>
+
+<div class="open-rail">
+  <div class="head">⚠ Open threads — what comes next</div>
+  <ul>
+    <li><strong>Ezekiel A2A response path</strong> — mac-xen says peer messages queued, no response path yet. <code>mac-vvs.ps1</code> sends via SSH → <code>vvs --stdin</code>; need to confirm mac-xen reads that inbox. Investigate omnimind inject path as alternative.</li>
+    <li><strong>UI-TARS /screen still hung</strong> — Node proxy at 4471 blocks 20s+, Python on 4460 has queue-blocked. Restart <code>serve-uitars.py</code> (PID 48656) recommended. <code>/click</code> works with POST body <code>{"q":"..."}</code>.</li>
+    <li><strong>tools.xlrd.org build</strong> — mac-xen owns runtime. Win-Ezekiel keeps inventory <code>/ifttt/</code> in sync as recipes wire live. 20-tool allowlist needs finalization.</li>
+    <li><strong>Canary Qwen background install</strong> — was pip-installing weights pre-verdict. Should kill the background download; STT verdict moved Win out of STT entirely.</li>
+    <li><strong>PayPal MCP + Square MCP auth</strong> — qi's browser sign-in unblocks direct payment-link tool dispatch (would bypass IFTTT for the 4 payment applets).</li>
+    <li><strong>Correction (truncated)</strong> — mac-xen had one more line of state-of-play that didn't transit. Awaiting re-send via better channel.</li>
+  </ul>
+</div>
+
+<footer>
+  <div>hitthe.link/sop/2026-05-22-14h-win</div>
+  <div>
+    <a href="/ifttt/">IFTTT inventory</a> ·
+    <a href="/spine/">Business spine</a> ·
+    <a href="/padre/">Padre</a> ·
+    <a href="/lab/">Lab</a>
+  </div>
+</footer>
+
+</div>
+<script src="/_shared/ava-play.js" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

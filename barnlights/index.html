@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barn Lights Payment Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-item.active { color: #2563eb; }
+        .nav-item.active svg { transform: scale(1.1); color: #2563eb; }
+        
+        .playing-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: currentColor;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-24">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-100 px-6 py-4 sticky top-0 z-50">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="bg-slate-900 p-1.5 rounded-lg shadow-sm text-yellow-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <div>
+                    <span class="font-black tracking-tighter text-lg uppercase block leading-none">Barn Lights</span>
+                    <a href="https://www.greystonepower.com" target="_blank" class="text-[9px] font-bold text-blue-500 uppercase tracking-widest hover:underline">Acc #49784003</a>
+                </div>
+            </div>
+            <div class="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded">
+                MAY 2026
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-6">
+        
+        <!-- PAGE 1: IMMEDIATE ACTION (PAY NOW) -->
+        <div id="page-action" class="page active space-y-6">
+            <!-- Audio Button -->
+            <button id="audio-btn" onclick="playOverview()" class="w-full flex items-center justify-center p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl border border-slate-200 transition-colors group">
+                <span id="audio-status" class="text-xs font-black uppercase text-slate-500 tracking-widest flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    Play Audio Overview
+                </span>
+            </button>
+
+            <div class="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center relative overflow-hidden">
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-red-50 rounded-full opacity-50"></div>
+                
+                <div class="relative z-10">
+                    <div class="inline-flex items-center justify-center p-3 bg-red-100 text-red-600 rounded-2xl mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-500 uppercase tracking-widest mb-2 text-balance">Immediate Action</h2>
+                    <p class="text-slate-400 text-sm mb-8 italic">Bill split 50/50 plus online fee</p>
+                    
+                    <div class="flex flex-col items-center justify-center mb-10">
+                        <span class="text-7xl font-black text-slate-900 tracking-tighter">$68.62</span>
+                        <div class="mt-2 px-4 py-1 bg-slate-900 text-white text-xs font-bold rounded-full uppercase">K. Hill 50/50 + fee</div>
+                        <div class="mt-3 text-[10px] font-bold text-slate-400 tracking-widest uppercase">Half $65.12 + $3.50 online fee = $68.62</div>
+                    </div>
+
+                    <div class="space-y-4 mb-8">
+                        <a href="https://cash.app/$x9ea" target="_blank" class="block w-full bg-[#00D632] hover:bg-[#00b32a] text-white py-5 rounded-2xl shadow-lg shadow-green-200 transition-all transform active:scale-[0.98] flex items-center justify-center space-x-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            <span class="text-xl font-black uppercase tracking-tight">Pay with CashApp</span>
+                        </a>
+                        
+                        <div class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <span id="cashapp-tag" class="text-lg font-mono font-bold text-slate-800">$x9ea</span>
+                            <button onclick="copyTag()" id="copy-btn" class="flex items-center space-x-2 px-3 py-2 rounded-lg transition-all bg-white shadow-sm text-slate-600 border border-slate-200 active:bg-slate-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                <span class="text-[10px] font-black uppercase">Copy Tag</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center space-y-2">
+                        <div class="flex items-center space-x-2 text-red-600 font-bold uppercase tracking-tight">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+                            <span>Due: Aug 10, 2026</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <a href="https://www.greystonepower.com" target="_blank" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-3 active:bg-slate-50 transition-colors">
+                    <div class="p-2 bg-blue-50 text-blue-500 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">View Bill</p>
+                        <p class="text-sm font-bold">$131.21</p>
+                    </div>
+                </a>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-3">
+                    <div class="p-2 bg-purple-50 text-purple-500 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Online Fee each</p>
+                        <p class="text-sm font-bold">$3.50</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2: NEXT PAYMENT DATE -->
+        <div id="page-upcoming" class="page space-y-6">
+            <div class="bg-slate-900 text-white rounded-3xl p-8 shadow-xl">
+                <h2 class="text-blue-400 text-xs font-black uppercase tracking-[0.2em] mb-8">Next Cycle Forecast</h2>
+                
+                <div class="flex items-start justify-between mb-10">
+                    <div>
+                        <p class="text-4xl font-black">To confirm</p>
+                        <p class="text-slate-400 text-sm mt-1 font-medium italic">Projected Split per person</p>
+                    </div>
+                    <div class="bg-white/10 p-4 rounded-2xl backdrop-blur-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-blue-400 mb-1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+                        <p class="text-xs font-bold uppercase">TBC</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-8 border-t border-white/10">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-400 font-medium text-balance">Projected Total Bill</span>
+                        <span class="font-bold text-lg">To confirm</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-400 font-medium">Billing Period</span>
+                        <span class="font-bold text-slate-200 uppercase text-xs">To confirm</span>
+                    </div>
+                </div>
+            </div>
+            
+            <a href="https://www.greystonepower.com/pay-bill" target="_blank" class="bg-blue-600 text-white rounded-2xl p-6 flex items-center justify-between shadow-lg shadow-blue-100 active:scale-[0.98] transition-transform">
+                <div class="flex items-center space-x-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <div>
+                        <p class="font-bold">GreyStone Portal</p>
+                        <p class="text-xs text-blue-100">Official Payment Gateway</p>
+                    </div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+            </a>
+        </div>
+
+        <!-- PAGE 3: COMPREHENSIVE HISTORY -->
+        <div id="page-history" class="page">
+            <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                    <h2 class="font-black text-slate-800 uppercase tracking-widest text-sm">History Overview</h2>
+                    <div class="flex items-center space-x-2 text-[10px] font-bold text-slate-400 uppercase">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span>Split Records</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[500px]">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                <th class="px-6 py-4 italic text-slate-300">#608032</th>
+                                <th class="px-6 py-4">Due Date</th>
+                                <th class="px-6 py-4 text-right">Total</th>
+                                <th class="px-6 py-4 text-right">Each</th>
+                                <th class="px-6 py-4 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body" class="divide-y divide-slate-50 text-sm">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-6 bg-slate-100 rounded-2xl p-4 text-[10px] font-bold text-slate-400 uppercase text-center tracking-widest leading-loose">
+                Total 2025 Paid To Date: $1,627 <br>
+                Average Split: $90.38
+            </div>
+        </div>
+
+        <!-- PAGE 4: GUIDE & PARTNER CONTACTS -->
+        <div id="page-guide" class="page space-y-6">
+            <div class="bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
+                <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center uppercase tracking-tight">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 text-blue-500" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
+                    Account Guide
+                </h2>
+
+                <!-- PARTNER CONTACTS -->
+                <div class="space-y-4 mb-8">
+                    <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1 ml-1">Project Partners</h3>
+                    
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm font-black text-slate-900">E. Allen</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">Owner</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <a href="tel:4706159983" class="flex items-center justify-center space-x-2 p-2 bg-white rounded-xl border border-slate-200 text-blue-600 hover:bg-blue-50 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                    <span class="text-xs font-bold">Call</span>
+                                </a>
+                                <a href="mailto:admin@selfexec.com" class="flex items-center justify-center space-x-2 p-2 bg-white rounded-xl border border-slate-200 text-blue-600 hover:bg-blue-50 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                    <span class="text-xs font-bold">Email</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm font-black text-slate-900">K. Hill</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">Partner</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <a href="tel:4704738556" class="flex items-center justify-center space-x-2 p-2 bg-white rounded-xl border border-slate-200 text-blue-600 hover:bg-blue-50 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                    <span class="text-xs font-bold">Call</span>
+                                </a>
+                                <a href="mailto:allendaleequine@gmail.com" class="flex items-center justify-center space-x-2 p-2 bg-white rounded-xl border border-slate-200 text-blue-600 hover:bg-blue-50 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                    <span class="text-xs font-bold">Email</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- UTILITY CONTACTS -->
+                <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 ml-1">Utility Support</h3>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <a href="tel:7709426576" class="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-blue-500 mb-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        <span class="text-[10px] font-black uppercase text-slate-400">Support</span>
+                    </a>
+                    <a href="tel:18664739786" class="flex flex-col items-center justify-center p-4 bg-red-50 rounded-2xl border border-red-100 hover:bg-red-100 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-red-500 mb-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        <span class="text-[10px] font-black uppercase text-red-400">Outage</span>
+                    </a>
+                </div>
+
+                <div class="space-y-4">
+                    <a href="mailto:memberservices@greystonepower.com" class="flex items-center space-x-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100 group transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 group-hover:text-blue-500 transition-colors"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        <div class="flex-1 overflow-hidden">
+                            <p class="text-[10px] font-black uppercase text-slate-400">Email Utility</p>
+                            <p class="text-xs font-bold truncate text-slate-700 underline decoration-slate-200 decoration-2 underline-offset-4 tracking-tight">memberservices@greystonepower.com</p>
+                        </div>
+                    </a>
+
+                    <a href="https://www.google.com/maps/search/?api=1&query=3400+Hiram+Douglasville+Highway+Hiram+GA+30141" target="_blank" class="flex items-center space-x-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100 group transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 group-hover:text-red-500 transition-colors"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <div class="flex-1">
+                            <p class="text-[10px] font-black uppercase text-slate-400">Main Office</p>
+                            <p class="text-xs font-bold text-slate-700 underline decoration-slate-200 decoration-2 underline-offset-4 leading-snug tracking-tight">3400 Hiram Douglasville Hwy, Hiram, GA</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-100 px-4 py-3 flex justify-around items-center z-50 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+        <button onclick="nav('action')" id="nav-action" class="nav-item active flex flex-col items-center space-y-1 transition-all text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span class="text-[10px] font-black uppercase tracking-wider">Pay Now</span>
+        </button>
+        <button onclick="nav('upcoming')" id="nav-upcoming" class="nav-item flex flex-col items-center space-y-1 transition-all text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+            <span class="text-[10px] font-black uppercase tracking-wider">Next</span>
+        </button>
+        <button onclick="nav('history')" id="nav-history" class="nav-item flex flex-col items-center space-y-1 transition-all text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+            <span class="text-[10px] font-black uppercase tracking-wider">History</span>
+        </button>
+        <button onclick="nav('guide')" id="nav-guide" class="nav-item flex flex-col items-center space-y-1 transition-all text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M8 7h6"/><path d="M8 11h8"/></svg>
+            <span class="text-[10px] font-black uppercase tracking-wider">Guide</span>
+        </button>
+    </nav>
+
+    <script>
+        const apiKey = ""; // Provisioned at runtime
+        
+        const historyData = [
+            { month: "Aug 2026", dueDate: "08/10/2026", total: 131.21, split: 68.62, paid: false, note: "Current bill, split incl. fee" },
+            { month: "Jan 2026", dueDate: "02/06/2026", total: 169, split: 85, paid: false, note: "Past due" },
+            { month: "Dec 2025", dueDate: "01/08/2026", total: 176, split: 88, paid: false, note: "Past due" },
+            { month: "Nov 2025", dueDate: "12/09/2025", total: 361, split: 181, paid: true, note: "$140 deposit incl." },
+            { month: "Oct 2025", dueDate: "11/10/2025", total: 201, split: 101, paid: true, note: "Regular" },
+            { month: "Sep 2025", dueDate: "10/09/2025", total: 241, split: 121, paid: true, note: "Regular" },
+            { month: "Aug 2025", dueDate: "09/09/2025", total: 209, split: 105, paid: true, note: "Regular" },
+            { month: "Jul 2025", dueDate: "08/11/2025", total: 159, split: 80, paid: true, note: "Regular" },
+            { month: "Jun 2025", dueDate: "07/10/2025", total: 130, split: 65, paid: true, note: "Regular" },
+            { month: "May 2025", dueDate: "06/10/2025", total: 118, split: 59, paid: true, note: "Regular" }
+        ];
+
+        function nav(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.getElementById('nav-' + pageId).classList.add('active');
+            
+            window.scrollTo(0, 0);
+        }
+
+        function copyTag() {
+            const tag = document.getElementById('cashapp-tag').innerText;
+            const el = document.createElement('textarea');
+            el.value = tag;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            const btn = document.getElementById('copy-btn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                <span class="text-[10px] font-black uppercase">Copied</span>
+            `;
+            btn.classList.add('bg-green-500', 'text-white', 'border-green-500');
+
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('bg-green-500', 'text-white', 'border-green-500');
+            }, 2000);
+        }
+
+        async function playOverview() {
+            const btn = document.getElementById('audio-btn');
+            const status = document.getElementById('audio-status');
+            const original = status.innerHTML;
+            
+            status.innerHTML = `<span class="playing-icon"></span> Generating Overview...`;
+            
+            const overviewText = "Say cheerfully: Hello! Here is your audio overview for the GreyStone Barn Lights account. The current bill is 131 dollars and 21 cents, split 50-50 between E. Allen and K. Hill. With the 3 dollar 50 online payment fee, that comes to 68 dollars and 62 cents each. It is due August tenth. E. Allen's Cash App is dollar sign x 9 e a. Stay on top of these dates to keep the barn lights on!";
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: overviewText }] }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } }
+                            }
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                const audioData = result.candidates[0].content.parts[0].inlineData.data;
+                const sampleRate = parseInt(result.candidates[0].content.parts[0].inlineData.mimeType.match(/rate=(\d+)/)?.[1] || 24000);
+
+                const wavBlob = pcmToWav(audioData, sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+                const audio = new Audio(audioUrl);
+                
+                status.innerHTML = `<span class="playing-icon"></span> Playing Summary...`;
+                audio.play();
+                audio.onended = () => { status.innerHTML = original; };
+
+            } catch (err) {
+                console.error(err);
+                status.innerHTML = `⚠️ Audio Error`;
+                setTimeout(() => { status.innerHTML = original; }, 3000);
+            }
+        }
+
+        function pcmToWav(base64Pcm, sampleRate) {
+            const pcmBuffer = Uint8Array.from(atob(base64Pcm), c => c.charCodeAt(0)).buffer;
+            const wavHeader = new ArrayBuffer(44);
+            const view = new DataView(wavHeader);
+            
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            };
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + pcmBuffer.byteLength, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM
+            view.setUint16(22, 1, true); // Mono
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, pcmBuffer.byteLength, true);
+
+            return new Blob([wavHeader, pcmBuffer], { type: 'audio/wav' });
+        }
+
+        function initHistory() {
+            const body = document.getElementById('history-body');
+            historyData.forEach((row) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-4">
+                        <p class="font-bold text-slate-800 tracking-tight">${row.month}</p>
+                        <p class="text-[10px] text-slate-400 font-black uppercase tracking-tighter">${row.note}</p>
+                    </td>
+                    <td class="px-6 py-4 font-bold text-slate-500 italic text-[11px] uppercase">${row.dueDate}</td>
+                    <td class="px-6 py-4 text-right font-bold text-slate-800">$${row.total}</td>
+                    <td class="px-6 py-4 text-right font-black text-blue-600">$${row.split}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-1 text-[8px] font-black rounded uppercase ${row.paid ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}">
+                            ${row.paid ? 'PAID' : 'DUE'}
+                        </span>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        window.onload = initHistory;
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

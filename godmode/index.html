@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Godmode Siri — Xen</title>
+<style>
+  :root {
+    --bg: #050507;
+    --bg2: #0a0a14;
+    --neon: #00ff88;
+    --magenta: #ff0080;
+    --cyan: #00d9ff;
+    --gold: #ffea00;
+    --text: #f4f4f8;
+    --dim: #6a6a78;
+    --glass: rgba(255,255,255,0.04);
+    --border: rgba(0,255,136,0.18);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif; line-height: 1.6; overflow-x: hidden; scroll-behavior: smooth; }
+  body { min-height: 100vh; }
+
+  /* ─── Cosmic background ──────────────────────────────────────────── */
+  .stars, .grid, .glow {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  }
+  .stars {
+    background:
+      radial-gradient(2px 2px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 60% 70%, #fff, transparent),
+      radial-gradient(2px 2px at 80% 10%, var(--cyan), transparent),
+      radial-gradient(1px 1px at 30% 80%, var(--neon), transparent),
+      radial-gradient(1px 1px at 90% 50%, var(--magenta), transparent),
+      radial-gradient(2px 2px at 50% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 10% 60%, var(--gold), transparent),
+      radial-gradient(1.5px 1.5px at 70% 40%, #fff, transparent);
+    background-repeat: repeat;
+    background-size: 600px 600px;
+    animation: drift 240s linear infinite;
+    opacity: 0.6;
+  }
+  @keyframes drift {
+    from { background-position: 0 0; }
+    to   { background-position: 600px 600px; }
+  }
+  .grid {
+    background-image:
+      linear-gradient(rgba(0,255,136,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse at center, #000 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 0%, transparent 70%);
+  }
+  .glow {
+    background:
+      radial-gradient(ellipse 800px 400px at 20% 10%, rgba(0,255,136,0.18), transparent 60%),
+      radial-gradient(ellipse 600px 600px at 80% 60%, rgba(255,0,128,0.12), transparent 60%),
+      radial-gradient(ellipse 800px 400px at 50% 100%, rgba(0,217,255,0.15), transparent 60%);
+    animation: pulse 8s ease-in-out infinite alternate;
+  }
+  @keyframes pulse {
+    from { opacity: 0.7; }
+    to   { opacity: 1; }
+  }
+
+  /* ─── Layout ─────────────────────────────────────────────────────── */
+  main { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+  /* ─── Hero ───────────────────────────────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center;
+    position: relative;
+  }
+  .hero .tag {
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    color: var(--neon);
+    letter-spacing: 0.4em;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+  .hero h1 {
+    font-size: clamp(56px, 12vw, 144px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, #fff 0%, var(--neon) 50%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 80px rgba(0,255,136,0.4);
+    opacity: 0;
+    animation: fadeUp 1s 0.4s forwards;
+  }
+  .hero h2 {
+    font-size: clamp(20px, 3vw, 32px);
+    font-weight: 300;
+    color: var(--dim);
+    margin-top: 24px;
+    max-width: 720px;
+    opacity: 0;
+    animation: fadeUp 1s 0.7s forwards;
+  }
+  .hero h2 span { color: var(--text); font-weight: 500; }
+  .hero .scroll-hint {
+    position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+    color: var(--dim); font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+    opacity: 0; animation: fadeUp 1s 2s forwards, bounce 2s 3s ease-in-out infinite;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(8px); }
+  }
+
+  /* ─── Steps ──────────────────────────────────────────────────────── */
+  .steps { padding: 80px 0 120px; }
+  .section-title {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--neon);
+    letter-spacing: 0.3em;
+    font-size: 12px;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .section-sub {
+    text-align: center;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    margin-bottom: 80px;
+    background: linear-gradient(90deg, var(--text), var(--neon), var(--text));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 4s linear infinite;
+  }
+  @keyframes shimmer {
+    from { background-position: 0% 0%; }
+    to   { background-position: 200% 0%; }
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 32px;
+    align-items: start;
+    margin-bottom: 32px;
+    padding: 32px;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    position: relative;
+    opacity: 0;
+    transform: translateY(60px);
+    transition: opacity 0.8s, transform 0.8s, border-color 0.4s, box-shadow 0.4s;
+    overflow: hidden;
+  }
+  .step.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .step::before {
+    content: '';
+    position: absolute; inset: -1px;
+    background: linear-gradient(135deg, transparent 30%, rgba(0,255,136,0.3), transparent 70%);
+    border-radius: 24px;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .step:hover {
+    border-color: rgba(0,255,136,0.5);
+    box-shadow: 0 20px 60px rgba(0,255,136,0.15);
+  }
+  .step:hover::before { opacity: 1; }
+
+  .num {
+    font-size: 80px;
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(180deg, var(--neon), var(--cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 30px rgba(0,255,136,0.5);
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: -0.05em;
+  }
+  .step:nth-child(even) .num {
+    background: linear-gradient(180deg, var(--magenta), var(--gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .body h3 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+  .body p {
+    color: var(--dim);
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+  .body p span.k {
+    color: var(--neon);
+    font-family: "JetBrains Mono", monospace;
+    background: rgba(0,255,136,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  .code {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", "SF Mono", monospace;
+    font-size: 14px;
+    color: var(--gold);
+    overflow-x: auto;
+    word-break: break-all;
+    line-height: 1.6;
+    margin-top: 12px;
+  }
+  .code .var { color: var(--magenta); }
+  .code .kw  { color: var(--cyan); }
+  .code .str { color: var(--neon); }
+
+  /* ─── CTA & footer ──────────────────────────────────────────────── */
+  .cta {
+    text-align: center; padding: 80px 24px 120px;
+    position: relative;
+  }
+  .cta h2 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, var(--neon), var(--cyan), var(--magenta));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .cta p { color: var(--dim); max-width: 600px; margin: 0 auto 40px; font-size: 18px; }
+  .cta-btn {
+    display: inline-block;
+    padding: 18px 40px;
+    background: var(--neon);
+    color: #000;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 16px;
+    border-radius: 12px;
+    letter-spacing: 0.05em;
+    transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+    box-shadow: 0 8px 40px rgba(0,255,136,0.3);
+  }
+  .cta-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 60px rgba(0,255,136,0.5);
+    background: #00ffaa;
+  }
+  .cta-btn.ghost {
+    background: transparent;
+    color: var(--neon);
+    border: 2px solid var(--neon);
+    margin-left: 12px;
+    box-shadow: none;
+  }
+  .cta-btn.ghost:hover { background: rgba(0,255,136,0.1); box-shadow: 0 8px 40px rgba(0,255,136,0.2); }
+
+  footer {
+    text-align: center; padding: 32px 24px; color: var(--dim); font-size: 12px;
+    font-family: "JetBrains Mono", monospace;
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--neon); text-decoration: none; }
+
+  @media (max-width: 640px) {
+    .step { grid-template-columns: 1fr; padding: 24px; }
+    .num { font-size: 56px; }
+    .cta-btn.ghost { margin-left: 0; margin-top: 12px; display: block; }
+  }
+</style>
+<style>.xen-build-stamp{position:fixed;top:14px;right:14px;z-index:9999;background:rgba(5,5,5,0.85);backdrop-filter:blur(8px);border:1px solid rgba(0,255,136,0.3);padding:6px 12px;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#00ff88;border-radius:2px;text-decoration:none}.xen-build-stamp:hover{background:#00ff88;color:#050505}.xen-build-stamp .sep{color:#666;margin:0 6px}</style></head>
+<body><a class="xen-build-stamp" href="https://hitthe.link/lab/" title="Build telemetry">BUILT<span class="sep">·</span>15.7KB<span class="sep">·</span>SEE LAB</a>
+
+<div class="stars"></div>
+<div class="grid"></div>
+<div class="glow"></div>
+
+<main>
+
+<section class="hero">
+  <div class="tag">// Xen VoiceOS</div>
+  <h1>Godmode<br>Siri Loop</h1>
+  <h2>Say <span>"Hey Siri, Hey Xen"</span> — then talk forever. Each turn is full agentic Claude. Reply spoken in Siri's voice on your phone.</h2>
+  <div class="scroll-hint">↓ Six actions ↓</div>
+</section>
+
+<section class="steps">
+  <div class="section-title">// Shortcuts.app · iOS</div>
+  <h2 class="section-sub">Six actions. One loop. Unlimited turns.</h2>
+
+  <div class="step" data-step="1">
+    <div class="num">01</div>
+    <div class="body">
+      <h3>Repeat — outer loop</h3>
+      <p>Wrap the whole flow in a <span class="k">Repeat</span> block, 100 iterations. Each iteration = one conversational turn with Claude.</p>
+      <div class="code"><span class="kw">Repeat</span> <span class="var">100</span> times</div>
+    </div>
+  </div>
+
+  <div class="step" data-step="2">
+    <div class="num">02</div>
+    <div class="body">
+      <h3>Dictate Text</h3>
+      <p>Capture what you say after the wake phrase. Save the result to a variable called <span class="k">Said</span>.</p>
+      <p>Set <span class="k">Stop Listening</span> to <span class="k">After Pause</span> so you can speak naturally.</p>
+      <div class="code"><span class="kw">Dictate Text</span> → <span class="var">Said</span></div>
+    </div>
+  </div>
+
+  <div class="step" data-step="3">
+    <div class="num">03</div>
+    <div class="body">
+      <h3>Exit if you say "stop xen"</h3>
+      <p>An <span class="k">If</span> action checking <span class="k">Said contains "stop xen"</span>. Inside the If, place an <span class="k">Exit Shortcut</span> action.</p>
+      <div class="code"><span class="kw">If</span> <span class="var">Said</span> <span class="kw">contains</span> <span class="str">"stop xen"</span> → <span class="kw">Exit Shortcut</span></div>
+    </div>
+  </div>
+
+  <div class="step" data-step="4">
+    <div class="num">04</div>
+    <div class="body">
+      <h3>POST to the godmode endpoint</h3>
+      <p><span class="k">Get Contents of URL</span> action. Method <span class="k">GET</span>. URL field — paste this and use the magic variable picker to insert <span class="k">Said</span> where shown:</p>
+      <div class="code"><span class="str">https://tui.xlrd.org/tui?q=</span><span class="var">[Said]</span><span class="str">&await=1</span></div>
+      <p>Save the returned dictionary to a variable called <span class="k">Init</span>. Then extract <span class="k">request_id</span> with <span class="k">Get Dictionary Value</span> → save to <span class="k">Id</span>.</p>
+    </div>
+  </div>
+
+  <div class="step" data-step="5">
+    <div class="num">05</div>
+    <div class="body">
+      <h3>Poll until Claude responds</h3>
+      <p>Inner <span class="k">Repeat</span> 60 times. Inside it: <span class="k">Get Contents of URL</span> against <span class="k">/await/[Id]</span>. If <span class="k">done</span> is true, extract <span class="k">text</span>, speak it, then <span class="k">Exit Repeat</span>. Otherwise <span class="k">Wait 1 second</span>.</p>
+      <div class="code"><span class="kw">Repeat</span> <span class="var">60</span> times<br>&nbsp;&nbsp;<span class="kw">URL</span>: <span class="str">https://tui.xlrd.org/await/</span><span class="var">[Id]</span><br>&nbsp;&nbsp;<span class="kw">If</span> done == <span class="var">true</span> → <span class="kw">Speak Text</span>, <span class="kw">Exit</span><br>&nbsp;&nbsp;<span class="kw">Wait</span> <span class="var">1</span> second</div>
+    </div>
+  </div>
+
+  <div class="step" data-step="6">
+    <div class="num">06</div>
+    <div class="body">
+      <h3>Loop forever — Add to Siri</h3>
+      <p>That's it. The outer Repeat starts the next turn. Name the shortcut <span class="k">Hey Xen</span>, tap <span class="k">Add to Siri</span>, record the trigger phrase <span class="k">Hey Xen</span>.</p>
+      <p>Now say <span class="k">"Hey Siri, Hey Xen"</span> and talk for hours.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <h2>Open it. Talk to it. Forever.</h2>
+  <p>One shortcut. One wake phrase. Full Claude agentic power streamed through Siri's voice on your iPhone, AirPods, HomePod, CarPlay — wherever Siri speaks.</p>
+  <a class="cta-btn" href="https://tui.xlrd.org/possess-siri">Setup walkthrough</a>
+  <a class="cta-btn ghost" href="https://tui.xlrd.org/qwen?q=Confirm+the+endpoint+is+live">Test endpoint</a>
+</section>
+
+<footer>
+  <strong style="color:var(--neon)">XEN</strong> &nbsp;·&nbsp; <a href="https://tui.xlrd.org">tui.xlrd.org</a> &nbsp;·&nbsp; voice-first sovereign agentic OS
+</footer>
+
+</main>
+
+<script>
+  // Scroll-triggered reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -10% 0px' });
+  document.querySelectorAll('.step').forEach(el => io.observe(el));
+
+  // Parallax: shift the glow and grid layers on scroll
+  const glow = document.querySelector('.glow');
+  const grid = document.querySelector('.grid');
+  const stars = document.querySelector('.stars');
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        glow.style.transform  = `translate3d(0, ${-y * 0.4}px, 0)`;
+        grid.style.transform  = `translate3d(0, ${-y * 0.15}px, 0)`;
+        stars.style.transform = `translate3d(0, ${-y * 0.08}px, 0)`;
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  // Mouse-tilt on step cards
+  document.querySelectorAll('.step').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const r = card.getBoundingClientRect();
+      const cx = (e.clientX - r.left) / r.width  - 0.5;
+      const cy = (e.clientY - r.top)  / r.height - 0.5;
+      card.style.transform = `perspective(1200px) rotateY(${cx * 4}deg) rotateX(${-cy * 4}deg) translateY(0)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+  });
+</script>
+
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>
+
+

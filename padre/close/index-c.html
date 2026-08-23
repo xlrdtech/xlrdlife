@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Padre · Command Center</title>
+<meta name="description" content="Padre Sales Ops — the closer's command center. Live pipeline, close-heat gauges, neon terminal.">
+<meta name="theme-color" content="#02040a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/logo-3.png">
+<link rel="apple-touch-icon" href="assets/logo-3.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#02040a; --bg2:#04070f; --panel:#070b16; --panel2:#0a1020;
+  --grid:rgba(60,220,255,.045);
+  --cyan:#27ecff; --cyan-d:#0a9bb5; --lime:#2effa0; --amber:#ffc23d; --violet:#c07bff; --blue:#4d86ff;
+  --ruby:#ff2249; --ruby-hi:#ff6c86;
+  --text:#eaf6ff; --soft:#a9c4d6; --mute:#5d7governs; --mute:#5d7790; --line:rgba(60,220,255,.14);
+  --g-New:#eaf6ff; --g-Called:#4d86ff; --g-NoAnswer:#ffc23d; --g-Interested:#c07bff; --g-Sent:#27ecff; --g-Closed:#2effa0;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Manrope',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding-bottom:76px;overflow-x:hidden;position:relative}
+a{color:inherit;text-decoration:none}
+.mono{font-family:'JetBrains Mono',monospace}
+.tk{font-family:'Orbitron',sans-serif}
+
+/* ── ambient command-deck backdrop ── */
+.deck{position:fixed;inset:0;z-index:-4;background:
+  radial-gradient(110% 70% at 50% -10%,#0b1a2e 0%,#04070f 46%,var(--bg) 100%);}
+.scan{position:fixed;inset:0;z-index:-3;pointer-events:none;
+  background:linear-gradient(rgba(60,220,255,.5),transparent);
+  background-size:100% 3px;height:60px;opacity:.05;animation:scan 7s linear infinite}
+@keyframes scan{0%{transform:translateY(-60px)}100%{transform:translateY(100vh)}}
+.gridbg{position:fixed;inset:-2px;z-index:-3;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:42px 42px;mask:radial-gradient(120% 90% at 50% 0,#000 35%,transparent 90%)}
+.aur{position:fixed;inset:0;z-index:-3;overflow:hidden;pointer-events:none}
+.aur i{position:absolute;border-radius:50%;filter:blur(90px);will-change:transform}
+.aur .a1{width:62vw;height:62vw;left:-16vw;top:-22vw;background:radial-gradient(circle,rgba(39,236,255,.16),transparent 70%);animation:dr1 28s ease-in-out infinite}
+.aur .a2{width:54vw;height:54vw;right:-18vw;top:26vh;background:radial-gradient(circle,rgba(255,34,73,.14),transparent 70%);animation:dr2 34s ease-in-out infinite}
+.aur .a3{width:46vw;height:46vw;left:24vw;bottom:-22vw;background:radial-gradient(circle,rgba(46,255,160,.1),transparent 70%);animation:dr1 40s ease-in-out infinite reverse}
+@keyframes dr1{0%,100%{transform:translate(0,0)}50%{transform:translate(6vw,7vh)}}
+@keyframes dr2{0%,100%{transform:translate(0,0)}50%{transform:translate(-7vw,-5vh)}}
+.grain{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.04;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ── top status bar ── */
+.statusbar{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0)) 16px 10px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(7,11,22,.9),rgba(2,4,10,.4));
+  backdrop-filter:blur(10px);position:sticky;top:0;z-index:40}
+.live{display:inline-flex;align-items:center;gap:7px;color:var(--lime);font-weight:800}
+.live .dot{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+.statusbar .sep{color:var(--mute);font-weight:500}
+.statusbar .clk{margin-left:auto;color:var(--cyan);font-weight:700;text-shadow:0 0 10px rgba(39,236,255,.5)}
+.statusbar .sys{color:var(--mute);font-weight:600;display:none}
+@media(min-width:480px){.statusbar .sys{display:inline}}
+
+/* ── command header ── */
+.crown{display:flex;align-items:center;gap:16px;padding:18px 16px 8px;max-width:980px;margin:0 auto}
+.sigil{position:relative;width:74px;height:74px;flex:0 0 auto}
+.sigil::before{content:'';position:absolute;inset:-10px;border-radius:22px;
+  background:radial-gradient(circle,rgba(39,236,255,.4),rgba(39,236,255,.08) 55%,transparent 75%);filter:blur(8px);animation:halo 4s ease-in-out infinite}
+@keyframes halo{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+.sigil img{position:relative;z-index:1;width:74px;height:74px;object-fit:contain;mix-blend-mode:screen;animation:float 6.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.title{flex:1;min-width:0}
+.wordmark{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(26px,8.5vw,44px);letter-spacing:.14em;margin:0;color:#fff;
+  text-shadow:0 0 22px rgba(39,236,255,.5),0 0 50px rgba(255,34,73,.3);line-height:1}
+.tagline{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.34em;text-transform:uppercase;color:var(--cyan);margin-top:8px;font-weight:700}
+
+/* ── HERO KPI READOUTS ── */
+.hud{max-width:980px;margin:14px auto 0;padding:0 16px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kpi{position:relative;border-radius:16px;padding:15px 13px 13px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(10,16,32,.85),rgba(4,7,15,.7));
+  border:1px solid var(--line);box-shadow:0 0 0 1px rgba(255,255,255,.02) inset,0 14px 40px -26px #000}
+.kpi::before{content:'';position:absolute;left:0;top:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--kc),transparent);opacity:.8}
+.kpi .kt{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.kpi .kv{font-family:'Orbitron',sans-serif;font-weight:800;font-size:clamp(24px,8vw,38px);line-height:1;margin-top:8px;color:var(--kc);
+  text-shadow:0 0 18px var(--kc);font-variant-numeric:tabular-nums}
+.kpi .kv small{font-size:.5em;color:var(--soft);text-shadow:none;font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:1px}
+.kpi .ks{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--soft);margin-top:6px;font-weight:600}
+.kpi.big{grid-column:span 3}
+.kpi.big .kv{font-size:clamp(40px,15vw,72px)}
+.kpi.big .spark{position:absolute;right:0;bottom:0;width:62%;height:64%;opacity:.85}
+.kpi .barwrap{margin-top:9px;height:6px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden}
+.kpi .bar{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--kc),#fff);box-shadow:0 0 12px var(--kc);
+  width:0;animation:fill 1.3s cubic-bezier(.2,.8,.2,1) forwards;transition:width .6s}
+
+@keyframes fill{to{width:var(--w)}}
+
+/* ── pipeline gauge rail ── */
+.railwrap{max-width:980px;margin:16px auto 0;padding:0 16px}
+.railhdr{display:flex;align-items:baseline;gap:10px;margin-bottom:9px}
+.railhdr .h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);font-weight:800}
+.railhdr .hint{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-left:auto}
+.rail{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+.dial{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 4px 9px;border-radius:13px;cursor:pointer;
+  background:linear-gradient(180deg,rgba(10,16,32,.7),rgba(4,7,15,.55));border:1px solid var(--line);transition:.18s;overflow:hidden}
+.dial::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:2px;background:var(--glow);opacity:.4;box-shadow:0 0 8px var(--glow)}
+.dial:hover{transform:translateY(-2px);border-color:var(--glow)}
+.dial.on{border-color:var(--glow);box-shadow:0 0 22px -4px var(--glow);background:linear-gradient(180deg,rgba(39,236,255,.06),rgba(4,7,15,.55))}
+.dial img{width:26px;height:26px;border-radius:50%;object-fit:cover;mix-blend-mode:screen;filter:drop-shadow(0 0 7px var(--glow));animation:shimmer 5s ease-in-out infinite}
+.dial b{font-family:'Orbitron',sans-serif;font-size:19px;font-weight:800;color:#fff;line-height:1;text-shadow:0 0 12px var(--glow)}
+.dial span{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft);font-weight:700;text-align:center;line-height:1.2}
+@keyframes shimmer{0%,100%{filter:brightness(1) drop-shadow(0 0 7px var(--glow))}50%{filter:brightness(1.35) drop-shadow(0 0 13px var(--glow))}}
+
+main{max-width:980px;margin:0 auto;padding:6px 16px 40px}
+
+/* ── price menu (terminal panel) ── */
+.price{margin:18px 0 4px;border-radius:16px;overflow:hidden;border:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(10,16,32,.8),rgba(4,7,15,.65));backdrop-filter:blur(12px);box-shadow:0 14px 40px -26px #000}
+.priceh{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 17px;background:none;border:none;cursor:pointer;color:#fff;
+  font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.priceh .t{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+.priceh .cv{transition:.3s;color:var(--mute)}.price.open .priceh .cv{transform:rotate(180deg)}
+.priceb{max-height:0;overflow:hidden;transition:max-height .42s ease,padding .42s ease;padding:0 17px}
+.price.open .priceb{max-height:800px;padding:0 17px 17px}
+.psub{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);margin:14px 0 2px;font-weight:800}
+.pr{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(60,220,255,.08);font-size:13.5px}
+.pr:last-child{border:none}.pr .n{color:#eef6ff;font-weight:600}.pr .n small{display:block;color:var(--mute);font-size:11px;font-weight:400;margin-top:2px}
+.pr .p{font-family:'Orbitron',sans-serif;font-weight:700;color:#fff;white-space:nowrap;text-shadow:0 0 12px rgba(39,236,255,.55)}
+.pay{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--soft);margin-top:12px;line-height:1.5}
+
+/* ── section label ── */
+.lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);margin:22px 2px 14px;display:flex;align-items:center;gap:10px;font-weight:800}
+.lbl b{color:var(--cyan);text-shadow:0 0 10px rgba(39,236,255,.4)}
+.lbl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+/* ── prospect terminal cards ── */
+.card{position:relative;margin-bottom:13px;border-radius:18px;overflow:hidden;opacity:0;transform:translateY(16px);animation:rise .55s ease forwards;
+  background:linear-gradient(180deg,rgba(10,16,32,.82),rgba(4,7,15,.72));backdrop-filter:blur(14px);border:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 18px 46px -28px #000}
+@keyframes rise{to{opacity:1;transform:translateY(0)}}
+.card::before{content:'';position:absolute;left:0;top:0;height:100%;width:3px;background:var(--hc);box-shadow:0 0 16px var(--hc);opacity:.9}
+.card.lead{border-color:rgba(255,34,73,.4);box-shadow:0 0 0 1px rgba(255,34,73,.25),0 20px 56px -28px rgba(255,34,73,.5),0 1px 0 rgba(255,255,255,.05) inset}
+.head{display:flex;gap:13px;align-items:center;padding:15px 15px 14px;cursor:pointer}
+
+/* heat gauge orb */
+.orb{position:relative;flex:0 0 auto;width:70px;height:70px;cursor:pointer}
+.orb .ring{position:absolute;inset:0;border-radius:50%;padding:4px;
+  background:conic-gradient(var(--hc) calc(var(--heat)*1%),rgba(60,220,255,.08) 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 4px));
+  filter:drop-shadow(0 0 7px var(--hc));transition:background .6s ease;animation:spin 14s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.orb .gemwrap{position:absolute;inset:8px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 38% 30%,rgba(60,220,255,.1),#03060d 72%);box-shadow:0 4px 10px rgba(0,0,0,.7) inset}
+.orb .gemwrap img{width:40px;height:40px;border-radius:50%;object-fit:cover;mix-blend-mode:screen;filter:drop-shadow(0 0 7px var(--glow));animation:shimmer 5s ease-in-out infinite}
+.orb:active .gemwrap img{transform:scale(.86)}
+.orb .hn{position:absolute;bottom:-4px;right:-4px;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:800;color:#03060d;background:var(--hc);padding:2px 6px;border-radius:50px;box-shadow:0 0 14px -1px var(--hc)}
+
+.who{flex:1;min-width:0}
+.rkrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rk{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--hc);font-weight:800;text-shadow:0 0 10px var(--hc)}
+.statuschip{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#03060d;font-weight:800;
+  background:var(--glow);padding:2px 7px;border-radius:5px;box-shadow:0 0 12px -3px var(--glow)}
+.who h2{margin:5px 0 0;font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:#fff;line-height:1.18;display:flex;align-items:center;gap:8px;flex-wrap:wrap;letter-spacing:.01em}
+.flag{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#fff;font-weight:800;border-radius:5px;padding:3px 7px;
+  background:linear-gradient(180deg,var(--ruby),#7c0a1f);box-shadow:0 0 12px -1px var(--ruby);animation:flagpulse 2.2s ease-in-out infinite}
+@keyframes flagpulse{0%,100%{box-shadow:0 0 12px -1px var(--ruby)}50%{box-shadow:0 0 22px 0 var(--ruby)}}
+.meta{font-size:12.5px;color:var(--soft);margin-top:5px;font-weight:500}
+.proof{font-family:'JetBrains Mono',monospace;font-size:10px;color:#7dffb8;margin-top:8px;display:inline-flex;gap:6px;background:rgba(34,224,122,.1);border:1px solid rgba(46,255,160,.32);padding:4px 9px;border-radius:7px;font-weight:700}
+.why{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);margin-top:7px;line-height:1.45}
+
+/* live heat meter bar inside card */
+.meter{margin:0 15px 13px;display:flex;align-items:center;gap:10px}
+.meter .track{flex:1;height:7px;border-radius:7px;background:rgba(60,220,255,.08);overflow:hidden;position:relative}
+.meter .fillb{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--hc),#fff);box-shadow:0 0 12px var(--hc);width:0;animation:fill 1.2s cubic-bezier(.2,.8,.2,1) forwards}
+.meter .mtag{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);font-weight:700;white-space:nowrap}
+.meter .mtag b{color:var(--hc);text-shadow:0 0 8px var(--hc)}
+
+.acts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;padding:0 15px 15px}
+.act{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 8px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;transition:.15s;
+  border:1px solid var(--line);color:#fff;background:rgba(60,220,255,.05);box-shadow:0 1px 0 rgba(255,255,255,.06) inset}
+.act:active{transform:translateY(1px)}.act svg{width:18px;height:18px}.act small{font-size:9px;display:block;opacity:.7;font-family:'JetBrains Mono',monospace;font-weight:500}
+.act.call{background:linear-gradient(180deg,#dffaff,#27ecff 60%,#0a9bb5);color:#03060d;border-color:#7df3ff;box-shadow:0 0 22px -7px var(--cyan),0 1px 0 rgba(255,255,255,.4) inset}
+.act.call small{opacity:.85}
+.act.sms{background:linear-gradient(180deg,var(--ruby-hi),var(--ruby) 55%,#7c0a1f);color:#fff;border-color:var(--ruby-hi);box-shadow:0 0 22px -7px var(--ruby),0 1px 0 rgba(255,255,255,.22) inset}
+
+.exp{border-top:1px solid var(--line);padding:0 15px;max-height:0;overflow:hidden;transition:max-height .45s ease,padding .45s ease;background:rgba(2,4,10,.5)}
+.card.open .exp{max-height:1800px;padding:15px}
+.kit h3{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);margin:0 0 8px;font-weight:800}
+.kit .b{margin-bottom:16px}.kit p{margin:0;font-size:14px;line-height:1.7;color:#eef6ff}
+.kit ul{margin:0;padding-left:18px}.kit li{font-size:13.5px;line-height:1.65;margin-bottom:6px;color:#dce8f2}
+.obj{background:rgba(2,4,10,.55);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:8px}
+.obj .q{font-weight:700;font-size:13px;color:#fff}.obj .a{font-size:13px;color:var(--soft);margin-top:5px;line-height:1.6}
+.note{font-size:12.5px;color:#ffd27a;background:rgba(255,194,61,.08);border:1px solid rgba(255,194,61,.28);border-radius:10px;padding:11px 13px;line-height:1.55;font-weight:500}
+.ask{font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:700;color:#fff;text-shadow:0 0 12px rgba(39,236,255,.5)}
+textarea{width:100%;background:rgba(2,4,10,.6);border:1px solid var(--line);border-radius:11px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px;resize:vertical;min-height:64px;margin-top:4px}
+textarea:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan)}
+.tn{font-size:10.5px;color:var(--mute);text-align:center;padding:8px 0 2px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-weight:800;font-size:12.5px;padding:13px 24px;border-radius:50px;opacity:0;pointer-events:none;transition:.25s;z-index:99;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;background:linear-gradient(180deg,#dffaff,#27ecff);color:#03060d;box-shadow:0 0 34px -4px var(--cyan)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{text-align:center;color:var(--mute);font-size:9.5px;font-family:'JetBrains Mono',monospace;padding:26px;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="deck"></div>
+<div class="gridbg"></div>
+<div class="aur"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+<div class="scan"></div>
+<div class="grain"></div>
+
+<div class="statusbar">
+  <span class="live"><span class="dot"></span>Live</span>
+  <span class="sep">·</span>
+  <span class="sys">Padre Sales Ops · Command Center</span>
+  <span class="clk mono" id="clk">--:--:--</span>
+</div>
+
+<div class="crown">
+  <div class="sigil"><img src="assets/logo-3.png" alt="Padre"></div>
+  <div class="title">
+    <h1 class="wordmark">PADRE</h1>
+    <div class="tagline">Command Center · Executive Leverage</div>
+  </div>
+</div>
+
+<div class="hud">
+  <div class="kpis" id="kpis"></div>
+</div>
+
+<div class="railwrap">
+  <div class="railhdr"><span class="h">Pipeline</span><span class="hint">tap to filter</span></div>
+  <div class="rail" id="rail"></div>
+</div>
+
+<main>
+  <div class="price" id="price"><button class="priceh" onclick="document.getElementById('price').classList.toggle('open')"><span>Price Menu</span><span class="t">tap to quote</span><span class="cv">▾</span></button>
+    <div class="priceb">
+      <div class="psub">Core</div><div class="pr"><span class="n">Website Build<small>domain · mobile · call buttons · niche SEO · 1 free edit</small></span><span class="p">$2,000</span></div>
+      <div class="psub">Add-Ons · new functionality</div><div class="pr"><span class="n">Any add-on<small>AI chatbot · automation · custom email · extra page · integration</small></span><span class="p">$111</span></div>
+      <div class="psub">Edits · no subscription</div><div class="pr"><span class="n">Edit round<small>text / image / layout · 1st free, then per round</small></span><span class="p">$222</span></div>
+      <div class="psub">Logos &amp; Branding</div>
+      <div class="pr"><span class="n">Basic logo<small>with site · 1 concept</small></span><span class="p">$111</span></div>
+      <div class="pr"><span class="n">Standard logo<small>2 concepts · 2 revisions · PNG+vector</small></span><span class="p">$333</span></div>
+      <div class="pr"><span class="n">Mini brand pack<small>logo · palette · type · usage</small></span><span class="p">$555</span></div>
+      <div class="pay">Start: $2,000 full or 50% deposit ($1,000) · PayPal · Cash App · Venmo · Zelle</div>
+    </div>
+  </div>
+  <div class="lbl" id="lbl">Ranked by Close Heat · hottest first</div>
+  <div id="list"></div>
+  <footer>Obsidian &amp; Platinum · L7 — Padre Sales Ops · hitthe.link/padre/close</footer>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const P=[
+ {slug:'t-and-g-plumbing-locust-grove',name:'T&G Plumbing',trade:'Plumbing',city:'Locust Grove, GA',owner:'Tracy Harper',tel:'+16787825514',disp:'(678) 782-5514',lead:true,proof:'4.3 · 72 Google reviews · BBB A+ · 15+ yrs',
+  opener:"Hi, is this Tracy or someone with T&G Plumbing? This is Padre with Executive Leverage — you've got 4.3 stars from 72 reviews and an A+ with the BBB, but no real website showing any of it.",
+  bullets:["15+ years and an A+ BBB rating — that trust is your edge, but it's buried on Google. The site puts it front and center.","One tap to call you from any phone — plumbing is an emergency search, you can't lose that caller.","Captures the job while you're on another call — every missed call is a customer someone else is winning."],
+  objs:[{q:"I stay busy on word of mouth.",a:"That's what got you 72 reviews. The site catches the people who heard your name then Googled before calling — the slice you're not seeing."},{q:"$2,000 is a lot.",a:"One drain or water-heater job covers it. It pays for itself the first month it lands a call you'd have missed."}],
+  note:"Facebook geo-tagged 'Zebulon' — confirm current service area."},
+ {slug:'promasters-automotive',name:'ProMasters Automotive',trade:'Auto Repair',city:'Stockbridge, GA',owner:'Juan',tel:'+16787591623',disp:'(678) 759-1623',lead:true,proof:'4.4 · 92 Google reviews',
+  opener:"Hey, is this Juan or someone with ProMasters Automotive on Burke Street? Padre with Executive Leverage — 4.4 stars from 92 reviews is serious reputation, but no website showing it off.",
+  bullets:["92 reviews at 4.4 is social proof most shops can't match — right now it only lives on Google Maps.","'We service all makes & models' + click-to-call gets the searching driver to you, not the chain down the road.","A real site with your warranty in writing turns first-timers into repeat customers."],
+  objs:[{q:"People find me on Google.",a:"They find your pin — a real site closes the ones comparing 3 shops. Click vs no-show."},{q:"No time for a website.",a:"That's the point — we built it. Half an hour to tweak, then it works for you."}],
+  note:"Verify 4.4/92 live before quoting. Owner Juan. 150 Burke St."},
+ {slug:'coker-heating-air',name:'Coker Heating & Air',trade:'HVAC',city:'McDonough, GA',owner:'Elijah Coker',tel:'+17703499809',disp:'(770) 349-9809',lead:false,proof:'',
+  opener:"Hi, is this Elijah? Padre with Executive Leverage — folks say you answer day or night and do great HVAC work, but there's nowhere online for a new customer to find and book you.",
+  bullets:["HVAC is urgent — when an AC dies in July they call the first pro with a real presence. Right now that's not you.","A 24/7 click-to-call site makes the 9pm panic-search your job, not a competitor's.","A financing/tune-up offer up top turns browsers into booked appointments."],
+  objs:[{q:"Enough from referrals.",a:"Referrals still Google you before calling. The site closes the gap and catches emergency searches referrals never send."},{q:"Sounds expensive.",a:"One install covers it several times. It's a marketing asset you own outright."}],
+  note:"Not the Louisiana 'Coker Air & Heat'."},
+ {slug:'jjs-painting',name:"JJ's Painting Company",trade:'Painting',city:'Stockbridge, GA',owner:'',tel:'+16786075878',disp:'(678) 607-5878',lead:false,proof:'',
+  opener:"Hey, is this the owner of JJ's Painting? Padre with Executive Leverage — solid local rep but no website, so I built you a sample to see what it'd look like.",
+  bullets:["Painting is a 'show me your work' sale — a gallery + free-estimate button closes far more than a phone number.","Residential and commercial customers self-select and request a quote instantly.","Puts you ahead of every painter still running on just a Facebook page."],
+  objs:[{q:"Word of mouth keeps me booked.",a:"It got you here — the site catches the homeowner who got your name but checks online first. Pure added work."},{q:"Can I see it first?",a:"That's why I built the sample. 5 minutes, look it over, if you like it we make it yours."}],
+  note:"Not the North-Georgia 'JJ's Painting'."},
+ {slug:'warner-lawn-care-service-mcdonough',name:'Warner Lawn Care',trade:'Lawn Care',city:'McDonough, GA',owner:'Faith Warner',tel:'+16784109876',disp:'(678) 410-9876',lead:false,proof:'4.7 on HomeAdvisor & Angi',
+  opener:"Hi, is this Faith? Padre with Executive Leverage — you're rated 4.7 on HomeAdvisor and Angi, but there's no website of your own pulling it together.",
+  bullets:["4.7 is great, but split across HomeAdvisor and Angi — your own site puts it in one place that's yours.","'Get your weekends back' lands with homeowners — a quote button books recurring service.","Recurring lawn customers are gold; a site makes signing them up effortless."],
+  objs:[{q:"Directories get me leads.",a:"They take a cut and rank you next to competitors. Your own site is leads with no middleman."},{q:"Worth it?",a:"A couple recurring accounts covers it, and they stay for years."}],
+  note:"Don't cite a review count — only the 4.7 rating is verified."},
+ {slug:'kdc-electrical-services-stockbridge',name:'KDC Electrical',trade:'Electrical',city:'Stockbridge, GA',owner:'Kenny Camp',tel:'+14048676527',disp:'(404) 867-6527',lead:false,proof:'Highly rated locally · owner-operated',
+  opener:"Hi, is this Kenny? Padre with Executive Leverage — strong local reputation as an electrician but no real website, so I put a sample together for KDC.",
+  bullets:["Electrical is trust-and-safety — a clean licensed site reassures the homeowner before they call.","Naming the trade + town up top ('Licensed Electricians in Stockbridge') wins local search.","A first-call offer turns a browser into a booked job."],
+  objs:[{q:"Busy enough.",a:"Then it's about the bigger jobs — the ones that check you out online first and pick the pro who looks established."},{q:"What's the catch?",a:"None — you own it. Half down to start, the rest when it's live in your name."}],
+  note:"GA license EN216813 may have lapsed (~Jun 2024) — confirm verbally; don't print a license # without his OK."},
+ {slug:'bridges-fencing-locust-grove',name:'Bridges Fencing',trade:'Fencing',city:'Locust Grove, GA',owner:'Billy Bridges',tel:'+17709607300',disp:'(770) 960-7300',lead:false,proof:'Family-run since 1996 · ~30 years',
+  opener:"Hi, is this Billy? Padre with Executive Leverage — Bridges Fencing has been around since '96, almost 30 years, but no website showing that track record.",
+  bullets:["30 years in business is a massive trust signal — it belongs at the top of a real site, not buried.","Fencing is a by-material sale — wood/vinyl/chain-link/aluminum sections + a quote form closes more.","Your old domain is dead; a fresh site recaptures everyone who searches your name."],
+  objs:[{q:"Fine 30 years without one.",a:"No doubt — the next 30 are won online. Younger homeowners search before they call; this puts your reputation there."},{q:"Too much hassle.",a:"Zero hassle on your end — it's built. You approve, we publish."}],
+  note:"Don't cite a star rating — only the since-1996 longevity is verified."},
+ {slug:'tobaz-towing-jonesboro',name:'Tobaz Towing',trade:'Towing',city:'Jonesboro, GA',owner:'',tel:'+14049250858',disp:'(404) 925-0858',lead:false,proof:'FMCSA-licensed since ~2012',
+  opener:"Hi, is this the owner of Tobaz Towing? Padre with Executive Leverage — FMCSA-licensed and running since 2012, but your website's broken, so a stranded driver searching can't reach you.",
+  bullets:["Towing is the ultimate emergency search — the driver calls the first working result. A fast site with your number up top is that result.","Your current site throws a security error — every visitor bounces. A clean one recaptures them.","24/7 'call now' framing + a fast-response promise converts the panic moment into your job."],
+  objs:[{q:"Dispatch keeps me busy.",a:"This is the cash, no-contract calls — the stranded driver who just needs someone now. Highest-margin tow you get."},{q:"My nephew can build one.",a:"Maybe — but is it built? Yours is done today, works on every phone, and won't throw the error your current one does."}],
+  note:"Address ambiguous (Walden Dr vs Fitzgerald Rd) — confirm location."},
+];
+const STATUSES=['New','Called','No answer','Interested','Sent site','Closed'];
+const GEM={'New':'gem-diamond','Called':'gem-sapphire','No answer':'gem-citrine','Interested':'gem-amethyst','Sent site':'gem-topaz','Closed':'gem-emerald'};
+const GLOW={'New':'#eaf6ff','Called':'#4d86ff','No answer':'#ffc23d','Interested':'#c07bff','Sent site':'#27ecff','Closed':'#2effa0'};
+const HEAT={'t-and-g-plumbing-locust-grove':94,'coker-heating-air':88,'tobaz-towing-jonesboro':85,'promasters-automotive':82,'kdc-electrical-services-stockbridge':74,'warner-lawn-care-service-mcdonough':70,'jjs-painting':62,'bridges-fencing-locust-grove':58};
+const WHY={'t-and-g-plumbing-locust-grove':'Emergency trade · hard proof · clear no-site gap','coker-heating-air':'Emergency trade · answers day/night · summer urgency','tobaz-towing-jonesboro':'Emergency · broken site = visible pain · cash sales','promasters-automotive':'Strong proof (4.4/92) · no site','kdc-electrical-services-stockbridge':'Trust trade · reachable · license caveat slows','warner-lawn-care-service-mcdonough':'4.7 rated · recurring hook · lower urgency',"jjs-painting":'Solid rep, no hard numbers · project cycle','bridges-fencing-locust-grove':'30-yr trust but slowest cycle'};
+const hc=h=>h>=85?'#2effa0':h>=75?'#27ecff':h>=65?'#ffc23d':'#ff6c86';
+const url=s=>'https://hitthe.link/padre/'+s+'/';const k=s=>'padre_'+s;
+const gS=s=>{try{return JSON.parse(localStorage.getItem(k(s)))||{}}catch(e){return{}}};const sS=(s,o)=>localStorage.setItem(k(s),JSON.stringify(o));
+let filter=null;
+function smsb(p){return encodeURIComponent("Hi"+(p.owner?(" "+p.owner.split(' ')[0]):"")+" — this is Padre with Executive Leverage. I built a website for "+p.name+" — take a look: "+url(p.slug)+" — got 5 minutes for me to walk you through it? Reply YES.");}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
+function adv(s){const st=gS(s);const i=STATUSES.indexOf(st.status||'New');st.status=STATUSES[(i+1)%STATUSES.length];sS(s,st);render();}
+function cp(s){navigator.clipboard.writeText(url(s)).then(()=>toast('Link copied'));}
+function nt(s,v){const st=gS(s);st.note=v;sS(s,st);}
+function render(){
+  const c={};STATUSES.forEach(s=>c[s]=0);P.forEach(p=>c[gS(p.slug).status||'New']++);
+  // KPI readouts
+  const total=P.length;
+  const active=total-c['Closed'];
+  const working=c['Called']+c['No answer']+c['Interested']+c['Sent site'];
+  const hot=P.filter(p=>(HEAT[p.slug]||50)>=85).length;
+  const avgheat=Math.round(P.reduce((a,p)=>a+(HEAT[p.slug]||50),0)/total);
+  const pipeval=(active*2000).toLocaleString();
+  const closedval=(c['Closed']*2000).toLocaleString();
+  document.getElementById('kpis').innerHTML=
+    '<div class="kpi big" style="--kc:var(--cyan)">'+
+      '<div class="kt">Open Pipeline Value</div>'+
+      '<div class="kv">$'+pipeval+'</div>'+
+      '<div class="ks">'+active+' open accounts · '+c['Closed']+' closed · $'+closedval+' booked</div>'+
+      '<svg class="spark" viewBox="0 0 120 40" preserveAspectRatio="none"><polyline points="0,32 15,28 30,30 45,20 60,22 75,12 90,15 105,6 120,2" fill="none" stroke="#27ecff" stroke-width="2" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #27ecff)"/></svg>'+
+    '</div>'+
+    '<div class="kpi" style="--kc:var(--ruby-hi)"><div class="kt">Hot ≥85</div><div class="kv">'+hot+'</div><div class="barwrap"><div class="bar" style="--w:'+Math.round(hot/total*100)+'%"></div></div></div>'+
+    '<div class="kpi" style="--kc:var(--amber)"><div class="kt">Working</div><div class="kv">'+working+'</div><div class="barwrap"><div class="bar" style="--w:'+Math.round(working/total*100)+'%"></div></div></div>'+
+    '<div class="kpi" style="--kc:'+hc(avgheat)+'"><div class="kt">Avg Heat</div><div class="kv">'+avgheat+'<small>°</small></div><div class="barwrap"><div class="bar" style="--w:'+avgheat+'%"></div></div></div>';
+  // pipeline gauge rail
+  document.getElementById('rail').innerHTML=STATUSES.map(s=>'<div class="dial'+(filter===s?' on':'')+'" style="--glow:'+GLOW[s]+'" onclick="filter=(filter===\''+s+'\'?null:\''+s+'\');render()"><img src="assets/'+GEM[s]+'.png" alt="'+s+'"><b>'+c[s]+'</b><span>'+s+'</span></div>').join('');
+  const sh=P.filter(p=>filter===null||(gS(p.slug).status||'New')===filter).sort((a,b)=>HEAT[b.slug]-HEAT[a.slug]);
+  const lbl=document.getElementById('lbl');
+  lbl.innerHTML=(filter?filter:'Ranked by <b>Close Heat</b>')+' · '+sh.length+(filter?' · tap a gem to clear':' · hottest first');
+  document.getElementById('list').innerHTML=sh.map((p,i)=>{const st=gS(p.slug);const s=st.status||'New';const g=GLOW[s];const h=HEAT[p.slug]||50;const C=hc(h);
+    const tier=h>=85?'CRITICAL':h>=75?'HIGH':h>=65?'WARM':'LONG';
+    return '<div class="card'+(p.lead?' lead':'')+'" id="c-'+p.slug+'" style="--hc:'+C+';animation-delay:'+(i*.05)+'s">'+
+     '<div class="head" onclick="tg(\''+p.slug+'\')">'+
+       '<div class="orb" style="--heat:'+h+';--glow:'+g+'" onclick="event.stopPropagation();adv(\''+p.slug+'\')" title="advance stage"><div class="ring"></div><div class="gemwrap"><img src="assets/'+GEM[s]+'.png" alt="'+s+'"></div><span class="hn">'+h+'</span></div>'+
+       '<div class="who"><div class="rkrow"><span class="rk">#'+(i+1)+'</span><span class="statuschip" style="--glow:'+g+'">'+s+'</span></div><h2>'+p.name+(p.lead?' <span class="flag">Top Lead</span>':'')+'</h2><div class="meta">'+p.trade+' · '+p.city+(p.owner?' · '+p.owner:'')+'</div>'+(p.proof?'<div class="proof">◆ '+p.proof+'</div>':'')+'<div class="why">'+(WHY[p.slug]||'')+'</div></div>'+
+     '</div>'+
+     '<div class="meter"><span class="mtag">CLOSE&nbsp;HEAT</span><div class="track"><div class="fillb" style="--w:'+h+'%"></div></div><span class="mtag"><b>'+h+'°</b> '+tier+'</span></div>'+
+     '<div class="acts">'+
+       '<a class="act call" href="tel:'+p.tel+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>Call<small>'+p.disp+'</small></span></a>'+
+       '<a class="act sms" href="sms:'+p.tel+'?&body='+smsb(p)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Text<small>pre-filled</small></span></a>'+
+       '<button class="act" onclick="cp(\''+p.slug+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span>Link<small>copy</small></span></button>'+
+     '</div>'+
+     '<div class="exp"><div class="kit">'+
+       '<div class="b"><h3>Opener</h3><p>'+p.opener+'</p></div>'+
+       '<div class="b"><h3>Why they need it</h3><ul>'+p.bullets.map(b=>'<li>'+b+'</li>').join('')+'</ul></div>'+
+       '<div class="b"><h3>Objections</h3>'+p.objs.map(o=>'<div class="obj"><div class="q">“'+o.q+'”</div><div class="a">'+o.a+'</div></div>').join('')+'</div>'+
+       '<div class="b"><h3>The ask</h3><p class="ask">$2,000 — full upfront, or 50% ($1,000) to start, balance before go-live. First version in ~1 week.</p></div>'+
+       (p.note?'<div class="b"><h3>Confirm on call</h3><div class="note">'+p.note+'</div></div>':'')+
+       '<div class="b"><h3>Notes</h3><textarea placeholder="Log the call..." oninput="nt(\''+p.slug+'\',this.value)">'+(st.note||'')+'</textarea></div>'+
+       '<div class="tn">tap the header to collapse</div>'+
+     '</div></div></div>';
+  }).join('');
+}
+function tg(s){document.getElementById('c-'+s).classList.toggle('open');}
+function clk(){const d=new Date();const z=n=>String(n).padStart(2,'0');const e=document.getElementById('clk');if(e)e.textContent=z(d.getHours())+':'+z(d.getMinutes())+':'+z(d.getSeconds());}
+clk();setInterval(clk,1000);
+render();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+</body>
+</html>

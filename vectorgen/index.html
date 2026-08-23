@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Client-Side SVG Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Import ImageTracerJS for client-side vectorization -->
+    <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.min.js"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+        .checkerboard {
+            background-image:
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        .drop-zone {
+            transition: all 0.3s ease;
+        }
+        .drop-zone.dragover {
+            background-color: #e0f2fe;
+            border-color: #3b82f6;
+            transform: scale(1.02);
+        }
+        .preview-container svg {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 text-slate-800">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-black text-slate-900 mb-2">Vectorize It</h1>
+            <p class="text-slate-600">Convert your reference images to SVG paths instantly in the browser.</p>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[700px]">
+            
+            <!-- Left Panel: Controls & Upload -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                
+                <!-- Upload Area -->
+                <div id="drop-zone" class="drop-zone bg-white border-2 border-dashed border-slate-300 rounded-2xl h-48 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 group relative overflow-hidden">
+                    <input type="file" id="file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                    <div class="text-center p-4 z-0 transition-opacity group-hover:opacity-75">
+                        <svg class="w-10 h-10 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <p class="font-bold text-slate-700">Click or Drop Image</p>
+                        <p class="text-xs text-slate-400 mt-1">JPG, PNG, GIF</p>
+                    </div>
+                    <img id="source-preview" class="absolute inset-0 w-full h-full object-contain bg-slate-100 hidden p-2 pointer-events-none opacity-40">
+                </div>
+
+                <!-- Controls -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col gap-4">
+                    <h2 class="font-bold text-sm uppercase tracking-wide text-slate-400">Settings</h2>
+                    
+                    <!-- Preset Selector -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2">Conversion Mode</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('posterized1')" class="preset-btn px-3 py-2 bg-blue-50 text-blue-700 text-xs font-bold rounded hover:bg-blue-100 active:bg-blue-200 border border-blue-100">Color (Detailed)</button>
+                            <button onclick="setPreset('default')" class="preset-btn px-3 py-2 bg-slate-50 text-slate-600 text-xs font-bold rounded hover:bg-slate-100 border border-slate-200">Color (Simple)</button>
+                            <button onclick="setPreset('curvy')" class="preset-btn px-3 py-2 bg-slate-50 text-slate-600 text-xs font-bold rounded hover:bg-slate-100 border border-slate-200">Smooth Curves</button>
+                            <button onclick="setPreset('sharp')" class="preset-btn px-3 py-2 bg-slate-50 text-slate-600 text-xs font-bold rounded hover:bg-slate-100 border border-slate-200">Sharp Edges</button>
+                        </div>
+                    </div>
+
+                    <!-- Sliders -->
+                    <div class="space-y-4 pt-2 border-t border-slate-100">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-xs font-medium text-slate-600">Colors</label>
+                                <span id="val-colors" class="text-xs font-bold text-blue-600">16</span>
+                            </div>
+                            <input type="range" id="opt-colors" min="2" max="64" value="16" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-xs font-medium text-slate-600">Detail (Min Path)</label>
+                                <span id="val-detail" class="text-xs font-bold text-blue-600">1</span>
+                            </div>
+                            <input type="range" id="opt-detail" min="0" max="100" value="1" step="0.5" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-xs font-medium text-slate-600">Smoothness</label>
+                                <span id="val-blur" class="text-xs font-bold text-blue-600">0</span>
+                            </div>
+                            <input type="range" id="opt-blur" min="0" max="5" value="0" step="1" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+                    </div>
+
+                    <div class="mt-auto pt-4">
+                        <button id="convert-btn" disabled class="w-full py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <span>Convert to SVG</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Results -->
+            <div class="lg:col-span-8 flex flex-col gap-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col relative overflow-hidden">
+                    
+                    <!-- Toolbar -->
+                    <div class="h-12 border-b border-slate-100 flex items-center justify-between px-4 bg-slate-50">
+                        <span class="text-xs font-bold text-slate-500 uppercase">SVG Preview</span>
+                        <div class="flex gap-2">
+                            <button onclick="toggleBg('white')" class="w-6 h-6 rounded bg-white border border-slate-200 shadow-sm"></button>
+                            <button onclick="toggleBg('check')" class="w-6 h-6 rounded bg-slate-200 border border-slate-300 shadow-sm checkerboard"></button>
+                            <button onclick="toggleBg('dark')" class="w-6 h-6 rounded bg-slate-900 border border-slate-700 shadow-sm"></button>
+                        </div>
+                    </div>
+
+                    <!-- Viewer -->
+                    <div id="svg-output" class="flex-1 checkerboard p-8 flex items-center justify-center overflow-auto min-h-[400px]">
+                        <div class="text-center text-slate-400">
+                            <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <p>Upload an image to see the vector result</p>
+                        </div>
+                    </div>
+
+                    <!-- Loading Overlay -->
+                    <div id="loading" class="absolute inset-0 bg-white/90 backdrop-blur-sm z-20 hidden flex-col items-center justify-center">
+                        <div class="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-3"></div>
+                        <p class="font-bold text-slate-600 animate-pulse">Vectorizing...</p>
+                    </div>
+
+                </div>
+
+                <!-- Actions -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="copyCode()" class="py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 active:bg-slate-100 transition">Copy Code</button>
+                    <button onclick="downloadSvg()" class="py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 active:bg-blue-800 shadow-lg shadow-blue-100 transition">Download SVG</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl opacity-0 transition-opacity pointer-events-none z-50">
+            Action successful!
+        </div>
+
+    </div>
+
+    <script>
+        // State
+        let currentImage = null;
+        let generatedSvg = '';
+        
+        // Settings Object
+        const settings = {
+            colors: 16,
+            blur: 0,
+            ltres: 1, // Linear error threshold
+            qtres: 1, // Quadratic error threshold
+            pathomit: 8, // Min path length
+            strokewidth: 0,
+            viewbox: true
+        };
+
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const sourcePreview = document.getElementById('source-preview');
+        const svgOutput = document.getElementById('svg-output');
+        const convertBtn = document.getElementById('convert-btn');
+        const loading = document.getElementById('loading');
+        
+        // Event Listeners
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        // Sliders
+        document.getElementById('opt-colors').addEventListener('input', (e) => {
+            document.getElementById('val-colors').textContent = e.target.value;
+            settings.colors = parseInt(e.target.value);
+            if(currentImage) runConversion();
+        });
+
+        document.getElementById('opt-detail').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('val-detail').textContent = val;
+            settings.ltres = (100 - val) / 20; // Inverse logic: lower res = higher detail
+            settings.qtres = (100 - val) / 20;
+            if(currentImage) runConversion();
+        });
+
+        document.getElementById('opt-blur').addEventListener('input', (e) => {
+            document.getElementById('val-blur').textContent = e.target.value;
+            settings.blur = parseInt(e.target.value);
+            if(currentImage) runConversion();
+        });
+
+        convertBtn.addEventListener('click', runConversion);
+
+        // Functions
+        function handleFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentImage = e.target.result;
+                    sourcePreview.src = currentImage;
+                    sourcePreview.classList.remove('hidden');
+                    convertBtn.disabled = false;
+                    runConversion();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function runConversion() {
+            if (!currentImage) return;
+
+            loading.classList.remove('hidden');
+            loading.classList.add('flex');
+
+            // Small delay to let UI render loading state
+            setTimeout(() => {
+                ImageTracer.imageToSVG(currentImage, function(svgstr) {
+                    generatedSvg = svgstr;
+                    svgOutput.innerHTML = svgstr;
+                    
+                    // Cleanup SVG attributes for better display
+                    const svgEl = svgOutput.querySelector('svg');
+                    if(svgEl) {
+                        svgEl.removeAttribute('width');
+                        svgEl.removeAttribute('height');
+                        svgEl.style.width = '100%';
+                        svgEl.style.height = '100%';
+                    }
+
+                    loading.classList.add('hidden');
+                    loading.classList.remove('flex');
+                }, {
+                    numberofcolors: settings.colors,
+                    blurradius: settings.blur,
+                    ltres: settings.ltres,
+                    qtres: settings.qtres,
+                    pathomit: 8,
+                    strokewidth: 0,
+                    viewbox: true,
+                    scale: 1
+                });
+            }, 100);
+        }
+
+        function setPreset(name) {
+            // Update UI buttons styling (simplified)
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'text-blue-700', 'border-blue-200');
+                btn.classList.add('bg-slate-50', 'text-slate-600', 'border-slate-200');
+            });
+            event.target.classList.remove('bg-slate-50', 'text-slate-600', 'border-slate-200');
+            event.target.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+
+            switch(name) {
+                case 'posterized1':
+                    updateSlider('opt-colors', 16);
+                    updateSlider('opt-detail', 80);
+                    updateSlider('opt-blur', 0);
+                    break;
+                case 'default':
+                    updateSlider('opt-colors', 8);
+                    updateSlider('opt-detail', 50);
+                    updateSlider('opt-blur', 1);
+                    break;
+                case 'curvy':
+                    updateSlider('opt-colors', 12);
+                    updateSlider('opt-detail', 10);
+                    updateSlider('opt-blur', 4);
+                    break;
+                case 'sharp':
+                    updateSlider('opt-colors', 4);
+                    updateSlider('opt-detail', 90);
+                    updateSlider('opt-blur', 0);
+                    break;
+            }
+            if(currentImage) runConversion();
+        }
+
+        function updateSlider(id, val) {
+            const el = document.getElementById(id);
+            el.value = val;
+            el.dispatchEvent(new Event('input'));
+        }
+
+        function toggleBg(type) {
+            const container = document.getElementById('svg-output');
+            container.classList.remove('checkerboard', 'bg-white', 'bg-slate-900');
+            
+            if (type === 'white') container.classList.add('bg-white');
+            else if (type === 'dark') container.classList.add('bg-slate-900');
+            else container.classList.add('checkerboard');
+        }
+
+        function copyCode() {
+            if(!generatedSvg) return;
+            navigator.clipboard.writeText(generatedSvg).then(() => showToast('SVG Code Copied!'));
+        }
+
+        function downloadSvg() {
+            if(!generatedSvg) return;
+            const blob = new Blob([generatedSvg], {type: "image/svg+xml"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "vector-result.svg";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast('Download Started');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        }
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

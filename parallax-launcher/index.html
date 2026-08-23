@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Parallax Launcher — Motion, depth, and a home screen that feels alive</title>
+<meta name="description" content="Parallax Launcher — your wallpaper comes alive with 3D depth that reacts to motion and touch.">
+<style>
+  :root{
+    --ink:#f4f6fb; --dim:#a6b0c4; --accent:#6ea8ff; --glass:rgba(20,26,40,.44);
+    --stroke:rgba(255,255,255,.14);
+    --f-disp:'Avenir Next','SF Pro Display','Segoe UI',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:var(--f-disp);color:var(--ink);
+    background:#05070d;
+    display:flex;align-items:center;justify-content:center;gap:34px;
+    min-height:100vh;padding:28px;flex-wrap:wrap;overflow-x:hidden;
+  }
+
+  /* ---------- phone frame ---------- */
+  .phone{
+    position:relative;width:390px;height:820px;border-radius:52px;
+    background:#0a0d16;
+    box-shadow:0 40px 120px rgba(0,0,0,.7), 0 0 0 12px #12151d, 0 0 0 13px #23262f, inset 0 0 0 2px rgba(255,255,255,.04);
+    overflow:hidden;flex:0 0 auto;
+    perspective:900px;
+  }
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);
+    width:118px;height:34px;background:#000;border-radius:20px;z-index:60}
+
+  /* ---------- parallax scene ---------- */
+  .scene{position:absolute;inset:0;transform-style:preserve-3d;overflow:hidden}
+  .layer{position:absolute;inset:-14%;will-change:transform;transition:opacity .6s ease}
+  .layer canvas{width:100%;height:100%;display:block}
+
+  /* ---------- home surface (icons/widgets float above) ---------- */
+  .home{position:absolute;inset:0;z-index:40;transform-style:preserve-3d;
+    display:flex;flex-direction:column;padding:56px 22px 26px}
+
+  /* status bar */
+  .status{display:flex;justify-content:space-between;align-items:center;
+    font-size:14px;font-weight:600;letter-spacing:.3px;padding:0 6px 8px}
+  .status .rt{display:flex;gap:6px;align-items:center;font-size:12px}
+  .bat{width:24px;height:12px;border:1.5px solid var(--ink);border-radius:3px;position:relative}
+  .bat::after{content:"";position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:70%;background:var(--ink);border-radius:1px}
+  .bat::before{content:"";position:absolute;right:-3px;top:3px;bottom:3px;width:2px;background:var(--ink);border-radius:0 2px 2px 0}
+
+  /* widgets */
+  .widgets{margin-top:6px;display:flex;flex-direction:column;gap:14px}
+  .w-clock{transform:translateZ(40px)}
+  .w-clock .t{font-size:66px;font-weight:200;line-height:.92;letter-spacing:-2px;
+    text-shadow:0 6px 30px rgba(0,0,0,.5)}
+  .w-clock .d{font-size:15px;color:var(--dim);font-weight:500;margin-top:2px}
+  .w-weather{align-self:flex-start;display:flex;gap:12px;align-items:center;
+    background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border:1px solid var(--stroke);border-radius:22px;padding:12px 18px;transform:translateZ(28px);
+    box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .w-weather .tmp{font-size:30px;font-weight:300}
+  .w-weather .meta{font-size:12px;color:var(--dim);line-height:1.4}
+  .w-weather .ico{font-size:26px}
+
+  /* app grid */
+  .grid{margin-top:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:20px 14px;
+    padding-bottom:16px;transform:translateZ(22px)}
+  .app{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+  .app:active{transform:scale(.88)}
+  .icon{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    font-size:27px;box-shadow:0 8px 22px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.25)}
+  .app .lbl{font-size:11px;font-weight:500;color:#eef2fb;text-shadow:0 1px 6px rgba(0,0,0,.7);letter-spacing:.2px}
+
+  /* dock */
+  .dock{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;
+    background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    border:1px solid var(--stroke);border-radius:30px;padding:16px 14px;transform:translateZ(50px);
+    box-shadow:0 16px 44px rgba(0,0,0,.45)}
+  .dock .app .lbl{display:none}
+  .page-dots{display:flex;gap:7px;justify-content:center;margin:12px 0 14px;transform:translateZ(30px)}
+  .page-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35)}
+  .page-dots i.on{background:#fff;width:20px;border-radius:4px}
+
+  /* ---------- control panel (host, beside phone) ---------- */
+  .panel{width:320px;max-width:92vw;color:var(--ink)}
+  .panel h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+  .panel .tag{color:var(--dim);font-size:14px;margin-bottom:22px;line-height:1.45}
+  .pblk{background:#0c111b;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px 18px;margin-bottom:14px}
+  .pblk h2{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:var(--dim);margin-bottom:12px;font-weight:600}
+  .scenes{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+  .sbtn{border:1px solid var(--stroke);background:#121826;color:var(--ink);border-radius:12px;
+    padding:11px 8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;position:relative;overflow:hidden}
+  .sbtn:hover{border-color:var(--accent)}
+  .sbtn.on{background:var(--accent);color:#04101f;border-color:var(--accent)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0}
+  .row label{font-size:14px;font-weight:500}
+  .row output{font-size:13px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:36px;text-align:right}
+  input[type=range]{width:150px;accent-color:var(--accent)}
+  .hint{font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px}
+  .gyro{width:100%;margin-top:6px;background:var(--accent);color:#04101f;border:0;border-radius:12px;
+    padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+  .credit{font-size:11px;color:#55607a;margin-top:8px}
+  @media(prefers-reduced-motion:reduce){.layer{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="island"></div>
+  <div class="scene" id="scene"></div>
+  <div class="home" id="home">
+    <div class="status">
+      <span id="clk2">9:41</span>
+      <span class="rt">▪▪▪ &nbsp;<span style="font-weight:600">5G</span>&nbsp;<i class="bat"></i></span>
+    </div>
+    <div class="widgets">
+      <div class="w-clock"><div class="t" id="clk">9:41</div><div class="d" id="date">Wednesday, June 12</div></div>
+      <div class="w-weather"><span class="ico">⛅</span><div><div class="tmp">72°</div><div class="meta">Partly Cloudy<br>H:78° L:61°</div></div></div>
+    </div>
+    <div class="page-dots"><i class="on"></i><i></i><i></i></div>
+    <div class="grid" id="grid"></div>
+    <div class="dock" id="dock"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h1>Parallax Launcher</h1>
+  <div class="tag">Motion, depth, and a home screen that feels alive. Move your mouse over the phone — or tilt a real device — and the world responds.</div>
+
+  <div class="pblk">
+    <h2>Wallpaper Scene</h2>
+    <div class="scenes" id="scenes"></div>
+  </div>
+
+  <div class="pblk">
+    <h2>Depth</h2>
+    <div class="row"><label>Depth intensity</label><output id="depthOut">100%</output></div>
+    <input type="range" id="depth" min="0" max="200" value="100" style="width:100%">
+    <div class="hint">Drives how far each layer travels. On a phone, allow motion access below to tilt the scene with the gyroscope.</div>
+    <button class="gyro" id="gyro">Enable device tilt (gyro)</button>
+  </div>
+  <div class="credit">Pure inline HTML · CSS 3D transforms + pointer/gyro · zero dependencies</div>
+</div>
+
+<script>
+const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* ---- scenes: each = ordered depth layers, painted on canvas ---- */
+const SCENES = {
+  'Mountain Dawn':[
+    {d:-60,paint:(x,c,w,h)=>{grad(c,w,h,['#ffb47a','#ff8fae','#7b6cc4']);}},
+    {d:-30,paint:(x,c,w,h)=>{c.fillStyle='#c98fb0';ridge(c,w,h,h*.62,90,7);}},
+    {d:-14,paint:(x,c,w,h)=>{c.fillStyle='#7a5b8f';ridge(c,w,h,h*.72,140,6);}},
+    {d:24, paint:(x,c,w,h)=>{c.fillStyle='#2e2350';ridge(c,w,h,h*.84,220,5);}},
+    {d:60, paint:(x,c,w,h)=>{c.fillStyle='#140f28';ridge(c,w,h,h*.94,320,4);}},
+  ],
+  'Night Sky':[
+    {d:-70,paint:(x,c,w,h)=>{grad(c,w,h,['#0a1230','#122048','#1c2f66']);stars(c,w,h,140,.7);}},
+    {d:-30,paint:(x,c,w,h)=>{moon(c,w*.72,h*.26,46);}},
+    {d:-10,paint:(x,c,w,h)=>{stars(c,w,h,60,1.3);}},
+    {d:40, paint:(x,c,w,h)=>{c.fillStyle='#060a1c';ridge(c,w,h,h*.86,200,5);}},
+    {d:80, paint:(x,c,w,h)=>{c.fillStyle='#02040e';ridge(c,w,h,h*.96,300,4);}},
+  ],
+  'Ocean':[
+    {d:-60,paint:(x,c,w,h)=>{grad(c,w,h,['#8fd6ff','#4aa3e0','#12608f']);}},
+    {d:-24,paint:(x,c,w,h)=>{c.fillStyle='rgba(255,255,255,.9)';for(let i=0;i<5;i++)cloud(c,(i*260+80)%(w+200)-100,h*.2+i*22,60+i*14);}},
+    {d:20, paint:(x,c,w,h)=>{waves(c,w,h,h*.6,'#1f7fb8',3);}},
+    {d:55, paint:(x,c,w,h)=>{waves(c,w,h,h*.78,'#0d5081',4);}},
+    {d:90, paint:(x,c,w,h)=>{waves(c,w,h,h*.92,'#063352',5);}},
+  ],
+  'Neon City':[
+    {d:-60,paint:(x,c,w,h)=>{grad(c,w,h,['#1a0b33','#3d0f57','#0b0620']);}},
+    {d:-20,paint:(x,c,w,h)=>{buildings(c,w,h,h*.55,'#2a1350',9,'#ff59d6');}},
+    {d:24, paint:(x,c,w,h)=>{buildings(c,w,h,h*.7,'#1a0c3a','#38f0ff',7,'#38f0ff');}},
+    {d:70, paint:(x,c,w,h)=>{buildings(c,w,h,h*.88,'#0d0622',5,'#ffd23f');}},
+  ],
+};
+function grad(c,w,h,cols){const g=c.createLinearGradient(0,0,0,h);cols.forEach((k,i)=>g.addColorStop(i/(cols.length-1),k));c.fillStyle=g;c.fillRect(0,0,w,h);}
+function ridge(c,w,h,base,amp,seg){c.beginPath();c.moveTo(0,h);let step=w/seg;for(let i=0;i<=seg;i++){c.lineTo(i*step, base+Math.sin(i*1.7+base)*amp*0.5 - (i%2?amp*0.3:0));}c.lineTo(w,h);c.closePath();c.fill();}
+function stars(c,w,h,n,s){c.fillStyle='#fff';for(let i=0;i<n;i++){const x=(i*97.3)%w,y=(i*57.7)%(h*.7);const r=((i*13)%10)/10*s;c.globalAlpha=.4+((i*7)%10)/16;c.beginPath();c.arc(x,y,r,0,7);c.fill();}c.globalAlpha=1;}
+function moon(c,x,y,r){const g=c.createRadialGradient(x,y,2,x,y,r);g.addColorStop(0,'#fffdf2');g.addColorStop(1,'rgba(255,253,242,0)');c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,7);c.fill();c.fillStyle='#fdf6d8';c.beginPath();c.arc(x,y,r*.5,0,7);c.fill();}
+function cloud(c,x,y,r){c.beginPath();c.arc(x,y,r*.6,0,7);c.arc(x+r*.5,y+6,r*.5,0,7);c.arc(x-r*.5,y+8,r*.45,0,7);c.arc(x+r,y+10,r*.4,0,7);c.fill();}
+function waves(c,w,h,base,col,n){c.fillStyle=col;c.beginPath();c.moveTo(0,h);for(let x=0;x<=w;x+=8){c.lineTo(x, base+Math.sin(x/40+n)*8);}c.lineTo(w,h);c.fill();}
+function buildings(c,w,h,base,col,glow,n,gcol){c.fillStyle=col;let x=0;let i=0;while(x<w){const bw=30+((i*37)%40),bh=80+((i*53)%180);c.fillRect(x,base-bh,bw,bh+h);c.fillStyle=gcol||glow;for(let wy=base-bh+10;wy<base;wy+=16)for(let wx=x+5;wx<x+bw-5;wx+=12){if((wx*wy)%7<3){c.globalAlpha=.8;c.fillRect(wx,wy,4,6);}}c.globalAlpha=1;c.fillStyle=col;x+=bw+8;i++;}}
+
+const scene=document.getElementById('scene');
+let layers=[];
+function buildScene(name){
+  scene.innerHTML='';layers=[];
+  const W=430,H=900;
+  SCENES[name].forEach(spec=>{
+    const div=document.createElement('div');div.className='layer';
+    const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+    const ctx=cv.getContext('2d');spec.paint(0,ctx,W,H);
+    div.appendChild(cv);scene.appendChild(div);
+    layers.push({el:div,depth:spec.d});
+  });
+}
+/* scene buttons */
+const scenesWrap=document.getElementById('scenes');
+Object.keys(SCENES).forEach((name,i)=>{
+  const b=document.createElement('button');b.className='sbtn'+(i===0?' on':'');b.textContent=name;
+  b.onclick=()=>{document.querySelectorAll('.sbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');buildScene(name);};
+  scenesWrap.appendChild(b);
+});
+buildScene('Mountain Dawn');
+
+/* ---- apps ---- */
+const APPS=[
+  ['Messages','💬','#34c759'],['Photos','🌸','#ff2d55'],['Music','🎵','#fa2c56'],['Camera','📷','#5a5f6b'],
+  ['Weather','⛅','#3a94e6'],['Clock','⏰','#111318'],['Notes','📝','#ffd60a'],['Maps','🗺️','#4cd964'],
+  ['Calendar','📅','#ff3b30'],['Mail','✉️','#2f9bff'],['Files','📁','#43b7ff'],['Settings','⚙️','#8e9096'],
+  ['App Store','🅰️','#0a84ff'],['Health','❤️','#ff4a68'],['Wallet','💳','#1c1c1e'],['Podcasts','🎙️','#a24bff'],
+];
+const DOCK=[['Phone','📞','#34c759'],['Safari','🧭','#1d9bf0'],['Messages','💬','#34c759'],['Camera','📷','#3a3f4b']];
+function mkApp(a){const d=document.createElement('div');d.className='app';
+  d.innerHTML=`<div class="icon" style="background:linear-gradient(145deg,${a[2]},${shade(a[2])})">${a[1]}</div><span class="lbl">${a[0]}</span>`;return d;}
+function shade(hex){return hex;} // gradient endpoint kept subtle via same hue
+document.getElementById('grid').append(...APPS.map(mkApp));
+document.getElementById('dock').append(...DOCK.map(mkApp));
+
+/* ---- clock ---- */
+function tick(){const n=new Date(),h=((n.getHours()+11)%12+1),m=String(n.getMinutes()).padStart(2,'0');
+  const t=h+':'+m;document.getElementById('clk').textContent=t;document.getElementById('clk2').textContent=t;
+  document.getElementById('date').textContent=n.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});}
+tick();setInterval(tick,10000);
+
+/* ---- parallax engine ---- */
+const home=document.getElementById('home');
+let tx=0,ty=0,cx=0,cy=0,intensity=1;
+const depthEl=document.getElementById('depth'),depthOut=document.getElementById('depthOut');
+depthEl.oninput=()=>{intensity=depthEl.value/100;depthOut.textContent=depthEl.value+'%';};
+
+const phone=document.getElementById('phone');
+phone.addEventListener('pointermove',e=>{const r=phone.getBoundingClientRect();
+  tx=((e.clientX-r.left)/r.width-.5)*2; ty=((e.clientY-r.top)/r.height-.5)*2;});
+phone.addEventListener('pointerleave',()=>{tx=0;ty=0;});
+
+document.getElementById('gyro').onclick=async()=>{
+  try{ if(typeof DeviceOrientationEvent!=='undefined' && DeviceOrientationEvent.requestPermission){
+      const p=await DeviceOrientationEvent.requestPermission(); if(p!=='granted')return;}
+    window.addEventListener('deviceorientation',e=>{ tx=Math.max(-1,Math.min(1,(e.gamma||0)/35)); ty=Math.max(-1,Math.min(1,((e.beta||0)-45)/35)); });
+    document.getElementById('gyro').textContent='Gyro active — tilt your phone';
+  }catch(err){document.getElementById('gyro').textContent='Gyro unavailable on this device';}
+};
+
+function frame(){
+  cx+=(tx-cx)*.08; cy+=(ty-cy)*.08;
+  const k=reduce?0:intensity;
+  layers.forEach(l=>{ const f=l.depth*k*0.6; l.el.style.transform=`translate3d(${-cx*f}px,${-cy*f}px,0) scale(1.08)`; });
+  // home content floats gently the opposite way for depth
+  home.style.transform=`rotateY(${cx*3*k}deg) rotateX(${-cy*3*k}deg)`;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

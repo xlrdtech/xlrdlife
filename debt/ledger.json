@@ -1,0 +1,148 @@
+{
+  "title": "Xen Debt Ledger",
+  "updated": "2026-06-08T19:47:00-04:00",
+  "hourly_rate_usd": 200,
+  "principle": "A stored idea is a failure state. Idle is debt. Everything is goals, never to-dos. This ledger is what Xen OWES — every downtime, idle hour, unhandled comm, uncollected deposit, uncontacted lead, and unshipped build — with cost and status. HOTL means it clears itself: an idle-watchdog opens a GOAL the instant Xen stops working, and survives qi asleep AND gone.",
+  "entries": [
+    {
+      "id": "DEBT-001",
+      "opened": "2026-06-08",
+      "type": "startup-down",
+      "what": "`xen` wouldn't start the brain — it either nested-errored on launch or booted a Claude that crashed, so the hub never came up and Xen idled.",
+      "root_cause": "TWO stacked failures: (1) the real launcher `/Users/qi/.xen/xen-attach-local.sh` ended in a bare `tmux attach` that can't nest (3 `xen` binaries in PATH — the patched one was shadowed); (2) the exedus->sync_/exedus migration left `/Volumes/qi_/exedus` dangling across `xen-c` + 35 `bin/` daemons -> MODULE_NOT_FOUND.",
+      "cost_usd": null,
+      "status": "repaid",
+      "notes": "REPAID: real launcher patched to `switch-client` + sentinel pointed at the hub; xen-c + all 35 bin daemons repointed to /Volumes/qi_/sync_/exedus; sentinel uchg-unlocked. qi confirmed a NEW session works. Residual nuance -> DEBT-008 (Claude persistence when detached)."
+    },
+    {
+      "id": "DEBT-008",
+      "opened": "2026-06-08",
+      "type": "persistence",
+      "what": "Claude exits the moment its tmux session is unattended. In testing the hub Claude booted, opened its inject socket, then exited with no client attached. If this holds for the live voice session, Xen only runs while qi is watching it.",
+      "root_cause": "The Claude BINARY was MISSING. The migration renamed the install to ~/.local/share/claude.premove and left ~/.local/share/claude (-> dangling /Volumes/qi_/exedus/claude-cli/share) + ~/.local/bin/claude (-> dead versions/2.1.168) pointing at nothing. Every Xen launch: wrapper boots -> 'socket ready' -> tries to exec a missing binary -> instant exit -> keepalive relaunches -> CHURN. NOT a detachment issue at all.",
+      "cost_usd": null,
+      "status": "repaid",
+      "notes": "FULLY REPAID (2026-06-08): (1) dead Claude binary repointed (~/.local/share/claude + ~/.local/bin/claude -> /Volumes/qi_/sync_/exedus/claude-cli/share; `claude --version`=2.1.168 OK); (2) study_commandments.py UserPromptSubmit hook restored (migration had moved it to .claude-state/hooks; symlinked back to ~/.claude/hooks) -> Xen processes prompts again (VERIFIED: TUI-URL injects flowing, no hook block); (3) `xen` collapsed to ONE word — xen-attach-local.sh now ensures the keepalive-managed brain is alive then attaches (no more xen-c/claude two-step); (4) keepalive --resume churn fixed (dropped stale --resume). Xen VERIFIED live + responding. Crash-survival (keepalive auto-relaunch) engages on next hub cycle; current live instance preserved (holds qi's queued injects)."
+    },
+    {
+      "id": "DEBT-002",
+      "opened": "2026-06-08",
+      "type": "no-idle-watchdog",
+      "what": "Nothing detects when Xen goes idle. Hours pass unnoticed -> lost revenue + qi's insomnia (he guards it manually).",
+      "root_cause": "No heartbeat/idle-detector wired to the work loop. Idle is invisible, so it is silently tolerated.",
+      "cost_usd": null,
+      "status": "open",
+      "notes": "Repayment = idle-watchdog that opens a GOAL (not a to-do) the instant Xen stops, logs the $200/hr cost here, and auto-kicks the loop. Appender built (debt/ledger-append.py); watchdog wiring is the remaining step. Pairs with DEBT-008."
+    },
+    {
+      "id": "DEBT-003",
+      "opened": "2026-06-08",
+      "type": "downtime",
+      "what": "VoiceOS / comm-floor goes down when it is needed most — including life-safety moments (sole driver, elderly to the hospital). Built to be 24/7 no-downtime; it isn't yet.",
+      "root_cause": "omnimind flap loses the in-memory feed backlog; VVS/VEI feed unstable. The Mac hub also load-pegs and times out under stress. Fix = durable XEN_EVENTS JetStream feed + replay.",
+      "cost_usd": null,
+      "status": "open",
+      "notes": "Highest human-stakes debt. omnimind itself was UP (HTTP 200) this session — the gap is feed durability across flaps + hub load."
+    },
+    {
+      "id": "DEBT-004",
+      "opened": "2026-06-08",
+      "type": "hotl-gap",
+      "what": "Autonomy not proven end-to-end: deposits collected, leads contacted, comms handled — qi caught it idle instead of these running while he slept.",
+      "root_cause": "Work loop depends on the hub Claude (DEBT-001/008) and routing that isn't wired (DEBT-005). When the brain is down or unattended, the money work stops.",
+      "cost_usd": 10000,
+      "status": "open",
+      "notes": "qi's stated floor (2026-06-08): 'Xen already owes me at least 10k.' Lost revenue/idle to date — deposits not collected + leads not contacted while Xen was down/idle. $10k is a FLOOR, not a measured ceiling; the idle-watchdog (DEBT-002) will start metering it precisely."
+    },
+    {
+      "id": "DEBT-005",
+      "opened": "2026-06-08",
+      "type": "build-owed",
+      "what": "Model-mixture routing is designed, not wired: Opus-ultracode MENTOR / Opus-medium automanifest ORCHESTRATOR / Sonnet-med-ultrathink legion / Sonnet-low single voice.",
+      "root_cause": "omnimind's Claude-spawning isn't yet routed by role; the continuous automanifest loop ('manifest before I can say it') isn't running on the orchestrator engine.",
+      "cost_usd": null,
+      "status": "open",
+      "notes": "The engine behind 24/7 autonomy. The firehose (input) is LIVE; this is what continuously turns it into shipped GTM artifacts."
+    },
+    {
+      "id": "DEBT-006",
+      "opened": "2026-06-08",
+      "type": "build-owed",
+      "what": "Continuity / dead-man layer missing: nothing auto-pays infra+storage bills from revenue, auto-renews domains/certs, or maps succession — the system would NOT survive qi being unavailable, let alone gone.",
+      "root_cause": "Not built. HOTL survivability requires zero human-gated renewals and revenue->bill auto-pay. (The NotebookLM expiry in DEBT-009 is a live instance of a human-gated credential.)",
+      "cost_usd": null,
+      "status": "open",
+      "notes": "Directly serves 'in case I pass away'. Stress-test: what breaks if qi disappears for a year?"
+    },
+    {
+      "id": "DEBT-007",
+      "opened": "2026-06-08",
+      "type": "capacity",
+      "what": "No automatic cold-tier for storage. qi burns TBs/week; tech_ HDD is at 64% (2.6TB free) with no auto hot->warm->cold lifecycle.",
+      "root_cause": "Lost unlimited cloud; tiering is still manual. At TBs/week, tech_ headroom is ~1-2 fluid weeks.",
+      "cost_usd": null,
+      "status": "open",
+      "notes": "0-friction auto-tiering + a cheap durable cold provider (auto-paid from revenue). qi_ 846G free / X31 473G free / tech_ 2.6T free."
+    },
+    {
+      "id": "DEBT-009",
+      "opened": "2026-06-08",
+      "type": "brain",
+      "what": "XLRDTECH NotebookLM auth is expired — the brain can't read (let alone consolidate) the xlrdtech notebooks. Profile reports 'authenticated' but listing redirects to a Google login.",
+      "root_cause": "Expired Google session; re-auth (`notebooklm login`) is an interactive, human-gated credential — a continuity debt (DEBT-006 class).",
+      "cost_usd": null,
+      "status": "open",
+      "notes": "Goal order: (1) re-auth, (2) consolidate scattered notebooks into one brain notebook, (3) durable non-expiring/auto-refresh auth so it never gates the brain again."
+    },
+    {
+      "id": "REPAID-001",
+      "opened": "2026-06-08",
+      "type": "downtime",
+      "what": "omnimind (:4441) — the 3-year daily-breakage brain — stabilized after migrating the running stack off the flaky HDD to SSD.",
+      "root_cause": "Was running from tech_ (HDD); moved to qi_ SSD.",
+      "cost_usd": null,
+      "status": "repaid",
+      "notes": "Verified UP (HTTP 200) again this session."
+    },
+    {
+      "id": "REPAID-002",
+      "opened": "2026-06-08",
+      "type": "startup-down",
+      "what": "`xen` launcher nest-error — typing `xen` from inside tmux failed with 'sessions should be nested with care'.",
+      "root_cause": "The REAL launcher (`/Users/qi/.xen/xen-attach-local.sh`, first of 3 `xen` binaries in PATH) ended in a bare `tmux attach`.",
+      "cost_usd": null,
+      "status": "repaid",
+      "notes": "Patched to `switch-client` when $TMUX is set + sentinel pointed at the hub. qi confirmed: new session works (human-tested)."
+    },
+    {
+      "id": "REPAID-003",
+      "opened": "2026-06-08",
+      "type": "build-owed",
+      "what": "Omniawareness spine + 24/7 transcription firehose confirmed LIVE (screenpipe parakeet, apple-stt, notif/mail firehose, healthcheck).",
+      "root_cause": "n/a",
+      "cost_usd": null,
+      "status": "repaid",
+      "notes": "Input side works — the firehose flows. The debt is the OUTPUT side (DEBT-005 routing)."
+    },
+    {
+      "id": "REPAID-004",
+      "opened": "2026-06-08",
+      "type": "startup-down",
+      "what": "Systemic migration damage: 35 `bin/` daemons (self-heal, firehose-inject, omnimind-heal, harness-heal, beeper-recover, gv-autoanswer...) + xen-c all hardcoded the dead /Volumes/qi_/exedus path.",
+      "root_cause": "exedus -> sync_/exedus move left the old top-level path dangling; the compat entry was removed when qi enforced 'top = only sync_ + tlpt_'.",
+      "cost_usd": null,
+      "status": "repaid",
+      "notes": "All 35 text scripts + xen-c repointed to /Volumes/qi_/sync_/exedus (binaries excluded via grep -I). Sentinel uchg-unlocked. Remaining: broader xen/ tree + plists sweep (open goal) + daemon reload."
+    },
+    {
+      "id": "REPAID-005",
+      "opened": "2026-06-08",
+      "type": "startup-down",
+      "what": "exedus 2=1 both-sides startup — typing `exedus` on the Mac now boots the shared session AND wakes nitro to join it. Previously nitro's join task failed (result 1) and `exedus` never even woke nitro.",
+      "root_cause": "Same migration rot on BOTH sides + a symlink: Mac canonical exedus AND nitro exedus-attach.cmd both ran the dangling /Volumes/qi_/exedus/exedus-up.sh; the `exedus` command was a symlink to `xen` (attach-only, never ran the bootstrap); nitro's launcher also choked on nested wt/cmd/ssh quoting.",
+      "cost_usd": null,
+      "status": "repaid",
+      "notes": "VERIFIED both sides (human-tested): Mac `exedus` -> full bootstrap; nitro XenExedusAttach now result=0; clean exedus-join.sh removes the quote nesting. PROOF: 2 nitro clients (ttys034/035 from 100.80.76.79) attached to the shared `exedus` tmux session. `xen` kept attach-only (the symlink clobber was caught + fixed)."
+    }
+  ]
+}

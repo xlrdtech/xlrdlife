@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Diamond Cutz — 3D Logo Objects (all variations)</title>
+<meta name="theme-color" content="#0a0908">
+<style>
+  :root{
+    --void:#000;--abyss:#0a0908;--ash:#17120e;
+    --pearl:#f4efe9;--bone:#cfc6bc;--mute:#8c8378;--dust:#5e564c;
+    --rose:#d9a37a;--rosegold:#c98a5e;--rose-pale:#ecc9a6;--rose-hi:#f6e2cc;--copper:#a8643c;
+    --line:rgba(224,176,136,.16);
+  }
+  html[data-theme="light"]{ --void:#ffffff;--abyss:#f5f6f8;--ash:#eceef1;--pearl:#14171c;--bone:#3a4048;--mute:#6b7280;--dust:#aab0b8;--line:rgba(30,45,70,.14) }
+  html[data-theme="light"] body{ background:linear-gradient(180deg,#ffffff,#f4f5f7) }
+  html[data-theme="light"] .card{ background:radial-gradient(ellipse 82% 76% at 50% 42%, #ffffff 38%, #eef1f5 100%) }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  ::selection{background:var(--rose);color:var(--void)}
+  html{scroll-behavior:smooth}
+  html,body{background:var(--void);color:var(--pearl);font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-weight:300;-webkit-font-smoothing:antialiased;overflow-x:clip}
+  body{background:
+    radial-gradient(ellipse 1100px 580px at 50% 0%, rgba(201,138,94,0.10), transparent 60%),
+    var(--void);min-height:100vh}
+
+  .themebtn{position:fixed;top:14px;right:14px;z-index:60;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(10,9,8,.5);backdrop-filter:blur(8px);color:var(--pearl);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,background .3s}
+  html[data-theme="light"] .themebtn{background:rgba(255,255,255,.7);box-shadow:0 4px 18px rgba(0,0,0,.12)}
+  .themebtn:hover{transform:scale(1.09)}
+
+  header.hd{max-width:1280px;margin:0 auto;padding:54px 28px 28px;text-align:center}
+  header.hd .kicker{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:var(--rose-pale);margin-bottom:16px}
+  header.hd h1{font-weight:600;font-size:clamp(24px,4.4vw,40px);letter-spacing:.01em;line-height:1.1;
+    background:linear-gradient(180deg,var(--rose-hi) 0%,#e0b088 34%,var(--copper) 56%,var(--rose-pale) 74%,var(--rose-hi) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  header.hd p.sub{margin-top:14px;color:var(--bone);font-size:clamp(13px,2vw,16px);font-weight:300;letter-spacing:.01em}
+
+  .grid{max-width:1280px;margin:0 auto;padding:20px 22px 80px;
+    display:grid;grid-template-columns:1fr;gap:20px}
+  @media (min-width:560px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (min-width:980px){ .grid{grid-template-columns:repeat(3,1fr);gap:24px} }
+
+  .card{position:relative;aspect-ratio:1/1;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    background:radial-gradient(ellipse 78% 70% at 50% 44%, rgba(22,33,58,.55), transparent 72%),#000;
+    touch-action:pan-y;transition:border-color .25s,box-shadow .25s,transform .25s}
+  .card:hover{border-color:var(--rose);box-shadow:0 10px 40px rgba(201,138,94,.16)}
+  .card canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+  .card canvas:active{cursor:grabbing}
+
+  .label{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;justify-content:space-between;
+    padding:11px 15px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--rose-pale);background:linear-gradient(0deg,rgba(0,0,0,.55),transparent);pointer-events:none}
+  html[data-theme="light"] .label{color:var(--copper);background:linear-gradient(0deg,rgba(255,255,255,.7),transparent)}
+  .label .n{color:var(--mute);font-size:10px;letter-spacing:.18em}
+
+  /* subtle loading state until the 3D object inits */
+  .loader{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;
+    transition:opacity .5s;pointer-events:none}
+  .card.live .loader{opacity:0}
+  .loader .ring{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--rose-pale);
+    animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  footer{padding:30px 26px 50px;text-align:center;font-family:'Cinzel',serif;font-size:9px;letter-spacing:.42em;text-transform:uppercase;color:var(--dust)}
+
+  @media (prefers-reduced-motion:reduce){ .loader .ring{animation:none} }
+</style>
+</head>
+<body>
+<button class="themebtn" id="themebtn" title="Toggle light / dark" aria-label="Toggle theme">&#9790;</button>
+
+<header class="hd">
+  <div class="kicker">&#9670;  Diamond Cutz  &#9670;</div>
+  <h1>3D Logo Objects — All Variations</h1>
+  <p class="sub">Every logo variation, rendered as a 3D object — drag to spin, scroll to browse.</p>
+</header>
+
+<main class="grid" id="grid"></main>
+
+<footer>&#9670; Diamond Cutz · 20 logo variations · 3D object showcase &#9670;</footer>
+
+<script type="importmap">{"imports":{"three":"/lib/three.module.min.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* ── build the grid: one card per logo dcz-1 … dcz-20 ── */
+var TOTAL = 20;
+var grid = document.getElementById('grid');
+var cards = [];
+for (var i = 1; i <= TOTAL; i++){
+  var name = 'dcz-' + i;
+  var card = document.createElement('section');
+  card.className = 'card';
+  card.dataset.logo = name;
+  card.dataset.src = '/dcz/assets/web/' + name + '.png';
+  card.innerHTML =
+    '<canvas></canvas>' +
+    '<div class="loader"><div class="ring"></div></div>' +
+    '<div class="label"><span>' + name + '</span><span class="n">' + i + ' / ' + TOTAL + '</span></div>';
+  grid.appendChild(card);
+  cards.push(card);
+}
+
+/* ── shared, reusable 3D env (canvas-gradient → PMREM) built once per live renderer ──
+   The opt8 technique: an image texture on stacked PlaneGeometry layers (genuine
+   extruded depth), MeshPhysicalMaterial metallic, lit via env/PMREM + spots,
+   follows pointer, idle auto-rotates, drag-to-spin. */
+function buildEnvTexture(){
+  var ec = document.createElement('canvas'); ec.width = 512; ec.height = 256;
+  var g = ec.getContext('2d');
+  var grd = g.createLinearGradient(0,0,0,256);
+  grd.addColorStop(0,'#10203a'); grd.addColorStop(.4,'#27406a'); grd.addColorStop(.5,'#eaf4ff');
+  grd.addColorStop(.6,'#1a2a44'); grd.addColorStop(1,'#05070a');
+  g.fillStyle = grd; g.fillRect(0,0,512,256);
+  function blob(x,y,r,c){ g.fillStyle=c; g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); }
+  blob(110,60,40,'rgba(255,255,255,1)'); blob(390,52,54,'rgba(169,232,255,.95)');
+  blob(300,150,66,'rgba(199,160,255,.6)'); blob(70,150,34,'rgba(255,232,192,.7)');
+  blob(240,40,26,'rgba(255,255,255,.9)');
+  return new THREE.CanvasTexture(ec);
+}
+
+function lightMode(){ return document.documentElement.getAttribute('data-theme') === 'light'; }
+
+/* Create a full live 3D object inside one card. Returns a handle with dispose(). */
+function createObject(card){
+  var canvas = card.querySelector('canvas');
+  var renderer;
+  try{
+    renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias:true, alpha:true, powerPreference:'high-performance' });
+  }catch(e){ return null; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.22;
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+  camera.position.set(0,0,5);
+
+  // env / PMREM lighting (the metallic shine)
+  var envTex = buildEnvTexture();
+  envTex.mapping = THREE.EquirectangularReflectionMapping; envTex.colorSpace = THREE.SRGBColorSpace;
+  var pmrem = new THREE.PMREMGenerator(renderer);
+  var envRT = pmrem.fromEquirectangular(envTex);
+  scene.environment = envRT.texture;
+  envTex.dispose(); pmrem.dispose();
+
+  scene.add(new THREE.AmbientLight(0x8198b8, 0.5));
+  var key = new THREE.DirectionalLight(0xffffff, 2.0); key.position.set(2,3.2,4); scene.add(key);
+  var sp1 = new THREE.SpotLight(0xffffff,110,24,0.6,0.5,1.2); sp1.position.set(-5,3,5); scene.add(sp1); scene.add(sp1.target);
+  var sp2 = new THREE.SpotLight(0xbfe0ff,85,24,0.7,0.5,1.2); sp2.position.set(5,-2,5); scene.add(sp2); scene.add(sp2.target);
+  var rimViolet = new THREE.PointLight(0xc7a0ff,22,30); rimViolet.position.set(3.5,-3,2.5); scene.add(rimViolet);
+  var sparkle = new THREE.PointLight(0xffffff,30,20); scene.add(sparkle);
+
+  var grp = new THREE.Group(); scene.add(grp);
+
+  var LAYERS = 11, TH = 0.30;
+  var planeGeo = null, layers = [], texRef = null;
+  var W = 3.5, H = 3.5; // updated from real texture aspect once loaded
+
+  var tl = new THREE.TextureLoader();
+  var disposed = false, rafId = 0;
+
+  tl.load(card.dataset.src, function(tex){
+    if (disposed){ tex.dispose(); return; }
+    texRef = tex;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    // size the plane to the REAL aspect ratio (logos are 16:9 or 1:1) so nothing distorts
+    var iw = (tex.image && tex.image.width) || 1, ih = (tex.image && tex.image.height) || 1;
+    var ar = iw / ih;
+    if (ar >= 1){ W = 3.5; H = 3.5 / ar; } else { H = 3.5; W = 3.5 * ar; }
+    planeGeo = new THREE.PlaneGeometry(W, H);
+    for (var k = 0; k < LAYERS; k++){
+      var f = k / (LAYERS - 1);
+      var z = TH/2 - f*TH;
+      var front = (k === 0);
+      var col = front ? 0xffffff : new THREE.Color().setScalar(0.42 - f*0.26).getHex();
+      var m = new THREE.MeshPhysicalMaterial({
+        map: tex, color: col,
+        metalness: front ? 0.85 : 0.92,
+        roughness: front ? 0.26 : (0.4 + f*0.3),
+        clearcoat: front ? 0.6 : 0,
+        envMapIntensity: front ? 1.5 : 0.45,
+        emissive: front ? 0xffffff : 0x000000,
+        emissiveMap: front ? tex : null,
+        emissiveIntensity: front ? 0.1 : 0
+      });
+      var mesh = new THREE.Mesh(planeGeo, m); mesh.position.z = z; grp.add(mesh); layers.push(mesh);
+    }
+    resize();
+    card.classList.add('live'); // hide loader
+  });
+
+  // ── interaction: pointer-follow + idle auto-rotate + drag-to-spin (per card) ──
+  var dragging = false, px = 0, py = 0, velX = 0, velY = 0, rotX = 0, rotY = 0, pX = 0, pY = 0, hovering = false;
+
+  function onMove(e){
+    var r = card.getBoundingClientRect();
+    pX = ((e.clientX - r.left) / r.width) * 2 - 1;
+    pY = ((e.clientY - r.top) / r.height) * 2 - 1;
+    if (dragging){
+      var dx = e.clientX - px, dy = e.clientY - py; px = e.clientX; py = e.clientY;
+      rotY += dx*0.01; rotX += dy*0.01; velY = dx*0.01; velX = dy*0.01;
+      rotX = Math.max(-1.1, Math.min(1.1, rotX));
+    }
+  }
+  function onEnter(){ hovering = true; }
+  function onLeave(){ hovering = false; }
+  function onDown(e){ dragging = true; px = e.clientX; py = e.clientY; velX = velY = 0; try{ canvas.setPointerCapture(e.pointerId); }catch(_){} }
+  function onUp(){ dragging = false; }
+  card.addEventListener('pointermove', onMove);
+  card.addEventListener('pointerenter', onEnter);
+  card.addEventListener('pointerleave', onLeave);
+  canvas.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointerup', onUp);
+
+  function resize(){
+    var w = card.clientWidth, h = card.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    var aspect = w / h; camera.aspect = aspect;
+    var halfTan = Math.tan(camera.fov*Math.PI/180/2), margin = 0.86;
+    var dH = (H/2)/(margin*halfTan), dW = (W/2)/(margin*halfTan*aspect);
+    camera.position.z = Math.max(dH, dW, 2.4);
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  var clock = new THREE.Clock();
+  function loop(){
+    if (disposed) return;
+    rafId = requestAnimationFrame(loop);
+    var t = clock.getElapsedTime();
+    rotY += velY; rotX += velX; velY *= 0.92; velX *= 0.92;
+    if (!dragging){
+      // pointer-follow when hovering; gentle idle auto-rotate otherwise
+      var aimY = hovering ? pX*0.6 : Math.sin(t*0.5)*0.55;
+      var aimX = hovering ? pY*0.4 : Math.sin(t*0.4)*0.10;
+      rotY += (aimY - rotY)*0.06; rotX += (aimX - rotX)*0.06;
+    }
+    grp.rotation.y = rotY; grp.rotation.x = rotX;
+    grp.position.y = Math.sin(t*0.7)*0.03;
+    sparkle.position.set(Math.cos(t*1.6)*3.0, Math.sin(t*1.4)*2.2, 3.0);
+    sp1.target.position.set(Math.sin(t*0.6)*1.2,0.3,0); sp1.position.x = Math.sin(t*0.6)*2.2-3;
+    sp2.target.position.set(Math.sin(t*0.5+2)*1.2,-0.2,0); sp2.position.x = Math.sin(t*0.5+2)*2.2+3;
+    renderer.render(scene, camera);
+  }
+  loop();
+
+  // ── full dispose: stop RAF, free GPU, lose the WebGL context ──
+  function dispose(){
+    if (disposed) return; disposed = true;
+    if (rafId) cancelAnimationFrame(rafId);
+    card.removeEventListener('pointermove', onMove);
+    card.removeEventListener('pointerenter', onEnter);
+    card.removeEventListener('pointerleave', onLeave);
+    canvas.removeEventListener('pointerdown', onDown);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('resize', resize);
+    try{
+      layers.forEach(function(m){ if (m.material) m.material.dispose(); });
+      if (planeGeo) planeGeo.dispose();
+      if (texRef) texRef.dispose();
+      if (envRT && envRT.texture) envRT.texture.dispose();
+      if (scene.environment) scene.environment = null;
+      renderer.dispose();
+      var ext = renderer.getContext().getExtension('WEBGL_lose_context');
+      if (ext) ext.loseContext();
+    }catch(_){}
+    card.classList.remove('live'); // restore loader for next time it enters view
+  }
+
+  return { dispose: dispose };
+}
+
+/* ── LAZY LIFECYCLE: only visible cards hold a live WebGL context ──
+   20 simultaneous canvases would blow past the browser's ~16-context cap and crash,
+   so each card's renderer is CREATED on enter and fully DISPOSED on exit.
+   rootMargin pre-warms one viewport ahead/behind for smooth scrolling. */
+var live = new WeakMap();
+function activate(card){ if (!live.has(card)){ var h = createObject(card); if (h) live.set(card, h); } }
+function deactivate(card){ var h = live.get(card); if (h){ h.dispose(); live.delete(card); } }
+
+if ('IntersectionObserver' in window){
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if (en.isIntersecting) activate(en.target);
+      else deactivate(en.target);
+    });
+  }, { root:null, rootMargin:'200px 0px 200px 0px', threshold:0.01 });
+  cards.forEach(function(c){ io.observe(c); });
+} else {
+  // no IO: activate only the first few to stay under the context cap
+  cards.slice(0,6).forEach(activate);
+}
+
+/* rebuild visible objects on theme change so loaders/contrast track (optional, cheap) */
+window.addEventListener('dcztheme', function(){
+  cards.forEach(function(c){ if (live.has(c)){ deactivate(c); activate(c); } });
+});
+</script>
+
+<script>
+/* ── theme toggle: same pattern as opt8 (data-theme, localStorage 'dcz-theme', white light bg) ── */
+(function(){
+  var root = document.documentElement, b = document.getElementById('themebtn');
+  function set(m){
+    root.setAttribute('data-theme', m);
+    try{ localStorage.setItem('dcz-theme', m); }catch(e){}
+    if (b) b.textContent = (m === 'light' ? '☀' : '☾');
+    window.dispatchEvent(new CustomEvent('dcztheme', { detail:m }));
+  }
+  var s; try{ s = localStorage.getItem('dcz-theme'); }catch(e){}
+  set(s || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+  if (b) b.addEventListener('click', function(){ set(root.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); });
+})();
+</script>
+</body>
+</html>

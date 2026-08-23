@@ -1,0 +1,32 @@
+# Cloudflare Worker manifest for tools.xlrd.org
+# Copy to wrangler.toml, fill in account_id + KV namespace id, then deploy
+#
+# Setup sequence:
+#   wrangler init tools-runtime --type module
+#   cp worker.js tools-runtime/src/index.js
+#   cd tools-runtime
+#   wrangler secret put XEN_TOOLS_TOKEN         # <- paste shared peer token
+#   wrangler secret put XEN_HMAC_KEY            # <- paste separate HMAC signing key
+#   wrangler secret put XEN_MAC_TOKEN           # <- the omnimind /api/inject token (same as Win-side XEN_MAC_TOKEN)
+#   wrangler kv namespace create TOOLS_RATE
+#   # paste returned ID into [[kv_namespaces]] below
+#   wrangler deploy
+
+name = "tools-runtime"
+main = "src/index.js"
+compatibility_date = "2026-05-23"
+account_id = "<YOUR_CF_ACCOUNT_ID>"
+
+# Route: tools.xlrd.org/*
+[[routes]]
+pattern = "tools.xlrd.org/*"
+zone_name = "xlrd.org"
+
+[[kv_namespaces]]
+binding = "TOOLS_RATE"
+id = "<KV_NAMESPACE_ID_FROM_kv_namespace_create>"
+
+# Secrets are NOT in this file. Set via:
+#   wrangler secret put XEN_TOOLS_TOKEN
+#   wrangler secret put XEN_HMAC_KEY
+#   wrangler secret put XEN_MAC_TOKEN

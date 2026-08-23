@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HOTL Plan — Lanes, Echo Fix &amp; Memory Verdict</title>
+<style>
+:root{--bg:#0a0a0f;--card:#13131c;--line:#23232f;--txt:#e8e8f0;--dim:#9a9ab0;--acc:#7c5cff;--good:#33d685;--bad:#ff5c7c;--warn:#ffb74d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:20px;max-width:760px;margin:0 auto}
+h1{font-size:26px;font-weight:800;margin-bottom:4px;background:linear-gradient(90deg,#fff,var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{color:var(--dim);font-size:14px;margin-bottom:24px}
+h2{font-size:18px;margin:28px 0 12px;display:flex;align-items:center;gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.q{color:var(--dim);font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.big{font-size:22px;font-weight:800}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}.acc{color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600;font-size:12px;text-transform:uppercase}
+.pid{font-family:ui-monospace,monospace;color:var(--acc)}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700}
+.t-keep{background:rgba(51,214,133,.15);color:var(--good)}
+.t-kill{background:rgba(255,92,124,.15);color:var(--bad)}
+.t-check{background:rgba(255,183,77,.15);color:var(--warn)}
+ol,ul{padding-left:20px}li{margin:6px 0}
+.step{display:flex;gap:12px;margin:10px 0}
+.num{flex:0 0 28px;height:28px;border-radius:8px;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+code{background:#000;padding:1px 6px;border-radius:5px;font-family:ui-monospace,monospace;font-size:13px;color:#9affc4}
+.foot{color:var(--dim);font-size:12px;text-align:center;margin-top:30px;padding-top:16px;border-top:1px solid var(--line)}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--dim);margin:8px 0}
+.flow b{color:var(--txt)}
+</style>
+</head>
+<body>
+
+<h1>HOTL Plan</h1>
+<div class="sub">Lanes · the 4-echo cause · Hermes memory verdict · the multi-terminal SOP you're building · 2026-06-30</div>
+
+<h2>① Why you got 4 echoes</h2>
+<div class="card">
+<div class="q">Root cause</div>
+<div class="big">6 separate <span class="acc">claude</span> brains are alive. ~4 of them heard the same voice inject and each answered.</div>
+<p style="color:var(--dim);margin-top:10px">Not a voice bug, not a memory bug. The pane/inject has <b>no single-consumer guard</b> — so every live lane subscribed to it replies. The text/pane path never got the dedup that voice already has.</p>
+</div>
+
+<div class="card">
+<table>
+<tr><th>PID</th><th>Started</th><th>What it is</th><th></th></tr>
+<tr><td class="pid">133600</td><td>6/29 7:03p</td><td>This session (opus, you talking to me)</td><td><span class="tag t-keep">KEEP</span></td></tr>
+<tr><td class="pid">125848</td><td>6/29 3:25p</td><td>tmux teammate lane</td><td><span class="tag t-check">CHECK</span></td></tr>
+<tr><td class="pid">70740</td><td>6/30 4:32a</td><td>2nd tmux teammate — <b>dup</b></td><td><span class="tag t-kill">KILL</span></td></tr>
+<tr><td class="pid">151524</td><td>6/30 2:18a</td><td>headless stream lane (warm responder?)</td><td><span class="tag t-check">CHECK</span></td></tr>
+<tr><td class="pid">143480</td><td>6/30 6:17a</td><td>resumed lane</td><td><span class="tag t-check">CHECK</span></td></tr>
+<tr><td class="pid">83784</td><td>6/30 6:17a</td><td>spawned same minute as 143480 — <b>dup</b></td><td><span class="tag t-kill">KILL</span></td></tr>
+</table>
+<p style="color:var(--dim);font-size:13px;margin-top:10px">The Desktop app's 13 background processes are <span class="good">normal Electron</span> (gpu, network, audio…) — not lanes, ignored.</p>
+</div>
+
+<h2>② The fix</h2>
+<div class="card">
+<div class="step"><div class="num">1</div><div><b>Now — stop the echo.</b> Kill the 2 clear dups: <span class="pid">70740</span> + <span class="pid">83784</span>. Peek at the 3 CHECK lanes first so nothing live dies mid-task.</div></div>
+<div class="step"><div class="num">2</div><div><b>Permanent — one inject, one answer.</b> Add a single-consumer guard on the pane (same <code>XEN_NESTED</code> pattern voice already uses). Inject routes to <b>one</b> brain; the rest never see it.</div></div>
+<div class="step"><div class="num">3</div><div><b>Governor.</b> A lane registry so respawns dedup by role instead of stacking. No more 2× tmux, 2× 6:17am.</div></div>
+</div>
+
+<h2>③ Do you need Hermes for memory? <span class="bad">No.</span></h2>
+<div class="card">
+<div class="q">Your use case</div>
+<div class="big">Instant · infinite · omnipresent memory</div>
+<p style="margin-top:10px;color:var(--dim)">That's a <b class="acc">storage + retrieval</b> problem. Hermes is an <b>LLM responder</b> — a consumer of memory, not the memory itself. Routing recall through it adds latency + token burn to what should be a lookup.</p>
+<div class="flow" style="margin-top:12px">voice inject → <b>capture</b> → store (bastra / sqlite / files) → <b>recall on need</b> → inject context. <span class="bad">No LLM in that loop.</span></div>
+</div>
+<div class="card">
+<div class="q">You already run the substrates</div>
+<ul>
+<li><b>bastra</b> — save_memory / load_memory / recall</li>
+<li><b>sqlite</b> — structured store</li>
+<li><b>file memory</b> + MEMORY.md index</li>
+<li><b>NotebookLM</b> — long-source corpora</li>
+</ul>
+<p style="margin-top:10px;color:var(--dim)">Your own pain-map already called it: <b>"WIRING not storage — 3 substrates exist; capture too late, recall only at SessionStart, no done-ledger."</b> The gap is plumbing, not a missing engine.</p>
+</div>
+<div class="card" style="border-color:var(--warn)">
+<div class="q warn">When Hermes WOULD earn its tokens</div>
+<p style="color:var(--dim)">Only as a <b>consumer</b>: compressing old context into memory entries, or answering "what do I know about X" in natural language over the store. Optional. Add when a summarizer measurably beats plain recall. Until then — <b class="bad">waste of tokens, you're right.</b></p>
+</div>
+
+<h2>④ The system you're actually building</h2>
+<div class="card">
+<div class="big acc">Voice inject → auto-runs the SOP → you stay fully HOTL</div>
+<p style="margin-top:10px;color:var(--dim)">The echo problem and the memory question are the <b>same project</b>: a multi-terminal session system where one voice command fans to the right lane, runs the SOP, and reports back — without you watching terminals.</p>
+<p style="margin-top:12px"><b>The 3 wires that make it real:</b></p>
+<ol>
+<li><b>Router</b> — voice inject → exactly one lane (kills echoes)</li>
+<li><b>Memory</b> — capture-on-correction + recall-on-need + done-ledger (kills amnesia, no Hermes)</li>
+<li><b>Lane registry</b> — named roles, dedup respawn (kills the stack of 6)</li>
+</ol>
+<p style="margin-top:12px;color:var(--dim)">Build these three and the whole thing is HOTL: you speak, the right brain acts once, remembers it, and tells you — on a page like this, not a terminal.</p>
+</div>
+
+<div class="foot">XEN · Nitro · hitthe.link/hotl-plan · verified live ✓</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

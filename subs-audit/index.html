@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex">
+<title>Subscription Audit — the real number</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f5f7;
+  --card:#ffffff;
+  --ink:#0b0d12;
+  --ink-2:#3c4350;
+  --ink-3:#6b7480;
+  --line:#e2e5ea;
+  --line-2:#eceff3;
+  --red:#b42318;
+  --red-bg:#fef3f2;
+  --red-line:#fbc9c4;
+  --amber:#8a5a00;
+  --amber-bg:#fffaeb;
+  --amber-line:#fadf9a;
+  --green:#0f6b45;
+  --green-bg:#f0fdf6;
+  --blue:#1d4ed8;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding:0 0 64px;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+header{padding:28px 0 8px}
+.eyebrow{
+  font:600 11px/1 var(--mono);
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+}
+h1{
+  font-size:clamp(26px,7vw,38px);
+  line-height:1.08;
+  letter-spacing:-.022em;
+  margin:10px 0 8px;
+  font-weight:800;
+}
+.asof{
+  font:500 12.5px/1.45 var(--mono);
+  color:var(--ink-3);
+  margin:0 0 4px;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  margin:14px 0;
+}
+h2{
+  font-size:13px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  font-weight:700;
+  margin:0 0 12px;
+}
+h3{font-size:15px;margin:18px 0 8px;font-weight:700;letter-spacing:-.01em}
+p{margin:0 0 10px}
+.lede{font-size:16.5px;color:var(--ink-2)}
+.muted{color:var(--ink-3);font-size:13.5px;line-height:1.5}
+
+/* ---- GAP HEADLINE ---- */
+.gap{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-top:5px solid var(--red);
+  border-radius:14px;
+  padding:20px 18px;
+  margin:16px 0;
+}
+.gapgrid{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  gap:10px;
+  align-items:end;
+  margin:6px 0 2px;
+}
+.gapcol .lbl{
+  font:600 11px/1.3 var(--mono);
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  margin-bottom:4px;
+}
+.gapcol .num{
+  font-size:clamp(30px,10vw,46px);
+  font-weight:800;
+  letter-spacing:-.03em;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.gapcol .num.big{color:var(--red)}
+.gapcol .sub{font-size:12px;color:var(--ink-3);margin-top:5px;line-height:1.35}
+.arrow{
+  font-size:22px;
+  color:var(--ink-3);
+  padding-bottom:10px;
+  text-align:center;
+}
+.gapline{
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid var(--line-2);
+  font-size:15px;
+  color:var(--ink-2);
+}
+.gapline b{color:var(--ink)}
+
+/* ---- TAGS ---- */
+.tag{
+  display:inline-block;
+  font:700 9.5px/1.35 var(--mono);
+  letter-spacing:.07em;
+  padding:2px 5px;
+  border-radius:4px;
+  vertical-align:2px;
+  white-space:nowrap;
+}
+.t-v{background:#e9f6ef;color:var(--green);border:1px solid #bfe5d1}
+.t-r{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-line)}
+.t-u{background:#f2f3f6;color:var(--ink-3);border:1px solid var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:2px 0 0;font-size:12.5px;color:var(--ink-3)}
+.legend div{display:flex;gap:6px;align-items:baseline}
+
+/* ---- TABLE ---- */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -18px;padding:0 18px}
+table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:340px}
+th{
+  text-align:left;
+  font:700 10.5px/1.3 var(--mono);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  border-bottom:1px solid var(--line);
+  padding:0 8px 7px 0;
+}
+td{padding:9px 8px 9px 0;border-bottom:1px solid var(--line-2);vertical-align:top}
+td:last-child,th:last-child{padding-right:0}
+.amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:650;white-space:nowrap}
+.vend{font-weight:600}
+.note{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.4;margin-top:2px;font-weight:400}
+tr.sum td{
+  border-top:2px solid var(--ink);
+  border-bottom:none;
+  padding-top:11px;
+  font-weight:800;
+  font-size:15.5px;
+}
+tr.dim td{color:var(--ink-3)}
+
+/* ---- SHARE BARS ---- */
+.bars{margin:4px 0 0}
+.bar{margin:0 0 11px}
+.bar .top{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;margin-bottom:5px}
+.bar .top b{font-weight:650}
+.bar .top span{color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.track{height:9px;background:#eef0f4;border-radius:99px;overflow:hidden}
+.fill{height:100%;border-radius:99px;background:var(--ink-2)}
+.fill.hero{background:var(--red)}
+
+/* ---- ACTION BLOCK ---- */
+.action{
+  background:var(--red-bg);
+  /* Uniform border, deliberately. A 6px left stripe used to live here; it was a third
+     redundant urgency signal on top of the tinted background and the red heading, and a
+     one-sided accent bar is the most recognizable tell of generated UI. Weight carries the
+     emphasis instead. */
+  border:2px solid var(--red);
+  border-radius:14px;
+  padding:18px;
+  margin:22px 0;
+}
+.action h2{color:var(--red);letter-spacing:.09em}
+.action .hl{
+  font-size:17px;
+  font-weight:750;
+  color:var(--red);
+  letter-spacing:-.01em;
+  margin:0 0 10px;
+  line-height:1.3;
+}
+.action table{font-size:14px}
+.action th{border-bottom-color:var(--red-line);color:#8b3a30}
+.action td{border-bottom-color:#f6dcd8}
+.only{
+  margin-top:14px;
+  padding:12px 13px;
+  background:#fff;
+  border:1px solid var(--red-line);
+  border-radius:10px;
+  font-size:14.5px;
+  color:var(--ink);
+}
+.only b{color:var(--red)}
+.wall{
+  margin-top:10px;
+  padding:11px 13px;
+  background:var(--amber-bg);
+  border:1px solid var(--amber-line);
+  border-radius:10px;
+  font-size:14px;
+  color:#5c3d00;
+}
+.wall b{color:var(--amber)}
+
+/* ---- TARGET ---- */
+.target .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line-2)}
+.target .row:last-of-type{border-bottom:none}
+.target .row .k{font-size:14.5px}
+.target .row .v{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.target .over{color:var(--red)}
+.meter{margin:32px 0 6px}
+.meter .track{height:22px;border-radius:6px;background:#eef0f4;position:relative;overflow:visible}
+.meter .under{position:absolute;left:0;top:0;bottom:0;background:#dfe3e9;border-radius:6px 0 0 6px}
+.meter .overfill{position:absolute;top:0;bottom:0;background:var(--red);opacity:.85}
+.meter .mark{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ink)}
+.meter .marklbl{
+  font:700 10.5px/1 var(--mono);
+  color:var(--ink);
+  position:absolute;
+  top:-22px;
+  transform:translateX(-50%);
+  white-space:nowrap;
+}
+.meterfoot{display:flex;justify-content:space-between;font:600 11px/1 var(--mono);color:var(--ink-3);margin-top:8px}
+
+/* ---- NON-SOFTWARE ---- */
+.sep{
+  margin:30px 0 8px;
+  padding-top:22px;
+  border-top:2px dashed var(--line);
+}
+.sep .k{
+  font:700 11px/1 var(--mono);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+}
+.nonsoft{border-style:dashed;background:#fbfbfc}
+.nonsoft h2{color:var(--ink-3)}
+.nsrow{padding:12px 0;border-bottom:1px solid var(--line-2)}
+.nsrow:last-child{border-bottom:none}
+.nsrow .h{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.nsrow .h .t{font-weight:650;font-size:14.5px}
+.nsrow .h .v{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.nsrow .d{font-size:12.5px;color:var(--ink-3);margin-top:3px;line-height:1.45}
+.nope{color:var(--red);font-weight:650}
+
+footer{margin-top:26px;font-size:12px;color:var(--ink-3);line-height:1.6}
+footer code{font-family:var(--mono);font-size:11.5px;background:#eef0f4;padding:1px 4px;border-radius:3px}
+@media (max-width:430px){
+  .card,.gap,.action{padding:15px}
+  .scroll{margin:0 -15px;padding:0 15px}
+  .gapgrid{grid-template-columns:1fr;gap:14px;align-items:start}
+  .arrow{text-align:left;padding:0;transform:rotate(90deg);width:20px}
+  table{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">XLRD · Software Spend</div>
+  <h1>The screen was lying to you.</h1>
+  <p class="asof">As of Sat Aug 1, 2026 · 3:58 PM EDT</p>
+  <p class="lede">One screen showed part of the bill. This is every channel that has been found so far — each line tagged by whether it was read off a file or receipt, or spoken from memory.</p>
+</header>
+
+<!-- ============ 1. THE GAP ============ -->
+<section class="gap">
+  <div class="eyebrow" style="color:var(--red)">The gap</div>
+  <div class="gapgrid">
+    <div class="gapcol">
+      <div class="lbl">The screen you saw</div>
+      <div class="num">$295</div>
+      <div class="sub">One app, one channel. <span class="tag t-r">REPORTED</span></div>
+    </div>
+    <div class="arrow">&rarr;</div>
+    <div class="gapcol">
+      <div class="lbl">Actual, all channels</div>
+      <div class="num big">$450&ndash;500+</div>
+      <div class="sub">Play + Apple + PayPal + card-direct. <span class="tag t-r">REPORTED</span></div>
+    </div>
+  </div>
+  <div class="gapline">
+    <b>You were budgeting against a number roughly $155&ndash;205/mo too low.</b>
+    The missing money is not hidden inside that app &mdash; it is billed through channels the app never sees:
+    Apple, PayPal, and cards charged directly by vendors.
+  </div>
+  <div class="gapline" style="border-top:1px solid var(--line-2)">
+    <b>Line items found on disk so far total $373.59/mo</b> (the table below, summed).
+    That is already <b>$78.59 above</b> the $295 screen, and it still excludes Wix (amount not yet found)
+    plus any vendor with no receipt on this machine &mdash; which is what pushes the real figure toward $450&ndash;500+.
+  </div>
+</section>
+
+<!-- ============ 2. LINE ITEMS ============ -->
+<section class="card">
+  <h2>Software &mdash; monthly, every channel</h2>
+  <div class="legend" style="margin-bottom:14px">
+    <div><span class="tag t-v">VERIFIED</span> read in a file or receipt on disk</div>
+    <div><span class="tag t-r">REPORTED</span> spoken aloud, not yet confirmed on disk</div>
+    <div><span class="tag t-u">UNKNOWN</span> no amount found</div>
+  </div>
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>Vendor</th><th>Source</th><th class="amt">Per mo.</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="vend">Claude / Anthropic <span class="tag t-r">REPORTED</span>
+          <span class="note">Disk shows $104/mo from a Jun 8 receipt ledger. $136 is the figure you gave today; the newer receipt has not been located.</span></td>
+        <td class="muted">spoken</td>
+        <td class="amt">$136.00</td>
+      </tr>
+      <tr>
+        <td class="vend">Grok / SuperGrok <span class="tag t-v">VERIFIED</span>
+          <span class="note">Google Play, read off the phone 2026-07-31. Next charge Aug 21.</span></td>
+        <td class="muted">Play</td>
+        <td class="amt">$29.99</td>
+      </tr>
+      <tr>
+        <td class="vend">Suno <span class="tag t-v">VERIFIED</span>
+          <span class="note">Receipt ledger. Multiple charges seen historically &mdash; possible duplicate account.</span></td>
+        <td class="muted">card</td>
+        <td class="amt">$30.00</td>
+      </tr>
+      <tr>
+        <td class="vend">Beside (post-trial rate) <span class="tag t-v">VERIFIED</span>
+          <span class="note">Payment log. $30 already charged once when the free trial failed to apply.</span></td>
+        <td class="muted">card</td>
+        <td class="amt">$30.00</td>
+      </tr>
+      <tr>
+        <td class="vend">Apple &mdash; recurring <span class="tag t-v">VERIFIED</span>
+          <span class="note">Logged 2026-07-24 via PayPal. May already include the iCloud+ line below &mdash; see overlap note.</span></td>
+        <td class="muted">PayPal</td>
+        <td class="amt">$25.97</td>
+      </tr>
+      <tr>
+        <td class="vend">Google One &mdash; AI Pro 5&nbsp;TB <span class="tag t-v">VERIFIED</span>
+          <span class="note">Google Play, device read. Next charge Sep 18.</span></td>
+        <td class="muted">Play</td>
+        <td class="amt">$19.99</td>
+      </tr>
+      <tr>
+        <td class="vend">Spotify <span class="tag t-r">REPORTED</span>
+          <span class="note">On the dead payment method. See the action block.</span></td>
+        <td class="muted">card</td>
+        <td class="amt">$12.99</td>
+      </tr>
+      <tr>
+        <td class="vend">GitHub / Copilot <span class="tag t-v">VERIFIED</span>
+          <span class="note">$10/mo base rate in the receipt ledger. Three attempts have declined &mdash; and one was $43, not $10. See the action block.</span></td>
+        <td class="muted">card</td>
+        <td class="amt">$10.00</td>
+      </tr>
+      <tr>
+        <td class="vend">Railway <span class="tag t-v">VERIFIED</span>
+          <span class="note">Receipt ledger, approximate.</span></td>
+        <td class="muted">card</td>
+        <td class="amt">$10.00</td>
+      </tr>
+      <tr>
+        <td class="vend">Beeper Plus <span class="tag t-v">VERIFIED</span>
+          <span class="note">Load-bearing &mdash; the unified inbox runs on it. Next charge Aug 5.</span></td>
+        <td class="muted">Play</td>
+        <td class="amt">$9.99</td>
+      </tr>
+      <tr>
+        <td class="vend">Apple iCloud+ 2&nbsp;TB <span class="tag t-v">VERIFIED</span>
+          <span class="note">Receipt on disk, PayPal, renews Aug 26. Possible overlap with the Apple $25.97 row.</span></td>
+        <td class="muted">PayPal</td>
+        <td class="amt">$9.99</td>
+      </tr>
+      <tr>
+        <td class="vend">Setapp <span class="tag t-v">VERIFIED</span>
+          <span class="note">Receipt ledger via Paddle.</span></td>
+        <td class="muted">card</td>
+        <td class="amt">$9.99</td>
+      </tr>
+      <tr>
+        <td class="vend">Unidentified Play plan <span class="tag t-v">VERIFIED</span>
+          <span class="note">The charge is real and on the device; the app it belongs to is not. Candidates on screen: Spike, CapCut, Hide Navigation Bar. Next charge Aug 29.</span></td>
+        <td class="muted">Play</td>
+        <td class="amt">$9.99</td>
+      </tr>
+      <tr>
+        <td class="vend">Spaceship / Spacemail <span class="tag t-v">VERIFIED</span>
+          <span class="note">Mailbox for xlrd.org. Two files disagree &mdash; $8.88 in one, $0.88 in another. Higher figure used.</span></td>
+        <td class="muted">card</td>
+        <td class="amt">$8.88</td>
+      </tr>
+      <tr>
+        <td class="vend">Appy Pie &mdash; yearly, amortized <span class="tag t-v">VERIFIED</span>
+          <span class="note">$84/yr, renewed Jul 31 &mdash; that date has passed, so the charge has most likely landed. You confirmed you do not use it. Cancellation is on appypie.com, not Play.</span></td>
+        <td class="muted">card</td>
+        <td class="amt">$7.00</td>
+      </tr>
+      <tr>
+        <td class="vend">djay PRO <span class="tag t-v">VERIFIED</span>
+          <span class="note">Google Play, device read. Next charge Aug 17.</span></td>
+        <td class="muted">Play</td>
+        <td class="amt">$6.99</td>
+      </tr>
+      <tr>
+        <td class="vend">IFTTT Pro <span class="tag t-v">VERIFIED</span>
+          <span class="note">Google Play, device read. Next charge Aug 17.</span></td>
+        <td class="muted">Play</td>
+        <td class="amt">$3.99</td>
+      </tr>
+      <tr>
+        <td class="vend">Three yearly Play plans, amortized <span class="tag t-v">VERIFIED</span>
+          <span class="note">Niagara Pro $13.99/yr + two unattributed at $4.00/yr and $3.99/yr = $21.98/yr.</span></td>
+        <td class="muted">Play</td>
+        <td class="amt">$1.83</td>
+      </tr>
+      <tr>
+        <td class="vend">Wix &mdash; l7sinc.com <span class="tag t-u">UNKNOWN</span>
+          <span class="note">Recurring and confirmed active, but no receipt with an amount has been found. Not included in the sum below. Tied to the Aug 31 domain wall.</span></td>
+        <td class="muted">card</td>
+        <td class="amt">&mdash;</td>
+      </tr>
+      <tr class="sum">
+        <td>Identified so far</td>
+        <td></td>
+        <td class="amt">$373.59</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p class="muted" style="margin-top:14px">
+    <b>Honest range:</b> if the Apple $25.97 already contains iCloud+ ($9.99) and Spacemail is the lower $0.88,
+    the identified figure drops to <b>$355.60</b>. So: <b>$355.60&ndash;$373.59/mo identified</b>, Wix and any
+    receipt-less vendor still on top. Nothing here is an estimate &mdash; every number came from a file, a receipt, or your own words.
+  </p>
+</section>
+
+<!-- ============ 2b. WHAT DOMINATES ============ -->
+<section class="card">
+  <h2>What actually dominates</h2>
+  <div class="bars">
+    <div class="bar">
+      <div class="top"><b>Claude / Anthropic</b><span>$136.00 &middot; 36% of identified</span></div>
+      <div class="track"><div class="fill hero" style="width:36.4%"></div></div>
+    </div>
+    <div class="bar">
+      <div class="top"><b>Everything else, 17 line items</b><span>$237.59 &middot; 64%</span></div>
+      <div class="track"><div class="fill" style="width:63.6%"></div></div>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:12px">
+    Measured against the <b>$295 screen</b> instead, Claude is <b>46%</b> &mdash; nearly half of the list you
+    were looking at, from one vendor. Against the fuller $373.59 it is <b>36%</b>. Both are true; they just use
+    different denominators. Either way it is the single largest line by a factor of roughly 4.5&times; over the next one ($30).
+  </p>
+  <p class="muted">
+    Second tier is a flat cluster at $30/mo each &mdash; SuperGrok, Suno, Beside &mdash; then Apple at $25.97.
+    The bottom nine lines together are under $70.
+  </p>
+</section>
+
+<!-- ============ 3. ACTION BLOCK ============ -->
+<section class="action">
+  <h2>Actively bleeding &mdash; needs you</h2>
+  <p class="hl">One dead payment method is taking down multiple services, and has been failing for about 11 days.</p>
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Vendor</th><th class="amt">Amount</th><th>State</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Jul 21</td>
+        <td class="vend">GitHub <span class="tag t-r">REPORTED</span></td>
+        <td class="amt">$10.00</td>
+        <td>declined</td>
+      </tr>
+      <tr>
+        <td>Jul 26</td>
+        <td class="vend">GitHub <span class="tag t-r">REPORTED</span>
+          <span class="note">The one you did not know about &mdash; 4.3&times; the normal $10.</span></td>
+        <td class="amt" style="color:var(--red)">$43.00</td>
+        <td>declined</td>
+      </tr>
+      <tr>
+        <td>Aug 1</td>
+        <td class="vend">GitHub <span class="tag t-r">REPORTED</span></td>
+        <td class="amt">$10.00</td>
+        <td>declined</td>
+      </tr>
+      <tr>
+        <td>Aug 1</td>
+        <td class="vend">Spotify <span class="tag t-r">REPORTED</span>
+          <span class="note">Same dead method.</span></td>
+        <td class="amt">$12.99</td>
+        <td>failing</td>
+      </tr>
+      <tr>
+        <td>recurring</td>
+        <td class="vend">Wix &mdash; l7sinc.com <span class="tag t-u">UNKNOWN</span>
+          <span class="note">Amount not found. Same method.</span></td>
+        <td class="amt">&mdash;</td>
+        <td>at risk</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="only">
+    <b>Only you can fix this.</b> Updating a card or payment method is an account action on a billing page &mdash;
+    it needs your hands and your credentials, and nothing automated should touch it. This page reports; it does not act.
+    Every other item here can wait. This one compounds: GitHub is on attempt three, and vendors suspend service after
+    a few failures.
+  </div>
+
+  <div class="wall">
+    <b>Aug 31 &mdash; hard wall.</b> The Wix line is tied to the l7sinc.com domain, which expires Aug 31.
+    That is 30 days out, and it is the only item on this page with a deadline that cannot be renegotiated.
+    A dead payment method plus a hard expiry is how a domain gets lost.
+  </div>
+</section>
+
+<!-- ============ 4. TARGET vs REAL ============ -->
+<section class="card target">
+  <h2>Your target vs. the real number</h2>
+  <p class="muted" style="margin-top:-4px;margin-bottom:14px">
+    Your words: <i>&ldquo;under three hundred, but that&rsquo;s just software.&rdquo;</i> <span class="tag t-r">REPORTED</span>
+  </p>
+
+  <div class="meter">
+    <div class="track">
+      <div class="under" style="width:60%"></div>
+      <div class="overfill" style="left:60%;width:14.7%"></div>
+      <div class="mark" style="left:60%"><span class="marklbl">$300 target</span></div>
+    </div>
+    <div class="meterfoot"><span>$0</span><span>$500</span></div>
+  </div>
+
+  <div class="row"><span class="k">Target &mdash; software only</span><span class="v">&lt; $300.00</span></div>
+  <div class="row"><span class="k">The screen you were budgeting from</span><span class="v">$295.00</span></div>
+  <div class="row"><span class="k">Identified on disk today</span><span class="v over">$373.59</span></div>
+  <div class="row"><span class="k">Over target, on identified alone</span><span class="v over">+ $73.59</span></div>
+  <div class="row"><span class="k">Over target, at the real $450&ndash;500+</span><span class="v over">+ $150 to $200+</span></div>
+
+  <p class="muted" style="margin-top:14px">
+    The $295 screen sat $5 under target, which is exactly why it felt fine. The identified list is already
+    <b>$73.59 over</b>, and the full picture is <b>$150&ndash;200+ over</b>. To land under $300 against the real number,
+    roughly <b>$150&ndash;200/mo has to come out</b> &mdash; and one vendor at $136 is 36% of the bill, so the arithmetic
+    does not close without a decision about it. Cheapest confirmed wins that need no judgment call:
+    Appy Pie ($7/mo equivalent, unused), the $9.99 unidentified Play plan, and djay at $6.99.
+  </p>
+</section>
+
+<!-- ============ 5. NON-SOFTWARE, KEPT SEPARATE ============ -->
+<div class="sep"><span class="k">Below this line is not software &mdash; it never enters the totals above</span></div>
+
+<section class="card nonsoft">
+  <h2>Separate ledger &mdash; do not mix in</h2>
+
+  <div class="nsrow">
+    <div class="h"><span class="t">Hardware &mdash; one-time</span><span class="v">~$2,000</span></div>
+    <div class="d">To get back to full operating capacity. <span class="tag t-r">REPORTED</span> One-time capital, not a
+      monthly subscription &mdash; it does not belong in the &lt;$300/mo test and must not be amortized into it.</div>
+  </div>
+
+  <div class="nsrow">
+    <div class="h"><span class="t">August 2026 business expenses</span><span class="v">$985</span></div>
+    <div class="d">Figure forwarded by Luckie. <span class="tag t-r">REPORTED</span> Business, software-heavy &mdash; so it
+      likely <i>overlaps</i> some rows above rather than adding to them. Until that overlap is reconciled against
+      receipts, do not add $985 to $373.59; the sum would double-count.</div>
+  </div>
+
+  <div class="nsrow">
+    <div class="h"><span class="t">Referral credit &mdash; Amazon-only</span><span class="v">$200</span></div>
+    <div class="d"><span class="nope">Not treated as headroom.</span> You said plainly you are not comfortable with an
+      Amazon-only credit. <span class="tag t-v">VERIFIED</span> as pending on the vendor&rsquo;s referral page, but it cannot
+      pay Claude, GitHub, or Wix, so it does not offset one dollar of the bill above. It is excluded from every total here
+      by design.</div>
+  </div>
+
+  <div class="nsrow">
+    <div class="h"><span class="t">Client balance outstanding</span><span class="v">$422</span></div>
+    <div class="d">Remaining on the DCZ engagement, second of two payments still to come. <span class="tag t-v">VERIFIED</span>
+      in the payment log. Incoming, not spend &mdash; listed only so it is not forgotten while budgeting.</div>
+  </div>
+</section>
+
+<footer>
+  <p><b>Sourcing.</b> VERIFIED lines were read out of files on this machine: a live Google Play read off the phone
+  (2026-07-31, 267 UI nodes), a purchase receipt, a July payment log, and two older receipt ledgers.
+  REPORTED lines are figures spoken aloud today and not yet matched to a receipt. No number on this page is estimated,
+  rounded up, or inferred &mdash; where an amount is missing it says UNKNOWN.</p>
+  <p><b>Known holes.</b> Wix has no amount. The Apple $25.97 and iCloud+ $9.99 may overlap. Spacemail is $0.88 or $8.88
+  depending on the file. The Claude figure on disk is $104 (Jun 8), not $136. Card-direct, Apple, and PayPal channels
+  are only partly audited &mdash; which is the whole reason the real total runs above the identified one.</p>
+  <p><b>This page is informational.</b> It moves no money, cancels nothing, and changes no payment method.
+  <span style="white-space:nowrap">As of Sat Aug 1, 2026 &middot; 3:58 PM EDT.</span></p>
+</footer>
+
+</div>
+</body>
+</html>

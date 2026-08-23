@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Send Clipboard to Xen — iOS Shortcut</title>
+<style>
+  :root { --bg:#0a0a0c; --card:#141418; --ink:#ECECEC; --dim:#9aa0aa; --acc:#5BE3B3; --acc2:#7aa2ff; --line:#23232b; --warn:#ffcf6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,sans-serif; -webkit-font-smoothing:antialiased; padding:0 0 80px; }
+  .wrap { max-width:760px; margin:0 auto; padding:0 20px; }
+  header { padding:48px 20px 28px; text-align:center; border-bottom:1px solid var(--line); }
+  h1 { font-size:29px; margin:0 0 8px; letter-spacing:-.02em; }
+  .badge { display:inline-block; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#04130d; background:var(--acc); padding:4px 11px; border-radius:999px; margin-top:6px; }
+  .sub { color:var(--dim); margin-top:14px; font-size:15px; }
+  h2 { font-size:20px; margin:38px 0 14px; letter-spacing:-.01em; }
+  h2 .n { color:var(--acc2); margin-right:8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:14px 0; }
+  ol.steps { list-style:none; counter-reset:s; padding:0; margin:0; }
+  ol.steps > li { counter-increment:s; position:relative; padding:16px 0 16px 50px; border-bottom:1px solid var(--line); }
+  ol.steps > li:last-child { border-bottom:0; }
+  ol.steps > li::before { content:counter(s); position:absolute; left:0; top:14px; width:32px; height:32px; border-radius:9px; background:var(--acc2); color:#02112e; font-weight:700; display:grid; place-items:center; font-size:15px; }
+  .li-title { font-weight:650; font-size:16px; }
+  .kv { margin:8px 0 0; color:var(--dim); font-size:14.5px; }
+  .kv b { color:var(--ink); font-weight:600; }
+  .branch { border-left:3px solid var(--acc2); padding-left:14px; margin:10px 0 10px 6px; }
+  .branch.else { border-left-color:var(--warn); }
+  code, pre { font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; }
+  code { background:#1d1d24; color:var(--acc); padding:2px 6px; border-radius:5px; font-size:13.5px; }
+  pre { background:#0f0f14; border:1px solid var(--line); border-radius:10px; padding:16px; overflow-x:auto; font-size:12.5px; line-height:1.5; color:#d8dde6; }
+  pre .s { color:var(--acc); } pre .c { color:#6b7280; }
+  .note { font-size:14px; color:var(--dim); }
+  .note b { color:var(--ink); }
+  .pill { display:inline-block; background:#1d1d24; border:1px solid var(--line); border-radius:7px; padding:3px 9px; margin:3px 4px 3px 0; font-size:13px; color:var(--ink); }
+  footer { text-align:center; color:#555b66; font-size:12.5px; margin-top:40px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Send Clipboard to Xen</h1>
+    <div class="badge">● iOS Shortcut</div>
+    <div class="sub">One tap sends whatever's on your clipboard — text, a link, an image, a file — straight into Xen's session.</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="n">∞</span>How it routes</h2>
+  <div class="card">
+    <p style="margin:0 0 8px;">Two endpoints, picked by clipboard type:</p>
+    <p class="kv"><b>Text / URL</b> → <code>POST /api/dictate-inject</code> (same as your voice shortcut; add <code>wait:true</code> if you want a spoken reply back).</p>
+    <p class="kv"><b>Image / file</b> → <code>POST /api/dictate-attach</code> (multipart/form-data; saves the file and notifies Xen with its path).</p>
+  </div>
+
+  <h2><span class="n">▸</span>Build the Shortcut — "Send Clipboard to Xen"</h2>
+  <div class="card">
+    <ol class="steps">
+      <li>
+        <div class="li-title">Get Clipboard</div>
+        <div class="kv">Returns whatever's currently copied (text, URL, image, or file).</div>
+      </li>
+      <li>
+        <div class="li-title">If — "Clipboard" has any value &amp; is Text or URL</div>
+        <div class="branch">
+          <div class="kv"><b>Get Contents of URL</b></div>
+          <div class="kv">URL <code>https://tui.xlrd.org/api/dictate-inject</code> · POST · Header <code>Content-Type: application/json</code></div>
+          <div class="kv">JSON body:
+            <span class="pill">source = clipboard</span>
+            <span class="pill">text = <b>Clipboard</b></span>
+            <span class="pill">wait = true <span style="color:var(--dim)">(optional, for spoken reply)</span></span>
+          </div>
+        </div>
+        <div class="branch else">
+          <div class="kv"><b>Otherwise</b> (image / file) → <b>Get Contents of URL</b></div>
+          <div class="kv">URL <code>https://tui.xlrd.org/api/dictate-attach</code> · POST</div>
+          <div class="kv">Request Body: <b>Form</b> — add a field, type <b>File</b>, value = <b>Clipboard</b> (Shortcuts sends it as multipart/form-data automatically).</div>
+        </div>
+      </li>
+      <li>
+        <div class="li-title">(Optional) Get Dictionary Value → Speak Text</div>
+        <div class="kv">If you sent text with <code>wait:true</code>, grab <code>reply</code> and Speak it — same as the voice shortcut. For attachments the response is <code>{ok:true,files:[…]}</code>; you can Show Notification on success.</div>
+      </li>
+    </ol>
+  </div>
+
+  <h2><span class="n">⌗</span>curl equivalents</h2>
+  <pre><span class="c"># clipboard TEXT / URL</span>
+curl -sS -X POST https://tui.xlrd.org/api/dictate-inject \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"source":"clipboard","text":"&lt;clipboard text&gt;","wait":true}'</span>
+
+<span class="c"># clipboard IMAGE / FILE (multipart)</span>
+curl -sS -X POST https://tui.xlrd.org/api/dictate-attach \
+  -F <span class="s">"file=@/path/to/clip.png"</span>
+<span class="c"># → {"ok":true,"files":[{"name":"clip.png","path":"…","size":12345}]}</span></pre>
+
+  <h2><span class="n">✓</span>Notes</h2>
+  <div class="card">
+    <p class="note" style="margin:0 0 8px;"><b>Text is instant</b> — lands in the session like a dictation. <b>Files</b> get saved server-side and Xen is notified with the path so it can open/read them.</p>
+    <p class="note" style="margin:0;"><b>Known follow-up:</b> the attach endpoint's save directory needs a one-line path correction to the canonical tree (tracked) — text path is unaffected and fully working.</p>
+  </div>
+
+  <footer>Xen · Send Clipboard to Xen · 2026-06-20 · /api/dictate-inject + /api/dictate-attach</footer>
+</div>
+</body>
+</html>

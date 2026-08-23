@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container Hub v5.4 | Direct Dial Build</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Manrope', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            navy: 'var(--brand-navy)',
+                            accent: 'var(--brand-accent)',
+                            gold: 'var(--brand-gold)',
+                        }
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    },
+                    keyframes: {
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --brand-navy: #0F172A;
+            --brand-accent: #D97706;
+            --brand-gold: #F59E0B;
+            --color-bg: #F8FAFC;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-edge: rgba(255, 255, 255, 0.9);
+            --glass-shadow: rgba(15, 23, 42, 0.06);
+            --glass-blur: 24px;
+            --orb-1: #F59E0B;
+            --orb-2: #3B82F6;
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+            --accent-rgb: 217, 119, 6;
+        }
+
+        .dark {
+            --color-bg: #020617;
+            --glass-bg: rgba(15, 23, 42, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-edge: rgba(255, 255, 255, 0.15);
+            --glass-shadow: rgba(0, 0, 0, 0.6);
+        }
+
+        body { font-family: 'Manrope', sans-serif; background-color: var(--color-bg); color: var(--text-body); transition: background-color 0.8s ease; overflow-x: hidden; }
+        
+        #glow-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: hidden; }
+        .glow-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.15; animation: float 25s infinite alternate ease-in-out; transition: background 1s ease; }
+        .orb-1 { width: 80vw; height: 80vw; top: -20%; left: -20%; background: var(--orb-1); } 
+        .orb-2 { width: 60vw; height: 60vw; bottom: -10%; right: -10%; background: var(--orb-2); } 
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(5%, 5%) scale(1.05); } }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid var(--glass-edge); 
+            box-shadow: 0 8px 32px var(--glass-shadow);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-link.active { background: rgba(var(--accent-rgb), 0.15); color: var(--brand-accent); font-weight: 800; }
+        
+        .shine-card { position: relative; overflow: hidden; }
+        .shine-card::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.4) 0%, transparent 60%);
+            opacity: 0; transition: opacity 0.5s ease; pointer-events: none; mix-blend-mode: overlay;
+        }
+        .shine-card:hover::after { opacity: 1; }
+
+        .chart-container { position: relative; height: 280px; width: 100%; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--brand-accent); border-radius: 10px; }
+        
+        .tab-btn.active { background: var(--brand-accent); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .data-table th { @apply text-[10px] font-black uppercase tracking-widest text-slate-400 pb-4 text-left; }
+        .data-table td { @apply py-4 border-t border-black/5 dark:border-white/5 text-sm font-bold; }
+    </style>
+</head>
+<body class="antialiased selection:bg-brand-accent selection:text-white text-slate-800 dark:text-slate-200">
+    
+    <div id="glow-container">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <!-- Navigation -->
+    <header class="fixed top-6 left-0 right-0 z-[100] flex justify-center px-4 pointer-events-none animate-slide-up">
+        <div class="pointer-events-auto glass-panel rounded-full px-6 py-3 flex items-center justify-between w-full max-w-6xl shadow-2xl">
+            <a href="javascript:void(0)" onclick="navigate('home')" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 bg-brand-accent rounded-xl flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-all">
+                    <i data-lucide="container" class="w-5 h-5"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-black tracking-tighter text-brand-navy dark:text-white uppercase text-base leading-none transition-colors">Container<span class="text-brand-accent">Hub</span></span>
+                    <span class="text-[9px] font-bold tracking-[0.1em] opacity-50 uppercase">Fairburn Index v5.4</span>
+                </div>
+            </a>
+
+            <nav class="hidden lg:flex items-center gap-2 bg-slate-100/50 dark:bg-white/5 p-1.5 rounded-full">
+                <a href="javascript:void(0)" onclick="navigate('home')" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest nav-link active transition-all" id="link-home">Radar</a>
+                <a href="javascript:void(0)" onclick="navigate('playbook')" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest nav-link transition-all" id="link-playbook">Playbook</a>
+                <a href="javascript:void(0)" onclick="navigate('directory')" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest nav-link transition-all" id="link-directory">Directory</a>
+                <a href="javascript:void(0)" onclick="navigate('logistics')" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest nav-link transition-all" id="link-logistics">Site Prep</a>
+            </nav>
+
+            <div class="flex items-center gap-2">
+                <button onclick="randomizeTheme()" class="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all group" aria-label="Random Theme">
+                    <i data-lucide="wand-2" class="w-4 h-4 group-hover:rotate-12"></i>
+                </button>
+                <button onclick="toggleDarkMode()" class="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all" aria-label="Theme Toggle">
+                    <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-brand-gold"></i>
+                </button>
+                <a href="javascript:void(0)" onclick="navigate('verdict')" class="hidden sm:flex px-8 py-3 rounded-full text-[10px] font-black bg-brand-navy dark:bg-brand-accent text-white uppercase tracking-[0.2em] shadow-lg">
+                    Verdict
+                </a>
+                <button onclick="toggleMobileMenu()" class="lg:hidden p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Centered Mobile Menu -->
+    <div id="mobile-menu" class="fixed inset-0 z-[110] bg-white/95 dark:bg-[#020617]/98 backdrop-blur-xl translate-y-[-100%] opacity-0 pointer-events-none flex flex-col items-center justify-center transition-all duration-500">
+        <button onclick="toggleMobileMenu()" class="absolute top-10 right-10 p-4 rounded-full bg-slate-100 dark:bg-white/10"><i data-lucide="x" class="w-6 h-6"></i></button>
+        <nav class="flex flex-col items-center gap-10 w-full px-8 text-center">
+            <a href="javascript:void(0)" onclick="navigate('home')" class="text-4xl font-black uppercase tracking-tighter hover:text-brand-accent transition-colors">Radar</a>
+            <a href="javascript:void(0)" onclick="navigate('playbook')" class="text-4xl font-black uppercase tracking-tighter hover:text-brand-accent transition-colors">Playbook</a>
+            <a href="javascript:void(0)" onclick="navigate('directory')" class="text-4xl font-black uppercase tracking-tighter hover:text-brand-accent transition-colors">Directory</a>
+            <a href="javascript:void(0)" onclick="navigate('logistics')" class="text-4xl font-black uppercase tracking-tighter hover:text-brand-accent transition-colors">Site Prep</a>
+            <div class="w-32 h-1 bg-slate-200 dark:bg-white/10 my-2 rounded-full"></div>
+            <a href="javascript:void(0)" onclick="navigate('verdict')" class="w-full max-w-xs bg-brand-accent py-6 rounded-3xl text-center font-black uppercase tracking-widest text-white shadow-2xl">Recommendation</a>
+        </nav>
+    </div>
+
+    <main id="main-content" class="pt-36 pb-24 max-w-7xl mx-auto px-4 sm:px-6">
+
+        <!-- RADAR VIEW -->
+        <div id="home-view" class="page-view animate-slide-up">
+            <div class="max-w-6xl mx-auto">
+                <div class="mb-16 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-brand-accent/10 text-[10px] font-black uppercase tracking-widest text-brand-accent mb-6 border border-brand-accent/20">
+                        <span class="w-2 h-2 rounded-full bg-brand-accent animate-pulse-fast"></span>
+                        Intermodal Focus: Zip 30213
+                    </div>
+                    <h1 class="text-6xl md:text-8xl font-black tracking-tighter text-brand-navy dark:text-white mb-6 leading-none">
+                        Market <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent to-brand-gold">Intelligence.</span>
+                    </h1>
+                    <p class="text-xl font-bold opacity-60 max-w-3xl leading-relaxed">
+                        Exhaustive analysis of container acquisition near **5390 Cascade Palmetto Hwy**. Sourcing inventory levels from Newnan, Conley, and Morrow depots.
+                    </p>
+                </div>
+
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 glass-panel p-10 rounded-[3rem] shine-card">
+                        <div class="flex justify-between items-center mb-8">
+                            <h3 class="text-lg font-black uppercase tracking-tighter">Mileage Heatmap</h3>
+                            <span class="text-[9px] font-black opacity-30 uppercase tracking-[0.2em]">Radius Check</span>
+                        </div>
+                        <div class="chart-container"><canvas id="distChart"></canvas></div>
+                    </div>
+                    <div class="glass-panel p-10 rounded-[3rem] bg-brand-navy text-white relative overflow-hidden flex flex-col">
+                        <div class="relative z-10">
+                            <h3 class="text-lg font-black uppercase tracking-tighter mb-8">Asset Breakdown</h3>
+                            <div class="chart-container !h-[220px] mb-8"><canvas id="mixChart"></canvas></div>
+                            <div class="space-y-4 pt-6 border-t border-white/10 text-[10px] font-black uppercase">
+                                <div class="flex justify-between"><span>RTO Availability</span><span class="text-brand-accent">60% Of Yards</span></div>
+                                <div class="flex justify-between"><span>Freight Base</span><span>$75 + Load Mile</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PLAYBOOK VIEW -->
+        <div id="playbook-view" class="page-view hidden animate-slide-up">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-5xl md:text-7xl font-black tracking-tighter uppercase mb-6 leading-none italic">Strategic <span class="text-brand-accent">Playbook.</span></h2>
+                    <p class="text-xl font-bold opacity-60">Asset Selection & Financial Delta</p>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-12 mb-12">
+                    <div class="glass-panel p-10 md:p-14 rounded-[4rem] shine-card">
+                        <h3 class="text-3xl font-black tracking-tighter uppercase mb-8 italic">The $1,200 <span class="text-brand-accent">Delta</span></h3>
+                        <table class="w-full data-table">
+                            <thead><tr><th>Comparison</th><th>1x 40ft HC</th><th>2x 20ft Std</th></tr></thead>
+                            <tbody>
+                                <tr><td>Height</td><td>9ft 6in</td><td>8ft 6in</td></tr>
+                                <tr><td>Interior Volume</td><td>~2,694 cu ft</td><td>~2,344 cu ft</td></tr>
+                                <tr><td>Strategy</td><td class="text-brand-accent">Best Value</td><td>35-50% Premium</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="mt-8 p-6 bg-slate-100 dark:bg-white/5 rounded-3xl text-sm font-bold opacity-70 leading-relaxed italic">
+                            "Buying two 20ft units typically incurs dual dual delivery mechanisms and higher manufacturing costs per square foot."
+                        </p>
+                    </div>
+
+                    <div class="glass-panel p-10 md:p-14 rounded-[4rem] bg-brand-navy text-white relative overflow-hidden">
+                        <div class="relative z-10">
+                            <h3 class="text-3xl font-black tracking-tighter uppercase mb-8 italic text-brand-gold">RTO Mechanics</h3>
+                            <div class="space-y-6">
+                                <div class="flex gap-6">
+                                    <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center font-black text-brand-accent text-xl">R</div>
+                                    <div>
+                                        <p class="text-sm font-black uppercase text-brand-gold">Rental Purchase Agreement</p>
+                                        <p class="text-xs opacity-60 leading-relaxed italic">"Title remains with yard until final payment. Implied multipliers range 2.0x to 2.5x."</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-6">
+                                    <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center font-black text-brand-accent text-xl">P</div>
+                                    <div>
+                                        <p class="text-sm font-black uppercase text-white">Early Payoff Strategy</p>
+                                        <p class="text-xs opacity-60 leading-relaxed">Execute the 90-day "same as cash" option to avoid long-tail rental factors.</p>
+                                    </div>
+                                </div>
+                                <div class="mt-10 p-6 bg-white/5 rounded-3xl border border-white/10 text-xs font-bold leading-loose">
+                                    ISO Corten Steel • 1-1/8” Marine Plywood Floors • 58,000lb Structural Capacity
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DIRECTORY VIEW: CALL ALL OPTIONS ENABLED -->
+        <div id="directory-view" class="page-view hidden animate-slide-up">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex flex-col xl:flex-row justify-between items-end mb-12 gap-8">
+                    <div>
+                        <h2 class="text-5xl font-black tracking-tighter uppercase leading-none">Ranked <span class="text-brand-accent italic">Yards.</span></h2>
+                        <p class="text-[10px] font-black uppercase opacity-40 tracking-[0.4em] mt-4">Direct Communication Protocol Active</p>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                        <div class="relative w-full md:w-72">
+                            <input type="text" id="dir-search" placeholder="Search yards or features..." oninput="handleSearch(this.value)" 
+                                   class="w-full bg-slate-200 dark:bg-white/10 rounded-full pl-12 pr-6 py-4 text-xs font-bold uppercase tracking-widest outline-none focus:ring-4 focus:ring-brand-accent/20 transition-all text-brand-navy dark:text-white">
+                            <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40"></i>
+                        </div>
+                        <div class="flex bg-slate-200 dark:bg-white/10 p-1.5 rounded-full">
+                            <button onclick="setFilter('Container')" id="dir-container" class="tab-btn px-8 py-3 rounded-full text-[10px] font-black active transition-all">Containers</button>
+                            <button onclick="setFilter('Workshop')" id="dir-workshop" class="tab-btn px-8 py-3 rounded-full text-[10px] font-black opacity-40 transition-all">Workshops</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="dir-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[500px]"></div>
+            </div>
+        </div>
+
+        <!-- LOGISTICS VIEW -->
+        <div id="logistics-view" class="page-view hidden animate-slide-up">
+            <div class="max-w-5xl mx-auto text-center">
+                <h2 class="text-5xl md:text-7xl font-black tracking-tighter uppercase mb-6 leading-none italic">Site <span class="text-brand-accent">Engineering.</span></h2>
+                <p class="text-xl font-bold opacity-60 mb-16">Deployment sequence for Cascade Palmetto Hwy</p>
+                
+                <div class="grid lg:grid-cols-2 gap-12 text-left">
+                    <div class="glass-panel p-10 md:p-14 rounded-[4rem] shine-card">
+                        <div class="space-y-12">
+                            <div class="flex gap-8">
+                                <div class="w-12 h-12 bg-brand-accent rounded-2xl flex items-center justify-center font-black text-white shadow-xl">01</div>
+                                <div><h4 class="font-black uppercase text-base mb-2">Gravel Pad (CR-6)</h4><p class="text-xs font-bold opacity-60 italic">"Gravel pad (#57 stone) is required to prevent the 15-ton truck from sinking in red clay."</p></div>
+                            </div>
+                            <div class="flex gap-8">
+                                <div class="w-12 h-12 bg-brand-navy dark:bg-white/10 rounded-2xl flex items-center justify-center font-black text-brand-accent shadow-xl">02</div>
+                                <div><h4 class="font-black uppercase text-base mb-2">Linear Clearance (120ft)</h4><p class="text-xs font-bold opacity-60">Tilt-bed mobilization requires approx. 120ft of straight exit space to slide the unit off safely.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-10 md:p-14 rounded-[4rem] bg-brand-navy text-white flex flex-col justify-center relative overflow-hidden">
+                        <h3 class="text-[10px] font-black uppercase text-brand-accent mb-10 text-center">Mobilization Calculator</h3>
+                        <div class="space-y-8 relative z-10">
+                            <select id="log-select" class="w-full bg-white/10 border-none rounded-2xl p-6 text-sm font-black uppercase outline-none focus:ring-4 focus:ring-brand-accent/50 appearance-none"></select>
+                            <div class="flex justify-between items-end pt-10 border-t border-white/10">
+                                <div><div class="text-[10px] font-black uppercase opacity-40 mb-1">Est. Cost</div><div id="log-price" class="text-6xl font-black text-brand-gold tracking-tighter">$0.00</div></div>
+                                <div class="text-right"><div class="text-[10px] font-black uppercase opacity-40 mb-1">Transit</div><div id="log-dist" class="text-2xl font-black">0.0 mi</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VERDICT VIEW -->
+        <div id="verdict-view" class="page-view hidden animate-slide-up">
+            <div class="max-w-4xl mx-auto py-12">
+                <div class="glass-panel p-16 md:p-24 rounded-[5rem] text-center bg-brand-navy text-white relative overflow-hidden shadow-2xl">
+                    <div class="relative z-10">
+                        <div class="w-24 h-24 bg-brand-accent rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-3xl rotate-6">
+                            <i data-lucide="award" class="w-12 h-12 text-white"></i>
+                        </div>
+                        <h2 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-10 leading-none">Final <span class="text-brand-gold italic">Verdict.</span></h2>
+                        <p class="text-2xl md:text-3xl font-bold mb-16 opacity-80 italic">"Buy a single **40ft High Cube WWT**. Use Jenco Sales (Rank 1) for physical verification and lowest freight differential."</p>
+                        <a href="tel:7702540161" class="flex items-center justify-center gap-6 bg-brand-accent px-12 py-6 rounded-3xl font-black text-xl uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all mx-auto w-fit">
+                            <i data-lucide="phone-outgoing" class="w-6 h-6"></i> Call Jenco Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Detail Modal -->
+    <div id="modal-overlay" class="fixed inset-0 z-[120] bg-brand-navy/95 backdrop-blur-xl hidden items-center justify-center p-6 opacity-0 transition-opacity duration-300" onclick="closeModal()">
+        <div class="glass-panel w-full max-w-3xl rounded-[4rem] p-12 md:p-16 scale-95 transition-all duration-300 relative overflow-hidden" id="modal-panel" onclick="event.stopPropagation()">
+            <button onclick="closeModal()" class="absolute top-10 right-10 p-4 rounded-full hover:bg-black/5 dark:hover:bg-white/5"><i data-lucide="x" class="w-8 h-8"></i></button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        const themes = [
+            { name: "Industrial", navy: "#0F172A", accent: "#D97706", gold: "#F59E0B", orb1: "#F59E0B", orb2: "#3B82F6", rgb: "217, 119, 6" },
+            { name: "Ocean", navy: "#083344", accent: "#0891B2", gold: "#22D3EE", orb1: "#06B6D4", orb2: "#1D4ED8", rgb: "8, 145, 178" },
+            { name: "Cyber", navy: "#1E1B4B", accent: "#7C3AED", gold: "#C084FC", orb1: "#8B5CF6", orb2: "#EC4899", rgb: "124, 58, 237" }
+        ];
+
+        const providers = [
+            { id: 1, name: "Jenco Sales, Inc.", cat: "Container", loc: "Newnan, GA", dist: 12.0, rating: 98, rto: true, rate: 3.8, phone: "770-254-0161", tags: ["Rank #1", "Family Owned"], verdict: "PREMIER RANK: Best choice for Fairburn. Physical gaskets audit available." },
+            { id: 2, name: "Atlanta Container (ACT)", cat: "Container", loc: "Conley, GA", dist: 18.0, rating: 94, rto: true, rate: 4.5, phone: "404-361-0939", tags: ["RTO Specialist", "Transparent Tiers"], verdict: "FINANCIAL LEADER: Published tiers ($175-$265). Uses Rental Purchase Agreement logic." },
+            { id: 3, name: "Container Tech (CTI)", cat: "Container", loc: "Morrow, GA", dist: 16.0, rating: 88, rto: false, rate: 5.0, phone: "770-960-6210", tags: ["IICL-5 Specialist"], verdict: "QUALITY STANDARD: Best for office conversions. Structurally superior repaired standard." },
+            { id: 4, name: "On-Site Storage", cat: "Container", loc: "Depot Hub", dist: 22.0, rating: 82, rto: true, rate: 5.5, phone: "888-667-4834", tags: ["No Credit Check"], verdict: "AGGREGATOR: Guaranteed approvals. Slightly higher mileage-based pricing." },
+            { id: 5, name: "Conestoga Builders", cat: "Workshop", loc: "Fairburn Area", dist: 28.0, rating: 91, rto: true, rate: 3.2, phone: "678-576-6852", tags: ["Build-on-site"], verdict: "CONSTRUCTION ALT: Removes linear truck clearance constraint. Stick-built." },
+            { id: 6, name: "DuraStor Structures", cat: "Workshop", loc: "McDonough, GA", dist: 19.5, rating: 89, rto: true, rate: 4.0, phone: "478-595-6513", tags: ["Heavy Floors"], verdict: "GARAGE OPTION: Flooring engineered for heavy payload vehicles like ATVs." }
+        ];
+
+        let currentThemeIndex = 0;
+        let dChart = null, mChart = null;
+        let activeFilter = 'Container', searchStr = '';
+
+        function randomizeTheme() {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            const t = themes[currentThemeIndex];
+            const root = document.documentElement;
+            root.style.setProperty('--brand-navy', t.navy);
+            root.style.setProperty('--brand-accent', t.accent);
+            root.style.setProperty('--brand-gold', t.gold);
+            root.style.setProperty('--orb-1', t.orb1);
+            root.style.setProperty('--orb-2', t.orb2);
+            root.style.setProperty('--accent-rgb', t.rgb);
+            renderCharts();
+            renderDirectory();
+        }
+
+        function navigate(id) {
+            document.querySelectorAll('.page-view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(id + '-view').classList.remove('hidden');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById('link-' + id)?.classList.add('active');
+            if(id === 'home') setTimeout(renderCharts, 100);
+            if(id === 'directory') renderDirectory();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            const mobileMenu = document.getElementById('mobile-menu');
+            if(mobileMenu && !mobileMenu.classList.contains('translate-y-[-100%]')) toggleMobileMenu();
+        }
+
+        function handleSearch(val) { searchStr = val.toLowerCase(); renderDirectory(); }
+        function setFilter(type) { activeFilter = type; renderDirectory(); }
+
+        function renderDirectory() {
+            const grid = document.getElementById('dir-grid'); if(!grid) return; grid.innerHTML = '';
+            document.getElementById('dir-container').className = activeFilter === 'Container' ? "tab-btn px-8 py-3 rounded-full text-[10px] font-black active transition-all" : "tab-btn px-8 py-3 rounded-full text-[10px] font-black opacity-40 transition-all";
+            document.getElementById('dir-workshop').className = activeFilter === 'Workshop' ? "tab-btn px-8 py-3 rounded-full text-[10px] font-black active transition-all" : "tab-btn px-8 py-3 rounded-full text-[10px] font-black opacity-40 transition-all";
+
+            const filtered = providers.filter(p => p.cat === activeFilter && (!searchStr || p.name.toLowerCase().includes(searchStr) || p.verdict.toLowerCase().includes(searchStr)));
+            filtered.forEach((p, i) => {
+                const card = document.createElement('div');
+                card.className = "glass-panel p-8 md:p-10 rounded-[3rem] shine-card group hover:border-brand-accent/40 cursor-pointer transform hover:-translate-y-1 transition-all";
+                card.style.animation = `slideUp 0.6s forwards ${i * 0.05}s`;
+                
+                // Allow card click to open detail EXCEPT for the call button
+                card.onclick = (e) => {
+                    if(!e.target.closest('.call-btn')) openProvider(p.id);
+                };
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-8"><div class="w-14 h-14 bg-slate-100 dark:bg-white/5 rounded-2xl flex items-center justify-center font-black text-slate-400 group-hover:bg-brand-accent group-hover:text-white transition-all text-lg">0${p.id}</div><span class="text-base font-black text-brand-accent">${p.rating}%</span></div>
+                    <h3 class="text-2xl font-black uppercase tracking-tighter mb-2 group-hover:text-brand-accent transition-colors leading-none">${p.name}</h3>
+                    <p class="text-[10px] font-black opacity-30 italic mb-8 tracking-[0.2em]">📍 ${p.loc} (${p.dist} mi)</p>
+                    <div class="flex flex-wrap gap-2 mb-10">${p.tags.map(t => `<span class="px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest">${t}</span>`).join('')}</div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <a href="tel:${p.phone.replace(/\D/g,'')}" class="call-btn flex items-center justify-center gap-2 py-4 bg-brand-accent text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all">
+                            <i data-lucide="phone" class="w-3 h-3"></i> Call
+                        </a>
+                        <button class="flex items-center justify-center py-4 bg-brand-navy text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:brightness-125 transition-all">Specs</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function openProvider(id) {
+            const p = providers.find(x => x.id === id);
+            const overlay = document.getElementById('modal-overlay'), body = document.getElementById('modal-body');
+            overlay.classList.remove('hidden'); setTimeout(() => overlay.classList.add('opacity-100'), 10);
+            body.innerHTML = `
+                <div class="flex items-center gap-4 mb-8"><span class="bg-brand-accent text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-widest">Audit Summary</span><span class="text-[10px] font-black opacity-30 uppercase tracking-[0.4em]">#0${p.id}</span></div>
+                <h2 class="text-5xl font-black uppercase mb-8 italic text-brand-navy dark:text-white leading-none">${p.name}</h2>
+                <div class="p-8 bg-slate-100 dark:bg-white/5 rounded-[3rem] mb-12 border border-black/5"><p class="font-bold text-xl opacity-70 leading-relaxed italic text-brand-navy dark:text-white">"${p.verdict}"</p></div>
+                <div class="grid grid-cols-2 gap-10 mb-12"><div><p class="text-[9px] font-black opacity-30 uppercase mb-2">Transit Radius</p><p class="text-3xl font-black tracking-tighter text-brand-navy dark:text-white">${p.dist} mi</p></div><div class="text-right"><p class="text-[9px] font-black opacity-30 uppercase mb-2">System Rating</p><p class="text-3xl font-black text-brand-accent">${p.rating}/100</p></div></div>
+                <a href="tel:${p.phone.replace(/\D/g,'')}" class="flex items-center justify-center gap-4 w-full py-6 rounded-3xl bg-brand-navy dark:bg-brand-accent text-white font-black uppercase tracking-widest shadow-2xl hover:scale-[1.02] transition-all"><i data-lucide="phone-call" class="w-6 h-6"></i> Dial Depot</a>
+            `;
+            lucide.createIcons();
+            updateEst(id);
+        }
+
+        function renderCharts() {
+            const ctxD = document.getElementById('distChart'), ctxM = document.getElementById('mixChart');
+            if(!ctxD || !ctxM) return; if(dChart) dChart.destroy(); if(mChart) mChart.destroy();
+            const isD = document.documentElement.classList.contains('dark'), accent = themes[currentThemeIndex].accent;
+            dChart = new Chart(ctxD.getContext('2d'), { type: 'line', data: { labels: providers.map(p => p.name.split(' ')[0]), datasets: [{ data: providers.map(p => p.dist), borderColor: accent, borderWidth: 6, fill: true, backgroundColor: 'rgba(' + themes[currentThemeIndex].rgb + ', 0.05)', tension: 0.45, pointRadius: 8, pointBackgroundColor: isD ? '#020617' : '#FFF', pointBorderWidth: 4, pointBorderColor: accent }] }, options: { responsive: true, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) openProvider(providers[el[0].index].id); }, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: isD ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }, ticks: { font: { weight: '800' } } }, x: { grid: { display: false }, ticks: { font: { weight: '800' } } } } } });
+            mChart = new Chart(ctxM.getContext('2d'), { type: 'doughnut', data: { labels: ['RTO', 'Cash'], datasets: [{ data: [4, 2], backgroundColor: [accent, isD ? '#1E293B' : '#E2E8F0'], borderWidth: 0, hoverOffset: 25 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '85%' } });
+        }
+
+        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); renderCharts(); }
+        
+        function toggleMobileMenu() { 
+            const m = document.getElementById('mobile-menu'); if(!m) return;
+            const isOpen = !m.classList.contains('translate-y-[-100%]'); 
+            if(isOpen) {
+                m.classList.add('translate-y-[-100%]', 'opacity-0', 'pointer-events-none');
+                document.body.style.overflow = 'auto';
+            } else {
+                m.classList.remove('translate-y-[-100%]', 'opacity-0', 'pointer-events-none');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal() { document.getElementById('modal-overlay').classList.remove('opacity-100'); setTimeout(() => document.getElementById('modal-overlay').classList.add('hidden'), 300); }
+        function initEst() { const s = document.getElementById('log-select'); if(!s) return; s.innerHTML = providers.map(p => `<option value="${p.id}">${p.name}</option>`).join(''); s.onchange = (e) => updateEst(parseInt(e.target.value)); updateEst(1); }
+        function updateEst(id) { const p = providers.find(x => x.id === id); const priceEl = document.getElementById('log-price'); const distEl = document.getElementById('log-dist'); if(priceEl) priceEl.innerText = `$${(75 + (p.dist * p.rate)).toFixed(2)}`; if(distEl) distEl.innerText = `${p.dist} mi`; document.getElementById('log-select').value = id; }
+
+        let mX = 0, mY = 0; document.addEventListener('mousemove', e => { mX = e.clientX; mY = e.clientY; });
+        function updateShine() { document.querySelectorAll('.shine-card').forEach(c => { const r = c.getBoundingClientRect(); if(r.top < window.innerHeight && r.bottom > 0) { c.style.setProperty('--mouse-x', `${((mX - r.left)/r.width)*100}%`); c.style.setProperty('--mouse-y', `${((mY - r.top)/r.height)*100}%`); } }); requestAnimationFrame(updateShine); }
+        window.onload = () => { lucide.createIcons(); setTimeout(renderCharts, 150); renderDirectory(); initEst(); updateShine(); };
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

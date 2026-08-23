@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BE·ME Receptionist · by Self Exec</title>
+<meta name="description" content="A voice agent that IS your business — answering every call 24/7, in your name and your brand, fully authorized to book, qualify, and route.">
+<meta name="theme-color" content="#04070a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2304070a'/%3E%3Cg fill='%2350e3c2'%3E%3Crect x='6' y='13' width='3' height='6' rx='1.5'/%3E%3Crect x='11.5' y='9' width='3' height='14' rx='1.5'/%3E%3Crect x='17' y='6' width='3' height='20' rx='1.5'/%3E%3Crect x='22.5' y='11' width='3' height='10' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Saira:wght@400;500;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  /* ── 15 tokens drive the entire page. A new brand is a token swap. ───────── */
+  :root{
+    --bg:#04070a;
+    --bg-2:#070d12;
+    --panel:rgba(12,20,25,.66);
+    --panel-2:rgba(8,15,19,.86);
+    --line:rgba(255,255,255,.10);
+    --line-a:rgba(80,227,194,.30);
+    --ink:#f2f7f6;
+    --dim:#9fb2b0;
+    --faint:#68807e;
+    --accent:#50e3c2;
+    --accent-2:#a8f3e0;
+    --accent-deep:#1f8f78;
+    --chrome:linear-gradient(135deg,#d8fff4,#50e3c2 44%,#eafff9 60%,#1f8f78);
+    --radius:16px;
+    --blur:26px;
+  }
+
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--dim);
+    font-family:Saira,system-ui,-apple-system,sans-serif;line-height:1.55;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden
+  }
+  a{color:inherit}
+
+  /* ambient glow field — no canvas, no WebGL */
+  .glow{position:fixed;border-radius:50%;filter:blur(150px);opacity:.16;z-index:0;pointer-events:none;mix-blend-mode:screen;background:var(--accent)}
+  .g1{top:-26%;left:-22%;width:74vw;height:74vw}
+  .g2{bottom:-18%;right:-16%;width:62vw;height:62vw;background:var(--accent-deep);opacity:.22}
+
+  .wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 clamp(.9rem,3vw,2rem) 4.5rem;text-align:center}
+
+  /* ── nav ─────────────────────────────────────────────────────────────────── */
+  nav{
+    position:sticky;top:0;z-index:20;background:rgba(4,7,10,.82);
+    -webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur));
+    border-bottom:1px solid var(--line)
+  }
+  .nav-in{max-width:1000px;margin:0 auto;padding:.7rem clamp(.9rem,3vw,2rem);display:flex;align-items:center;justify-content:center;gap:1.1rem;flex-wrap:wrap}
+  .mark{display:inline-flex;align-items:center;gap:.5rem;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:.98rem;letter-spacing:.02em;color:var(--ink);text-decoration:none;white-space:nowrap}
+  .mark i{display:inline-flex;gap:2px;align-items:flex-end;height:15px;font-style:normal}
+  .mark i b{display:block;width:3px;border-radius:2px;background:var(--accent)}
+  .mark i b:nth-child(1){height:6px}
+  .mark i b:nth-child(2){height:14px}
+  .mark i b:nth-child(3){height:10px}
+  .mark i b:nth-child(4){height:15px}
+  .mark span{background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .mark em{font-style:normal;color:var(--faint);font-weight:500}
+  .nav-links{display:flex;gap:.15rem;flex-wrap:wrap;justify-content:center}
+  .nav-links a{font-size:.83rem;font-weight:500;color:var(--dim);text-decoration:none;padding:.35rem .6rem;border-radius:8px;transition:color .15s,background .15s}
+  .nav-links a:hover{color:var(--accent);background:rgba(80,227,194,.08)}
+  .nav-book{
+    font-family:"Chakra Petch",sans-serif;font-size:.82rem;font-weight:700;text-decoration:none;
+    color:#02120e;background:linear-gradient(135deg,#a8f3e0,#50e3c2 55%,#1f8f78);
+    padding:.5rem .9rem;border-radius:999px;white-space:nowrap;
+    box-shadow:0 4px 18px rgba(80,227,194,.28)
+  }
+
+  /* ── shared type ─────────────────────────────────────────────────────────── */
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.34em;text-transform:uppercase;color:var(--faint)}
+  h1{
+    font-family:"Chakra Petch",sans-serif;font-weight:700;
+    font-size:clamp(2rem,6vw,3.4rem);line-height:1.03;letter-spacing:-.025em;color:var(--ink);
+    margin:.85rem auto .9rem;max-width:16ch
+  }
+  h1 span{background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  h2{
+    font-family:"Chakra Petch",sans-serif;font-weight:700;
+    font-size:clamp(1.35rem,3.6vw,2.05rem);line-height:1.12;letter-spacing:-.02em;color:var(--ink);
+    margin:.55rem 0 .5rem
+  }
+  .lede{max-width:60ch;margin:0 auto;font-size:clamp(.97rem,1.6vw,1.1rem);color:var(--dim)}
+  .block{padding:3.6rem 0 .6rem;scroll-margin-top:70px}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--accent-deep)}
+
+  /* ── hero ────────────────────────────────────────────────────────────────── */
+  header{padding:3.4rem 0 0}
+  .meta{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:1.5rem auto 0;max-width:760px}
+  .meta li{
+    list-style:none;font-family:"JetBrains Mono",monospace;font-size:.7rem;color:var(--dim);
+    border:1px solid var(--line);border-radius:999px;padding:.4rem .85rem;background:var(--panel)
+  }
+  .meta li::before{content:"›";color:var(--accent);margin-right:.45rem;font-weight:700}
+  .cta-row{display:flex;flex-wrap:wrap;gap:.7rem;justify-content:center;margin-top:1.7rem}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:.45rem;
+    font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:.95rem;text-decoration:none;
+    padding:.85rem 1.5rem;border-radius:12px;border:1px solid transparent;transition:transform .14s,box-shadow .14s,background .14s
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn-solid{color:#02120e;background:linear-gradient(135deg,#a8f3e0,#50e3c2 55%,#1f8f78);box-shadow:0 6px 24px rgba(80,227,194,.3)}
+  .btn-ghost{color:var(--accent-2);border-color:var(--line-a);background:rgba(80,227,194,.05)}
+  .btn-ghost:hover{background:rgba(80,227,194,.12);border-color:var(--accent)}
+
+  /* ── live call card ──────────────────────────────────────────────────────── */
+  .live{
+    max-width:560px;margin:2.6rem auto 0;text-align:left;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    -webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur));
+    box-shadow:0 18px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);overflow:hidden
+  }
+  .live-top{display:flex;align-items:center;gap:.7rem;padding:.8rem 1rem;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(80,227,194,.55);animation:pulse 2.4s ease-out infinite;flex:none}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(80,227,194,.5)}70%{box-shadow:0 0 0 9px rgba(80,227,194,0)}100%{box-shadow:0 0 0 0 rgba(80,227,194,0)}}
+  .live-top .lbl{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);flex:1}
+  .wave{display:flex;align-items:flex-end;gap:2px;height:16px}
+  .wave b{display:block;width:3px;border-radius:2px;background:var(--accent-deep);animation:bob 1.4s ease-in-out infinite}
+  .wave b:nth-child(1){height:5px;animation-delay:0s}
+  .wave b:nth-child(2){height:12px;animation-delay:.12s}
+  .wave b:nth-child(3){height:8px;animation-delay:.24s}
+  .wave b:nth-child(4){height:16px;animation-delay:.36s}
+  .wave b:nth-child(5){height:7px;animation-delay:.48s}
+  .wave b:nth-child(6){height:11px;animation-delay:.6s}
+  @keyframes bob{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
+  .turns{padding:1rem 1rem 1.1rem;display:flex;flex-direction:column;gap:.6rem}
+  .turn{max-width:88%;padding:.6rem .85rem;border-radius:12px;font-size:.9rem;line-height:1.45}
+  .turn .who{display:block;font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:.25rem}
+  .caller{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid var(--line);border-bottom-left-radius:4px;color:var(--dim)}
+  .caller .who{color:var(--faint)}
+  .you{align-self:flex-end;background:rgba(80,227,194,.1);border:1px solid var(--line-a);border-bottom-right-radius:4px;color:var(--ink)}
+  .you .who{color:var(--accent)}
+  .live-foot{padding:.55rem 1rem .85rem;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);border-top:1px solid var(--line);text-align:center}
+
+  /* ── capability + step grids ─────────────────────────────────────────────── */
+  .grid{display:grid;gap:.7rem;margin-top:1.6rem;justify-content:center}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .cell{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:1.15rem .9rem;text-align:center;transition:border-color .18s,transform .18s,background .18s
+  }
+  .cell:hover{border-color:var(--line-a);transform:translateY(-2px);background:var(--panel-2)}
+  .num{font-family:"JetBrains Mono",monospace;font-size:.66rem;font-weight:700;letter-spacing:.18em;color:var(--accent-deep);display:block;margin-bottom:.45rem}
+  .cell:hover .num{color:var(--accent)}
+  .cname{font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:.98rem;color:var(--ink);line-height:1.25}
+  .rule{width:26px;height:2px;border-radius:2px;background:var(--accent-deep);margin:.6rem auto 0;opacity:.7}
+
+  /* ── proof ───────────────────────────────────────────────────────────────── */
+  .chip{
+    display:inline-block;font-family:"JetBrains Mono",monospace;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent-2);border:1px solid var(--line-a);background:rgba(80,227,194,.07);border-radius:999px;padding:.4rem .95rem
+  }
+  .proof{
+    max-width:760px;margin:1.2rem auto 0;padding:1.6rem 1.4rem;
+    background:var(--panel-2);border:1px solid var(--line-a);border-radius:18px;
+    -webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur));
+    box-shadow:0 14px 50px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05)
+  }
+  .proof .big{font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:1.18rem;color:var(--ink);line-height:1.3}
+  .proof p{margin-top:.85rem;font-size:.95rem;color:var(--dim)}
+  .sig{margin-top:1.1rem;padding-top:.9rem;border-top:1px dashed var(--line-a);font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--faint);line-height:1.6}
+
+  /* ── audiences ───────────────────────────────────────────────────────────── */
+  .chips{display:flex;flex-wrap:wrap;gap:.55rem;justify-content:center;margin-top:1.5rem}
+  .chips span{
+    font-size:.88rem;font-weight:500;color:var(--dim);background:var(--panel);
+    border:1px solid var(--line);border-radius:999px;padding:.55rem 1.05rem;transition:color .15s,border-color .15s
+  }
+  .chips span:hover{color:var(--accent-2);border-color:var(--line-a)}
+
+  /* ── pricing ─────────────────────────────────────────────────────────────── */
+  .tiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem;margin-top:1.8rem;align-items:stretch}
+  .tier{
+    position:relative;display:flex;flex-direction:column;text-align:left;
+    background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1.5rem 1.25rem 1.25rem;
+    -webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur))
+  }
+  .tier.best{border-color:var(--accent);box-shadow:0 0 0 1px rgba(80,227,194,.2),0 14px 44px rgba(80,227,194,.12)}
+  .flag{
+    position:absolute;top:-.65rem;left:50%;transform:translateX(-50%);
+    font-family:"JetBrains Mono",monospace;font-size:.58rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:#02120e;background:linear-gradient(135deg,#a8f3e0,#50e3c2);padding:.25rem .7rem;border-radius:999px;white-space:nowrap
+  }
+  .tname{font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:1.1rem;color:var(--ink);letter-spacing:-.01em}
+  .setup{display:flex;align-items:baseline;gap:.15rem;margin-top:.5rem;font-family:"Chakra Petch",sans-serif}
+  .cur{font-size:1.1rem;font-weight:600;color:var(--accent-deep)}
+  .amt{font-size:2.5rem;font-weight:700;line-height:1;background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .lab{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-left:.4rem}
+  .monthly{font-family:"JetBrains Mono",monospace;font-size:.74rem;color:var(--dim);margin-top:.3rem}
+  .monthly .cf{color:var(--accent-deep)}
+  .tdesc{font-size:.88rem;color:var(--dim);margin-top:.75rem;line-height:1.5}
+  .tlist{list-style:none;margin:1rem 0 1.2rem;display:flex;flex-direction:column;gap:.45rem}
+  .tlist li{position:relative;padding-left:1.15rem;font-size:.86rem;color:var(--dim);line-height:1.4}
+  .tlist li::before{content:"›";position:absolute;left:0;top:-.05rem;color:var(--accent);font-weight:700}
+  .tlist li.muted{color:var(--faint);font-size:.8rem}
+  .tlist li.muted::before{color:var(--accent-deep)}
+  .tier .btn{margin-top:auto;width:100%;font-size:.88rem;padding:.75rem 1rem}
+  .note{
+    max-width:620px;margin:1.5rem auto 0;padding:.9rem 1.1rem;border:1px dashed var(--line-a);border-radius:12px;
+    font-size:.86rem;color:var(--dim)
+  }
+  .note b{color:var(--accent-2)}
+  .note small{display:block;margin-top:.4rem;font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--faint)}
+
+  /* ── close ───────────────────────────────────────────────────────────────── */
+  .close{
+    margin-top:3.4rem;padding:2.4rem 1.4rem;
+    background:var(--panel-2);border:1px solid var(--line-a);border-radius:20px;
+    box-shadow:0 16px 55px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05)
+  }
+  footer{margin-top:2.6rem;padding-top:1.4rem;border-top:1px solid var(--line);font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--faint);line-height:1.8}
+  .fnav{display:flex;flex-wrap:wrap;gap:.9rem;justify-content:center;margin-top:.7rem}
+  .fnav a{color:var(--accent-deep);text-decoration:none}
+  .fnav a:hover{color:var(--accent)}
+
+  /* reveal — only ever hides content once JS has confirmed it can un-hide it */
+  .js .rv{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+  .js .rv.in{opacity:1;transform:none}
+
+  /* ── 3 breakpoints, mobile is the primary case ───────────────────────────── */
+  @media(max-width:860px){
+    .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .tiers{grid-template-columns:1fr;max-width:440px;margin-left:auto;margin-right:auto}
+    .tier.best{order:-1}
+    .nav-links a{padding:.3rem .45rem;font-size:.79rem}
+  }
+  @media(max-width:620px){
+    .g3{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .block{padding-top:2.8rem}
+    .turn{max-width:94%}
+    .btn{width:100%}
+    .cta-row{flex-direction:column}
+    .mark em{display:none}
+  }
+  @media(max-width:420px){
+    .g3,.g4{grid-template-columns:1fr}
+    .amt{font-size:2.1rem}
+    .meta li{font-size:.66rem;padding:.35rem .7rem}
+  }
+</style>
+</head>
+<body>
+<script>
+  /* Arm the reveal only when JS + IntersectionObserver are both real.
+     Without this class nothing is ever hidden, so no-JS still reads the whole page. */
+  if('IntersectionObserver' in window) document.documentElement.className='js';
+</script>
+<div class="glow g1"></div><div class="glow g2"></div>
+
+<nav>
+  <div class="nav-in">
+    <a class="mark" href="#top"><i><b></b><b></b><b></b><b></b></i><span>BE·ME</span> <em>by Self Exec</em></a>
+    <div class="nav-links">
+      <a href="#what">The offer</a>
+      <a href="#how">How it works</a>
+      <a href="#who">Who it's for</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <a class="nav-book" href="https://cal.com/ctoeast" target="_blank" rel="noopener">Book a setup call</a>
+  </div>
+</nav>
+
+<main class="wrap" id="top">
+
+  <header>
+    <div class="kicker">BE-ME Receptionist</div>
+    <h1>It doesn't sound like <span>&ldquo;an AI.&rdquo;</span> It sounds like you.</h1>
+    <p class="lede">A voice agent that IS your business &mdash; answering every call 24/7, in your name and your brand, fully authorized to book, qualify, and route. No &ldquo;press 1.&rdquo; No &ldquo;let me transfer you.&rdquo; No missed calls turning into lost money.</p>
+
+    <ul class="meta">
+      <li>Answers as your name &amp; brand</li>
+      <li>Books straight to your calendar</li>
+      <li>24/7 / 365 &mdash; never off the clock</li>
+      <li>Live in days, not months</li>
+    </ul>
+
+    <div class="cta-row">
+      <a class="btn btn-solid" href="https://cal.com/ctoeast" target="_blank" rel="noopener">Book a setup call</a>
+      <a class="btn btn-ghost" href="#how">See how it works</a>
+    </div>
+
+    <div class="live">
+      <div class="live-top">
+        <span class="dot"></span>
+        <span class="lbl">On the line</span>
+        <span class="wave"><b></b><b></b><b></b><b></b><b></b><b></b></span>
+      </div>
+      <div class="turns">
+        <div class="turn caller"><span class="who">Caller</span>Hi, do you have any openings this week?</div>
+        <div class="turn you"><span class="who">You</span>We do &mdash; I've got Thursday at 2 or Friday morning&hellip;</div>
+        <div class="turn caller"><span class="who">Caller</span>Thursday at 2 works.</div>
+        <div class="turn you"><span class="who">You</span>Done. You'll get a text confirmation in a second&hellip;</div>
+      </div>
+      <div class="live-foot">Illustrative demo &middot; not a recorded call</div>
+    </div>
+  </header>
+
+  <div class="block rv" id="what">
+    <div class="eyebrow">The offer</div>
+    <h2>Six things it does, every single call.</h2>
+    <div class="grid g3">
+      <div class="cell"><span class="num">01</span><div class="cname">Answers as you</div><div class="rule"></div></div>
+      <div class="cell"><span class="num">02</span><div class="cname">Books appointments</div><div class="rule"></div></div>
+      <div class="cell"><span class="num">03</span><div class="cname">Qualifies leads</div><div class="rule"></div></div>
+      <div class="cell"><span class="num">04</span><div class="cname">Routes &amp; escalates</div><div class="rule"></div></div>
+      <div class="cell"><span class="num">05</span><div class="cname">Answers the FAQs</div><div class="rule"></div></div>
+      <div class="cell"><span class="num">06</span><div class="cname">Logs every call</div><div class="rule"></div></div>
+    </div>
+  </div>
+
+  <div class="block rv" id="how">
+    <div class="eyebrow">How it works</div>
+    <h2>Four steps to hearing yourself answer.</h2>
+    <div class="grid g4">
+      <div class="cell"><span class="num">01</span><div class="cname">We capture your voice</div><div class="rule"></div></div>
+      <div class="cell"><span class="num">02</span><div class="cname">We build the agent</div><div class="rule"></div></div>
+      <div class="cell"><span class="num">03</span><div class="cname">You hear it first</div><div class="rule"></div></div>
+      <div class="cell"><span class="num">04</span><div class="cname">It goes live</div><div class="rule"></div></div>
+    </div>
+    <div class="note">The First Win can be standing up in <b>days, not months</b> &mdash; fast enough to hear yourself answer this week.</div>
+  </div>
+
+  <div class="block rv">
+    <span class="chip">Built by an operator who runs it himself</span>
+    <div class="proof">
+      <div class="big">&ldquo;We don't pitch a product we haven't lived on.&rdquo;</div>
+      <p>Self Exec runs a BE-ME voice agent on its own line every day &mdash; answering, booking, and routing as the business. We're not reselling someone else's bot wrapped in a logo. The same system we trust with our own calls is the one we build for you &mdash; tuned to your voice instead of ours.</p>
+      <div class="sig">// Self Exec &middot; East &middot; built, run, and proven on our own line before it touches yours.</div>
+    </div>
+  </div>
+
+  <div class="block rv" id="who">
+    <div class="eyebrow">Who it's for</div>
+    <h2>Any business where a missed call is missed money.</h2>
+    <div class="chips">
+      <span>Salons &amp; studios</span>
+      <span>Trades &amp; contractors</span>
+      <span>Clinics &amp; practices</span>
+      <span>Law &amp; pro services</span>
+      <span>Real estate &amp; agents</span>
+      <span>Solo operators</span>
+    </div>
+  </div>
+
+  <div class="block rv" id="pricing">
+    <div class="eyebrow">Pricing</div>
+    <h2>Three ways in. All of them real.</h2>
+
+    <div class="tiers">
+      <div class="tier">
+        <div class="tname">First Win</div>
+        <div class="setup"><span class="cur">$</span><span class="amt">111</span><span class="lab">setup</span></div>
+        <div class="monthly">+ monthly <span class="cf">(confirm)</span></div>
+        <p class="tdesc">The proof, not the product. A single scoped voice agent stood up fast so you can hear yourself answer &mdash; before you commit to more.</p>
+        <ul class="tlist">
+          <li>One voice agent in your name</li>
+          <li>Greeting + your core FAQ answers</li>
+          <li>Calendar booking on one line</li>
+          <li>You approve the voice before it's live</li>
+          <li class="muted">Setup credits forward to the next tier</li>
+        </ul>
+        <a class="btn btn-ghost" href="https://cal.com/ctoeast" target="_blank" rel="noopener">Start the First Win</a>
+      </div>
+
+      <div class="tier best">
+        <span class="flag">Most chosen</span>
+        <div class="tname">The Front Desk</div>
+        <div class="setup"><span class="cur">$</span><span class="amt">333</span><span class="lab">setup</span></div>
+        <div class="monthly">+ monthly <span class="cf">(confirm)</span></div>
+        <p class="tdesc">The full receptionist. Books, qualifies, routes, and logs every call 24/7 &mdash; your whole front desk in one voice.</p>
+        <ul class="tlist">
+          <li>Everything in First Win</li>
+          <li>Lead qualification + intake questions</li>
+          <li>Routing, escalation &amp; warm handoff</li>
+          <li>Text/email confirmations &amp; call recaps</li>
+          <li>Call logs, transcripts &amp; summaries</li>
+          <li>Voice + flow tuning until it's truly you</li>
+        </ul>
+        <a class="btn btn-solid" href="https://cal.com/ctoeast" target="_blank" rel="noopener">Build my front desk</a>
+      </div>
+
+      <div class="tier">
+        <div class="tname">Done-For-You</div>
+        <div class="setup"><span class="cur">$</span><span class="amt">555</span><span class="lab">setup</span></div>
+        <div class="monthly">+ monthly <span class="cf">(confirm)</span></div>
+        <p class="tdesc">White-glove. We own the build, the integrations, and the ongoing tuning so you never think about it again.</p>
+        <ul class="tlist">
+          <li>Everything in The Front Desk</li>
+          <li>CRM / tools integration</li>
+          <li>Multi-line &amp; after-hours flows</li>
+          <li>Custom scripts per call type</li>
+          <li>Priority tuning &amp; ongoing optimization</li>
+          <li>Direct line to the operator who built it</li>
+        </ul>
+        <a class="btn btn-ghost" href="https://cal.com/ctoeast" target="_blank" rel="noopener">Talk through the build</a>
+      </div>
+    </div>
+
+    <div class="note">
+      All prices are setup (one-time) + monthly. Monthly amounts and exact scope are confirmed on your setup call &mdash; <b>we quote real, never canned.</b>
+      <small>We quote real numbers, never placeholders.</small>
+    </div>
+  </div>
+
+  <div class="close rv">
+    <div class="eyebrow">Next step</div>
+    <h2>Hear yourself answer.</h2>
+    <p class="lede">Book the setup call and we'll scope the line, the voice, and the monthly on the call &mdash; real numbers, your brand, your words.</p>
+    <div class="cta-row">
+      <a class="btn btn-solid" href="https://cal.com/ctoeast" target="_blank" rel="noopener">Book a setup call</a>
+      <a class="btn btn-ghost" href="mailto:admin@selfexec.com">Email Self Exec</a>
+    </div>
+  </div>
+
+  <footer>
+    BE·ME Receptionist &mdash; a Self Exec offer. Built, run, and proven by an operator.
+    <div class="fnav">
+      <a href="https://cal.com/ctoeast" target="_blank" rel="noopener">Book</a>
+      <a href="mailto:admin@selfexec.com">admin@selfexec.com</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  var els = document.querySelectorAll('.rv');
+  function showAll(){ for(var i=0;i<els.length;i++) els[i].classList.add('in'); }
+  if(!('IntersectionObserver' in window)){ showAll(); return; }
+  /* safety net: nothing stays invisible for more than 3s, whatever the observer does */
+  setTimeout(showAll,3000);
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  },{rootMargin:'0px 0px -8% 0px',threshold:.08});
+  els.forEach(function(el){ io.observe(el); });
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

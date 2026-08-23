@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Breath to Life</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#08090a; --panel:#0e1012; --line:#1c2024;
+    --ink:#e8ecef; --dim:#8b959c; --faint:#5a636a;
+    --jade:#07C42C; --amber:#c9922b; --grey:#4d565c;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:400 16px/1.5 Figtree,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:28px 18px 64px;
+  }
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:.9rem;margin:0 0 26px}
+  .sub b{color:var(--jade);font-weight:600}
+
+  /* ---- aggregate ---- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;margin-bottom:30px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px 14px}
+  .stat .n{font:800 1.35rem/1.15 Figtree;letter-spacing:-.02em}
+  .stat .l{color:var(--faint);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+  .stat.hero .n{color:var(--jade)}
+
+  h2{font-size:.76rem;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);
+     font-weight:600;margin:32px 0 12px;border-top:1px solid var(--line);padding-top:20px}
+  h2 .c{color:var(--dim);text-transform:none;letter-spacing:0;font-weight:400}
+
+  /* ---- rows ---- */
+  .row{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+       padding:13px 15px;margin-bottom:9px}
+  .row .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .el{font:800 1.05rem/1 Figtree;color:var(--jade);letter-spacing:-.01em;
+      min-width:62px;font-variant-numeric:tabular-nums}
+  .el.slow{color:var(--amber)}
+  .when{color:var(--faint);font:400 .74rem/1 var(--mono)}
+  .breath{margin:9px 0 0;color:var(--ink);font-size:.94rem}
+  .breath.red{color:var(--faint);font-style:italic}
+  .did{margin:7px 0 0;color:var(--dim);font-size:.83rem;display:flex;gap:7px;align-items:baseline}
+  .did .arrow{color:var(--faint)}
+  .v{font-size:.63rem;text-transform:uppercase;letter-spacing:.07em;
+     padding:2px 7px;border-radius:20px;border:1px solid;white-space:nowrap}
+  .v.ok{color:var(--jade);border-color:#0d3d1c;background:#07160c}
+  .v.pend{color:var(--grey);border-color:#20262a}
+  .art{color:var(--faint);font:400 .72rem/1.4 var(--mono);margin-top:5px;
+       word-break:break-all}
+
+  .note{color:var(--faint);font-size:.8rem;line-height:1.6;
+        border-left:2px solid var(--line);padding-left:13px;margin:14px 0 0}
+  .empty{color:var(--faint);font-size:.87rem;padding:16px 0}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);
+         color:var(--faint);font-size:.74rem;line-height:1.7}
+  @media(max-width:430px){
+    body{padding:22px 13px 52px}
+    .el{min-width:54px;font-size:.98rem}
+    .stat .n{font-size:1.2rem}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Breath to Life</h1>
+  <p class="sub">Every line qi speaks, what it became, and <b>how long that took</b>.
+     Live — no refresh.</p>
+
+  <div class="stats" id="stats"></div>
+
+  <h2>Latency <span class="c">— breath → life</span></h2>
+  <div class="stats" id="lat"></div>
+
+  <h2>Timeline <span class="c" id="tlc"></span></h2>
+  <div id="timeline"><div class="empty">loading…</div></div>
+
+  <h2>Open breaths <span class="c" id="opc"></span></h2>
+  <p class="note">Words with no action linked. <b>Tracking began 2026-08-18 20:41</b> —
+     everything spoken before that is unmeasurable, not dropped.</p>
+  <div id="open"></div>
+
+  <footer>
+    Breath text is <b>redacted by default</b> and shown only when it clears a content
+    screen — medical, financial, contact and credential detail never reach this page.
+    Command lines are never published; actions show the tool only.<br>
+    <span id="gen"></span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function dur(s){
+    if (s == null) return "—";
+    if (s < 60) return s + "s";
+    var m = Math.floor(s/60);
+    return m < 60 ? m + "m" : (m/60).toFixed(1) + "h";
+  }
+  function clock(ts){ return ts ? String(ts).slice(11,19) : ""; }
+
+  function stat(n, l, hero){
+    return '<div class="stat' + (hero ? ' hero' : '') + '">' +
+           '<div class="n">' + esc(n) + '</div>' +
+           '<div class="l">' + esc(l) + '</div></div>';
+  }
+
+  function breathHTML(r){
+    if (r.redacted) {
+      return '<p class="breath red">[redacted — ' + (r.breath_len || 0) + ' characters]</p>';
+    }
+    return '<p class="breath">' + esc(r.breath) + '</p>';
+  }
+
+  function render(d){
+    var t = d.totals || {}, L = d.latency || {};
+
+    $("stats").innerHTML =
+      stat(t.breaths_qi, "qi breaths", true) +
+      stat(t.actions_linked, "actions linked") +
+      stat(t.verified, "verified") +
+      stat(t.pending, "pending") +
+      stat(t.open_breaths, "open");
+
+    $("lat").innerHTML =
+      stat(dur(L.p50), "median", true) +
+      stat(dur(L.p90), "p90") +
+      stat(dur(L.max), "slowest") +
+      stat(dur(L.min), "fastest") +
+      stat(L.count, "measured");
+
+    var tl = d.timeline || [];
+    $("tlc").textContent = "— " + tl.length + " most recent";
+    $("timeline").innerHTML = tl.length ? tl.map(function(r){
+      var ok = r.verdict === "verified-end-to-end";
+      return '<div class="row">' +
+        '<div class="top">' +
+          '<span class="el' + (r.elapsed_s > 600 ? ' slow' : '') + '">' + dur(r.elapsed_s) + '</span>' +
+          '<span class="when">' + esc(clock(r.breath_ts)) + ' → ' + esc(clock(r.ts)) + '</span>' +
+          '<span class="v ' + (ok ? 'ok' : 'pend') + '">' + esc(ok ? 'verified' : 'pending') + '</span>' +
+        '</div>' +
+        breathHTML(r) +
+        '<div class="did"><span class="arrow">→</span><span>' + esc(r.action) + '</span></div>' +
+        (r.artifact ? '<div class="art">' + esc(r.artifact) + '</div>' : '') +
+      '</div>';
+    }).join("") : '<div class="empty">No linked actions yet.</div>';
+
+    var op = d.open || [];
+    $("opc").textContent = "— showing " + op.length + " of " + (t.open_breaths || 0);
+    $("open").innerHTML = op.length ? op.map(function(r){
+      return '<div class="row">' +
+        '<div class="top"><span class="when">' + esc(clock(r.ts)) + '</span></div>' +
+        breathHTML(r) + '</div>';
+    }).join("") : '<div class="empty">Nothing open.</div>';
+
+    $("gen").textContent = "Generated " + (d.generated || "") +
+      " · " + (t.breaths_mine_excluded || 0) + " of Xen's own prompts excluded from every count above.";
+  }
+
+  function poll(){
+    fetch("btl.json?t=" + Date.now(), {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ if (d) render(d); })
+      .catch(function(){ /* keep the last good render */ });
+  }
+  poll();
+  setInterval(poll, 15000);
+})();
+</script>
+</body>
+</html>

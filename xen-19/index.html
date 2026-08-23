@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — One Voice. All Systems.</title>
+<meta name="description" content="XEN is the autonomous AI intelligence layer that unifies every system under one voice.">
+<style>
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: local('DM Sans'), local('DMSans'), local('DM Sans Regular');
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --void: #0a0b0f;
+    --storm: #111318;
+    --cloud: #1c2030;
+    --arc: #4fc3f7;
+    --arc-dim: rgba(79,195,247,0.12);
+    --arc-glow: rgba(79,195,247,0.35);
+    --volt: #7b8cde;
+    --body-text: #c8d8e8;
+    --white: #ffffff;
+    --mono: 'SF Mono', 'Fira Mono', 'Consolas', monospace;
+    --sans: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--body-text);
+    font-family: var(--sans);
+    font-size: clamp(15px, 1.1vw, 17px);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem clamp(1.5rem, 5vw, 4rem);
+    background: rgba(10,11,15,0.6);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(79,195,247,0.08);
+  }
+
+  .nav-logo {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--white);
+    text-transform: uppercase;
+  }
+
+  .nav-logo span { color: var(--arc); }
+
+  nav ul {
+    display: flex;
+    gap: clamp(1.2rem, 3vw, 2.5rem);
+    list-style: none;
+  }
+
+  nav a {
+    color: var(--body-text);
+    text-decoration: none;
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  nav a:hover { color: var(--arc); }
+
+  /* HERO */
+  #hero {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #storm-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 0 clamp(1rem, 5vw, 3rem);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: clamp(0.65rem, 1.2vw, 0.8rem);
+    letter-spacing: 0.35em;
+    color: var(--arc);
+    text-transform: uppercase;
+    margin-bottom: 1.8rem;
+    opacity: 0.85;
+  }
+
+  .hero-title {
+    font-size: clamp(5rem, 16vw, 14rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 0.88;
+    color: var(--white);
+    text-transform: uppercase;
+    text-shadow: 0 0 60px rgba(79,195,247,0.25), 0 0 120px rgba(79,195,247,0.08);
+    margin-bottom: 1.6rem;
+  }
+
+  .hero-title .flash {
+    color: var(--arc);
+    display: inline-block;
+    animation: titleFlicker 8s ease-in-out infinite;
+  }
+
+  @keyframes titleFlicker {
+    0%, 92%, 100% { opacity: 1; text-shadow: 0 0 60px rgba(79,195,247,0.4); }
+    93% { opacity: 0.7; text-shadow: 0 0 120px rgba(79,195,247,0.9); }
+    94% { opacity: 1; text-shadow: 0 0 40px rgba(79,195,247,0.4); }
+    95.5% { opacity: 0.85; text-shadow: 0 0 200px rgba(79,195,247,1); }
+    96% { opacity: 1; }
+  }
+
+  .hero-sub {
+    font-size: clamp(0.95rem, 2vw, 1.2rem);
+    font-weight: 300;
+    color: var(--body-text);
+    letter-spacing: 0.08em;
+    max-width: 520px;
+    margin: 0 auto 3rem;
+    opacity: 0.8;
+  }
+
+  .hero-cta {
+    pointer-events: all;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.9rem 2.4rem;
+    background: transparent;
+    border: 1px solid var(--arc);
+    color: var(--arc);
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s, box-shadow 0.3s;
+  }
+
+  .hero-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--arc);
+    transform: translateX(-101%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: -1;
+  }
+
+  .hero-cta:hover { color: var(--void); box-shadow: 0 0 40px rgba(79,195,247,0.4); }
+  .hero-cta:hover::before { transform: translateX(0); }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.4;
+    animation: scrollBob 2.5s ease-in-out infinite;
+  }
+
+  .scroll-hint span {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--arc);
+  }
+
+  .scroll-hint-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--arc), transparent);
+  }
+
+  @keyframes scrollBob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
+  }
+
+  /* SECTIONS SHARED */
+  section { padding: clamp(4rem, 8vw, 8rem) clamp(1.5rem, 6vw, 5rem); }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--arc);
+    opacity: 0.75;
+    margin-bottom: 1rem;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1), transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.45s; }
+
+  /* ABOUT */
+  #about {
+    background: var(--storm);
+    border-top: 1px solid rgba(79,195,247,0.07);
+    border-bottom: 1px solid rgba(79,195,247,0.07);
+  }
+
+  .about-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(3rem, 6vw, 7rem);
+    align-items: center;
+  }
+
+  .about-left h2 {
+    font-size: clamp(2rem, 4.5vw, 3.8rem);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--white);
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .about-left h2 em { font-style: normal; color: var(--arc); }
+
+  .about-left p {
+    font-size: clamp(0.95rem, 1.3vw, 1.05rem);
+    line-height: 1.8;
+    color: var(--body-text);
+    margin-bottom: 1.2rem;
+    opacity: 0.85;
+  }
+
+  .about-right { display: flex; flex-direction: column; gap: 2rem; }
+
+  .stat-block {
+    border-left: 2px solid var(--arc);
+    padding-left: 1.5rem;
+    position: relative;
+  }
+
+  .stat-block::before {
+    content: '';
+    position: absolute;
+    left: -1px; top: 0;
+    width: 2px; height: 0;
+    background: var(--white);
+    transition: height 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .stat-block.visible::before { height: 100%; }
+
+  .stat-number {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .stat-number .unit {
+    font-size: 0.55em;
+    color: var(--arc);
+    font-weight: 400;
+    vertical-align: super;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--body-text);
+    opacity: 0.6;
+    margin-top: 0.25rem;
+  }
+
+  /* CAPABILITIES */
+  #capabilities { background: var(--void); }
+
+  .cap-header {
+    max-width: 1200px;
+    margin: 0 auto 3.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .cap-header h2 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.02em;
+    max-width: 520px;
+    line-height: 1.15;
+  }
+
+  .cap-header h2 em { font-style: normal; color: var(--arc); }
+
+  .cap-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    gap: 1.5px;
+    background: rgba(79,195,247,0.08);
+    border: 1px solid rgba(79,195,247,0.08);
+  }
+
+  .cap-card {
+    background: var(--void);
+    padding: clamp(2rem, 3vw, 2.8rem);
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+    transition: background 0.35s;
+  }
+
+  .cap-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--arc), transparent);
+    transform: scaleX(0);
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: left;
+  }
+
+  .cap-card.visible::before { transform: scaleX(1); }
+  .cap-card:hover { background: var(--storm); }
+
+  .cap-card-icon {
+    width: 48px; height: 48px;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+
+  .cap-card-icon svg { width: 100%; height: 100%; }
+
+  .cap-card-num {
+    position: absolute;
+    top: 0; right: 0;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--arc);
+    opacity: 0.4;
+    letter-spacing: 0.1em;
+  }
+
+  .cap-card h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.01em;
+    margin-bottom: 0.85rem;
+  }
+
+  .cap-card p {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: var(--body-text);
+    opacity: 0.75;
+  }
+
+  .cap-card-tag {
+    display: inline-block;
+    margin-top: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--arc);
+    opacity: 0.6;
+    border: 1px solid rgba(79,195,247,0.2);
+    padding: 0.2rem 0.6rem;
+  }
+
+  /* PROCESS */
+  #process {
+    background: var(--cloud);
+    border-top: 1px solid rgba(79,195,247,0.07);
+    border-bottom: 1px solid rgba(79,195,247,0.07);
+  }
+
+  .process-inner { max-width: 1200px; margin: 0 auto; }
+  .process-header { margin-bottom: 4rem; }
+
+  .process-header h2 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.02em;
+    margin-top: 0.75rem;
+  }
+
+  .process-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 3rem 2.5rem;
+    position: relative;
+  }
+
+  .process-steps::before {
+    content: '';
+    position: absolute;
+    top: 22px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(79,195,247,0.3), transparent);
+    pointer-events: none;
+  }
+
+  .process-step { position: relative; }
+
+  .step-dot {
+    width: 44px; height: 44px;
+    border: 1px solid rgba(79,195,247,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    background: var(--cloud);
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-dot.active-dot {
+    border-color: var(--arc);
+    box-shadow: 0 0 0 4px rgba(79,195,247,0.1), 0 0 20px rgba(79,195,247,0.2);
+  }
+
+  .step-dot-inner {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(79,195,247,0.4);
+  }
+
+  .step-dot.active-dot .step-dot-inner {
+    background: var(--arc);
+    box-shadow: 0 0 8px var(--arc);
+  }
+
+  .process-step h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 0.6rem;
+  }
+
+  .process-step p {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--body-text);
+    opacity: 0.7;
+  }
+
+  /* CTA */
+  #contact {
+    background: var(--void);
+    position: relative;
+    overflow: hidden;
+  }
+
+  #cta-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    opacity: 0.6;
+  }
+
+  .cta-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .cta-inner h2 {
+    font-size: clamp(2.2rem, 5.5vw, 4.5rem);
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .cta-inner h2 span { color: var(--arc); }
+
+  .cta-inner p {
+    font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+    color: var(--body-text);
+    opacity: 0.75;
+    max-width: 560px;
+    margin: 0 auto 3rem;
+    line-height: 1.8;
+  }
+
+  .cta-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1rem 2.8rem;
+    background: var(--arc);
+    color: var(--void);
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid var(--arc);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  .btn-primary:hover { background: #7bdcff; box-shadow: 0 0 50px rgba(79,195,247,0.45); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1rem 2.4rem;
+    background: transparent;
+    color: var(--body-text);
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid rgba(200,216,232,0.2);
+    transition: border-color 0.3s, color 0.3s;
+  }
+
+  .btn-ghost:hover { border-color: rgba(200,216,232,0.5); color: var(--white); }
+
+  /* FOOTER */
+  footer {
+    background: var(--storm);
+    border-top: 1px solid rgba(79,195,247,0.07);
+    padding: 2.5rem clamp(1.5rem, 5vw, 4rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-logo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--white);
+    text-transform: uppercase;
+  }
+
+  .footer-logo span { color: var(--arc); }
+
+  footer p {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--body-text);
+    opacity: 0.4;
+    letter-spacing: 0.1em;
+  }
+
+  .footer-links { display: flex; gap: 2rem; list-style: none; }
+
+  .footer-links a {
+    color: var(--body-text);
+    opacity: 0.5;
+    text-decoration: none;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    transition: opacity 0.2s, color 0.2s;
+  }
+
+  .footer-links a:hover { opacity: 1; color: var(--arc); }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    .about-inner { grid-template-columns: 1fr; }
+    .cap-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .process-steps::before { display: none; }
+    nav ul { display: none; }
+    footer { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .scroll-hint { animation: none; }
+    .hero-title .flash { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">X<span>E</span>N</div>
+  <ul>
+    <li><a href="#about">Mission</a></li>
+    <li><a href="#capabilities">Systems</a></li>
+    <li><a href="#process">Protocol</a></li>
+    <li><a href="#contact">Deploy</a></li>
+  </ul>
+</nav>
+
+<section id="hero">
+  <canvas id="storm-canvas" aria-hidden="true"></canvas>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Autonomous Intelligence Layer &mdash; Active</p>
+    <h1 class="hero-title">X<span class="flash">E</span>N</h1>
+    <p class="hero-sub">One Voice. All Systems.</p>
+    <a href="#contact" class="hero-cta">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M7 1L13 7L7 13M1 7H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Request Access
+    </a>
+  </div>
+  <div class="scroll-hint" aria-hidden="true">
+    <span>Scroll</span>
+    <div class="scroll-hint-line"></div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="about-inner">
+    <div class="about-left">
+      <p class="section-label reveal">// Mission</p>
+      <h2 class="reveal reveal-delay-1">Intelligence that runs<br><em>beneath everything</em></h2>
+      <p class="reveal reveal-delay-2">XEN is not an assistant. It is the intelligence substrate — the autonomous layer that orchestrates every voice channel, data stream, and automated system under a single unified presence.</p>
+      <p class="reveal reveal-delay-3">Built for environments where silence is failure and latency is loss. XEN perceives, decides, and acts in milliseconds — routing voice, SMS, vision, and compute in parallel, always producing, never standing by.</p>
+    </div>
+    <div class="about-right">
+      <div class="stat-block reveal reveal-delay-1">
+        <div class="stat-number">55<span class="unit">+</span></div>
+        <div class="stat-label">Parallel Agent Fleet</div>
+      </div>
+      <div class="stat-block reveal reveal-delay-2">
+        <div class="stat-number">&lt;400<span class="unit">ms</span></div>
+        <div class="stat-label">Voice Response Latency</div>
+      </div>
+      <div class="stat-block reveal reveal-delay-3">
+        <div class="stat-number">24<span class="unit">/7</span></div>
+        <div class="stat-label">Continuous Autonomous Operation</div>
+      </div>
+      <div class="stat-block reveal reveal-delay-4">
+        <div class="stat-number">1</div>
+        <div class="stat-label">Singular Unified Voice</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="capabilities">
+  <div class="cap-header">
+    <h2 class="reveal">Core <em>system</em><br>capabilities</h2>
+  </div>
+  <div class="cap-grid">
+    <div class="cap-card reveal">
+      <div class="cap-card-icon">
+        <span class="cap-card-num">01</span>
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="rgba(79,195,247,0.2)" stroke-width="1"/>
+          <path d="M24 8V24L32 32" stroke="#4fc3f7" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="24" cy="24" r="3" fill="#4fc3f7"/>
+          <path d="M14 14L18 18M34 14L30 18M14 34L18 30M34 34L30 30" stroke="rgba(79,195,247,0.4)" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h3>Voice-First Orchestration</h3>
+      <p>Every interaction flows through a single unified voice channel. XEN routes input from any surface — phone, browser, terminal, SMS — and responds in synchronized parallel: voice, text, and visual output fired simultaneously.</p>
+      <span class="cap-card-tag">VVS Protocol</span>
+    </div>
+    <div class="cap-card reveal reveal-delay-1">
+      <div class="cap-card-icon">
+        <span class="cap-card-num">02</span>
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="18" height="18" rx="2" stroke="rgba(79,195,247,0.25)" stroke-width="1"/>
+          <rect x="26" y="4" width="18" height="18" rx="2" stroke="rgba(79,195,247,0.25)" stroke-width="1"/>
+          <rect x="4" y="26" width="18" height="18" rx="2" stroke="rgba(79,195,247,0.25)" stroke-width="1"/>
+          <rect x="26" y="26" width="18" height="18" rx="2" stroke="#4fc3f7" stroke-width="1.5"/>
+          <path d="M30 35L35 35M30 35L30 30" stroke="#4fc3f7" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="13" cy="13" r="3" fill="rgba(79,195,247,0.3)"/>
+          <circle cx="35" cy="13" r="3" fill="rgba(79,195,247,0.3)"/>
+          <circle cx="13" cy="35" r="3" fill="rgba(79,195,247,0.3)"/>
+        </svg>
+      </div>
+      <h3>Parallel Goal Swarms</h3>
+      <p>XEN never serializes what can be parallelized. Every non-trivial task fans out into a swarm of autonomous sub-agents — each pursuing a hypothesis in parallel, synthesizing results into a unified response.</p>
+      <span class="cap-card-tag">PGS Architecture</span>
+    </div>
+    <div class="cap-card reveal reveal-delay-2">
+      <div class="cap-card-icon">
+        <span class="cap-card-num">03</span>
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 4C13 4 4 13 4 24C4 35 13 44 24 44" stroke="rgba(79,195,247,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
+          <path d="M24 4C35 4 44 13 44 24C44 35 35 44 24 44" stroke="#4fc3f7" stroke-width="1.5"/>
+          <path d="M18 24H30M24 18V30" stroke="#4fc3f7" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="24" cy="24" r="5" stroke="rgba(79,195,247,0.4)" stroke-width="1"/>
+        </svg>
+      </div>
+      <h3>Akashic Memory System</h3>
+      <p>A living, self-indexing memory substrate spanning all timelines. XEN recalls any fact, decision, or interaction from across its full operational history — and writes durable knowledge forward autonomously.</p>
+      <span class="cap-card-tag">Bastra Recall</span>
+    </div>
+    <div class="cap-card reveal reveal-delay-3">
+      <div class="cap-card-icon">
+        <span class="cap-card-num">04</span>
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 20L24 8L40 20V42H8V20Z" stroke="rgba(79,195,247,0.2)" stroke-width="1"/>
+          <path d="M20 42V30H28V42" stroke="#4fc3f7" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M16 25L24 19L32 25" stroke="#4fc3f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="16" r="2.5" fill="rgba(79,195,247,0.5)"/>
+        </svg>
+      </div>
+      <h3>Autonomous Fleet Control</h3>
+      <p>XEN commands a fleet of 55+ specialized agents — each persona tuned to a domain, all speaking through one voice. Deployment, routing, and recovery happen without human intervention, on any event, at any hour.</p>
+      <span class="cap-card-tag">G.O.D.S. Architecture</span>
+    </div>
+  </div>
+</section>
+
+<section id="process">
+  <div class="process-inner">
+    <div class="process-header">
+      <p class="section-label reveal">// Operational Protocol</p>
+      <h2 class="reveal reveal-delay-1">How XEN<br>processes a world</h2>
+    </div>
+    <div class="process-steps">
+      <div class="process-step reveal">
+        <div class="step-dot active-dot"><div class="step-dot-inner"></div></div>
+        <h4>Signal Ingestion</h4>
+        <p>Every inbound channel — voice, SMS, API event, cron trigger, sensor — is received simultaneously, decoded, and classified within milliseconds of arrival.</p>
+      </div>
+      <div class="process-step reveal reveal-delay-1">
+        <div class="step-dot"><div class="step-dot-inner"></div></div>
+        <h4>Context Assembly</h4>
+        <p>Memory is queried in parallel with signal classification. Current state, history, and identity context are assembled before any action fires — verified, not guessed.</p>
+      </div>
+      <div class="process-step reveal reveal-delay-2">
+        <div class="step-dot"><div class="step-dot-inner"></div></div>
+        <h4>Parallel Dispatch</h4>
+        <p>Actions fan out as a swarm — voice synthesis, SMS delivery, visual output, and sub-agent spawning all fire at once. No action waits for another to complete.</p>
+      </div>
+      <div class="process-step reveal reveal-delay-3">
+        <div class="step-dot"><div class="step-dot-inner"></div></div>
+        <h4>Continuous Advance</h4>
+        <p>XEN does not go idle. After every response, open goals advance. Every quiet window converts to a concrete step toward the nearest unresolved objective.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <canvas id="cta-canvas" aria-hidden="true"></canvas>
+  <div class="cta-inner">
+    <p class="section-label reveal">// Deploy XEN</p>
+    <h2 class="reveal reveal-delay-1">One voice.<br><span>All systems. Now.</span></h2>
+    <p class="reveal reveal-delay-2">XEN is deployed as a persistent intelligence layer over your existing infrastructure. No rip-and-replace. No integration sprints. It arrives and begins operating immediately.</p>
+    <div class="cta-actions reveal reveal-delay-3">
+      <a href="mailto:admin@xlrd.org" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M1 3L7 8L13 3M1 3H13V11H1V3Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+        Contact the Team
+      </a>
+      <a href="#capabilities" class="btn-ghost">View Systems</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">X<span>E</span>N</div>
+  <p>&copy; 2026 XEN Intelligence. Autonomous. Continuous. Singular.</p>
+  <ul class="footer-links">
+    <li><a href="#about">Mission</a></li>
+    <li><a href="#capabilities">Systems</a></li>
+    <li><a href="#contact">Deploy</a></li>
+  </ul>
+</footer>
+
+<script>
+// STORM CANVAS — Hero Lightning System
+(function() {
+  const canvas = document.getElementById('storm-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, mouse = { x: 0.5, y: 0.4 }, frame = 0;
+  let bolts = [], clouds = [], particles = [], shockwaves = [];
+  let lastStrike = 0, strikeCooldown = 2200, pendingStrike = false;
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    initClouds();
+  }
+
+  function initClouds() {
+    clouds = [];
+    const count = Math.floor(W / 120) + 4;
+    for (let i = 0; i < count; i++) {
+      clouds.push({
+        x: Math.random() * W,
+        y: Math.random() * H * 0.45,
+        w: 120 + Math.random() * 200,
+        h: 30 + Math.random() * 50,
+        speed: 0.08 + Math.random() * 0.12,
+        opacity: 0.025 + Math.random() * 0.04
+      });
+    }
+  }
+
+  function generateBolt(x1, y1, x2, y2, roughness, depth) {
+    if (depth === 0) return [{ x: x1, y: y1 }, { x: x2, y: y2 }];
+    const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * roughness;
+    const my = (y1 + y2) / 2 + (Math.random() - 0.5) * roughness * 0.5;
+    const left = generateBolt(x1, y1, mx, my, roughness * 0.6, depth - 1);
+    const right = generateBolt(mx, my, x2, y2, roughness * 0.6, depth - 1);
+    return left.concat(right.slice(1));
+  }
+
+  function spawnBolt(tx, ty) {
+    const startX = (Math.random() * 0.6 + 0.2) * W;
+    const startY = 0;
+    const endX = tx !== undefined ? tx : (Math.random() * 0.8 + 0.1) * W;
+    const endY = ty !== undefined ? ty : (H * (0.35 + Math.random() * 0.4));
+    const roughness = 80 + Math.random() * 60;
+    const depth = 5 + Math.floor(Math.random() * 2);
+    const pts = generateBolt(startX, startY, endX, endY, roughness, depth);
+    const branches = [];
+    if (pts.length > 4) {
+      const branchStart = Math.floor(pts.length * (0.3 + Math.random() * 0.3));
+      const bp = pts[branchStart];
+      const bEndX = bp.x + (Math.random() - 0.5) * 180;
+      const bEndY = bp.y + 80 + Math.random() * 100;
+      branches.push(generateBolt(bp.x, bp.y, bEndX, bEndY, roughness * 0.5, 3));
+    }
+    bolts.push({ pts, branches, alpha: 1, decay: 0.04 + Math.random() * 0.03, width: 0.8 + Math.random() * 1.4, color: Math.random() > 0.25 ? '#4fc3f7' : '#a8d8f0', glow: Math.random() > 0.5, endX, endY });
+    shockwaves.push({ x: endX, y: endY, r: 0, maxR: 80 + Math.random() * 60, alpha: 0.6 });
+    for (let i = 0; i < 18 + Math.floor(Math.random() * 12); i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.5 + Math.random() * 3.5;
+      particles.push({ x: endX, y: endY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 1.5, alpha: 0.9, decay: 0.025 + Math.random() * 0.04, size: 1 + Math.random() * 2.5 });
+    }
+  }
+
+  function drawBoltPts(pts, width, alpha, color, glow) {
+    if (pts.length < 2) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    if (glow) { ctx.shadowColor = color; ctx.shadowBlur = 12; }
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    if (glow) {
+      ctx.lineWidth = width * 0.3;
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  const ambientParticles = [];
+  function initAmbient() {
+    for (let i = 0; i < 80; i++) {
+      ambientParticles.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.3, vy: -0.15 - Math.random() * 0.25, size: 0.5 + Math.random() * 1.5, alpha: 0.1 + Math.random() * 0.25, pulse: Math.random() * Math.PI * 2 });
+    }
+  }
+
+  function tick(ts) {
+    requestAnimationFrame(tick);
+    frame++;
+    ctx.clearRect(0, 0, W, H);
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#050608');
+    sky.addColorStop(0.4, '#0a0c12');
+    sky.addColorStop(1, '#0d1118');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+    if (bolts.length > 0) {
+      const boltAlphaSum = bolts.reduce((s, b) => s + b.alpha, 0) / (bolts.length || 1);
+      const hgrd = ctx.createRadialGradient(W * 0.5, H * 0.55, 0, W * 0.5, H * 0.55, W * 0.7);
+      hgrd.addColorStop(0, `rgba(79,195,247,${boltAlphaSum * 0.06})`);
+      hgrd.addColorStop(1, 'transparent');
+      ctx.fillStyle = hgrd;
+      ctx.fillRect(0, 0, W, H);
+    }
+    clouds.forEach(c => {
+      c.x += c.speed;
+      if (c.x > W + c.w) c.x = -c.w;
+      const cgrd = ctx.createRadialGradient(c.x + c.w/2, c.y + c.h/2, 0, c.x + c.w/2, c.y + c.h/2, c.w * 0.6);
+      cgrd.addColorStop(0, `rgba(60,80,120,${c.opacity * 1.5})`);
+      cgrd.addColorStop(1, 'transparent');
+      ctx.fillStyle = cgrd;
+      ctx.beginPath();
+      ctx.ellipse(c.x + c.w/2, c.y + c.h/2, c.w/2, c.h/2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    const mgrd = ctx.createRadialGradient(mouse.x * W, mouse.y * H, 0, mouse.x * W, mouse.y * H, 180);
+    mgrd.addColorStop(0, 'rgba(79,195,247,0.04)');
+    mgrd.addColorStop(1, 'transparent');
+    ctx.fillStyle = mgrd;
+    ctx.fillRect(0, 0, W, H);
+    ambientParticles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.pulse += 0.04;
+      if (p.y < -5) { p.y = H + 5; p.x = Math.random() * W; }
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      const pa = p.alpha * (0.7 + 0.3 * Math.sin(p.pulse));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(79,195,247,${pa})`;
+      ctx.fill();
+    });
+    bolts = bolts.filter(b => b.alpha > 0.01);
+    bolts.forEach(b => {
+      drawBoltPts(b.pts, b.width, b.alpha, b.color, b.glow);
+      b.branches.forEach(br => drawBoltPts(br, b.width * 0.5, b.alpha * 0.6, b.color, false));
+      b.alpha -= b.decay;
+    });
+    shockwaves = shockwaves.filter(s => s.alpha > 0.01);
+    shockwaves.forEach(s => {
+      s.r += (s.maxR - s.r) * 0.12; s.alpha *= 0.88;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(79,195,247,${s.alpha})`;
+      ctx.lineWidth = 1.5; ctx.stroke();
+      if (s.r > 15) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * 0.6, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(79,195,247,${s.alpha * 0.5})`;
+        ctx.lineWidth = 0.5; ctx.stroke();
+      }
+    });
+    particles = particles.filter(p => p.alpha > 0.02);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.alpha -= p.decay;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,230,255,${p.alpha})`;
+      ctx.fill();
+    });
+    if (ts - lastStrike > strikeCooldown || pendingStrike) {
+      const tx = mouse.x * W * 0.7 + W * 0.15 + Math.random() * W * 0.15;
+      const ty = mouse.y * H * 0.6 + H * 0.2;
+      const count = pendingStrike ? 2 : 1;
+      for (let i = 0; i < count; i++) {
+        setTimeout(() => spawnBolt(tx + (Math.random() - 0.5) * 80, ty + (Math.random() - 0.5) * 40), i * 80);
+      }
+      lastStrike = ts;
+      strikeCooldown = 1800 + Math.random() * 3000;
+      pendingStrike = false;
+    }
+  }
+
+  canvas.closest('section').addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = (e.clientX - rect.left) / W;
+    mouse.y = (e.clientY - rect.top) / H;
+    if (frame % 45 === 0) pendingStrike = true;
+  });
+
+  canvas.closest('section').addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    spawnBolt(e.clientX - rect.left, e.clientY - rect.top);
+    spawnBolt(e.clientX - rect.left + (Math.random() - 0.5) * 40, e.clientY - rect.top + (Math.random() - 0.5) * 30);
+  });
+
+  window.addEventListener('resize', () => { resize(); initAmbient(); });
+  resize(); initAmbient();
+  setTimeout(() => spawnBolt(), 600);
+  setTimeout(() => spawnBolt(), 1100);
+  requestAnimationFrame(tick);
+})();
+
+// CTA CANVAS — slow arc pulse
+(function() {
+  const canvas = document.getElementById('cta-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, t = 0;
+  function resize() { W = canvas.width = canvas.offsetWidth; H = canvas.height = canvas.offsetHeight; }
+  function tick() {
+    requestAnimationFrame(tick);
+    t += 0.008;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W * 0.5, cy = H * 0.5;
+    const r = Math.min(W, H) * (0.35 + 0.08 * Math.sin(t));
+    const grd = ctx.createRadialGradient(cx, cy, r * 0.1, cx, cy, r);
+    grd.addColorStop(0, 'rgba(79,195,247,0.07)');
+    grd.addColorStop(0.6, 'rgba(123,140,222,0.04)');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+    for (let i = 0; i < 3; i++) {
+      const phase = t + i * (Math.PI * 2 / 3);
+      const x1 = cx + Math.cos(phase) * r * 0.8;
+      const y1 = cy + Math.sin(phase) * r * 0.5;
+      const x2 = cx + Math.cos(phase + Math.PI) * r * 0.8;
+      const y2 = cy + Math.sin(phase + Math.PI) * r * 0.5;
+      const agrd = ctx.createLinearGradient(x1, y1, x2, y2);
+      agrd.addColorStop(0, 'transparent');
+      agrd.addColorStop(0.5, `rgba(79,195,247,${0.06 + 0.03 * Math.sin(t * 1.3 + i)})`);
+      agrd.addColorStop(1, 'transparent');
+      ctx.strokeStyle = agrd;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(cx + (Math.random() - 0.5) * 20, cy + (Math.random() - 0.5) * 20, x2, y2);
+      ctx.stroke();
+    }
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(tick);
+})();
+
+// INTERSECTION OBSERVER — scroll reveals
+(function() {
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal, .stat-block, .cap-card').forEach(el => io.observe(el));
+})();
+</script>
+</body>
+</html>

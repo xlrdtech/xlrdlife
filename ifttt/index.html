@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IFTTT Ops Overhaul — Padre · Beside · PayPal · Square · Drive · Calendar</title>
+<meta name="description" content="IFTTT applet overhaul for Xen / Padre / Self Exec ops · Beside SMS triggers · PayPal + Square payment automations · Drive uploads → Shang Tsung absorb · daily Padre dialer queue · calendar reminders.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:#0A0A0C; --cream:#F4EEE4; --bone:#C7C2B6; --dust:#7A7A7A; --line:rgba(244,238,228,.12);
+  --volt:#00FF88; --rust:#E5552A; --gold:#D2AC47; --steel:#6AD4FF; --rose:#FF5E9C; --violet:#A78BFA;
+  --serif:'Instrument Serif',serif; --sans:'Inter',-apple-system,sans-serif; --mono:'JetBrains Mono',monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--paper); color:var(--cream); font-family:var(--sans); line-height:1.55; }
+body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background:radial-gradient(ellipse 1200px 600px at 50% 0%, rgba(0,255,136,.05), transparent 60%); }
+.wrap { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:72px 28px 100px; }
+header { margin-bottom:56px; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.4em; text-transform:uppercase; color:var(--volt); margin-bottom:18px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:clamp(48px,7vw,96px); line-height:0.95; letter-spacing:-.025em; margin:0 0 18px; }
+h1 em { color:var(--volt); font-style:italic; }
+.lede { font-family:var(--serif); font-style:italic; font-size:clamp(20px,2.2vw,26px); color:var(--bone); max-width:880px; line-height:1.45; }
+section { margin-bottom:64px; padding-top:48px; border-top:1px solid var(--line); }
+section .sn { font-family:var(--mono); font-size:11px; letter-spacing:.4em; text-transform:uppercase; color:var(--volt); margin-bottom:14px; }
+section h2 { font-family:var(--serif); font-weight:400; font-size:clamp(32px,4.4vw,52px); line-height:1.05; letter-spacing:-.02em; margin:0 0 24px; }
+section h2 em { color:var(--volt); font-style:italic; }
+
+.recipes { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px; }
+.recipe {
+  background:linear-gradient(155deg,#141414,#0E0E0E); border:1px solid var(--line); border-radius:14px;
+  padding:24px 26px; border-left:3px solid var(--accent);
+}
+.recipe.beside { --accent:var(--steel); }
+.recipe.pay { --accent:var(--gold); }
+.recipe.drive { --accent:var(--volt); }
+.recipe.cal { --accent:var(--rose); }
+.recipe.padre { --accent:var(--violet); }
+.recipe.voice { --accent:var(--rust); }
+
+.recipe .tag { display:inline-block; font-family:var(--mono); font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); padding:3px 10px; border:1px solid var(--accent); border-radius:50px; margin-bottom:14px; }
+.recipe h3 { font-family:var(--serif); font-style:italic; font-size:22px; color:var(--cream); margin-bottom:8px; letter-spacing:-.01em; line-height:1.2; }
+.recipe .flow { font-family:var(--mono); font-size:12px; color:var(--bone); margin-bottom:12px; line-height:1.55; }
+.recipe .flow .if { color:var(--steel); font-weight:700; }
+.recipe .flow .then { color:var(--volt); font-weight:700; }
+.recipe .flow .arrow { color:var(--accent); margin:0 4px; }
+.recipe .why { font-size:13px; color:var(--bone); line-height:1.55; padding-top:12px; border-top:1px dotted var(--line); }
+.recipe .why strong { color:var(--accent); }
+.recipe .status { font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--dust); margin-top:10px; padding-top:10px; border-top:1px dotted var(--line); }
+
+.state-card {
+  background:linear-gradient(155deg, rgba(255,179,71,.08), rgba(255,179,71,.02));
+  border:1px solid var(--gold); border-left:4px solid var(--gold);
+  padding:24px 28px; margin:18px 0;
+}
+.state-card .head { color:var(--gold); font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-weight:700; margin-bottom:10px; }
+.state-card p { font-size:14.5px; color:var(--cream); line-height:1.6; }
+
+.flow-rail {
+  background:#0E0E0E; border:1px solid var(--line); border-radius:12px;
+  padding:22px 28px; margin:18px 0;
+  font-family:var(--mono); font-size:13px; line-height:1.8;
+}
+.flow-rail .step { display:grid; grid-template-columns:24px 1fr; gap:14px; align-items:flex-start; padding:6px 0; }
+.flow-rail .step .n { color:var(--volt); font-weight:700; }
+.flow-rail .step .b { color:var(--bone); }
+.flow-rail .step .b strong { color:var(--cream); }
+.flow-rail .step .b code { background:rgba(255,255,255,.05); padding:2px 6px; border-radius:3px; font-size:11.5px; color:var(--steel); }
+
+footer { margin-top:72px; padding-top:28px; border-top:1px solid var(--line); display:flex; justify-content:space-between; gap:16px; font-family:var(--mono); font-size:11px; letter-spacing:.15em; text-transform:uppercase; color:var(--dust); flex-wrap:wrap; }
+footer a { color:var(--volt); text-decoration:none; border-bottom:1px dotted rgba(0,255,136,.3); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">// IFTTT Ops Overhaul · v0.1</div>
+  <h1>Wire <em>everything</em>.<br>Trigger <em>once</em>.</h1>
+  <div class="lede">If Beside SMS lands · IF PayPal/Square pays · IF Drive lands · IF Calendar fires · IF Padre lead arrives → THEN the next-step automation fires before qi has to think about it. Twelve applets that overhaul daily ops.</div>
+</header>
+
+<div class="state-card">
+  <div class="head">⚠ MCP state · 2026-05-22</div>
+  <p>IFTTT MCP currently <strong>unauthorized</strong> on claude.ai — needs browser sign-in flow to complete before Ezekiel can call IFTTT's tools directly. <strong>Plan ships now; execution unblocks the moment the MCP authenticates.</strong> Applets below are wirable manually via <a href="https://ifttt.com/create" style="color:var(--gold);">ifttt.com/create</a> in the meantime.</p>
+</div>
+
+<section>
+  <div class="sn">// 01 · Twelve applets</div>
+  <h2>The <em>overhaul recipes</em>.</h2>
+  <div class="recipes">
+
+    <div class="recipe beside">
+      <div class="tag">Beside · Inbound</div>
+      <h3>Luckie SMS → Lyn auto-draft</h3>
+      <div class="flow"><span class="if">IF</span> Beside webhook fires for Luckie chat <span class="arrow">→</span> <span class="then">THEN</span> POST to omnimind <code>/api/lyn-draft</code> with body + thread context.</div>
+      <div class="why"><strong>Why:</strong> Lyn pre-drafts the reply before qi reads the SMS. Approve/edit cycle drops from 5min to 30s.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe pay">
+      <div class="tag">PayPal · Payment</div>
+      <h3>Padre $1K deposit → site delivery</h3>
+      <div class="flow"><span class="if">IF</span> PayPal Invoice paid OR Square Web Checkout succeeds (amount ≥ $1000, tag=padre) <span class="arrow">→</span> <span class="then">THEN</span> trigger <code>xen-padre-build --slug</code> + send confirmation SMS to client.</div>
+      <div class="why"><strong>Why:</strong> Payment → instant delivery cycle. No human in the loop. 7-day clock starts at PayPal/Square confirmation, not at Padre handoff. PayPal MCP + Square MCP both available in Xen session — bypasses IFTTT once authed.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe pay">
+      <div class="tag">Square · Recurring</div>
+      <h3>Monthly maintenance → SMS qi</h3>
+      <div class="flow"><span class="if">IF</span> Square Subscriptions OR PayPal recurring profile charges (monthly maintenance) <span class="arrow">→</span> <span class="then">THEN</span> SMS qi: "+ $X from <client>. Total MRR now $Y."</div>
+      <div class="why"><strong>Why:</strong> qi sees revenue compound in real-time. Manifesting the close per <code>canon_l7s_pop_to_habits</code>.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe drive">
+      <div class="tag">Drive · Upload</div>
+      <h3>New file in /inbox → Shang Tsung absorb</h3>
+      <div class="flow"><span class="if">IF</span> Drive uploads file to <code>/inbox/godly/</code> <span class="arrow">→</span> <span class="then">THEN</span> ssh mac-xen <code>xen-shang-tsung &lt;url-from-filename&gt;</code> + deploy to <code>/shang/&lt;slug&gt;/</code>.</div>
+      <div class="why"><strong>Why:</strong> qi drops a screenshot or URL file, soul-steal fires automatically. Goes from manual-paste-to-Ezekiel to drop-and-walk-away.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe cal">
+      <div class="tag">Calendar · Reminder</div>
+      <h3>Padre call 5min before → VVS</h3>
+      <div class="flow"><span class="if">IF</span> Calendar event tagged "padre-call" 5min before start <span class="arrow">→</span> <span class="then">THEN</span> VVS Ava: "Padre call with <client> in 5. Site is /padre/&lt;slug&gt;/. Script: <link>."</div>
+      <div class="why"><strong>Why:</strong> qi never walks into a Padre call cold. Ava announces the prospect + script URL automatically.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe padre">
+      <div class="tag">Padre · Lead</div>
+      <h3>New PSO-2 lead → auto-build site</h3>
+      <div class="flow"><span class="if">IF</span> PSO-2 outputs <code>website_missing: true</code> candidate <span class="arrow">→</span> <span class="then">THEN</span> auto-fire <code>xen-padre-build</code> + push to <code>/padre/&lt;slug&gt;/</code> + SMS qi the URL.</div>
+      <div class="why"><strong>Why:</strong> Lead → live demo site in &lt;90s, before the first call. Padre's killer move.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe voice">
+      <div class="tag">Voice · STT</div>
+      <h3>Apple Reminder due → omnimind voice prompt</h3>
+      <div class="flow"><span class="if">IF</span> Apple Reminder hits due-time <span class="arrow">→</span> <span class="then">THEN</span> push to omnimind <code>/voice-transcript</code> as if qi spoke it · inject into tmux %0.</div>
+      <div class="why"><strong>Why:</strong> Reminders flow through the same channel as voice STT. Single funnel, no separate review queue.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe cal">
+      <div class="tag">Location · Geofence</div>
+      <h3>Arrive at home/studio → state change</h3>
+      <div class="flow"><span class="if">IF</span> iPhone enters home or studio geofence <span class="arrow">→</span> <span class="then">THEN</span> POST omnimind <code>/api/state</code> → status: arrived · mute non-urgent SMS · resume voice loop.</div>
+      <div class="why"><strong>Why:</strong> Xen knows qi's physical context. Quiets the mesh when qi's offline, fires it back when qi lands.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe beside">
+      <div class="tag">Padre · Published</div>
+      <h3>New /padre/&lt;slug&gt;/ live → SMS Luckie</h3>
+      <div class="flow"><span class="if">IF</span> GH Pages publishes new <code>/padre/&lt;slug&gt;/</code> <span class="arrow">→</span> <span class="then">THEN</span> SMS Luckie: "New Padre demo live: <url>" + Beside push to qi.</div>
+      <div class="why"><strong>Why:</strong> Luckie sees every new lead instantly. Network compounds.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe drive">
+      <div class="tag">Photo · Capture</div>
+      <h3>Screenshot in Photos → Shang Tsung view-source</h3>
+      <div class="flow"><span class="if">IF</span> new screenshot in Photos with "godly" or URL keyword <span class="arrow">→</span> <span class="then">THEN</span> OCR URL out of image + fire Shang Tsung absorb.</div>
+      <div class="why"><strong>Why:</strong> qi can screenshot any reference and the absorb fires without paste. Closes the manual-paste loop entirely.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe voice">
+      <div class="tag">Voice · Spike</div>
+      <h3>Voice transcript "anthony" → Eli persona route</h3>
+      <div class="flow"><span class="if">IF</span> apple-stt-v2 transcript contains "anthony" <span class="arrow">→</span> <span class="then">THEN</span> route to Eli persona context · auto-load Anthony V goal map.</div>
+      <div class="why"><strong>Why:</strong> Persona switching by voice keyword. Same applies for "luckie" → Lyn, "father in law" → father-in-law lead workflow, etc.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+    <div class="recipe padre">
+      <div class="tag">Daily · Padre</div>
+      <h3>9am ET → Padre dialer queue</h3>
+      <div class="flow"><span class="if">IF</span> Daily trigger at 9am ET on weekdays <span class="arrow">→</span> <span class="then">THEN</span> fetch top 5 PSO-2 leads · pre-build sites · send qi the dialer CSV via Beside.</div>
+      <div class="why"><strong>Why:</strong> Padre's day starts pre-loaded. qi opens the phone and 5 leads are waiting with sites ready to demo.</div>
+      <div class="status">status · plan · IFTTT applet TBD</div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <div class="sn">// 02 · Wiring order</div>
+  <h2>How to <em>ship the overhaul</em>.</h2>
+  <div class="flow-rail">
+    <div class="step"><span class="n">1.</span><span class="b"><strong>Authorize IFTTT MCP</strong> on claude.ai (browser sign-in flow). <code>/mcp</code> shows status.</span></div>
+    <div class="step"><span class="n">2.</span><span class="b"><strong>Inventory existing IFTTT applets</strong> on qi's account (if any) via <code>mcp__claude_ai_IFTTT__list_applets</code> when the tools load.</span></div>
+    <div class="step"><span class="n">3.</span><span class="b"><strong>Wire PayPal IPN + Square webhooks</strong> first (highest revenue impact). PayPal/Square → IFTTT → omnimind hook. Recipes #2 and #3. Note: PayPal MCP + Square MCP also available in session — can bypass IFTTT entirely once authed.</span></div>
+    <div class="step"><span class="n">4.</span><span class="b"><strong>Wire Beside webhook</strong> for inbound SMS routing. Lyn pre-draft + persona-keyword routing. Recipes #1 and #11.</span></div>
+    <div class="step"><span class="n">5.</span><span class="b"><strong>Wire Drive uploads</strong> for Shang Tsung absorb pipeline. Recipe #4 + #10.</span></div>
+    <div class="step"><span class="n">6.</span><span class="b"><strong>Wire Calendar + Geofence</strong> for context-aware Xen state. Recipes #5 and #8.</span></div>
+    <div class="step"><span class="n">7.</span><span class="b"><strong>Wire daily Padre trigger</strong> at 9am ET. Recipe #12 — closes the daily revenue loop.</span></div>
+    <div class="step"><span class="n">8.</span><span class="b"><strong>Wire publish-to-Luckie SMS</strong> automation. Recipe #9. Network growth multiplier.</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="sn">// 03 · Replaces what</div>
+  <h2>What this <em>retires</em>.</h2>
+  <ul style="padding-left:24px; font-size:15.5px; line-height:1.85;">
+    <li><strong style="color:var(--volt);">Manual SMS triage</strong> — Lyn pre-drafts via Beside webhook · qi just approves</li>
+    <li><strong style="color:var(--volt);">Manual Padre site build per close</strong> — PayPal/Square payment auto-triggers <code>xen-padre-build</code></li>
+    <li><strong style="color:var(--volt);">Daily lead-sourcing run</strong> — PSO-2 → IFTTT → auto-site → SMS queue lands at 9am</li>
+    <li><strong style="color:var(--volt);">Voice keyword routing</strong> — apple-stt-v2 transcript → persona switch without manual context</li>
+    <li><strong style="color:var(--volt);">Drive-drop pasting</strong> — qi drops a file, absorb fires, no manual paste loop</li>
+    <li><strong style="color:var(--volt);">Calendar reminder fatigue</strong> — context-aware VVS announces the prospect + script</li>
+  </ul>
+</section>
+
+<footer>
+  <div>hitthe.link/ifttt · v0.1 plan · IFTTT MCP unauth · auto-execute on reconnect</div>
+  <div>
+    <a href="/padre/">Padre</a> ·
+    <a href="/padre/offer/">offer canon</a> ·
+    <a href="/padre/leads/">PSO-2 leads</a> ·
+    <a href="/spine/">spine</a>
+  </div>
+</footer>
+
+</div>
+<script src="/_shared/ava-play.js" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="googlebot" content="noindex,nofollow">
+<title>OMNI-INBOX · XOS</title>
+<meta name="description" content="Unlisted-but-public merged Matrix/Beeper inbox. No login. Not search-indexed. Fully readable and controllable by an AI agent via /api/rooms, /api/room/:id/messages, POST /api/room/:id/send.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebAPI",
+  "name": "Omni-Inbox",
+  "description": "Merged Matrix/Beeper inbox. Unlisted (noindex) but public and agent-operable. No auth. CORS open.",
+  "documentation": "https://omni.xlrd.org/api/discovery",
+  "potentialAction": [
+    {"@type": "SearchAction", "name": "list rooms", "target": "https://omni.xlrd.org/api/rooms"},
+    {"@type": "ReadAction", "name": "read messages", "target": "https://omni.xlrd.org/api/room/{roomId}/messages"},
+    {"@type": "CommunicateAction", "name": "send message", "target": "https://omni.xlrd.org/api/room/{roomId}/send"}
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&display=swap" rel="stylesheet">
+<style>
+  /* ===== XOS canon tokens (verbatim from hitthe.link/xos/styles.css) ===== */
+  :root{
+    --bg:#000000; --bg-surface:#060808; --bg-elevated:#0c0f0e;
+    --border:rgba(0,220,130,0.12); --border-bright:rgba(0,220,130,0.25);
+    --accent:#00dc82; --accent-dim:rgba(0,220,130,0.5); --accent-faint:rgba(0,220,130,0.08);
+    --red:#ff3344; --green:#00dc82; --amber:#ffc04a;
+    --text:#c8d0c0; --text-bright:#e8f0e0; --text-dim:#6a7666; --text-muted:#3a423a;
+    --f-mono:'JetBrains Mono',ui-monospace,"SF Mono",Menlo,monospace;
+    --f-display:'Share Tech Mono','JetBrains Mono',ui-monospace,monospace;
+    --f-serif:'Fraunces',"New York","Times New Roman",serif;
+    --email:#d97757; --beside:#22d3a4; --slack:#ECB22E; --instagram:#E1306C;
+    --facebook:#1877F2; --telegram:#229ED9; --whatsapp:#25D366; --discord:#5865F2;
+    --linkedin:#0A66C2; --signal:#3A76F0; --x:#E8E8E8; --gmessages:#1a73e8; --beeper:#229ED9;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:var(--f-mono);font-size:14px;line-height:1.35;
+    -webkit-font-smoothing:antialiased}
+  /* phosphor field + faint grid, exactly like the XOS shell */
+  body{
+    background:
+      radial-gradient(50% 40% at 50% 20%, rgba(0,220,130,0.05), transparent 70%),
+      radial-gradient(60% 40% at 80% 90%, rgba(0,220,130,0.03), transparent 70%),
+      var(--bg);
+    background-attachment:fixed;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+    background:
+      linear-gradient(rgba(0,220,130,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,220,130,0.025) 1px, transparent 1px);
+    background-size:44px 44px;
+  }
+  header{position:sticky;top:0;z-index:5;
+    background:linear-gradient(180deg, rgba(26,28,30,0.92), rgba(5,6,8,0.985) 100%);
+    -webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);
+    border-bottom:1px solid var(--border);
+    padding:calc(env(safe-area-inset-top) + 12px) 14px 10px}
+  /* kicker bar: OMNIBOX label + live pill */
+  .kicker-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;height:26px}
+  .kicker{font-family:var(--f-mono);font-size:10px;color:rgba(255,255,255,0.5);
+    letter-spacing:.16em;text-transform:uppercase}
+  .livepill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:99px;
+    background:rgba(0,220,130,0.12);color:var(--accent);font-family:var(--f-mono);
+    font-size:9px;letter-spacing:.18em;text-transform:uppercase;font-weight:500;opacity:.45;transition:.3s}
+  .livepill.live{opacity:1}
+  .livepill .led{width:5px;height:5px;border-radius:50%;background:var(--text-muted)}
+  .livepill.live .led{background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .title{display:flex;align-items:baseline;gap:10px;margin-top:8px}
+  .title h1{font-family:var(--f-serif);font-style:italic;font-weight:400;
+    font-size:22px;letter-spacing:-.01em;margin:0;color:var(--text-bright)}
+  .sub{color:var(--text-dim);font-family:var(--f-mono);font-size:10px;
+    letter-spacing:.14em;text-transform:uppercase;margin-top:6px}
+  .sub .count{color:var(--text-bright);font-weight:700;font-variant-numeric:tabular-nums}
+  /* filter chips = XOS .mfilter */
+  .filters{display:flex;gap:6px;overflow-x:auto;padding:11px 0 2px;-webkit-overflow-scrolling:touch;position:relative;z-index:1}
+  .filters::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;appearance:none;background:transparent;
+    border:.5px solid rgba(255,255,255,.16);color:var(--text-dim);
+    font-family:var(--f-mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+    padding:5px 9px 4px;border-radius:99px;cursor:pointer;white-space:nowrap;user-select:none}
+  .chip.on{color:var(--bg);background:var(--text-bright);border-color:var(--text-bright)}
+  .chip.on[data-f="telegram"],.chip.on[data-f="beeper"]{background:var(--telegram);border-color:var(--telegram);color:#000}
+  .chip.on[data-f="whatsapp"]{background:var(--whatsapp);border-color:var(--whatsapp);color:#000}
+  .chip.on[data-f="gmessages"]{background:var(--gmessages);border-color:var(--gmessages);color:#fff}
+  .chip.on[data-f="slack"]{background:var(--slack);border-color:var(--slack);color:#000}
+  .chip.on[data-f="instagram"]{background:var(--instagram);border-color:var(--instagram);color:#fff}
+  .chip.on[data-f="facebook"]{background:var(--facebook);border-color:var(--facebook);color:#fff}
+  .chip.on[data-f="discord"]{background:var(--discord);border-color:var(--discord);color:#fff}
+  .chip .n{margin-left:5px;font-variant-numeric:tabular-nums;opacity:.7}
+  /* feed */
+  #list{list-style:none;margin:0;padding:12px 12px 48px;position:relative;z-index:1;
+    display:flex;flex-direction:column;gap:8px}
+  /* each row = glass card with left phosphor accent, like XOS .mcard */
+  .item{display:flex;gap:12px;align-items:center;position:relative;
+    padding:11px 12px 11px 14px;border-radius:12px;cursor:default;
+    background:var(--bg-surface);border:.5px solid var(--border);
+    border-left:2px solid var(--card-accent, var(--text-muted))}
+  .badge{flex:0 0 auto;width:38px;height:38px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--f-mono);font-size:10px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:#000}
+  .b-telegram,.b-beeper{background:var(--telegram);color:#000}
+  .b-whatsapp{background:var(--whatsapp);color:#000}
+  .b-gmessages{background:var(--gmessages);color:#fff}
+  .b-slack{background:var(--slack);color:#000}
+  .b-instagram{background:var(--instagram);color:#fff}
+  .b-discord{background:var(--discord);color:#fff}
+  .b-facebook{background:var(--facebook);color:#fff}
+  .b-linkedin{background:var(--linkedin);color:#fff}
+  .b-signal{background:var(--signal);color:#fff}
+  .mid{flex:1;min-width:0}
+  .name{font-family:var(--f-mono);font-weight:600;font-size:13px;color:var(--text-bright);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
+  .prev{color:var(--text-dim);font-family:var(--f-mono);font-size:11.5px;margin-top:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* one-thread message body — wraps (not truncated) so the full message reads inline */
+  .msgtext{color:var(--text);font-family:var(--f-mono);font-size:12.5px;margin-top:4px;
+    line-height:1.4;word-break:break-word;overflow-wrap:anywhere}
+  .msgtext .enc{color:var(--text-muted);font-style:italic}
+  .ctx{color:var(--text-muted);font-family:var(--f-mono);font-size:10px;margin-top:4px;
+    letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .name .net{margin-left:8px}
+  .item{align-items:flex-start}
+  .prev .enc{color:var(--text-muted);font-style:italic}
+  .net{color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:.16em}
+  /* which Beeper account (qi01/qi02/qi03) this message came from */
+  .acct{margin-left:8px;padding:1px 6px;border-radius:99px;border:.5px solid var(--border-bright);
+    color:var(--accent-dim);font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+  .right{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .time{color:var(--text-dim);font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+  .pill{min-width:19px;height:19px;padding:0 6px;border-radius:99px;
+    background:var(--accent);color:#000;font-family:var(--f-mono);
+    font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;
+    display:flex;align-items:center;justify-content:center}
+  .empty{padding:60px 24px;text-align:center;color:var(--text-dim);
+    font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+  .note{margin:12px 12px 0;padding:11px 12px 10px;border-radius:12px;position:relative;z-index:1;
+    background:var(--bg-surface);border:.5px solid var(--border-bright);border-left:2px solid var(--accent);
+    color:var(--text-dim);font-family:var(--f-mono);font-size:11px;line-height:1.5}
+  .note b{color:var(--accent);font-weight:700}
+
+  /* ===== HARD mobile guard: nothing may ever force horizontal overflow =====
+     qi views XOS at phone proportions. A single long token (URL/hashtag) in an
+     unwrapped span used to blow the document out to ~1686px on a 390px phone,
+     so the browser zoomed the whole page out to an illegible blur = "blank/broken".
+     Lock the page to the viewport width and make ALL text wrap. */
+  html,body{max-width:100%;overflow-x:hidden}
+  #list,.item,.mid,.name,.prev,.msgtext,.ctx{max-width:100%;min-width:0}
+  .name,.prev,.msgtext,.ctx{overflow-wrap:anywhere;word-break:break-word}
+
+  /* ===== SSR fallback (#omni-ssr) — the server bakes all rows here so a no-JS /
+     pre-JS / crawler load sees the full merged thread. It was previously UNSTYLED,
+     which is what broke mobile. Style it to match the live feed AND make it wrap.
+     Progressive enhancement: JS hides this block only AFTER it successfully paints
+     #list; if the JS render throws, this styled block stays and remains readable. */
+  #omni-ssr{display:block;list-style:none;position:relative;z-index:1}
+  #omni-ssr .omni-summary{
+    margin:12px 12px 0;padding:11px 12px 10px;border-radius:12px;
+    background:var(--bg-surface);border:.5px solid var(--border-bright);border-left:2px solid var(--accent);
+    color:var(--text-dim);font-family:var(--f-mono);font-size:11px;line-height:1.5;
+    overflow-wrap:anywhere;word-break:break-word}
+  #omni-ssr .omni-thread{
+    list-style:none;margin:0;padding:12px 12px 48px;
+    display:flex;flex-direction:column;gap:8px;max-width:100%}
+  #omni-ssr .omni-msg{
+    display:block;max-width:100%;min-width:0;
+    padding:11px 12px 11px 14px;border-radius:12px;
+    background:var(--bg-surface);border:.5px solid var(--border);
+    border-left:2px solid var(--accent)}
+  #omni-ssr .omni-msg .net{
+    color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:.16em;margin-right:8px}
+  #omni-ssr .omni-msg .acct{
+    margin-right:8px;padding:1px 6px;border-radius:99px;border:.5px solid var(--border-bright);
+    color:var(--accent-dim);font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+  #omni-ssr .omni-msg .sender{
+    color:var(--text-bright);font-weight:600;font-size:13px;margin-right:8px;overflow-wrap:anywhere;word-break:break-word}
+  #omni-ssr .omni-msg .ts{color:var(--text-dim);font-size:10px;margin-right:8px;font-variant-numeric:tabular-nums}
+  #omni-ssr .omni-msg .text{
+    display:block;color:var(--text);font-size:12.5px;margin-top:4px;line-height:1.4;
+    overflow-wrap:anywhere;word-break:break-word;white-space:normal}
+  #omni-ssr .omni-msg .ctx{
+    display:block;color:var(--text-muted);font-size:10px;margin-top:4px;letter-spacing:.06em;
+    overflow-wrap:anywhere;word-break:break-word}
+  /* When JS successfully renders #list, it sets this to hide the duplicate SSR block. */
+  body.js-rendered #omni-ssr{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker-bar">
+    <span class="kicker">OMNIBOX · ONE MERGED THREAD</span>
+    <span class="livepill" id="dot"><span class="led"></span>LIVE</span>
+  </div>
+  <div class="title"><h1>Omni-Inbox</h1></div>
+  <div class="sub" id="sub">one thread · every network · newest first</div>
+  <div class="filters" id="filters"></div>
+</header>
+<div class="note" id="encnote" style="display:none"></div>
+<ul id="list"><li class="empty">Loading one merged thread…</li></ul>
+<!-- Baked snapshot: a real interleaved-stream snapshot injected at ship time so a
+     cold public GET paints the unified thread instantly (no JS round-trip needed). -->
+<!--STREAM_SNAPSHOT-->
+<!-- SSR block: the real interleaved message thread rendered server-side so a plain
+     GET (human or AI crawler, no JS) sees the one merged feed — never a room list. -->
+<!--SSR_ROOMS-->
+
+<!-- reply/read drawer — every card maps to callable endpoints -->
+<div id="drawer" style="display:none;position:fixed;inset:auto 0 0 0;z-index:20;background:var(--bg-elevated);border-top:1px solid var(--border-bright);padding:12px 14px calc(env(safe-area-inset-bottom) + 14px);max-height:70vh;overflow:auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <div id="drawer-title" class="name" style="font-size:14px"></div>
+    <button id="drawer-close" class="chip">close</button>
+  </div>
+  <div id="drawer-msgs" style="margin:10px 0;font-size:12px;color:var(--text-dim)"></div>
+  <div style="display:flex;gap:8px">
+    <input id="drawer-input" placeholder="Reply via Matrix token…" style="flex:1;background:var(--bg-surface);border:.5px solid var(--border-bright);color:var(--text-bright);font-family:var(--f-mono);font-size:13px;padding:9px 11px;border-radius:10px">
+    <button id="drawer-send" class="chip" style="background:var(--accent);color:#000;border-color:var(--accent)">send</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Public data endpoint (CF tunnel). Same-origin when served from omni.xlrd.org;
+  // absolute so the page also works verbatim on hitthe.link/xos3 (cross-origin, CORS-open).
+  var API=(location.hostname==='omni.xlrd.org')?'':'https://omni.xlrd.org';
+
+  // ── RESILIENT FETCH — beats the Cloudflare QUIC/HTTP3 phantom "fetch failed" ──
+  // Ground truth (verified in a real mobile browser 2026-07-21): the server sends
+  // `Access-Control-Allow-Origin: *` correctly on EVERY response (proven over HTTP/2),
+  // but Chrome first negotiates HTTP/3 (QUIC) to Cloudflare (alt-svc: h3). That QUIC
+  // connection INTERMITTENTLY dies with net::ERR_QUIC_PROTOCOL_ERROR. When the transport
+  // aborts mid-flight the browser can't read the response headers, so it reports the
+  // MISLEADING "No 'Access-Control-Allow-Origin' header is present" CORS error and the
+  // fetch REJECTS — which is exactly the "fetch failed" qi saw in the reply box.
+  // A single-shot POST had no recovery, so one QUIC drop = a permanent visible failure.
+  // Fix: retry. On retry Chrome marks the QUIC route broken and falls back to HTTP/2,
+  // which succeeds (verified: 0/12 failures once fallen back). Small backoff, few tries.
+  function apiFetch(path, opts, tries){
+    opts = opts || {};
+    if (opts.cache === undefined) opts.cache = 'no-store'; // never serve a stale CF-cached body
+    var max = (tries === undefined) ? 3 : tries;
+    var attempt = 0;
+    return new Promise(function(resolve, reject){
+      (function go(){
+        attempt++;
+        fetch(API + path, opts).then(function(r){
+          // Retry transient 5xx (502/503/504 = tunnel hiccup) too, not just transport aborts.
+          if (!r.ok && (r.status === 502 || r.status === 503 || r.status === 504) && attempt < max){
+            setTimeout(go, 350 * attempt); return;
+          }
+          resolve(r);
+        }).catch(function(err){
+          // Transport-level failure (QUIC abort / CORS-phantom / network blip): retry.
+          if (attempt < max){ setTimeout(go, 350 * attempt); return; }
+          reject(err);
+        });
+      })();
+    });
+  }
+
+  var listEl=document.getElementById('list');
+  var subEl=document.getElementById('sub');
+  var dotEl=document.getElementById('dot');
+  var filtersEl=document.getElementById('filters');
+  var encNote=document.getElementById('encnote');
+  // ONE unified thread: state.msgs = every network's latest message, interleaved
+  // by timestamp into a single time-sorted river (qi's exact ask: no per-chat clicking).
+  var state={msgs:[],byNet:{},total:0,cleartext:0,encrypted:0,filter:'all'};
+
+  function fmtTime(ts){
+    if(!ts) return '';
+    var d=new Date(ts), now=new Date();
+    var same=d.toDateString()===now.toDateString();
+    if(same) return d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+    var days=(now-d)/86400000;
+    if(days<7) return d.toLocaleDateString([], {weekday:'short',hour:'numeric',minute:'2-digit'});
+    return d.toLocaleDateString([], {month:'short',day:'numeric'});
+  }
+  function esc(s){return (s||'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+
+  function renderFilters(){
+    var nets=Object.keys(state.byNet).sort(function(a,b){return state.byNet[b]-state.byNet[a];});
+    var html='<div class="chip '+(state.filter==='all'?'on':'')+'" data-f="all">All<span class="n">'+state.total+'</span></div>';
+    nets.forEach(function(n){
+      var lbl=(state.msgs.find(function(m){return m.network===n;})||{}).networkLabel||n;
+      var cnt=state.msgs.filter(function(m){return m.network===n;}).length;
+      html+='<div class="chip '+(state.filter===n?'on':'')+'" data-f="'+n+'">'+esc(lbl)+'<span class="n">'+cnt+'</span></div>';
+    });
+    filtersEl.innerHTML=html;
+    Array.prototype.forEach.call(filtersEl.querySelectorAll('.chip'),function(c){
+      c.onclick=function(){state.filter=c.getAttribute('data-f');try{renderFilters();}catch(_){}try{renderList();}catch(_){}};
+    });
+  }
+
+  // ONE merged thread: render every message as a single row in a continuous
+  // time-sorted feed (newest first). No room list, no click-to-open-per-chat.
+  // Progressive enhancement: this repaints #list from state.msgs. It is wrapped in
+  // try/catch by every caller — if it throws, we DO NOT touch/hide the server-rendered
+  // #omni-ssr fallback, so the user still sees the full merged thread. Only on a clean
+  // paint do we mark <body class="js-rendered">, which hides the duplicate SSR block.
+  function renderList(){
+    var rows=state.msgs.filter(function(m){return state.filter==='all'||m.network===state.filter;});
+    if(!rows.length){
+      // No live rows to show. Do NOT hide SSR — leave the baked thread visible.
+      listEl.innerHTML='<li class="empty">No messages yet.</li>';
+      return;
+    }
+    var html='';
+    rows.forEach(function(m){
+      var net = m.network || 'beeper';
+      var body = m.encrypted
+               ? '<span class="enc">encrypted</span>'
+               : (m.text ? esc(String(m.text).slice(0,240)) : '<span class="enc">no text</span>');
+      var who = m.sender ? esc(m.sender) : esc(m.title||'');
+      var accentVar = 'var(--'+net+', var(--accent))';
+      var acct = m.account ? '<span class="acct">'+esc(m.account)+'</span>' : '';
+      html+='<li class="item" data-room-id="'+esc(m.roomId)+'" style="--card-accent:'+accentVar+';cursor:pointer">'
+        + '<div class="badge b-'+net+'">'+esc(m.networkIcon||'')+'</div>'
+        + '<div class="mid">'
+        +   '<div class="name">'+who+' <span class="net">'+esc(m.networkLabel||net)+'</span>'+acct+'</div>'
+        +   '<div class="msgtext">'+body+'</div>'
+        +   '<div class="ctx">'+esc(m.title||'')+'</div>'
+        + '</div>'
+        + '<div class="right">'
+        +   '<div class="time">'+fmtTime(m.ts)+'</div>'
+        + '</div>'
+        +'</li>';
+    });
+    listEl.innerHTML=html;
+    Array.prototype.forEach.call(listEl.querySelectorAll('.item'),function(el){
+      el.onclick=function(){openDrawer(el.getAttribute('data-room-id'));};
+    });
+    // Clean paint succeeded with real rows -> hide the duplicate SSR fallback.
+    document.body.classList.add('js-rendered');
+  }
+
+  // ── drawer: read messages (GET) + reply (POST) — maps UI to callable endpoints ──
+  var curRoom=null;
+  var drawer=document.getElementById('drawer');
+  var dTitle=document.getElementById('drawer-title');
+  var dMsgs=document.getElementById('drawer-msgs');
+  var dInput=document.getElementById('drawer-input');
+  document.getElementById('drawer-close').onclick=function(){drawer.style.display='none';curRoom=null;};
+  function openDrawer(roomId){
+    curRoom=roomId;
+    var r=state.msgs.find(function(x){return x.roomId===roomId;})||{};
+    dTitle.textContent=r.title||roomId;
+    dMsgs.textContent='loading…';
+    drawer.style.display='block';
+    apiFetch('/api/room/'+encodeURIComponent(roomId)+'/messages?limit=30')
+      .then(function(x){return x.json();}).then(function(d){
+        if(!d.ok){dMsgs.textContent='error: '+(d.error||'?');return;}
+        if(!d.messages.length){dMsgs.textContent='(no readable messages)';return;}
+        dMsgs.innerHTML=d.messages.map(function(m){
+          var body=m.encrypted?'<i style="color:var(--text-muted)">encrypted</i>':esc(m.body);
+          return '<div style="margin:4px 0"><b style="color:var(--text-bright)">'+esc(m.sender)+':</b> '+body+'</div>';
+        }).join('');
+      }).catch(function(){dMsgs.textContent='fetch failed';});
+  }
+  function sendReply(){
+    if(!curRoom||!dInput.value.trim())return;
+    var txt=dInput.value;dInput.value='';
+    // Optimistic echo so the reply is visibly in the thread immediately.
+    var pend=document.createElement('div');
+    pend.style.cssText='margin:4px 0;color:var(--accent-dim)';
+    pend.innerHTML='<b style="color:var(--text-bright)">you:</b> '+esc(txt)+' <span style="color:var(--text-muted)">· sending…</span>';
+    dMsgs.appendChild(pend);dMsgs.scrollTop=dMsgs.scrollHeight;
+    // Unified reply: /api/reply routes to the item's ORIGIN channel (email→SMTP,
+    // chat→Matrix). Server resolves the origin from the merged stream by roomId.
+    apiFetch('/api/reply',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({roomId:curRoom,text:txt})
+    }).then(function(x){return x.json().catch(function(){return{ok:false,error:'HTTP '+x.status};});}).then(function(d){
+      if(d.ok){
+        pend.style.color='var(--text)';
+        pend.innerHTML='<b style="color:var(--text-bright)">you:</b> '+esc(txt)+' <span style="color:var(--accent)">· sent ✓</span>';
+        // Pull the live thread so the delivered message shows from the server too.
+        setTimeout(function(){apiFetch('/api/stream?limit=300').then(function(r){return r.json();}).then(apply).catch(function(){});},1500);
+      } else {
+        pend.style.color='var(--red)';
+        pend.innerHTML='<b style="color:var(--text-bright)">you:</b> '+esc(txt)+' <span style="color:var(--red)">· NOT sent — '+esc(d.error||'send failed')+'</span>';
+      }
+    }).catch(function(e){
+      pend.style.color='var(--red)';
+      pend.innerHTML='<b style="color:var(--text-bright)">you:</b> '+esc(txt)+' <span style="color:var(--red)">· NOT sent — network error</span>';
+    });
+  }
+  document.getElementById('drawer-send').onclick=sendReply;
+  dInput.addEventListener('keydown',function(e){if(e.key==='Enter')sendReply();});
+
+  function apply(data){
+    if(!data||!data.ok){subEl.textContent='error: '+((data&&data.error)||'unknown');dotEl.classList.remove('live');return;}
+    state.msgs=data.messages||[];state.byNet=data.byNet||{};
+    state.total=data.total||state.msgs.length;
+    state.cleartext=(data.cleartext!=null)?data.cleartext:state.msgs.filter(function(m){return m.text&&!m.encrypted;}).length;
+    state.encrypted=(data.encrypted!=null)?data.encrypted:state.msgs.filter(function(m){return m.encrypted;}).length;
+    var nets=Object.keys(state.byNet).length;
+    var accts=(data.accounts&&data.accounts.length)?data.accounts.length:(data.byAccount?Object.keys(data.byAccount).length:0);
+    var acctTxt=accts?(' · <span class="count">'+accts+'</span> accounts'):'';
+    subEl.innerHTML='<span class="count">'+state.total+'</span> messages · <span class="count">'+nets+'</span> networks'+acctTxt+' · one merged thread';
+    dotEl.classList.add('live');
+    if(state.encrypted>0){
+      encNote.style.display='block';
+      encNote.innerHTML='<b>'+state.encrypted+'</b> of these messages are end-to-end encrypted — sender, network and time are live and honest, but the body needs the device keys to decrypt. '+state.cleartext+' show full decrypted text now.';
+    } else { encNote.style.display='none'; }
+    // Guard the render: if anything throws, the server-rendered #omni-ssr thread
+    // stays on screen (we never reach the js-rendered flag), so the user still sees
+    // the full merged feed instead of a blank page.
+    try{ renderFilters(); }catch(_){ }
+    try{ renderList(); }catch(err){ if(window.console)console.error('renderList failed, keeping SSR fallback:',err); }
+  }
+
+  // Live via SSE; fallback to poll if SSE unsupported. Both hit /api/stream so the
+  // view is ALWAYS the one interleaved thread (never the old room list).
+  function connect(){
+    try{
+      var es=new EventSource(API+'/sse-stream');
+      es.onmessage=function(e){
+        try{var d=JSON.parse(e.data);
+          if(d.type==='stream')apply(d);
+          else if(d.type==='error'){subEl.textContent='error: '+d.error;dotEl.classList.remove('live');}
+        }catch(_){}
+      };
+      es.onerror=function(){dotEl.classList.remove('live');poll();};
+    }catch(_){ poll(); }
+  }
+  var _polling=false;
+  function poll(){
+    if(_polling)return; _polling=true;
+    (function tick(){
+      // Live receive: pull the merged stream every 10s so NEW inbound messages
+      // appear on their own (no reship, no refresh). apply() re-renders newest-first.
+      apiFetch('/api/stream?limit=300').then(function(r){return r.json();}).then(apply).catch(function(){});
+      setTimeout(tick,10000);
+    })();
+  }
+  // Cold-load: paint the baked snapshot INSTANTLY (so a public GET shows the unified
+  // thread with zero JS round-trip), then go live off /api/stream.
+  if(window.__STREAM__&&window.__STREAM__.ok){apply(window.__STREAM__);}
+  apiFetch('/api/stream?limit=300').then(function(r){return r.json();}).then(apply).catch(function(){});
+  connect();
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

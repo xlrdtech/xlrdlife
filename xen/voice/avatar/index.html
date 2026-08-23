@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ophanim · XLRD ID Avatar</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#000; overflow:hidden; }
+  canvas { display:block; width:100vw; height:100vh; outline:none; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const canvas = document.getElementById('gl');
+const scene  = new THREE.Scene();
+scene.fog    = new THREE.FogExp2(0x050510, 0.0035);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 5000);
+camera.position.set(0, 1.6, 5.5);
+camera.lookAt(0, 1.2, 0);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.45, 0.4, 0.85);
+bloom.threshold = 0.08; bloom.strength = 1.45; bloom.radius = 0.75;
+composer.addPass(bloom);
+
+// --- Ophanim core: concentric spinning rings + central glowing core + eye dust ---
+const ophanim = new THREE.Group();
+scene.add(ophanim);
+
+const ringMat = (color, opacity=1) => new THREE.MeshBasicMaterial({
+  color, transparent:true, opacity, wireframe:true, side:THREE.DoubleSide
+});
+
+const ringGeo1 = new THREE.TorusGeometry(1.4, 0.04, 6, 64);
+const ringGeo2 = new THREE.TorusGeometry(1.7, 0.035, 6, 80);
+const ringGeo3 = new THREE.TorusGeometry(2.0, 0.030, 6, 96);
+
+const r1 = new THREE.Mesh(ringGeo1, ringMat(0x00ff88));
+const r2 = new THREE.Mesh(ringGeo2, ringMat(0x5fff9e, 0.85));
+const r3 = new THREE.Mesh(ringGeo3, ringMat(0x00ff88, 0.6));
+r2.rotation.x = Math.PI/2;
+r3.rotation.y = Math.PI/2;
+ophanim.add(r1, r2, r3);
+
+// Crossing rings (extra wheel-within-wheel)
+const r4 = new THREE.Mesh(ringGeo1.clone(), ringMat(0xb0ffd0, 0.5));
+r4.rotation.x = Math.PI/3; r4.rotation.z = Math.PI/4;
+const r5 = new THREE.Mesh(ringGeo2.clone(), ringMat(0xb0ffd0, 0.35));
+r5.rotation.x = -Math.PI/3; r5.rotation.z = Math.PI/5;
+ophanim.add(r4, r5);
+
+// Glowing core
+const coreGeo = new THREE.SphereGeometry(0.35, 32, 32);
+const coreMat = new THREE.MeshBasicMaterial({ color:0xb0ffd0 });
+const core = new THREE.Mesh(coreGeo, coreMat);
+ophanim.add(core);
+
+// Eye dust — instanced phosphor specks orbiting the rings
+const DUST_COUNT = 240;
+const dustGeo = new THREE.SphereGeometry(0.014, 6, 6);
+const dustMat = new THREE.MeshBasicMaterial({ color:0x00ff88, transparent:true, opacity:0.9 });
+const dust = new THREE.InstancedMesh(dustGeo, dustMat, DUST_COUNT);
+const dummy = new THREE.Object3D();
+const dustOrbits = [];
+for (let i = 0; i < DUST_COUNT; i++) {
+  const radius = 1.2 + Math.random() * 1.0;
+  const theta = Math.random() * Math.PI * 2;
+  const phi   = (Math.random() - 0.5) * Math.PI * 0.4;
+  const speed = 0.3 + Math.random() * 0.7;
+  const tilt  = Math.random() * Math.PI;
+  dustOrbits.push({ radius, theta, phi, speed, tilt });
+}
+ophanim.add(dust);
+
+// Ambient glow + a single key light for softness
+scene.add(new THREE.AmbientLight(0x163524, 0.6));
+const key = new THREE.PointLight(0x00ff88, 2.2, 12);
+key.position.set(0, 1.8, 2);
+scene.add(key);
+
+// --- Animation loop ---
+const clock = new THREE.Clock();
+function tick() {
+  requestAnimationFrame(tick);
+  const t  = clock.getElapsedTime();
+  const dt = clock.getDelta();
+
+  // Rings spinning at distinct speeds (Ezekiel's "wheels within wheels")
+  r1.rotation.x += 0.6  * dt;
+  r1.rotation.y += 0.35 * dt;
+  r2.rotation.y += 0.8  * dt;
+  r2.rotation.z += 0.4  * dt;
+  r3.rotation.z += 0.5  * dt;
+  r3.rotation.x += 0.2  * dt;
+  r4.rotation.y += 1.1  * dt;
+  r5.rotation.x += 0.9  * dt;
+
+  // Core pulse
+  const pulse = 1 + Math.sin(t * 2.2) * 0.12;
+  core.scale.set(pulse, pulse, pulse);
+
+  // Dust orbits
+  for (let i = 0; i < DUST_COUNT; i++) {
+    const o = dustOrbits[i];
+    o.theta += o.speed * dt;
+    const x = Math.cos(o.theta) * o.radius;
+    const z = Math.sin(o.theta) * o.radius;
+    const y = Math.sin(o.theta * 0.5 + o.tilt) * o.radius * Math.sin(o.phi);
+    dummy.position.set(x, y, z);
+    dummy.scale.setScalar(0.7 + Math.sin(o.theta * 3) * 0.4);
+    dummy.updateMatrix();
+    dust.setMatrixAt(i, dummy.matrix);
+  }
+  dust.instanceMatrix.needsUpdate = true;
+
+  // Slow whole-rig float so it doesn't sit static
+  ophanim.position.y = 1.4 + Math.sin(t * 0.6) * 0.05;
+  ophanim.rotation.y = Math.sin(t * 0.15) * 0.15;
+
+  composer.render();
+}
+tick();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+});
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

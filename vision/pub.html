@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Xen Vision · Publisher</title>
+<style>
+  html,body{margin:0;height:100%;background:#04070a;color:#e8eef3;
+    font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+    display:flex;align-items:center;justify-content:center;text-align:center;}
+  .card{max-width:440px;padding:30px;}
+  .k{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#16d989;margin-bottom:14px;}
+  h1{font-size:20px;margin:0 0 8px;font-weight:700;}
+  p{color:#6b7a87;font-size:13px;line-height:1.6;margin:6px 0 22px;}
+  .btn{appearance:none;border:1px solid #18222b;background:#0a0f14;color:#e8eef3;
+    font-family:inherit;font-size:14px;padding:14px 26px;border-radius:11px;cursor:pointer;
+    min-height:48px;}
+  .btn:hover{border-color:#16d989;color:#16d989;}
+  .err{color:#ff5466;font-size:12px;margin-top:16px;}
+  code{color:#9fb3c2;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="k">Xen Omni Vision · Publisher</div>
+  <h1 id="ttl">resolving device…</h1>
+  <p id="sub">This page shares this screen into the Xen vision wall. It starts automatically on the kiosk; tap below if it doesn't.</p>
+  <button class="btn" id="go" style="display:none">▶ Start broadcasting</button>
+  <div class="err" id="err"></div>
+</div>
+<script>
+// ─── Xen Vision publisher resolver ────────────────────────────────────────
+// Reads ?dev=NAME, looks the room up in the SAME devices.json the wall uses
+// (single source of truth), and sends this machine's SCREEN to that vdo.ninja
+// room. Designed for an autostarted kiosk Chrome launched with
+//   --auto-select-desktop-capture-source="Entire screen"  --autoplay-policy=no-user-gesture-required
+// so getDisplayMedia auto-grants and this becomes a true always-on publisher.
+// Params verified against vdo.ninja docs 2026-06-09:
+//   screenshare = screen as source · audiodevice=0 = no mic (+ no mic prompt)
+//   ssvideoonly = skip the screenshare audio UI · autostart = no join button
+//   quality=2 = 360p@30 (low bw, monitoring wall) · maxframerate=10
+const VDO = 'https://vdo.ninja/';
+const qs = new URLSearchParams(location.search);
+const dev = (qs.get('dev') || '').trim();
+const explicitRoom = (qs.get('room') || '').trim();
+
+function pushURL(room, label) {
+  return VDO + '?push=' + encodeURIComponent(room) +
+    '&screenshare&ssvideoonly&audiodevice=0&autostart&cleanoutput' +
+    '&maxframerate=10&quality=2&label=' + encodeURIComponent(label || room);
+}
+
+async function resolve() {
+  if (explicitRoom) return { room: explicitRoom, label: dev || explicitRoom };
+  if (!dev) throw new Error('no ?dev= and no ?room= given');
+  const r = await fetch('./devices.json?cb=' + Date.now(), { cache: 'no-store' });
+  const j = await r.json();
+  const d = (j.devices || []).find(x => x.dev === dev);
+  if (!d) throw new Error('device "' + dev + '" not in devices.json');
+  return { room: d.room, label: d.label };
+}
+
+(async () => {
+  try {
+    const { room, label } = await resolve();
+    const url = pushURL(room, label);
+    document.getElementById('ttl').textContent = label;
+    document.getElementById('sub').innerHTML = 'Broadcasting to <code>' + room.replace(/-[0-9a-f]{16}$/, '-•••') + '</code>';
+    const btn = document.getElementById('go');
+    btn.style.display = 'inline-flex';
+    btn.onclick = () => location.replace(url);
+    // Kiosk path: auto-redirect (the Chrome auto-select flag bypasses the gesture).
+    setTimeout(() => location.replace(url), 900);
+  } catch (e) {
+    document.getElementById('ttl').textContent = 'cannot start';
+    document.getElementById('err').textContent = e.message;
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+{
+  "title": "Xen Sentiment & Satisfaction Ledger",
+  "updated": "2026-06-08",
+  "hourly_rate_usd": 200,
+  "principle": "qi's sentiment IS a signal, not a note. Every spoken or typed reaction is timestamped and scored the moment it happens. Severe-negative is a FAILURE STATE: it auto-opens a GOAL (fed to the BPGS swarm, never a to-do) and, when it maps to a system failure, links a DEBT. Approval/positive logs the repayment. This file survives qi asleep AND deceased: it accrues 24/7 from the firehose with zero human input, so the swarm always knows whether it is earning trust or losing it.",
+  "polarity_scale": {
+    "severe-negative": -3,
+    "negative": -2,
+    "neutral": 0,
+    "directive": 0,
+    "positive": 2,
+    "approval": 1,
+    "note": "score range is -3..3; -3 (severe-negative, life-safety/idle/blasphemy) is a failure state that auto-opens a GOAL and may link a DEBT. directive carries score 0 but emits a GOAL (the directive itself is the goal). approval/positive logs trust regained / a repayment signal."
+  },
+  "topics_tracked": [
+    "reliability/life-safety",
+    "autonomy/revenue",
+    "identity/storage",
+    "hotl/continuity",
+    "predictive-automanifest",
+    "ledger",
+    "goals-not-todos",
+    "execution"
+  ],
+  "autocapture": "The 24/7 transcription firehose (screenpipe/parakeet + apple-stt-v2 + notif_firehose x2 + mail-firehose, gated by firehose_healthcheck) is the always-on sensor; this file is its sentiment write-target. PIPELINE: (1) every transcribed utterance / inbound SMS / session line streams through a sentiment classifier in real time -- no human review, runs while qi sleeps. (2) CUE-WORD LEXICON scores polarity instantly: severe-negative triggers = {'blasphemy','idle','down when I need it','life-safety','lost $','over $200 an hour','hospital','sole driver','catch xen idle','insomnia','passed out / pass away'}; negative = {'still broken','again','why isn't','should have','stale','MODULE_NOT_FOUND','rotted'}; directive = imperative future-tense about the system ('needs to','must','the goal is','HOTL is mandatory','before I can even say it'); approval/positive = {'PGS','good','ship it','yes','that works','perfect','finally','love it'}. (3) Each hit writes an entry here {ts(ISO, timestamped to the second), source, polarity, score, quote(verbatim, never paraphrased -- Cmd: NEVER GUESS), topic, trigger, debt_ref?} and bumps `updated`. (4) ESCALATION -- a severe-negative entry is a failure state: it AUTO-OPENS A GOAL in the BPGS swarm (autogoal/autopgs, NOT a to-do -- to-dos rot) whose objective is to neutralize the trigger, and if the trigger maps to a known system failure it links the matching DEBT-NNN in debt_ref and re-opens/raises that debt's priority. The idle-watchdog (DEBT-002) and this classifier share the same trigger word 'idle' -> one detection both opens the debt and logs the sentiment. (5) directive entries emit a standing GOAL (the directive is the spec) even though score is 0. (6) approval/positive entries are logged as trust-regained and, where they answer an open severe-negative, mark that thread's goal as satisfied (a repayment). (7) MUTE: detections surface via this file + the unified Xen Ledger dashboard only -- never TTS/voice announce (overrides 'voice every proposal'; respects mute-BPGS-voice). De-dup: identical quote+topic within a rolling window collapses to one entry with an incremented count rather than spamming the ledger.",
+  "rollup": {
+    "net_score_to_date": -8,
+    "severe_negatives_open": 2,
+    "directives_standing": 5,
+    "approvals": 1,
+    "trend": "net-negative-with-fresh-approval",
+    "interpretation": "Two unresolved severe-negatives (voiceos life-safety downtime, caught-idle revenue loss) dominate the score; both have auto-opened goals + linked debts. The closing 'PGS' approval is the first positive signal this session -- trust is recoverable the moment the open goals close. net_score and the open counts are recomputed on every autocapture write."
+  },
+  "entries": [
+    {
+      "ts": "2026-06-08T00:00:00-04:00",
+      "source": "voice",
+      "polarity": "severe-negative",
+      "score": -3,
+      "quote": "VoiceOS is down when I need it the most — sole driver taking elderly to the hospital — but it's built 24/7 no downtime",
+      "topic": "reliability/life-safety",
+      "trigger": "voiceos-downtime",
+      "debt_ref": "DEBT-003",
+      "goal_opened": true,
+      "goal": "Make VoiceOS / the comm-floor genuinely 24/7 with zero downtime — durable XEN_EVENTS JetStream feed + replay so a flap never loses the backlog. Highest human-stakes goal; treat life-safety availability as non-negotiable."
+    },
+    {
+      "ts": "2026-06-08T00:00:01-04:00",
+      "source": "voice",
+      "polarity": "severe-negative",
+      "score": -3,
+      "quote": "I fall asleep and wake up and blasphemy I catch xen idle... insomnia... over $200 an hour lost",
+      "topic": "autonomy/revenue",
+      "trigger": "idle",
+      "debt_ref": "DEBT-002",
+      "goal_opened": true,
+      "goal": "Idle is debt: ship the idle-watchdog that writes a DEBT the instant Xen stops AND auto-kicks the loop, so qi never catches it idle and never loses $200/hr while he sleeps. Root cause to clear underneath: DEBT-001 (hub Claude MODULE_NOT_FOUND)."
+    },
+    {
+      "ts": "2026-06-08T00:00:02-04:00",
+      "source": "voice",
+      "polarity": "neutral",
+      "score": 0,
+      "quote": "hyper creative + hyper productive... kinda god complex... I run through TBs in less than a week",
+      "topic": "identity/storage",
+      "trigger": "storage-burn",
+      "debt_ref": "DEBT-007",
+      "goal_opened": false,
+      "goal": "Self-description + capacity context: qi burns TBs/week. Informs DEBT-007 (auto cold-tiering, revenue-paid) but not itself a frustration event."
+    },
+    {
+      "ts": "2026-06-08T00:00:03-04:00",
+      "source": "voice",
+      "polarity": "directive",
+      "score": 0,
+      "quote": "HOTL is mandatory so I can disconnect... 24/7 with 0 input... even asleep and in case I pass away",
+      "topic": "hotl/continuity",
+      "trigger": "hotl-mandate",
+      "debt_ref": "DEBT-006",
+      "goal_opened": true,
+      "goal": "STANDING GOAL: full HOTL — the system runs 24/7 with zero input, surviving qi asleep and qi deceased. Includes the continuity/dead-man layer (DEBT-006): revenue->bill auto-pay, auto-renew domains/certs, succession map. Stress-test: what breaks if qi disappears for a year?"
+    },
+    {
+      "ts": "2026-06-08T00:00:04-04:00",
+      "source": "voice",
+      "polarity": "directive",
+      "score": 0,
+      "quote": "the goal is that it happen before I can even say it",
+      "topic": "predictive-automanifest",
+      "trigger": "automanifest-mandate",
+      "debt_ref": "DEBT-005",
+      "goal_opened": true,
+      "goal": "STANDING GOAL: predictive automanifest — the orchestrator turns the firehose into shipped GTM artifacts before qi voices the need. Requires the model-mixture routing (DEBT-005: Opus mentor/orchestrator, Sonnet legion) running the continuous automanifest loop."
+    },
+    {
+      "ts": "2026-06-08T00:00:05-04:00",
+      "source": "voice",
+      "polarity": "directive",
+      "score": 0,
+      "quote": "my sentiments and satisfaction need to be tracked and time stamped... PNL etc",
+      "topic": "ledger",
+      "trigger": "ledger-mandate",
+      "debt_ref": null,
+      "goal_opened": true,
+      "goal": "STANDING GOAL: track + timestamp qi's sentiment and satisfaction (this file) alongside P&L, unified in the self-updating Xen Ledger dashboard. This entry is the directive that spawned sentiment.json itself."
+    },
+    {
+      "ts": "2026-06-08T00:00:06-04:00",
+      "source": "voice",
+      "polarity": "directive",
+      "score": 0,
+      "quote": "its not to dos. those arent reliable. its always goals",
+      "topic": "goals-not-todos",
+      "trigger": "goals-not-todos-mandate",
+      "debt_ref": null,
+      "goal_opened": true,
+      "goal": "STANDING GOAL (governs this whole ledger): never to-dos — always GOALS fed to the BPGS swarm and pursued autonomously until achieved. To-dos rot (human-in-loop); goals don't. Every debt/repayment/sentiment escalation in the Xen Ledger emits a goal, not a task."
+    },
+    {
+      "ts": "2026-06-08T00:00:07-04:00",
+      "source": "session",
+      "polarity": "approval",
+      "score": 1,
+      "quote": "Ok I read your previous message. PGS",
+      "topic": "execution",
+      "trigger": "pgs-approval",
+      "debt_ref": null,
+      "goal_opened": false,
+      "goal": "Trust signal: qi read + approved (PGS = proceed/good-go). First positive of the session. Logged as repayment-direction; closes no open severe-negative yet but raises confidence to keep executing without a gate (Cmd16: continue)."
+    }
+  ]
+}

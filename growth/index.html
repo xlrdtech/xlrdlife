@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>East Allen's Growth Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Deep Space Glass -->
+    <!-- Application Structure: Single Page App (SPA) using Vanilla JS. 
+         - State Management: Central 'appState' object.
+         - Rendering: Dynamic DOM manipulation based on state.
+         - AI: Direct fetch calls to Gemini API. 
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(16, 185, 129, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #e5e7eb;
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .glass-input:focus {
+            border-color: rgba(59, 130, 246, 0.5);
+            outline: none;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1); 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2); 
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .loader {
+            border: 2px solid rgba(255,255,255,0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <nav class="w-full md:w-64 glass-panel flex flex-col z-20 md:h-screen sticky top-0 md:relative border-r-0 md:border-r border-b md:border-b-0 border-white/10">
+        <div class="p-6 border-b border-white/10">
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">Growth Interface</h1>
+            <p class="text-xs text-gray-400 mt-1">Lead & Email Executor</p>
+        </div>
+        
+        <div class="p-4 space-y-2 flex-1 overflow-y-auto">
+            <button onclick="renderTab('Overview')" id="nav-Overview" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 text-gray-400 hover:text-white flex items-center gap-3">
+                <span>📊</span> Overview
+            </button>
+            <button onclick="renderTab('High Priority')" id="nav-High Priority" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 text-gray-400 hover:text-white flex items-center gap-3">
+                <span>💎</span> High Priority
+            </button>
+            <button onclick="renderTab('Secondary')" id="nav-Secondary" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 text-gray-400 hover:text-white flex items-center gap-3">
+                <span>🟢</span> Secondary
+            </button>
+            <button onclick="renderTab('Window Shoppers')" id="nav-Window Shoppers" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 text-gray-400 hover:text-white flex items-center gap-3">
+                <span>⚠️</span> Window Shoppers
+            </button>
+            <button onclick="renderTab('All Emails')" id="nav-All Emails" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 text-gray-400 hover:text-white flex items-center gap-3">
+                <span>📨</span> Email Archive
+            </button>
+        </div>
+
+        <div class="p-4 border-t border-white/10">
+            <div class="text-xs text-gray-500 mb-2">API KEY (Optional for local use)</div>
+            <input type="password" id="userApiKey" placeholder="Enter Gemini API Key" class="w-full glass-input px-3 py-2 rounded text-xs">
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto relative h-[calc(100vh-64px)] md:h-screen">
+        <div id="content-area" class="p-4 md:p-8 max-w-7xl mx-auto pb-24">
+            <!-- Content Injected via JS -->
+        </div>
+    </main>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div id="modal-content" class="glass-panel w-full max-w-3xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col fade-in">
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <div id="modal-title-area">
+                    <!-- Title injected here -->
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">&times;</button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div id="modal-body" class="p-6 overflow-y-auto custom-scrollbar">
+                <!-- Details injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-8 right-8 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2">
+        <span id="toast-icon">✨</span>
+        <span id="toast-message">Notification</span>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        // --- 1. DATA MODEL --- 
+        const allContacts = [
+            {
+                id: 'c1', name: 'Joe Kleinwaechter', company: 'Self-Employed', title: 'Founder', email: 'joe @example.com',
+                verificationStatus: 'Verified', monthlyValue: '$8,000', sixMonthValue: '$48,000', depositAmount: '$4,000',
+                priority: 'Tier 1', followUpDate: '2025-11-07', nextAction: 'Send initial outreach (Template 1)',
+                notes: 'Direct founder connection. High potential for same-day close.',
+                history: [
+                    { emailId: 'e1-1', subject: 'Quick Question re: Your Company', receivedAt: '2025-11-06', body: '<p>Hi Joe,</p><p>I came across your profile and was impressed by your work. I\'m a Product Designer with experience in SaaS...</p>' }
+                ]
+            },
+            {
+                id: 'c2', name: 'Sarah Lee', company: 'Meta', title: 'Hiring Manager', email: 's.lee @meta.com',
+                verificationStatus: 'Verified', monthlyValue: '$10,000', sixMonthValue: '$60,000', depositAmount: '-',
+                priority: 'Tier 1', followUpDate: '2025-11-08', nextAction: 'Send initial outreach (Template 1)',
+                notes: 'Recruiter for two Product Designer roles ($135K-231K).',
+                history: [
+                    { emailId: 'e2-1', subject: 'Job Alert: Product Designer at Meta', receivedAt: '2025-11-05', body: '<p>You are receiving this alert for a Product Designer role at Meta. Apply now.</p>' }
+                ]
+            },
+            {
+                id: 'c3', name: 'Mike Brown', company: 'SimplePractice', title: 'Recruiter', email: 'mbrown @simplepractice.com',
+                verificationStatus: 'Verified', monthlyValue: '$7,000', sixMonthValue: '$42,000', depositAmount: '-',
+                priority: 'Tier 1', followUpDate: '2025-11-10', nextAction: 'Follow-up on call',
+                notes: 'Strong connection, follow-up required.', history: []
+            },
+            {
+                id: 'c4', name: 'Emily White', company: 'ADP', title: 'Talent Acquisition', email: 'emily.w @adp.com',
+                verificationStatus: 'Verified', monthlyValue: '$5,000', sixMonthValue: '$30,000', depositAmount: '-',
+                priority: 'Tier 1', followUpDate: '2025-11-09', nextAction: 'Send portfolio',
+                notes: 'Atlanta-area opportunity.', history: []
+            },
+            {
+                id: 'c5', name: 'David Chen', company: 'Reacher', title: 'Founder', email: 'david @reacher.com',
+                verificationStatus: 'Verified', monthlyValue: '$4,000', sixMonthValue: '$24,000', depositAmount: '$2,000',
+                priority: 'Tier 2', followUpDate: '2025-11-12', nextAction: 'Initial contact (Template 1)',
+                notes: 'Design-focused company.', history: []
+            },
+            {
+                id: 'c6', name: 'Alex Johnson', company: 'BJAK', title: 'CEO', email: 'alex @bjak.com',
+                verificationStatus: 'Verified', monthlyValue: '$3,000', sixMonthValue: '$18,000', depositAmount: '$1,000',
+                priority: 'Tier 2', followUpDate: '2025-11-14', nextAction: 'Initial contact',
+                notes: 'Growing startup.', history: []
+            },
+            {
+                id: 'c7', name: 'Chris Green', company: 'Daily Wire', title: 'Hiring Manager', email: 'c.green @dailywire.com',
+                verificationStatus: 'Verified', monthlyValue: '$3,500', sixMonthValue: '$21,000', depositAmount: '$1,000',
+                priority: 'Tier 2', followUpDate: '2025-11-15', nextAction: 'Schedule call',
+                notes: 'Media company role.', history: []
+            },
+            {
+                id: 'c8', name: 'Jessica Blue', company: 'sunday', title: 'Recruiter', email: 'jess @sunday.com',
+                verificationStatus: 'Verified', monthlyValue: '$2,000', sixMonthValue: '$12,000', depositAmount: '-',
+                priority: 'Tier 2', followUpDate: '2025-11-18', nextAction: 'Initial contact',
+                notes: 'Insurtech.', history: []
+            },
+            {
+                id: 'c9', name: 'Tom Wilson', company: 'Mercor', title: 'Recruiter', email: 'tom @mercor.com',
+                verificationStatus: 'Verified', monthlyValue: '$1,000', sixMonthValue: '$6,000', depositAmount: '-',
+                priority: 'Window Shopper', windowShopperReason: 'Likely low-ball offer', timeWasteEstimate: '2 hrs',
+                nextAction: 'Send qualifying email', history: []
+            },
+            {
+                id: 'c10', name: 'Laura Hill', company: 'PERSUIT', title: 'Manager', email: 'laura @persuit.com',
+                verificationStatus: 'Unverified', monthlyValue: '$500', sixMonthValue: '$3,000', depositAmount: '-',
+                priority: 'Window Shopper', windowShopperReason: 'Low salary range', timeWasteEstimate: '3 hrs',
+                nextAction: 'Send qualifying email', history: []
+            },
+             {
+                id: 'c11', name: 'Sam Rich', company: 'sunday', title: 'HR', email: 'sam @sunday.com',
+                verificationStatus: 'Verified', monthlyValue: '$1,000', sixMonthValue: '$6,000', depositAmount: '-',
+                priority: 'Window Shopper', windowShopperReason: 'Duplicate company contact', timeWasteEstimate: '1 hr',
+                nextAction: 'Qualify budget', history: []
+            },
+             {
+                id: 'c12', name: 'Megan Clark', company: 'T-Mobile', title: 'Coordinator', email: 'm.clark @t-mobile.com',
+                verificationStatus: 'Verified', monthlyValue: '$800', sixMonthValue: '$4,800', depositAmount: '-',
+                priority: 'Window Shopper', windowShopperReason: 'Contract role, low rate', timeWasteEstimate: '4 hrs',
+                nextAction: 'Qualify budget', history: []
+            },
+             {
+                id: 'c13', name: 'Kevin Baker', company: 'Luma Health', title: 'HR', email: 'kevin @luma.com',
+                verificationStatus: 'Verified', monthlyValue: '$1,200', sixMonthValue: '$7,200', depositAmount: '-',
+                priority: 'Window Shopper', windowShopperReason: 'Slow response time', timeWasteEstimate: '3 hrs',
+                nextAction: 'Qualify budget', history: []
+            }
+        ];
+
+        const emailTemplates = {
+            "Initial Outreach": `Subject: Quick Question re: [Their Company/Role]
+Hi [Name],
+I came across your profile and was impressed by your work at [Company].
+I\'m a [Your Title/Role] with experience in [Relevant Skill 1] and [Relevant Skill 2], and I\'m currently exploring opportunities where I can help teams [Achieve X].
+Would you be open to a brief 10-minute chat next week?
+Best,
+[Your Name]`,
+            "Follow-Up": `Subject: Re: Quick Question
+Hi [Name],
+Just wanted to follow up on my previous message.
+I know you\'re busy, but I\'m very interested in [Company]'s work and would welcome the chance to briefly discuss how my skills could be a fit.
+Let me know if there\'s a better time for you.
+Thanks,
+[Your Name]`,
+            "Window Shopper Inquiry": `Subject: Following up on our conversation
+Hi [Name],
+Thanks for your interest. To help me provide the most accurate information, could you share more details about your project timeline and budget?
+This will help us determine if we\'re a good fit and ensure we don\'t waste each other\'s valuable time.
+Looking forward to hearing from you.
+Best,
+[Your Name]`
+        };
+
+        // --- 2. STATE MANAGEMENT --- 
+        let appState = {
+            activeTab: 'Overview',
+            selectedContact: null
+        };
+
+        // --- 3. UI RENDERING --- 
+        
+        function init() {
+            renderTab('Overview');
+        }
+
+        function renderTab(tabName) {
+            appState.activeTab = tabName;
+            
+            // Update Sidebar Active State
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white/10', 'text-white', 'border-l-4', 'border-blue-500');
+                btn.classList.add('text-gray-400');
+            });
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-white/10', 'text-white', 'border-l-4', 'border-blue-500');
+                activeBtn.classList.remove('text-gray-400');
+            }
+
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = ''; // Clear content
+
+            // Render content based on tab
+            if (tabName === 'Overview') renderOverview(contentArea);
+            else if (tabName === 'High Priority') renderGrid(contentArea, allContacts.filter(c => c.priority === 'Tier 1'), 'High Priority (Tier 1)');
+            else if (tabName === 'Secondary') renderGrid(contentArea, allContacts.filter(c => c.priority === 'Tier 2'), 'Secondary (Tier 2)');
+            else if (tabName === 'Window Shoppers') renderGrid(contentArea, allContacts.filter(c => c.priority === 'Window Shopper'), 'Window Shoppers');
+            else if (tabName === 'All Emails') renderEmailArchive(contentArea);
+        }
+
+        function renderOverview(container) {
+            // Calculate KPIs
+            const totalValue = allContacts.reduce((sum, c) => sum + parseInt(c.sixMonthValue.replace(/[^0-9]/g, '') || 0), 0);
+            const tier1Count = allContacts.filter(c => c.priority === 'Tier 1').length;
+            const shopperCount = allContacts.filter(c => c.priority === 'Window Shopper').length;
+
+            container.innerHTML = `
+                <div class="fade-in">
+                    <h2 class="text-3xl font-bold mb-2">Dashboard Overview</h2>
+                    <p class="text-gray-400 mb-8">Real-time pipeline analytics</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-blue-500/30"></div>
+                            <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider">Total 6mo Potential</h3>
+                            <p class="text-4xl font-bold mt-2 text-white">$${totalValue.toLocaleString()}</p>
+                        </div>
+                        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-24 h-24 bg-green-500/20 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-green-500/30"></div>
+                            <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider">High Priority Leads</h3>
+                            <p class="text-4xl font-bold mt-2 text-green-400">${tier1Count}</p>
+                        </div>
+                        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-24 h-24 bg-red-500/20 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-red-500/30"></div>
+                            <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider">Window Shoppers</h3>
+                            <p class="text-4xl font-bold mt-2 text-red-400">${shopperCount}</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-8 rounded-2xl">
+                        <h3 class="text-xl font-bold mb-4">Quick Actions</h3>
+                        <div class="flex gap-4 flex-wrap">
+                            <button onclick="renderTab('High Priority')" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium">Process Tier 1 Leads</button>
+                            <button onclick="renderTab('All Emails')" class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors font-medium">Review Email Archive</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderGrid(container, contacts, title) {
+            let html = `
+                <div class="fade-in">
+                    <h2 class="text-3xl font-bold mb-2">${title}</h2>
+                    <p class="text-gray-400 mb-8">${contacts.length} opportunities identified</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            `;
+
+            if(contacts.length === 0) {
+                html += `<div class="col-span-3 text-center text-gray-500 py-10">No contacts found in this category.</div>`;
+            } else {
+                contacts.forEach(c => {
+                    const badgeColor = c.priority === 'Tier 1' ? 'bg-green-500/20 text-green-300 border-green-500/30' : 
+                                     c.priority === 'Tier 2' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' : 
+                                     'bg-red-500/20 text-red-300 border-red-500/30';
+                    
+                    html += `
+                        <div class="glass-card p-6 rounded-2xl flex flex-col h-full">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-lg font-bold text-white leading-tight">${c.name}</h3>
+                                    <p class="text-sm text-gray-400">${c.title} @ ${c.company}</p>
+                                </div>
+                                <span class="px-2 py-1 rounded text-xs font-semibold border ${badgeColor}">${c.priority}</span>
+                            </div>
+                            
+                            <div class="space-y-3 mb-6 flex-1">
+                                <div class="flex justify-between text-sm border-b border-white/5 pb-2">
+                                    <span class="text-gray-500">Monthly</span>
+                                    <span class="text-gray-200 font-mono">${c.monthlyValue}</span>
+                                </div>
+                                <div class="flex justify-between text-sm border-b border-white/5 pb-2">
+                                    <span class="text-gray-500">6mo Value</span>
+                                    <span class="text-gray-200 font-mono">${c.sixMonthValue}</span>
+                                </div>
+                                <div class="flex justify-between text-sm items-center">
+                                    <span class="text-gray-500">Next Step</span>
+                                    <span class="text-blue-300 text-xs text-right max-w-[60%]">${c.nextAction}</span>
+                                </div>
+                            </div>
+                            
+                            <button onclick="openContactModal('${c.id}')" class="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm font-medium transition-colors text-blue-300 hover:text-blue-200">
+                                View & Action
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+
+            html += `</div></div>`;
+            container.innerHTML = html;
+        }
+
+        function renderEmailArchive(container) {
+            const allEmails = [];
+            allContacts.forEach(c => {
+                c.history.forEach(h => {
+                    allEmails.push({ ...h, contactName: c.name, contactCompany: c.company });
+                });
+            });
+
+            let html = `
+                <div class="fade-in">
+                    <h2 class="text-3xl font-bold mb-2">Email Archive</h2>
+                    <p class="text-gray-400 mb-8">Full history of scraping results</p>
+                    <div class="space-y-4">
+            `;
+
+            if(allEmails.length === 0) {
+                 html += `<div class="text-center text-gray-500 py-10">No email history found.</div>`;
+            } else {
+                allEmails.forEach(e => {
+                    html += `
+                        <div class="glass-card p-5 rounded-xl">
+                            <details class="group">
+                                <summary class="flex justify-between items-center cursor-pointer list-none">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs">✉️</div>
+                                        <div>
+                                            <h4 class="font-bold text-gray-200">${e.subject}</h4>
+                                            <p class="text-xs text-gray-500">From: ${e.contactName} (${e.contactCompany})</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs text-gray-500">${e.receivedAt}</span>
+                                </summary>
+                                <div class="mt-4 pl-12 text-sm text-gray-300 border-t border-white/5 pt-4 prose prose-invert max-w-none">
+                                    ${e.body.replace(/\\/g, '')}
+                                </div>
+                            </details>
+                        </div>
+                    `;
+                });
+            }
+
+            html += `</div></div>`;
+            container.innerHTML = html;
+        }
+
+        // --- 4. MODAL LOGIC & AI --- 
+
+        function openContactModal(contactId) {
+            const c = allContacts.find(x => x.id === contactId);
+            if(!c) return;
+
+            appState.selectedContact = c;
+
+            const modalTitle = document.getElementById('modal-title-area');
+            const modalBody = document.getElementById('modal-body');
+            const overlay = document.getElementById('modal-overlay');
+
+            modalTitle.innerHTML = `
+                <div>
+                    <h2 class="text-xl font-bold text-white">${c.name}</h2>
+                    <p class="text-sm text-gray-400">${c.title} @ ${c.company} <span class="ml-2 px-2 py-0.5 rounded text-[10px] border border-green-500/30 bg-green-500/10 text-green-400">${c.verificationStatus}</span></p>
+                </div>
+            `;
+
+            // History HTML
+            let historyHtml = '';
+            if(c.history.length > 0) {
+                c.history.forEach(h => {
+                    historyHtml += `
+                        <div class="bg-black/20 p-3 rounded-lg border border-white/5 mb-2">
+                            <div class="flex justify-between text-xs text-gray-500 mb-1"><span>${h.subject}</span><span>${h.receivedAt}</span></div>
+                            <div class="text-xs text-gray-300 line-clamp-2">${h.body.replace(/<[^>]*>?/gm, '')}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                historyHtml = `<p class="text-xs text-gray-500 italic">No previous email history.</p>`;
+            }
+
+            modalBody.innerHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-black/30 p-3 rounded-lg text-center border border-white/5">
+                        <div class="text-xs text-gray-500 uppercase">Monthly</div>
+                        <div class="text-lg font-bold text-white">${c.monthlyValue}</div>
+                    </div>
+                    <div class="bg-black/30 p-3 rounded-lg text-center border border-white/5">
+                        <div class="text-xs text-gray-500 uppercase">6mo Total</div>
+                        <div class="text-lg font-bold text-white">${c.sixMonthValue}</div>
+                    </div>
+                    <div class="bg-black/30 p-3 rounded-lg text-center border border-white/5">
+                        <div class="text-xs text-gray-500 uppercase">Deposit</div>
+                        <div class="text-lg font-bold text-white">${c.depositAmount}</div>
+                    </div>
+                    <div class="bg-black/30 p-3 rounded-lg text-center border border-white/5">
+                        <div class="text-xs text-gray-500 uppercase">Priority</div>
+                        <div class="text-lg font-bold ${c.priority === 'Tier 1' ? 'text-green-400' : 'text-yellow-400'}">${c.priority}</div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-white mb-2 uppercase tracking-wide">Notes & Context</h3>
+                    <div class="bg-white/5 p-4 rounded-lg text-sm text-gray-300 border border-white/10">
+                        ${c.notes}
+                        ${c.windowShopperReason ? `<br><br><span class="text-red-400">⚠️ Risk: ${c.windowShopperReason} (Est. waste: ${c.timeWasteEstimate})</span>` : ''}
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-white mb-2 uppercase tracking-wide">Communication History</h3>
+                    <div class="max-h-32 overflow-y-auto custom-scrollbar">
+                        ${historyHtml}
+                    </div>
+                </div>
+
+                <!-- AI COMPOSER -->
+                <div class="border-t border-white/10 pt-6 mt-6">
+                    <h3 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 mb-4 flex items-center gap-2">
+                        ✨ AI Executor
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Template</label>
+                                <select id="ai-template" class="w-full glass-input px-3 py-2 rounded text-sm">
+                                    <option value="Initial Outreach">Initial Outreach</option>
+                                    <option value="Follow-Up">Follow-Up</option>
+                                    <option value="Window Shopper Inquiry">Window Shopper Inquiry</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Personalization Context</label>
+                                <input id="ai-context" type="text" placeholder="e.g. mention their recent funding" class="w-full glass-input px-3 py-2 rounded text-sm">
+                            </div>
+                        </div>
+
+                        <button onclick="generateEmail()" id="btn-generate" class="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-lg font-bold shadow-lg transition-all flex items-center justify-center gap-2">
+                            <span>⚡</span> Generate Draft
+                        </button>
+
+                        <div id="ai-output-container" class="hidden">
+                            <label class="block text-xs text-gray-500 mb-1">Generated Draft</label>
+                            <textarea id="ai-output" rows="8" class="w-full glass-input p-4 rounded-lg font-mono text-sm leading-relaxed mb-3"></textarea>
+                            
+                            <div class="flex gap-3">
+                                <button onclick="copyToClipboard()" class="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors">📋 Copy to Clipboard</button>
+                                <a href="#" id="mailto-link" class="flex-1 py-2 bg-green-600 hover:bg-green-500 text-center text-white rounded-lg text-sm font-medium transition-colors">🚀 Open Mail Client</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            overlay.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            appState.selectedContact = null;
+        }
+
+        // --- 5. GEMINI API INTEGRATION --- 
+
+        async function generateEmail() {
+            const btn = document.getElementById('btn-generate');
+            const outputContainer = document.getElementById('ai-output-container');
+            const output = document.getElementById('ai-output');
+            const template = document.getElementById('ai-template').value;
+            const context = document.getElementById('ai-context').value;
+            
+            // UI Loading State
+            const originalBtnText = btn.innerHTML;
+            btn.innerHTML = `<div class="loader"></div> Generating...`;
+            btn.disabled = true;
+
+            const c = appState.selectedContact;
+            
+            // SYSTEM PROMPT
+            const systemPrompt = `You are East Allen, a Senior Product Designer helping teams build high-impact products.
+            Write a professional, concise email.
+            - My Skills: SaaS, React, Design Systems.
+            - Tone: Direct, high-value, no fluff.
+            - Do not use placeholders like [Your Name], sign off as East Allen.
+            - Output ONLY the email body.`;
+
+            const userPrompt = `
+            Contact: ${c.name}, ${c.title} at ${c.company}.
+            Template: ${emailTemplates[template]}
+            Extra Context: ${context || "None"}
+            Rewrite the template for this specific contact.`;
+
+            // API CALL
+            const apiKey = document.getElementById('userApiKey').value || ""; // User Input or Default
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            try {
+                if(!apiKey) throw new Error("Please enter an API Key in the sidebar.");
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userPrompt }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+
+                const data = await response.json();
+                const generatedText = data.candidates[0].content.parts[0].text;
+
+                // Show Result
+                output.value = generatedText;
+                outputContainer.classList.remove('hidden');
+                
+                // Update Mailto Link
+                const mailto = `mailto:${c.email}?subject=${encodeURIComponent("Regarding " + c.company)}&body=${encodeURIComponent(generatedText)}`;
+                document.getElementById('mailto-link').href = mailto;
+
+                showToast("Email Generated Successfully!", "✨");
+
+            } catch (error) {
+                console.error(error);
+                // Fallback for demo/no-key: Local Template fill
+                let fallbackText = emailTemplates[template]
+                    .replace('[Name]', c.name.split(' ')[0])
+                    .replace('[Company]', c.company)
+                    .replace('[Your Title/Role]', 'Senior Product Designer')
+                    .replace('[Relevant Skill 1]', 'SaaS')
+                    .replace('[Relevant Skill 2]', 'React')
+                    .replace('[Achieve X]', 'scale their product')
+                    .replace('[Your Name]', 'East Allen');
+                
+                if(context) fallbackText += `\n\nP.S. ${context}`;
+                
+                output.value = fallbackText + "\n\n(Note: Using fallback template. Add valid Gemini API Key for AI generation.)";
+                outputContainer.classList.remove('hidden');
+                showToast("Generated with Offline Template", "⚠️");
+            } finally {
+                btn.innerHTML = originalBtnText;
+                btn.disabled = false;
+            }
+        }
+
+        function copyToClipboard() {
+            const copyText = document.getElementById("ai-output");
+            copyText.select();
+            document.execCommand("copy");
+            showToast("Copied to Clipboard!", "📋");
+        }
+
+        function showToast(msg, icon) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            document.getElementById('toast-icon').innerText = icon;
+            toast.classList.remove('opacity-0', 'translate-y-20');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-20');
+            }, 3000);
+        }
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', init);
+
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

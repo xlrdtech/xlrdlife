@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Status — Xen Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:   #050505;
+    --ash:   #0e0e0e;
+    --char:  #181818;
+    --cream: #f0ece2;
+    --bone:  #d8d2c2;
+    --dust:  #5a5a5a;
+    --volt:  #00ff88;
+    --rust:  #ff4a3d;
+    --gold:  #ffcc40;
+    --steel: #6ad4ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: var(--volt); color: var(--ink); }
+
+  html, body {
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* CRT scanline overlay */
+  body::after {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 100;
+    background: repeating-linear-gradient(
+      180deg,
+      rgba(255,255,255,0) 0px,
+      rgba(255,255,255,0) 2px,
+      rgba(255,255,255,0.02) 3px,
+      rgba(255,255,255,0) 4px
+    );
+    mix-blend-mode: overlay;
+  }
+
+  /* ── Top ribbon: continuous tape of status ─────────────────────────── */
+  .ticker {
+    border-bottom: 1px solid rgba(240,236,226,0.12);
+    height: 32px; overflow: hidden;
+    background: var(--ash);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .ticker-track {
+    display: inline-flex; align-items: center; height: 100%;
+    white-space: nowrap;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--dust);
+    animation: scroll 60s linear infinite;
+  }
+  .ticker-track span { padding: 0 32px; }
+  .ticker-track span.volt { color: var(--volt); }
+  .ticker-track span.rust { color: var(--rust); }
+  .ticker-track span.gold { color: var(--gold); }
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* ── Masthead ──────────────────────────────────────────────────────── */
+  .masthead {
+    padding: 32px 32px 24px;
+    border-bottom: 2px solid var(--cream);
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: end;
+    max-width: 1640px; margin: 0 auto;
+  }
+  .masthead .brand {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: clamp(56px, 8vw, 112px);
+    line-height: 0.9;
+    color: var(--cream);
+    letter-spacing: -0.03em;
+  }
+  .masthead .brand .accent { color: var(--volt); }
+  .masthead .when {
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust); text-align: right;
+  }
+  .masthead .when strong { color: var(--cream); font-weight: 500; display: block; font-size: 13px; margin-top: 6px; }
+
+  /* ── Hero status banner ───────────────────────────────────────────── */
+  .banner {
+    max-width: 1640px; margin: 0 auto;
+    padding: 24px 32px;
+    border-bottom: 1px solid rgba(240,236,226,0.08);
+    display: grid; grid-template-columns: auto 1fr auto; gap: 32px;
+    align-items: center;
+  }
+  .pulse {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--volt);
+    box-shadow: 0 0 0 0 rgba(0,255,136,0.7);
+    animation: ping 1.6s cubic-bezier(0.66, 0, 0, 1) infinite;
+  }
+  .pulse.warn { background: var(--gold); box-shadow: 0 0 0 0 rgba(255,204,64,0.7); }
+  .pulse.err  { background: var(--rust); box-shadow: 0 0 0 0 rgba(255,74,61,0.7); }
+  @keyframes ping {
+    0%   { box-shadow: 0 0 0 0 rgba(0,255,136,0.7); }
+    100% { box-shadow: 0 0 0 22px rgba(0,255,136,0); }
+  }
+  .banner-text {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: clamp(24px, 3vw, 36px);
+    color: var(--cream);
+    line-height: 1.2;
+  }
+  .banner-text strong { color: var(--volt); font-style: normal; }
+  .banner-tag {
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+    text-align: right;
+  }
+  .banner-tag strong { display: block; color: var(--cream); font-size: 13px; margin-top: 4px; font-weight: 500; }
+
+  /* ── Editorial section heading ─────────────────────────────────────── */
+  .section {
+    max-width: 1640px; margin: 0 auto;
+    padding: 64px 32px 32px;
+    border-bottom: 1px solid rgba(240,236,226,0.08);
+  }
+  .section-head {
+    display: grid; grid-template-columns: 100px 1fr auto; gap: 32px;
+    align-items: baseline;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(240,236,226,0.15);
+  }
+  .section-num {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 64px;
+    line-height: 0.9;
+    color: var(--volt);
+  }
+  .section-title {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: clamp(32px, 4vw, 56px);
+    color: var(--cream);
+    line-height: 1;
+  }
+  .section-title em { color: var(--volt); font-style: italic; }
+  .section-meta {
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+  }
+
+  /* ── Big metric tiles ──────────────────────────────────────────────── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid rgba(240,236,226,0.12);
+  }
+  .metric {
+    padding: 32px 28px;
+    border-right: 1px solid rgba(240,236,226,0.08);
+    background: var(--ash);
+    position: relative;
+    transition: background 0.4s;
+  }
+  .metric:hover { background: var(--char); }
+  .metric:last-child { border-right: 0; }
+  .metric-label {
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+    margin-bottom: 24px;
+  }
+  .metric-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 64px; line-height: 1;
+    color: var(--cream);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    transition: color 0.3s;
+  }
+  .metric-value.good { color: var(--volt); }
+  .metric-value.bad  { color: var(--rust); }
+  .metric-value.warn { color: var(--gold); }
+  .metric-sub {
+    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--dust);
+  }
+
+  /* ── Backend grid ──────────────────────────────────────────────────── */
+  .backend-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0;
+    border: 1px solid rgba(240,236,226,0.12);
+    margin-bottom: 32px;
+  }
+  .backend {
+    padding: 20px 24px;
+    border-right: 1px solid rgba(240,236,226,0.06);
+    border-bottom: 1px solid rgba(240,236,226,0.06);
+    background: var(--ash);
+    display: grid; grid-template-columns: 32px 1fr auto; gap: 16px;
+    align-items: center;
+    transition: background 0.3s;
+  }
+  .backend:hover { background: var(--char); }
+  .backend .glyph {
+    font-family: 'Instrument Serif', serif;
+    font-size: 24px; line-height: 1;
+    color: var(--volt);
+  }
+  .backend.dead .glyph { color: var(--rust); }
+  .backend .name { font-size: 13px; color: var(--cream); letter-spacing: 0.05em; }
+  .backend .state {
+    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--volt);
+  }
+  .backend.dead .state { color: var(--rust); }
+
+  /* ── Audit log ─────────────────────────────────────────────────────── */
+  .log {
+    background: var(--ash);
+    border: 1px solid rgba(240,236,226,0.12);
+    padding: 24px 28px;
+    max-height: 360px;
+    overflow-y: auto;
+    font-size: 12px;
+    color: var(--bone);
+  }
+  .log-line { padding: 4px 0; border-bottom: 1px dashed rgba(240,236,226,0.05); display: grid; grid-template-columns: 80px 80px 1fr; gap: 16px; }
+  .log-line:last-child { border-bottom: 0; }
+  .log-line .t { color: var(--dust); }
+  .log-line .l { color: var(--volt); font-weight: 500; }
+  .log-line .l.WARN { color: var(--gold); }
+  .log-line .l.ERROR { color: var(--rust); }
+
+  /* ── Endpoint grid (compact catalog reference) ─────────────────────── */
+  .quick-endpoints {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 8px;
+  }
+  .qe {
+    padding: 14px 18px;
+    background: var(--ash);
+    border: 1px solid rgba(240,236,226,0.08);
+    color: var(--cream);
+    text-decoration: none;
+    font-size: 12px;
+    display: grid; grid-template-columns: 1fr auto; gap: 8px;
+    align-items: center;
+    transition: border-color 0.3s, background 0.3s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .qe:hover { border-color: var(--volt); background: var(--char); transform: translateX(2px); }
+  .qe .verb { color: var(--volt); font-weight: 500; letter-spacing: 0.1em; font-size: 10px; text-transform: uppercase; }
+
+  footer {
+    padding: 40px 32px;
+    border-top: 2px solid var(--cream);
+    max-width: 1640px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr auto;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+  }
+  footer .r { text-align: right; }
+  footer a { color: var(--volt); text-decoration: none; }
+
+  @media (max-width: 880px) {
+    .masthead { grid-template-columns: 1fr; }
+    .masthead .when { text-align: left; margin-top: 16px; }
+    .banner { grid-template-columns: auto 1fr; }
+    .banner-tag { grid-column: 1 / -1; text-align: left; }
+    .section-head { grid-template-columns: auto 1fr; }
+    .section-meta { grid-column: 1 / -1; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .metric { border-bottom: 1px solid rgba(240,236,226,0.08); }
+    .log-line { grid-template-columns: 60px 60px 1fr; gap: 8px; }
+    footer { grid-template-columns: 1fr; gap: 8px; }
+    footer .r { text-align: left; }
+  }
+</style>
+<style>.xen-build-stamp{position:fixed;top:14px;right:14px;z-index:9999;background:rgba(5,5,5,0.85);backdrop-filter:blur(8px);border:1px solid rgba(0,255,136,0.3);padding:6px 12px;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#00ff88;border-radius:2px;text-decoration:none}.xen-build-stamp:hover{background:#00ff88;color:#050505}.xen-build-stamp .sep{color:#666;margin:0 6px}</style></head>
+<body><a class="xen-build-stamp" href="https://hitthe.link/lab/" title="Build telemetry">BUILT IN 111s<span class="sep">·</span>18.2KB<span class="sep">·</span>SEE LAB</a>
+
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="volt">XEN LIVE</span>
+    <span>· AUA edge ·</span>
+    <span class="gold">tui.xlrd.org</span>
+    <span>· operator: qi ·</span>
+    <span>blind-first agentic OS ·</span>
+    <span class="volt">node 4471</span>
+    <span>· cloudflared godmode-win ·</span>
+    <span class="gold">edge-tts ava</span>
+    <span>· ollama localhost ·</span>
+    <span class="volt">XEN LIVE</span>
+    <span>· AUA edge ·</span>
+    <span class="gold">tui.xlrd.org</span>
+    <span>· operator: qi ·</span>
+    <span>blind-first agentic OS ·</span>
+    <span class="volt">node 4471</span>
+    <span>· cloudflared godmode-win ·</span>
+    <span class="gold">edge-tts ava</span>
+    <span>· ollama localhost ·</span>
+  </div>
+</div>
+
+<div class="masthead">
+  <h1 class="brand">Live<br><em class="accent">Telemetry</em></h1>
+  <div class="when">
+    Refreshed
+    <strong id="updated">—</strong>
+  </div>
+</div>
+
+<div class="banner">
+  <div class="pulse" id="pulse"></div>
+  <div class="banner-text" id="banner">Connecting to <strong>tui.xlrd.org/health</strong>…</div>
+  <div class="banner-tag">
+    Auto-refresh
+    <strong>every 5s</strong>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">i.</div>
+    <h2 class="section-title">Pillars <em>at a glance</em></h2>
+    <div class="section-meta">// state · port · auth · platform</div>
+  </div>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">SERVICE</div>
+      <div class="metric-value" id="m-service">—</div>
+      <div class="metric-sub" id="m-service-sub">awaiting</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">PORT</div>
+      <div class="metric-value" id="m-port">—</div>
+      <div class="metric-sub" id="m-port-sub">awaiting</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">AUTH</div>
+      <div class="metric-value" id="m-auth">—</div>
+      <div class="metric-sub" id="m-auth-sub">awaiting</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">PLATFORM</div>
+      <div class="metric-value" id="m-platform">—</div>
+      <div class="metric-sub" id="m-platform-sub">awaiting</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">ii.</div>
+    <h2 class="section-title">Injection <em>backends</em></h2>
+    <div class="section-meta">// socket · tmux · winpane</div>
+  </div>
+  <div class="backend-list" id="backends">
+    <div class="backend">
+      <div class="glyph">◎</div>
+      <div class="name">…</div>
+      <div class="state">awaiting</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">iii.</div>
+    <h2 class="section-title">Quick <em>catalog</em></h2>
+    <div class="section-meta">// click to dispatch</div>
+  </div>
+  <div class="quick-endpoints">
+    <a class="qe" href="https://tui.xlrd.org/qwen?q=hello"><span>/qwen</span><span class="verb">ask</span></a>
+    <a class="qe" href="https://tui.xlrd.org/deepseek?q=hello"><span>/deepseek</span><span class="verb">reason</span></a>
+    <a class="qe" href="https://tui.xlrd.org/hermes?q=hello"><span>/hermes</span><span class="verb">balanced</span></a>
+    <a class="qe" href="https://tui.xlrd.org/qwen-coder?q=hello"><span>/qwen-coder</span><span class="verb">code</span></a>
+    <a class="qe" href="https://tui.xlrd.org/query?q=hello"><span>/query</span><span class="verb">vanity</span></a>
+    <a class="qe" href="https://tui.xlrd.org/ask?q=hello"><span>/ask?m=…</span><span class="verb">any</span></a>
+    <a class="qe" href="https://tui.xlrd.org/tui?q=test"><span>/tui</span><span class="verb">inject</span></a>
+    <a class="qe" href="https://tui.xlrd.org/screen"><span>/screen</span><span class="verb">vision</span></a>
+    <a class="qe" href="https://tui.xlrd.org/share/"><span>/share/</span><span class="verb">files</span></a>
+    <a class="qe" href="https://tui.xlrd.org/godmode"><span>/godmode</span><span class="verb">setup</span></a>
+    <a class="qe" href="https://tui.xlrd.org/possess-siri"><span>/possess-siri</span><span class="verb">walkthrough</span></a>
+    <a class="qe" href="https://tui.xlrd.org/aua"><span>/aua</span><span class="verb">manifesto</span></a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">iv.</div>
+    <h2 class="section-title">Audit <em>tape</em></h2>
+    <div class="section-meta">// last 16 events · client-side</div>
+  </div>
+  <div class="log" id="log">
+    <div class="log-line"><span class="t">—</span><span class="l">BOOT</span><span>dashboard initialized</span></div>
+  </div>
+</section>
+
+<footer>
+  <div class="l">XEN VoiceOS · Live Telemetry · AUA v0.1</div>
+  <div class="r">tui.xlrd.org · operator <a href="https://tui.xlrd.org/aua">qi</a></div>
+</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const logEl = $('log');
+  const events = [];
+
+  function addLog(level, msg) {
+    const t = new Date().toLocaleTimeString('en-US', { hour12: false });
+    events.unshift({ t, level, msg });
+    if (events.length > 16) events.pop();
+    logEl.innerHTML = events.map(e =>
+      `<div class="log-line"><span class="t">${e.t}</span><span class="l ${e.level}">${e.level}</span><span>${e.msg}</span></div>`
+    ).join('');
+  }
+
+  function setMetric(id, value, sub, cls) {
+    const el = $(id);
+    if (el) {
+      el.textContent = value;
+      el.classList.remove('good','bad','warn');
+      if (cls) el.classList.add(cls);
+    }
+    const subEl = $(id + '-sub');
+    if (subEl) subEl.textContent = sub;
+  }
+
+  function setBanner(text, pulseCls) {
+    $('banner').innerHTML = text;
+    const p = $('pulse');
+    p.classList.remove('warn','err');
+    if (pulseCls) p.classList.add(pulseCls);
+  }
+
+  async function fetchHealth() {
+    try {
+      const r = await fetch('https://tui.xlrd.org/health', { headers: { Accept: 'application/json' }, cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+
+      $('updated').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+      const ok = j.ok;
+      setBanner(
+        ok ? `All <strong>green</strong> · ${j.service} on :${j.port}`
+           : `<strong>Degraded</strong> · ${j.service || 'unknown'}`,
+        ok ? null : 'err'
+      );
+
+      setMetric('m-service',  j.service || '—', ok ? 'online' : 'offline', ok ? 'good' : 'bad');
+      setMetric('m-port',     j.port    || '—', 'listening',                ok ? 'good' : 'bad');
+      setMetric('m-auth',     j.auth_required ? 'on' : 'off',
+                              j.auth_required ? 'bearer required' : 'open public',
+                              j.auth_required ? 'warn' : 'good');
+      setMetric('m-platform', j.platform || '—', j.platform === 'win32' ? 'windows' : j.platform, 'good');
+
+      // Backends
+      const b = j.backends || {};
+      const backends = [
+        { name: 'unix socket',  alive: !!b.socket,  desc: '/tmp/xen-claude.sock' },
+        { name: 'tmux send-keys', alive: !!b.tmux,    desc: '~/.xen_tmux_target' },
+        { name: 'win pane inject', alive: !!b.winpane, desc: 'SendKeys + Clipboard' },
+      ];
+      $('backends').innerHTML = backends.map(x =>
+        `<div class="backend ${x.alive ? '' : 'dead'}">
+           <div class="glyph">${x.alive ? '◉' : '◎'}</div>
+           <div>
+             <div class="name">${x.name}</div>
+             <div class="state" style="font-size:9px;color:var(--dust);margin-top:2px;letter-spacing:.2em;">${x.desc}</div>
+           </div>
+           <div class="state">${x.alive ? 'live' : 'idle'}</div>
+         </div>`
+      ).join('');
+
+      addLog(ok ? 'INFO' : 'WARN', `health · port ${j.port} · ${j.auth_required ? 'auth on' : 'open'} · ${backends.filter(b=>b.alive).length}/3 backends`);
+    } catch (e) {
+      setBanner(`Cannot reach <strong>/health</strong> — ${e.message}`, 'err');
+      addLog('ERROR', `health fetch failed: ${e.message}`);
+      $('updated').textContent = 'failed';
+    }
+  }
+
+  fetchHealth();
+  setInterval(fetchHealth, 5000);
+</script>
+
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>
+
+

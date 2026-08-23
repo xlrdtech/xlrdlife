@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Omni Inject — Mobile Access Surface</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="One mobile surface: omni webhook contract, iOS share-sheet shortcut, and the truthful IPA/APK status. Inbound text fans to all 3 trinity panes + xql.">
+<meta name="theme-color" content="#07070a">
+<link rel="icon" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#07070a; --ink:#ececf2; --mut:#8b8b9a;
+    --steel1:#b8c0cc; --steel2:#6e7787; --gold:#d9b46a;
+    --gold1:#f4e2a8; --gold2:#b8923e; --line:rgba(255,255,255,.08);
+    --ok:#7fe3a3; --warn:#ffd479; --live:#5ad1a0; --bad:#ff8b8b;
+    --code:#0c0c12;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 620px at 72% -12%,#15151f 0%,#07070a 60%);
+    color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+    padding:42px 18px 100px;-webkit-font-smoothing:antialiased;min-height:100vh;
+  }
+  .wrap{max-width:920px;margin:0 auto}
+  .kick{letter-spacing:.34em;font-size:11px;color:var(--mut);text-transform:uppercase}
+  h1{
+    font-size:clamp(30px,6vw,50px);line-height:1.04;margin:10px 0 8px;font-weight:800;letter-spacing:-.01em;
+    background:linear-gradient(92deg,var(--steel1),#fff 28%,var(--gold1) 54%,var(--gold2) 80%,var(--steel2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{color:var(--mut);font-size:13.5px;max-width:680px}
+  .pill{display:inline-flex;align-items:center;gap:7px;margin:18px 0 4px;padding:6px 14px;border:1px solid rgba(90,209,160,.35);
+    border-radius:999px;background:rgba(90,209,160,.07);color:var(--live);font-size:12px;font-weight:700;letter-spacing:.04em}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 10px var(--live);animation:p 1.8s infinite}
+  @keyframes p{0%,100%{opacity:1}50%{opacity:.4}}
+
+  .map{margin:24px 0 10px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;
+    background:rgba(255,255,255,.02);font:12px/1.85 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--steel1);overflow-x:auto}
+  .map .g{color:#fff}
+
+  section{margin-top:34px}
+  .shead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .shead h2{font-size:21px;font-weight:750;letter-spacing:-.01em}
+  .shead .n{font:12px/1 ui-monospace,Menlo,monospace;color:var(--gold2);border:1px solid rgba(216,180,106,.3);
+    border-radius:7px;padding:5px 8px;flex:0 0 auto}
+  .shead .tag{font-size:12px;color:var(--mut)}
+  .lead{color:var(--mut);font-size:13.5px;margin:2px 0 14px}
+
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+    border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-top:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 22px 55px -32px #000}
+  .card h3{font-size:13px;letter-spacing:.05em;font-weight:700;margin-bottom:10px;color:#fff;display:flex;align-items:center;gap:8px}
+  .method{font:11px/1 ui-monospace,Menlo,monospace;font-weight:700;padding:4px 7px;border-radius:6px;flex:0 0 auto}
+  .m-get{color:var(--live);background:rgba(90,209,160,.12);border:1px solid rgba(90,209,160,.3)}
+  .m-post{color:var(--gold1);background:rgba(216,180,106,.12);border:1px solid rgba(216,180,106,.3)}
+
+  pre{position:relative;background:var(--code);border:1px solid var(--line);border-radius:11px;
+    padding:14px 14px;margin:10px 0;overflow-x:auto;font:12.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfd3e0}
+  pre .k{color:var(--gold1)} pre .s{color:#9fe6b8} pre .c{color:var(--mut)} pre .u{color:#9cc2ff}
+  .copy{position:absolute;top:8px;right:8px;font:11px/1 -apple-system,sans-serif;color:var(--steel1);
+    background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:7px;padding:6px 9px;cursor:pointer;transition:.15s}
+  .copy:hover{background:rgba(255,255,255,.12);color:#fff}
+  .copy.done{color:var(--ok);border-color:rgba(90,209,160,.4)}
+
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;color:var(--gold1);background:rgba(216,180,106,.1);padding:1px 6px;border-radius:5px}
+
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}
+  th,td{text-align:left;padding:9px 10px;border-top:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
+  td b{color:#fff;font-weight:600}
+  td .ep{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#cfd3e0}
+
+  ol.steps{list-style:none;counter-reset:s;margin-top:6px}
+  ol.steps li{counter-increment:s;position:relative;padding:11px 0 11px 40px;border-top:1px solid var(--line);font-size:13.6px;color:var(--ink)}
+  ol.steps li:first-child{border-top:none}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:10px;width:25px;height:25px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font:12px/1 ui-monospace,Menlo,monospace;font-weight:700;
+    color:var(--gold1);background:rgba(216,180,106,.1);border:1px solid rgba(216,180,106,.3)}
+  ol.steps li b{color:#fff}
+  ol.steps li .hint{display:block;color:var(--mut);font-size:12.5px;margin-top:3px}
+
+  .stat{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+  .stat:first-child{border-top:none}
+  .stat .badge{flex:0 0 auto;font:10.5px/1 ui-monospace,Menlo,monospace;font-weight:700;padding:5px 8px;border-radius:7px;text-transform:uppercase;letter-spacing:.05em}
+  .b-live{color:var(--live);background:rgba(90,209,160,.12);border:1px solid rgba(90,209,160,.35)}
+  .b-pend{color:var(--warn);background:rgba(255,212,121,.1);border:1px solid rgba(255,212,121,.32)}
+  .b-no{color:var(--bad);background:rgba(255,139,139,.1);border:1px solid rgba(255,139,139,.3)}
+  .stat .body b{color:#fff;font-weight:650}
+  .stat .body{font-size:13.5px}
+  .stat .body span{color:var(--mut)}
+  .stat a{color:var(--gold1);text-decoration:none;border-bottom:1px solid rgba(216,180,106,.4)}
+  .stat a:hover{color:#fff}
+
+  .note{margin-top:12px;padding:12px 14px;border-radius:11px;border:1px solid rgba(216,180,106,.26);
+    background:linear-gradient(180deg,rgba(216,180,106,.06),rgba(216,180,106,.01));font-size:13px;color:var(--ink);line-height:1.6}
+  .note b{color:var(--gold1)}
+  .key{margin-top:12px;padding:12px 14px;border-radius:11px;border:1px solid rgba(120,160,255,.25);
+    background:rgba(120,160,255,.05);font-size:13px;line-height:1.6}
+  .key b{color:#9cc2ff}
+
+  footer{margin-top:42px;color:var(--mut);font-size:12px;text-align:center;letter-spacing:.03em;line-height:1.7}
+  footer a{color:var(--steel1);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kick">Xen Fleet · Mobile Access Surface · 2026-06-12</div>
+  <h1>Omni Inject</h1>
+  <div class="sub">One mobile surface. Send text from any phone — it fans to all three trinity panes
+  (genesis / exodus / leviticus) plus the xql sink, in about one second. Webhook contract, the iOS
+  share-sheet shortcut, and the honest app-link status, all in one place.</div>
+  <div class="pill"><span class="dot"></span>WEBHOOK LIVE — verified through api.xlrd.org tunnel</div>
+
+  <div class="map">
+<span class="g">phone</span> → POST api.xlrd.org/api/omni/inject → <span class="g">xen-fanout</span> (single source of truth)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;→ resolve panes fresh → <span class="g">genesis %2</span> · <span class="g">exodus %3</span> · <span class="g">leviticus %4</span> + xql sink<br>
+spine: Mac 127.0.0.1:4441 omnimind ←(Cloudflare tunnel)— <span class="g">api.xlrd.org</span>
+  </div>
+
+  <!-- ============ SECTION 1: WEBHOOK CONTRACT ============ -->
+  <section id="webhook">
+    <div class="shead">
+      <span class="n">01</span>
+      <h2>Omni webhook contract</h2>
+      <span class="tag">base https://api.xlrd.org</span>
+    </div>
+    <div class="lead">Reads are open (no token). Writes are gated by the <code>X-Xen-Token</code> header.
+    Verified live 2026-06-12: authenticated inject returned <code>fanned:3 all3:true</code> through the public tunnel.</div>
+
+    <div class="card">
+      <h3><span class="method m-post">POST</span> /api/omni/inject &nbsp;<span style="color:var(--mut);font-weight:400">— fan to all 3 panes + xql</span></h3>
+      <table>
+        <tr><th style="width:110px">Header</th><td class="ep"><b>Content-Type:</b> application/json<br><b>X-Xen-Token:</b> &lt;XEN_API_TOKEN&gt; (64 chars, from ~/.xen/secrets.env, not in repo)</td></tr>
+        <tr><th>Body</th><td class="ep">{ "text": "...", "source": "..." } &nbsp;<span style="color:var(--mut)">(source optional, defaults "omni")</span></td></tr>
+        <tr><th>Returns</th><td class="ep">{ "ok":true, "fanned":3, "expected":3, "all3":true, "detail":"[FANOUT] ✓✓✓ ALL 3 +xql✓ genesis=%2 exodus=%3 leviticus=%4" }</td></tr>
+      </table>
+      <pre><button class="copy" data-c="curl">Copy</button><code class="c"># Inject one line to all 3 panes (replace TOKEN with the value from ~/.xen/secrets.env)</code>
+curl -X POST <span class="u">https://api.xlrd.org/api/omni/inject</span> \
+  -H <span class="s">'Content-Type: application/json'</span> \
+  -H <span class="s">'X-Xen-Token: TOKEN'</span> \
+  -d <span class="s">'{"text":"hello from my phone","source":"omni"}'</span></pre>
+      <div class="note"><b>Why this path:</b> <code>/api/omni/inject</code> routes through <code>xen-fanout</code>, the single
+      source-of-truth fanout that resolves panes fresh, hits all 3 with poll-until-idle + verify + retry, and appends to the
+      xql feed. It is the only inject path that feeds xql. (Alternates also exist on the spine:
+      <code>POST /api/route</code> with <code>{"role":"all","text":...}</code> also fans 3-of-3; <code>POST /api/inject</code> hits a single pane only.)</div>
+    </div>
+
+    <div class="card">
+      <h3>Reads <span style="color:var(--mut);font-weight:400">— open, no token, verified 200 JSON</span></h3>
+      <table>
+        <tr><th style="width:64px">Method</th><th>Endpoint</th><th>Returns</th></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="ep">/api/omni/feed?limit=N</td><td><b>the xql-feed stream</b> — {ok,feed:[{ts,label,body,fanned,ok}],count}</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="ep">/api/omni/threads</td><td>{ok,threads:[...]}</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="ep">/api/xql</td><td>panes + feed snapshot</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="ep">/api/omni/messages</td><td>message history</td></tr>
+      </table>
+      <pre><button class="copy" data-c="read">Copy</button><code class="c"># Read the live xql feed — no token needed</code>
+curl <span class="u">'https://api.xlrd.org/api/omni/feed?limit=5'</span></pre>
+      <div class="key"><b>Auth model:</b> a global middleware gates every write method (POST / PUT / DELETE / PATCH) on the
+      <code>X-Xen-Token</code> header; <code>GET / HEAD / OPTIONS</code> are open. A missing or wrong token returns
+      <code>401 {"error":"unauthorized"}</code> — confirmed both locally and through the api.xlrd.org tunnel.</div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2: iOS SHORTCUT ============ -->
+  <section id="shortcut">
+    <div class="shead">
+      <span class="n">02</span>
+      <h2>iOS share-sheet shortcut</h2>
+      <span class="tag">build by hand in ~60 seconds</span>
+    </div>
+    <div class="lead">Select text or hit Share in any app → <b>Omni Inject</b> → the content fans to all 3 panes.
+    No App Store, no signing — built straight in the Shortcuts app.</div>
+
+    <div class="key"><b>The one value you paste:</b> the <code>XEN_API_TOKEN</code> value from the Mac at
+    <code>~/.xen/secrets.env</code> (the text after <code>XEN_API_TOKEN=</code>). It goes into the Shortcut's
+    <code>X-Xen-Token</code> header where the recipe says <code>PASTE_XEN_API_TOKEN_HERE</code>. The real token is
+    never committed and is not in this file or any repo.</div>
+
+    <div class="card">
+      <h3>Recipe</h3>
+      <ol class="steps">
+        <li>Open the <b>Shortcuts</b> app → tap <b>+</b> → name it <b>Omni Inject</b>.</li>
+        <li>Tap <b>(i)</b> / Details → turn ON <b>Show in Share Sheet</b>.
+          <span class="hint">Accept Text, URLs, and Safari web pages as the share types. This makes it appear in every app's Share button.</span></li>
+        <li>Add action <b>Receive</b> → "Receive <b>Text and URLs</b> from <b>Share Sheet</b>".
+          <span class="hint">Set "If there's no input" → <b>Ask For Text</b> so you can also run it standalone. This produces the variable Shortcut Input.</span></li>
+        <li>Add action <b>Text</b> → insert the <b>Shortcut Input</b> variable.
+          <span class="hint">Coerces the input to a clean string before JSON encoding.</span></li>
+        <li>Add action <b>Get Contents of URL</b> → URL <code>https://api.xlrd.org/api/omni/inject</code> → Show More → Method <b>POST</b>.
+          <span class="hint">Add header: X-Xen-Token = PASTE_XEN_API_TOKEN_HERE. (Content-Type is set automatically when Request Body = JSON.)</span></li>
+        <li>Request Body: <b>JSON</b> → add field, key <code>text</code>, value = the <b>Text</b> variable (key <code>source</code> = <code>omni</code> optional).</li>
+        <li>(Optional) Add <b>Get Dictionary Value</b> for key <code>fanned</code> from the response → <b>Show Notification</b> "Injected to {fanned}/3 panes".</li>
+        <li>Done. In any app: select text or Share → <b>Omni Inject</b>. Expect <code>fanned 3</code>, <code>all3 true</code>.</li>
+      </ol>
+    </div>
+
+    <div class="note"><b>Why no .shortcut file is shipped:</b> an iCloud shortcut link / signed
+    <code>.shortcut</code> plist can only be minted on a logged-in Apple device (it embeds an Apple signing blob) — it cannot be
+    generated headlessly. The 8-step recipe reproduces the identical shortcut with zero Apple-signing dependency. Once built on
+    the device, tap its Share button → <b>Copy iCloud Link</b> to share it off-device. Full text spec also lives at
+    <code>/inject/shortcut.md</code>.</div>
+  </section>
+
+  <!-- ============ SECTION 3: APP STATUS ============ -->
+  <section id="apps">
+    <div class="shead">
+      <span class="n">03</span>
+      <h2>App download status</h2>
+      <span class="tag">truthful — no fake links</span>
+    </div>
+    <div class="lead">The mobile webhook above needs nothing installed. These are the native VVSVEI shells.
+    Status verified 2026-06-12. Links are shown only where a real, reachable file exists.</div>
+
+    <div class="card">
+      <div class="stat">
+        <span class="badge b-live">APK live</span>
+        <div class="body">
+          <b>Android — real downloadable link.</b>
+          <span>Live now: <a href="https://hitthe.link/vvsvei/vvsvei.apk">hitthe.link/vvsvei/vvsvei.apk</a>
+          — HTTP 200, application/vnd.android.package-archive, 12,789 bytes. A real APK (WebView shell pointed at the VVSVEI surface).
+          Caveat: it is <b>debug-signed</b> and a minimal shell — sideload-installable (adb install / tap-to-install), but not Google-Play publishable.</span>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="badge b-no">No IPA link</span>
+        <div class="body">
+          <b>iOS — no public download link exists.</b>
+          <span>Every hitthe.link IPA URL is 404 (verified). The only iOS build is an <b>unsigned</b> GitHub Actions artifact in
+          <code>xlrdtech/xen-vvsvei-ios</code> (requires GitHub login; sideload-only via AltStore + free Apple ID). There is intentionally
+          no tap-to-install iOS link here because one does not truthfully exist yet.</span>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="badge b-pend">CI in progress</span>
+        <div class="body">
+          <b>Automated app pipeline — pending / red.</b>
+          <span>The live APK was hand-committed into the Pages repo, not produced by CI. The Android "Build APK" workflow last
+          completed with a Gradle failure; a fresh run was in progress at check time. The shippable (Play / App Store) builds remain
+          a work in progress — this is the demoable-vs-shippable gap, stated honestly.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="note"><b>Bottom line:</b> for mobile access you do not need an app — use the iOS shortcut (section 02) or the raw webhook
+    (section 01). The Android APK is a real, live, sideloadable demo link today. A signed, store-publishable iOS/Android build is pending.</div>
+  </section>
+
+  <footer>
+    Mobile access surface · hitthe.link/inject · webhook verified live through api.xlrd.org<br>
+    No live secret in repo. No fabricated links. Sibling surfaces: <a href="/xql/">/xql</a> · <a href="/life/">/life</a>
+  </footer>
+</div>
+
+<script>
+  var snippets = {
+    curl: "curl -X POST https://api.xlrd.org/api/omni/inject \\\n  -H 'Content-Type: application/json' \\\n  -H 'X-Xen-Token: TOKEN' \\\n  -d '{\"text\":\"hello from my phone\",\"source\":\"omni\"}'",
+    read: "curl 'https://api.xlrd.org/api/omni/feed?limit=5'"
+  };
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var txt = snippets[btn.dataset.c] || '';
+      navigator.clipboard.writeText(txt).then(function(){
+        var o = btn.textContent; btn.textContent = 'Copied'; btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = o; btn.classList.remove('done'); }, 1400);
+      });
+    });
+  });
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gen Stack — what each generator actually costs</title>
+<meta name="theme-color" content="#07080b" />
+<style>
+  :root{--bg:#07080b;--panel:#0e1016;--line:#1c2030;--ink:#eef1f7;--dim:#8b93a7;--warn:#f0b73f;--ok:#5f9f74;--hot:#d4696b;
+  --sheen:linear-gradient(135deg,#cfd6e6 0%,#8d97ad 28%,#eef2fa 52%,#79839b 76%,#c3cbdd 100%)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 ui-sans-serif,-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;padding:28px 18px 64px}
+  .wrap{width:100%;max-width:700px;display:flex;flex-direction:column;align-items:center;text-align:center}
+  h1{margin:0 0 4px;font-size:clamp(26px,6.5vw,38px);letter-spacing:-.02em;font-weight:700;
+  background:var(--sheen);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:13.5px;margin:0 0 22px}
+  h2{width:100%;margin:28px 0 10px;font-size:12.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);text-align:center}
+  p{width:100%;text-align:left;margin:0 0 12px}
+  .tw{width:100%;overflow-x:auto;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:440px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+  td b{color:var(--ink)}
+  code{background:#0a0c12;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:13px}
+  .card{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 16px;text-align:left;margin-bottom:9px}
+  .card b{display:block;margin-bottom:3px}
+  .card span{color:var(--dim);font-size:14px}
+  .note{width:100%;border:1px solid var(--line);border-left:3px solid var(--warn);background:#12141c;border-radius:10px;
+  padding:12px 14px;margin:16px 0;color:var(--dim);font-size:13.5px;text-align:left}
+  .note b{color:var(--warn)}
+  .big{font-size:23px;font-weight:700;color:var(--ink)}
+  a{color:#9fb4d8}
+  .src{width:100%;text-align:left;font-size:12.5px;color:#5b6377;margin-top:6px}
+  .src a{color:#7d8ba6}
+  footer{margin-top:26px;color:#5b6377;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Gen Stack</h1>
+  <p class="sub">What each generator actually costs &middot; priced 27 Jul 2026</p>
+
+  <div class="note">
+    <b>Read the unit, not the sticker.</b> These tools price three different ways &mdash; per
+    second, per credit, and per month &mdash; which makes the headline numbers useless for
+    comparison. Everything below is normalised to <b>what a 3-minute music video costs</b>.
+  </div>
+
+  <h2>Scenes &mdash; Grok Imagine</h2>
+  <div class="tw"><table>
+    <tr><th>Item</th><th>Price</th></tr>
+    <tr><td>Image, standard 1K</td><td><b>$0.02</b></td></tr>
+    <tr><td>Image, pro</td><td><b>$0.07</b></td></tr>
+    <tr><td>Video 480p</td><td><b>$0.05 / sec</b> &mdash; ~$3.00/min</td></tr>
+    <tr><td>Video 720p</td><td><b>$0.07 / sec</b> &mdash; ~$4.20/min</td></tr>
+    <tr><td>6-second clip</td><td><b>$0.30</b>, native audio included</td></tr>
+  </table></div>
+  <p>This is the cheap leg, and native audio is included. <b>Caveat that matters:</b>
+  <code>grok-imagine-video</code> is in limited availability &mdash; confirm access before
+  building a pipeline that depends on it.</p>
+
+  <h2>Video &amp; avatars &mdash; Higgsfield</h2>
+  <div class="tw"><table>
+    <tr><th>Plan</th><th>Cost</th><th>Credits/mo</th></tr>
+    <tr><td>Starter</td><td><b>$15</b></td><td>200</td></tr>
+    <tr><td>Plus</td><td><b>$39</b></td><td>1,000</td></tr>
+    <tr><td>Ultra</td><td><b>$99</b></td><td>3,000</td></tr>
+  </table></div>
+  <p>Credits reset monthly and <b>do not roll over</b>. Top-ups ~$5 per 100 credits and those
+  expire in 90 days. Burn rate is the whole story: <b>Kling 3.0 ~6 credits</b> a video, but
+  <b>Sora 2 / Veo 3.1 cost 40&ndash;70 credits each</b> &mdash; so the $15 tier is ~33 Kling clips
+  or as few as <b>3 Veo clips</b>.</p>
+
+  <h2>Lip sync &mdash; the gap you named</h2>
+  <div class="tw"><table>
+    <tr><th>Tool</th><th>Price</th><th>Best at</th></tr>
+    <tr><td><b>Sync.so</b></td><td>from $5.99, usage-based</td><td><b>Pipelines</b> &mdash; built for programmatic use</td></tr>
+    <tr><td><b>Magic Hour</b></td><td>400 free credits, no card</td><td><b>Real footage</b> + the most generous free tier</td></tr>
+    <tr><td><b>VEED Fabric 1.0</b></td><td>$0.15 / sec</td><td>Fastest tested &mdash; 46&ndash;68% quicker than rivals</td></tr>
+    <tr><td><b>HeyGen</b></td><td>$0.10 / sec <i>+ $100/mo API min</i></td><td>Multilingual avatars, 175+ languages</td></tr>
+  </table></div>
+  <p>Cheapest per second is <b>not</b> cheapest overall: HeyGen's $0.10 beats VEED's $0.15, but
+  the <b>$100/month API floor</b> means VEED wins until you're doing ~2,000 sec/month.</p>
+
+  <h2>The actual number &mdash; one 3-min video</h2>
+  <div class="card"><b>Scenes (Grok, 180s @ 720p)</b><span>180 &times; $0.07 = <b>$12.60</b></span></div>
+  <div class="card"><b>Lip sync (VEED Fabric)</b><span>180 &times; $0.15 = <b>$27.00</b></span></div>
+  <div class="card"><b>Lip sync (Sync.so, usage-based)</b><span>likely lower &mdash; quote it before committing</span></div>
+  <div class="card"><b>Synthesis / script (NotebookLM)</b><span><b>$0</b> on the free tier</span></div>
+  <p class="big">≈ $40 per finished 3-minute video</p>
+  <p>The lip-sync step costs <b>more than twice the scene generation</b>. That inverts the
+  intuition &mdash; the expensive part isn't making the footage, it's making the mouths match.
+  Which is also the one stage you didn't have a tool picked for.</p>
+
+  <div class="note">
+    <b>Verify two things before you buy.</b> Higgsfield's tier names differ across sources
+    (Starter/Plus/Ultra vs Pro/Max) and monthly billing runs 21&ndash;26% above the annual price
+    shown first on their page. And Grok video access is gated. Both are worth a 60-second check
+    against the vendor's own pricing page.
+  </div>
+
+  <div class="src">
+    Sources:
+    <a href="https://www.scopeful.org/tools/higgsfield">Scopeful — Higgsfield pricing</a> ·
+    <a href="https://www.imagine.art/blogs/higgsfield-ai-pricing">imagine.art — Higgsfield credits</a> ·
+    <a href="https://openrouter.ai/x-ai/grok-imagine-video">OpenRouter — Grok Imagine Video</a> ·
+    <a href="https://poyo.ai/comparison/grok-imagine-api-pricing">PoYo — Grok Imagine API pricing</a> ·
+    <a href="https://www.veed.io/learn/best-lipsync-api">VEED — best lip-sync API</a> ·
+    <a href="https://magichour.ai/blog/best-ai-lip-sync-tools">Magic Hour — lip-sync tools tested</a> ·
+    <a href="https://crazyrouter.com/en/blog/ai-lip-sync-tools-comparison-2026">Crazyrouter — lip-sync comparison</a>
+  </div>
+
+  <footer>priced 27 Jul 2026 &middot; check vendor pages before purchase</footer>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

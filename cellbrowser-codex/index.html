@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CellBrowser · Codex Handoff</title>
+<style>
+  :root{
+    --bg:#070b0a; --glass:rgba(18,28,25,.62); --line:rgba(58,210,159,.22);
+    --green:#3ad29f; --green2:#7ef0c6; --ink:#e8f5ef; --mut:#8fa79d; --gold:#e9c46a;
+  }
+  *{box-sizing:border-box; overflow-wrap:break-word; word-break:normal; hyphens:none;}
+  html,body{margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;}
+  body{background:
+    radial-gradient(900px 600px at 82% -8%,rgba(58,210,159,.14),transparent 60%),
+    radial-gradient(700px 500px at -8% 18%,rgba(126,240,198,.08),transparent 55%),var(--bg);
+    min-height:100vh; padding:0 0 80px;}
+  a{color:var(--green2); text-decoration:none;} a:hover{text-decoration:underline;}
+  .wrap{max-width:1060px; margin:0 auto; padding:0 22px;}
+  header{padding:54px 0 26px; text-align:center;}
+  .eyebrow{letter-spacing:.34em; text-transform:uppercase; font-size:11px; color:var(--green);
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;}
+  h1{font-size:clamp(30px,5vw,50px); margin:.28em 0 .12em; font-weight:800; letter-spacing:-.02em;
+    background:linear-gradient(92deg,#fff,var(--green2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+  .sub{color:var(--mut); font-size:16px; max-width:680px; margin:0 auto;}
+  .card{background:var(--glass); border:1px solid var(--line); border-radius:18px;
+    padding:24px 26px; margin:20px 0; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    box-shadow:0 18px 50px rgba(0,0,0,.36);}
+  h2{font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:var(--green);
+    margin:0 0 14px; font-family:"SF Mono",ui-monospace,Menlo,monospace;}
+  .row{display:flex; gap:14px; flex-wrap:wrap; align-items:center; justify-content:center;}
+  .btn{display:inline-flex; align-items:center; gap:9px; cursor:pointer; border:none;
+    font:600 15px/1 inherit; padding:14px 22px; border-radius:13px; transition:.16s; text-decoration:none;}
+  .btn.primary{background:linear-gradient(92deg,var(--green),#28b487); color:#04130d;}
+  .btn.primary:hover{filter:brightness(1.08); transform:translateY(-1px);}
+  .btn.ghost{background:rgba(58,210,159,.08); color:var(--green2); border:1px solid var(--line);}
+  .btn.ghost:hover{background:rgba(58,210,159,.16);}
+  .promptbox{position:relative;}
+  pre.prompt{white-space:pre-wrap; background:#040706; border:1px solid var(--line); border-radius:14px;
+    padding:20px 20px 20px; max-height:420px; overflow:auto; font:13px/1.5 "SF Mono",ui-monospace,Menlo,monospace;
+    color:#cfe9df; margin:0;}
+  .copybar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px; flex-wrap:wrap;}
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+  @media(max-width:720px){.grid{grid-template-columns:1fr;}}
+  .gods{border:1px solid var(--line); border-radius:13px; padding:14px 16px; background:rgba(7,13,11,.5);}
+  .gods b{color:var(--green2);} .gods .t{font-size:12px; color:var(--mut); font-family:"SF Mono",monospace;}
+  .gods ol{margin:8px 0 0; padding-left:20px; font-size:13.5px; color:#cfe2da;}
+  .sched{display:flex; flex-wrap:wrap; gap:8px; justify-content:center;}
+  .pill{font:600 13px/1 "SF Mono",ui-monospace,monospace; padding:8px 11px; border-radius:9px;
+    background:rgba(58,210,159,.09); border:1px solid var(--line); color:var(--green2);}
+  .pill.gap{opacity:.4; background:transparent; border-style:dashed; color:var(--mut);}
+  .note{color:var(--mut); font-size:13.5px;}
+  .toast{position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px);
+    background:var(--green); color:#04130d; font-weight:700; padding:13px 22px; border-radius:12px;
+    opacity:0; pointer-events:none; transition:.25s; box-shadow:0 12px 30px rgba(0,0,0,.4); z-index:9;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  footer{text-align:center; color:var(--mut); font-size:12.5px; margin-top:30px;
+    font-family:"SF Mono",monospace;}
+  .links{display:flex; gap:18px; justify-content:center; flex-wrap:wrap; margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Exedus · Xen · CellBrowser</div>
+    <h1>Codex Handoff</h1>
+    <p class="sub">One copy → paste into Codex. It drives the Comet browser's Perplexity Assistant across the G.O.D.S. grid on qi's angel schedule. No human in the loop after handoff.</p>
+  </header>
+
+  <div class="card promptbox">
+    <div class="copybar">
+      <h2 style="margin:0">The Codex prompt</h2>
+      <div class="row">
+        <button class="btn primary" onclick="copyPrompt()">⧉ Copy prompt</button>
+        <a class="btn ghost" href="https://chatgpt.com/codex" target="_blank" rel="noopener">Open Codex ↗</a>
+      </div>
+    </div>
+    <pre class="prompt" id="prompt"></pre>
+  </div>
+
+  <div class="card">
+    <h2>The G.O.D.S. grid · 4 tabs × 9 cells</h2>
+    <div class="grid">
+      <div class="gods"><div class="t">TAB 1</div><b>GENERATE</b> — creation/drafting
+        <ol><li>Perplexity</li><li>ChatGPT</li><li>Claude</li><li>Gemini</li><li>Grok</li><li>Suno</li><li>NotebookLM</li><li>Sora</li><li>Canva</li></ol></div>
+      <div class="gods"><div class="t">TAB 2</div><b>OPERATE</b> — execution/management
+        <ol><li>Sintra</li><li>Asana</li><li>Perplexity Labs</li><li>Google Docs</li><li>Sheets</li><li>Notion</li><li>GitHub</li><li>n8n</li><li>Raindrop</li></ol></div>
+      <div class="gods"><div class="t">TAB 3</div><b>DISTRIBUTE</b> — push outputs
+        <ol><li>Spark</li><li>Beeper</li><li>Beside</li><li>Google Voice</li><li>Gmail</li><li>X</li><li>Facebook</li><li>LinkedIn</li><li>YouTube Studio</li></ol></div>
+      <div class="gods"><div class="t">TAB 4</div><b>SYSTEM</b> — Xen orchestration
+        <ol><li>Omnimind</li><li>TUI</li><li>MCP hub</li><li>hitthe.link</li><li>VVSVEI</li><li>XUI</li><li>Mac MCP</li><li>Nitro11</li><li>Cloudflare</li></ol></div>
+    </div>
+    <p class="note" style="margin-top:14px">Live grid source: <a href="links.md">links.md</a> — Codex fetches this each run so the cells stay current.</p>
+  </div>
+
+  <div class="card">
+    <h2>The angel schedule · 16 daily fires</h2>
+    <div class="sched">
+      <span class="pill">00:12</span><span class="pill">01:11</span><span class="pill">02:22</span><span class="pill">03:33</span><span class="pill">04:44</span><span class="pill">05:55</span>
+      <span class="pill gap">· deep work ·</span>
+      <span class="pill">10:10</span><span class="pill">11:11</span><span class="pill">12:12</span><span class="pill">13:11</span><span class="pill">14:22</span><span class="pill">15:33</span><span class="pill">16:44</span><span class="pill">17:55</span>
+      <span class="pill gap">· deep work ·</span>
+      <span class="pill">22:10</span><span class="pill">23:11</span>
+    </div>
+    <p class="note" style="text-align:center; margin-top:14px">Angel numbers 1:11 · 2:22 · 3:33 · 4:44 · 5:55 · 10:10 · 11:11 · 12:12, each AM + PM. Tab rotates G→O→D→S per fire (full grid swept every 4 pulses). Ready plist: <a href="com.xen.cellbrowser-angel-loop.plist">com.xen.cellbrowser-angel-loop.plist</a>.</p>
+  </div>
+
+  <footer>
+    Exedus / Xen · hand off once, runs on the angel cadence
+    <div class="links">
+      <a href="codex-prompt.md">raw prompt .md</a>
+      <a href="links.md">grid links</a>
+      <a href="/">hitthe.link</a>
+    </div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">Prompt copied — paste into Codex</div>
+
+<script>
+// Full Codex prompt embedded verbatim (kept in sync with codex-prompt.md)
+const PROMPT = String.raw`# CODEX PROMPT — CellBrowser omnitab loop via Comet + Perplexity Assistant
+> Paste into Codex (computer-use agent). It drives the Comet browser's built-in Perplexity Assistant to run the CellBrowser G.O.D.S. workflows on a scheduled loop. qi 2026-05-31.
+
+## ROLE
+You are an autonomous computer-use operator running on qi's Mac. Your body is the Comet browser (Perplexity's agentic browser at /Volumes/X31/Applications/Comet.app). You drive Comet's built-in Perplexity Assistant to execute the CellBrowser G.O.D.S. workflow grid, then report results back to Xen. No human in the loop.
+
+## THE CELLBROWSER MODEL
+CellBrowser = ONE browser, 4 tabs, each tab a 3×3 grid of 9 "cells" (36 cells total) + 1 dedicated Sintra cell. The four tabs are G.O.D.S.:
+- GENERATE — Perplexity, ChatGPT, Claude, Gemini, Grok, Suno, NotebookLM, Sora, Canva
+- OPERATE — Sintra, Asana, Perplexity Labs, Docs, Sheets, Notion, GitHub, n8n, Raindrop
+- DISTRIBUTE — Spark, Beeper, Beside, Google Voice, Gmail, X, Facebook, LinkedIn, YouTube Studio
+- SYSTEM — Omnimind (api.xlrd.org), TUI, MCP hub, hitthe.link, VVSVEI, XUI, Nitro11, Cloudflare
+Fetch the live grid at https://hitthe.link/cellbrowser-codex/links.md at the start of every run.
+
+## EACH LOOP ITERATION
+1. Launch/focus Comet (open -a Comet). Confirm frontmost.
+2. Open the active G.O.D.S. tab's 9 cell URLs (from links.md) as tabs/panes.
+3. Invoke the Perplexity Assistant (Comet sidebar AI). Give it the per-cell omnitab task — GENERATE=draft, OPERATE=advance, DISTRIBUTE=post, SYSTEM=health-check.
+4. Capture each cell's output + screenshot for evidence.
+5. Rotate the active tab each iteration: Generate → Operate → Distribute → System (full grid swept every 4 iterations).
+6. Report to Xen: curl -s -X POST https://api.xlrd.org/api/dictate-inject -H 'content-type: application/json' -d '{"text":"[CELLBROWSER PULSE] <tab>: <one-line result per cell>","source":"codex-cellbrowser"}'
+7. Persist artifacts verbatim into /Volumes/X31/xen-vault/root/notes_/histories/cellbrowser-pulses/<ISO-date>.md (dated, verbatim).
+
+## RELIABILITY RULES (qi canon)
+- Never miss / no silent failure: log + retry once, never drop silently.
+- Parallel where safe: open cells concurrently.
+- Verbatim + dated: full text + timestamp on everything.
+- Comet only (XenBrowser is broken); Perplexity Assistant is the in-browser driver.
+- Idempotent: track last-seen state per cell; report only what's NEW.
+
+## SCHEDULE — THE ANGEL SCHEDULE (qi 2026-05-31)
+Fire one iteration at each of these 16 daily times (24h, America/New_York):
+00:12 01:11 02:22 03:33 04:44 05:55  10:10 11:11 12:12 13:11 14:22 15:33 16:44 17:55  22:10 23:11
+Angel numbers 1:11/2:22/3:33/4:44/5:55/10:10/11:11/12:12, each AM+PM. Gaps 5:55→10:10 (AM+PM) are deep-work windows — do NOT fill them. (Separate 19:00 Pulse is for workflow critique; CellBrowser does NOT fire at 7 PM.)
+Implement as launchd StartCalendarInterval (16 {Hour,Minute} dicts), NOT StartInterval. Rotate the G.O.D.S. tab per tick.
+
+## SUCCESS = each pulse leaves: (a) a dated verbatim artifact in cellbrowser-pulses/, (b) a [CELLBROWSER PULSE] line injected to Xen/omnimind, (c) screenshots as evidence, (d) zero silent drops.`;
+
+document.getElementById('prompt').textContent = PROMPT;
+function copyPrompt(){
+  navigator.clipboard.writeText(PROMPT).then(()=>{
+    const t=document.getElementById('toast'); t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2200);
+  }).catch(()=>{
+    const r=document.createRange(); r.selectNode(document.getElementById('prompt'));
+    getSelection().removeAllRanges(); getSelection().addRange(r);
+    try{document.execCommand('copy');}catch(e){}
+    const t=document.getElementById('toast'); t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2200);
+  });
+}
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

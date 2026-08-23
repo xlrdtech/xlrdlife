@@ -1,0 +1,2365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExtendLM Optimizer | Advanced Scope Merger</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3b82f6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #070913;
+      --bg-surface: rgba(15, 23, 42, 0.45);
+      --bg-card: rgba(30, 41, 59, 0.45);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(59, 130, 246, 0.35);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.5);
+      --secondary: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-outfit: 'Outfit', sans-serif;
+      --font-inter: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 40%);
+      color: var(--text-main);
+      font-family: var(--font-inter);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    header {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 2.25rem;
+      height: 2.25rem;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .brand-logo svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      stroke: #fff;
+    }
+
+    .brand h1 {
+      font-family: var(--font-outfit);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      background: linear-gradient(to right, #ffffff, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand span {
+      font-size: 0.75rem;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid var(--primary);
+      color: #93c5fd;
+      padding: 0.15rem 0.4rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+
+    .ext-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      color: var(--text-muted);
+      margin-left: 0.75rem;
+    }
+
+    .ext-status .status-dot {
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 50%;
+      background: var(--text-muted);
+      display: inline-block;
+    }
+
+    .ext-status.connected {
+      border-color: var(--success);
+      color: var(--success);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+    }
+
+    .ext-status.connected .status-dot {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .ext-status.connecting {
+      border-color: var(--warning);
+      color: var(--warning);
+    }
+
+    .ext-status.connecting .status-dot {
+      background: var(--warning);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.6; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.6; }
+    }
+
+    .nav-tabs {
+      display: flex;
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: 0.75rem;
+      padding: 0.25rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .nav-tab {
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.5rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-outfit);
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-main);
+    }
+
+    .nav-tab.active {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    }
+
+    .nav-tab svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Banner / Alerts */
+    .alert-banner {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(6, 182, 212, 0.05) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .alert-content {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .alert-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .alert-text h3 {
+      font-family: var(--font-outfit);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.15rem;
+    }
+
+    .alert-text p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .alert-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .alert-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Cards Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .metric-card {
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 140px;
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      opacity: 0;
+    }
+
+    .metric-card:hover::before {
+      opacity: 1;
+    }
+
+    .metric-card:hover {
+      border-color: rgba(59, 130, 246, 0.25);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-icon {
+      color: var(--primary);
+      opacity: 0.8;
+    }
+
+    .metric-value {
+      font-family: var(--font-outfit);
+      font-size: 2.25rem;
+      font-weight: 800;
+      margin: 0.5rem 0 0.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .metric-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .accent-cyan .metric-icon { color: var(--secondary); }
+    .accent-green .metric-icon { color: var(--success); }
+    .accent-amber .metric-icon { color: var(--warning); }
+
+    /* Work Area Grid */
+    .workspace-layout {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 968px) {
+      .workspace-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sidebar controls */
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .panel-card {
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .panel-card h2 {
+      font-family: var(--font-outfit);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Tab Selector inside Cards */
+    .conn-tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 0.15rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .conn-tab-btn {
+      flex: 1;
+      padding: 0.4rem 0.25rem;
+      font-size: 0.75rem;
+      font-family: var(--font-outfit);
+      font-weight: 600;
+      color: var(--text-muted);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 0.35rem;
+      text-align: center;
+    }
+
+    .conn-tab-btn.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    /* File Drop Zone */
+    .dropzone {
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 0.75rem;
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(30, 41, 59, 0.2);
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.05);
+      box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.1);
+    }
+
+    .dropzone svg {
+      width: 2.25rem;
+      height: 2.25rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-muted);
+    }
+
+    .dropzone p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .dropzone span {
+      color: var(--primary);
+      font-weight: 500;
+      font-size: 0.85rem;
+    }
+
+    /* Form fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-select, .form-input {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 0.65rem 0.85rem;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.6rem;
+      font-family: var(--font-outfit);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #2563eb);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #047857);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-success:hover:not(:disabled) {
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Group list on main content */
+    .main-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .section-title {
+      font-family: var(--font-outfit);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .group-card {
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+    }
+
+    .group-card.modified {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
+    }
+
+    .group-header {
+      background: rgba(30, 41, 59, 0.35);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .group-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .group-tag {
+      background: rgba(6, 182, 212, 0.1);
+      color: var(--secondary);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      padding: 0.25rem 0.6rem;
+      border-radius: 0.5rem;
+      font-family: var(--font-outfit);
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .group-title {
+      font-family: var(--font-outfit);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .group-stats {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 1rem;
+    }
+
+    .group-stats span {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .group-toggle-icon {
+      transition: transform 0.2s;
+    }
+
+    .group-card.collapsed .group-toggle-icon {
+      transform: rotate(-90deg);
+    }
+
+    .group-body {
+      padding: 1rem 1.5rem;
+    }
+
+    .group-card.collapsed .group-body {
+      display: none;
+    }
+
+    /* Notebook Rows */
+    .notebook-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 150px 150px;
+      align-items: center;
+      padding: 0.75rem 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 0.5rem;
+    }
+
+    .notebook-row:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .notebook-row:last-child {
+      border-bottom: none;
+    }
+
+    .nb-select {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nb-title-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .nb-name {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .nb-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .nb-sources-col {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge-sources {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+    }
+
+    .badge-sources.limit-alert {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .nb-target-col {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Custom Checkboxes/Radios */
+    .custom-checkbox, .custom-radio {
+      appearance: none;
+      width: 1.1rem;
+      height: 1.1rem;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 0.25rem;
+      outline: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .custom-radio {
+      border-radius: 50%;
+    }
+
+    .custom-checkbox:checked {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .custom-checkbox:checked::after {
+      content: '✓';
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .custom-radio:checked {
+      border-color: var(--secondary);
+    }
+
+    .custom-radio:checked::after {
+      content: '';
+      width: 0.5rem;
+      height: 0.5rem;
+      background: var(--secondary);
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    /* Table styling for Database Viewer */
+    .table-container {
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .table-header {
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(30, 41, 59, 0.25);
+    }
+
+    .table-search {
+      position: relative;
+      max-width: 320px;
+      width: 100%;
+    }
+
+    .table-search input {
+      padding-left: 2.25rem;
+    }
+
+    .table-search svg {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      width: 1rem;
+      height: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      font-family: var(--font-outfit);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.85rem;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .source-type-tag {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .source-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 50%;
+    }
+
+    .status-ready { color: var(--success); }
+    .status-ready .status-dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+    /* Schema mapping visualizer */
+    .schema-mapper-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    .json-visualizer {
+      background: #05070f;
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #93c5fd;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    /* Modal / Popups */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-container {
+      background: #0f172a;
+      border: 1px solid var(--border-glow);
+      border-radius: 1.25rem;
+      max-width: 600px;
+      width: 90%;
+      padding: 2rem;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      transform: translateY(-20px);
+      transition: transform 0.3s;
+    }
+
+    .modal-overlay.active .modal-container {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .modal-header h3 {
+      font-family: var(--font-outfit);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      color: #fff;
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .modal-body strong {
+      color: #fff;
+    }
+
+    .modal-footer {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+
+    /* PWA Install Promo */
+    .pwa-promo {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #0f172a;
+      border: 1px solid var(--border-glow);
+      border-radius: 0.75rem;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+    }
+
+    .toast.active {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast-icon {
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toast-success { border-color: var(--success); }
+    .toast-success .toast-icon { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .toast-error { border-color: var(--error); }
+    .toast-error .toast-icon { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+
+    footer {
+      margin-top: auto;
+      background: rgba(15, 23, 42, 0.3);
+      border-top: 1px solid var(--border-color);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .demo-ribbon {
+      background: var(--warning);
+      color: #000;
+      font-weight: 700;
+      font-size: 0.7rem;
+      padding: 0.15rem 1rem;
+      position: absolute;
+      top: 15px;
+      right: -30px;
+      transform: rotate(45deg);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/>
+          <path d="M6 21V9a9 9 0 0 0 9 9"/>
+        </svg>
+      </div>
+      <div>
+        <h1>ExtendLM Optimizer</h1>
+      </div>
+      <div class="ext-status" id="extStatus" style="cursor: pointer;" onclick="openInstructions()" title="Click to view connection instructions">
+        <span class="status-dot"></span>
+        <span class="status-text" id="extStatusText">Extension Offline</span>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('planner')">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/>
+        </svg>
+        Merge Planner
+      </button>
+      <button class="nav-tab" onclick="switchTab('inspector')">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+        </svg>
+        Database Inspector
+      </button>
+      <button class="nav-tab" onclick="switchTab('mapper')">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+        </svg>
+        Schema Customizer
+      </button>
+    </div>
+
+    <button class="alert-btn" id="installBtn" style="display: none;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Install App
+    </button>
+  </header>
+
+  <main>
+    <!-- Welcome Info Alert -->
+    <div class="alert-banner" id="welcomeBanner">
+      <div class="alert-content">
+        <div class="alert-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </div>
+        <div class="alert-text">
+          <h3>Welcome to ExtendLM Scope-Merger</h3>
+          <p>Optimize your Google NotebookLM slots by merging notebooks with fewer than 100 sources. Choose a database connection method below to start planning.</p>
+        </div>
+      </div>
+      <button class="alert-btn" onclick="openInstructions()">
+        Instructions Guide
+      </button>
+    </div>
+
+    <!-- Demo / Offline Status Warning Banner -->
+    <div class="alert-banner" id="demoBanner" style="background: linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%); border: 1px solid rgba(245, 158, 11, 0.3); margin-top: -0.75rem; margin-bottom: -0.75rem;">
+      <div class="alert-content">
+        <div class="alert-icon" style="color: var(--warning); background: rgba(245, 158, 11, 0.2);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="alert-text">
+          <h3 id="demoBannerTitle" style="color: var(--warning);">Offline / Not Synced (Showing Demo Data)</h3>
+          <p id="demoBannerDesc">The app is not connected to your live Google account. Log in to NotebookLM first or load your backup JSON file to see your real notebooks.</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="https://notebooklm.google.com" target="_blank" class="alert-btn" style="text-decoration: none; background: var(--primary); border-color: var(--primary); color: #ffffff; font-weight: 600;">
+          Log In to NotebookLM
+        </a>
+        <button class="alert-btn" onclick="switchConnMode('file')">
+          Upload Backup JSON
+        </button>
+      </div>
+    </div>
+
+    <!-- Dashboard Analytics Widgets -->
+    <div class="dashboard-grid">
+      <div class="metric-card">
+        <div class="demo-ribbon" id="demoRibbon">Demo Data</div>
+        <div class="metric-header">
+          <span>Active Notebooks</span>
+          <svg class="metric-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
+        <div class="metric-value" id="statNotebooks">8</div>
+        <div class="metric-desc" id="statNotebooksDesc">Total in uploaded file</div>
+      </div>
+
+      <div class="metric-card accent-cyan">
+        <div class="metric-header">
+          <span>Total Sources</span>
+          <svg class="metric-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <div class="metric-value" id="statSources">9</div>
+        <div class="metric-desc">Assigned to notebooks</div>
+      </div>
+
+      <div class="metric-card accent-green">
+        <div class="metric-header">
+          <span>Optimizable Slots</span>
+          <svg class="metric-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+        </div>
+        <div class="metric-value" id="statSlots">4</div>
+        <div class="metric-desc" id="statSlotsDesc">Notebooks that will be merged</div>
+      </div>
+
+      <div class="metric-card accent-amber">
+        <div class="metric-header">
+          <span>Scope Groups</span>
+          <svg class="metric-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="metric-value" id="statGroups">4</div>
+        <div class="metric-desc">Groups ready to merge</div>
+      </div>
+    </div>
+
+    <!-- Main Workspace Layout -->
+    <div class="workspace-layout">
+      
+      <!-- Left sidebar: Controls and Connections -->
+      <aside class="control-panel">
+        
+        <!-- Connection Center Card -->
+        <div class="panel-card" style="border-color: rgba(59, 130, 246, 0.25);">
+          <h2>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v1"/><path d="M18 8h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4"/><circle cx="8" cy="12" r="2"/>
+            </svg>
+            Connection Center
+          </h2>
+          
+          <div class="conn-tabs">
+            <button class="conn-tab-btn active" id="btnModeExt" onclick="switchConnMode('extension')">Extension</button>
+            <button class="conn-tab-btn" id="btnModeAgent" onclick="switchConnMode('agent')">Local Agent</button>
+            <button class="conn-tab-btn" id="btnModeCloud" onclick="switchConnMode('cloud')">Beside Cloud</button>
+            <button class="conn-tab-btn" id="btnModeFile" onclick="switchConnMode('file')">Backup File</button>
+          </div>
+
+          <!-- CONNECTION MODE: EXTENSION -->
+          <div id="connView-extension" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <p style="font-size: 0.75rem; color: var(--text-muted);">
+              Connect dynamically via your browser. Ensure you are signed in.
+            </p>
+            
+            <a href="https://notebooklm.google.com" target="_blank" class="btn btn-primary" style="text-decoration: none; padding: 0.6rem 1rem; color: #ffffff;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 2px;">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+              Log In to NotebookLM
+            </a>
+
+            <button class="btn btn-success" onclick="syncFromExtension()" id="btnExtSync" style="padding: 0.6rem 1rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              Auto-Sync from Extension
+            </button>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+              <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-main);">Connection Problems?</span>
+              <p style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.3;">
+                If it shows <em>Extension Offline</em>, Chrome's security model is blocking direct messaging. Use this alternative:
+              </p>
+              <ol style="font-size: 0.7rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.35; display: flex; flex-direction: column; gap: 0.25rem;">
+                <li>Open the ExtendLM Extension in your browser.</li>
+                <li>Click <strong>Export Database</strong> to save the JSON file.</li>
+                <li>Switch to the <strong>Backup File</strong> tab above and upload it.</li>
+              </ol>
+            </div>
+          </div>
+
+          <!-- CONNECTION MODE: LOCAL AGENT -->
+          <div id="connView-agent" style="display: none; flex-direction: column; gap: 0.75rem;">
+            <p style="font-size: 0.75rem; color: var(--text-muted);">
+              Connect to your local background Xen supervisor to fetch your operational database.
+            </p>
+            <div class="form-group">
+              <label for="agentUrl">Local Port URL</label>
+              <input class="form-input" type="text" id="agentUrl" value="http://localhost:7723">
+            </div>
+            <button class="btn btn-primary" onclick="syncFromLocalAgent()" id="btnAgentSync" style="padding: 0.6rem 1rem;">
+              Sync from Local Engine
+            </button>
+          </div>
+
+          <!-- CONNECTION MODE: BESIDE CLOUD -->
+          <div id="connView-cloud" style="display: none; flex-direction: column; gap: 0.75rem;">
+            <p style="font-size: 0.75rem; color: var(--text-muted);">
+              Sync your strategy groups directly from your Beside account.
+            </p>
+            <div class="form-group">
+              <label for="besideToken">Beside JWT Token</label>
+              <input class="form-input" type="password" id="besideToken" placeholder="Paste beside.token content...">
+            </div>
+            <button class="btn btn-primary" onclick="syncFromBesideCloud()" id="btnCloudSync" style="padding: 0.6rem 1rem;">
+              Sync from Beside Cloud
+            </button>
+            <div style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.3; border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.25rem;">
+              🔑 <strong>How to get Beside Token:</strong> on your running Xen console, view the file at <code>~/.config/xen/beside.token</code> or copy the JWT from your active browser session on Beside.
+            </div>
+          </div>
+
+          <!-- CONNECTION MODE: MANUAL FILE -->
+          <div id="connView-file" style="display: none; flex-direction: column; gap: 0.75rem;">
+            <p style="font-size: 0.75rem; color: var(--text-muted);">
+              Load a local JSON database file exported manually from the ExtendLM extension.
+            </p>
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/>
+              </svg>
+              <p>Drag & drop backup JSON file or</p>
+              <span>Browse files</span>
+              <input type="file" id="fileInput" style="display: none;" accept=".json" onchange="handleFileSelect(this)">
+            </div>
+          </div>
+
+          <!-- Reset / Demo Controls -->
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+            <button class="btn btn-secondary" onclick="loadDemoData()" style="flex: 1; padding: 0.45rem; font-size: 0.8rem;">Use Demo</button>
+            <button class="btn btn-secondary" id="clearBtn" onclick="clearData()" style="flex: 1; padding: 0.45rem; font-size: 0.8rem;" disabled>Reset</button>
+          </div>
+        </div>
+
+        <!-- Configurations Panel -->
+        <div class="panel-card" id="configCard">
+          <h2>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Merge Rules
+          </h2>
+
+          <div class="form-group">
+            <label for="scopeGrouping">Group By (Scope)</label>
+            <select class="form-select" id="scopeGrouping" onchange="recalculateGroups()">
+              <option value="tag-prefix">Notebook Tag (e.g. scope:miami5)</option>
+              <option value="title-prefix">Notebook Title Prefix (e.g., XLRD TECH)</option>
+              <option value="folder">Folder Name (SELSCORP, etc.)</option>
+              <option value="tag-all">Any Matching Tag</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="sourceLimit">Source Limit Threshold</label>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <input class="form-input" type="number" id="sourceLimit" value="100" min="10" max="500" style="flex: 1;" onchange="recalculateGroups()">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Sources</span>
+            </div>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">Notebooks with sources below this limit will be merged.</p>
+          </div>
+
+          <div class="form-group">
+            <label for="titleRule">Title Extraction Splitter</label>
+            <input class="form-input" type="text" id="titleRule" value=" - " onchange="recalculateGroups()">
+            <p style="font-size: 0.7rem; color: var(--text-muted);">Split separator for title prefix mode.</p>
+          </div>
+        </div>
+
+        <!-- Optimized Download Panel -->
+        <div class="panel-card" style="border-color: rgba(16, 185, 129, 0.3);">
+          <h2>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Optimize & Export
+          </h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Confirm the planner on the right, then trigger the in-memory database rebuild.</p>
+          
+          <button class="btn btn-primary" id="mergeBtn" onclick="executeMerge()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Merge & Export JSON
+          </button>
+        </div>
+
+      </aside>
+
+      <!-- Right Content Area: Views -->
+      <section class="main-panel">
+        
+        <!-- VIEW 1: MERGE PLANNER -->
+        <div id="tabView-planner">
+          <div class="section-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+            Merge Action Planner
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+            Select which notebooks in each scope group to merge. Choose one target notebook to absorb all sources.
+          </p>
+
+          <div id="plannerGroupsContainer">
+            <!-- Dynamic Groups will be inserted here -->
+          </div>
+        </div>
+
+        <!-- VIEW 2: DATABASE INSPECTOR -->
+        <div id="tabView-inspector" style="display: none;">
+          <div class="section-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
+            </svg>
+            Source Database Inspector
+          </div>
+          
+          <div class="table-container">
+            <div class="table-header">
+              <div class="table-search">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input class="form-input" type="text" id="inspectorSearch" placeholder="Search source name..." oninput="renderInspectorTable()">
+              </div>
+              
+              <div style="display: flex; gap: 0.5rem;">
+                <select class="form-select" id="inspectorNotebookFilter" style="max-width: 200px;" onchange="renderInspectorTable()">
+                  <option value="all">All Notebooks</option>
+                </select>
+                <select class="form-select" id="inspectorTypeFilter" style="max-width: 150px;" onchange="renderInspectorTable()">
+                  <option value="all">All Types</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+              <table id="inspectorTable">
+                <thead>
+                  <tr>
+                    <th>Source Title</th>
+                    <th>Type</th>
+                    <th>Linked Notebook</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="inspectorTableBody">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <div style="padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color);">
+              <span style="font-size: 0.8rem; color: var(--text-muted);" id="inspectorTableCounter">Showing 0-0 of 0 sources</span>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" id="prevPageBtn" onclick="changeInspectorPage(-1)">Previous</button>
+                <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" id="nextPageBtn" onclick="changeInspectorPage(1)">Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 3: SCHEMA CUSTOMIZER -->
+        <div id="tabView-mapper" style="display: none;">
+          <div class="section-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Database Field Mapping Customizer
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+            If your uploaded JSON schema differs from the standard ExtendLM format, adjust the field paths here.
+          </p>
+
+          <div class="schema-mapper-grid">
+            <div class="panel-card" style="gap: 1rem;">
+              <h3 style="font-family: var(--font-outfit); font-size: 1.05rem; color: #fff;">Field Mappings</h3>
+              
+              <div class="form-group">
+                <label for="mapNotebooks">Notebooks Array Path</label>
+                <input class="form-input" type="text" id="mapNotebooks" value="notebooks" onchange="updateMappings()">
+              </div>
+
+              <div class="form-group">
+                <label for="mapSources">Sources Array Path</label>
+                <input class="form-input" type="text" id="mapSources" value="sources" onchange="updateMappings()">
+              </div>
+
+              <div class="form-group">
+                <label for="mapNbId">Notebook ID Key</label>
+                <input class="form-input" type="text" id="mapNbId" value="id" onchange="updateMappings()">
+              </div>
+
+              <div class="form-group">
+                <label for="mapSrcNbId">Source Notebook Association Key</label>
+                <input class="form-input" type="text" id="mapSrcNbId" value="notebookId" onchange="updateMappings()">
+              </div>
+
+              <div class="form-group">
+                <label for="mapNbTags">Notebook Tags Key</label>
+                <input class="form-input" type="text" id="mapNbTags" value="tags" onchange="updateMappings()">
+              </div>
+
+              <button class="btn btn-secondary" onclick="resetMappings()">Reset Mappings</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <h3 style="font-family: var(--font-outfit); font-size: 1.05rem; color: #fff;">Source JSON Schema Preview</h3>
+              <div class="json-visualizer" id="jsonPreview">No custom file uploaded. Showing default database structure.</div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modal: Instructions -->
+  <div class="modal-overlay" id="instructionsModal" onclick="closeInstructions()">
+    <div class="modal-container" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>How to Optimize ExtendLM Notebooks</h3>
+        <button class="modal-close" onclick="closeInstructions()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Follow these <strong>4 simple steps</strong> to merge your low-source notebooks and create slot capacity:</p>
+        <ol style="margin-left: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+          <li><strong>Select Connection Method:</strong> Choose how to connect. If using **Extension Sync**, make sure the Chrome extension has `hitthe.link` configured in its externally_connectable settings. Alternatively, use the **Local Agent** (Port 7723) or paste a **Beside Cloud JWT Token**.</li>
+          <li><strong>Or Upload JSON File:</strong> Open ExtendLM, export database, and drag-and-drop the JSON backup file under **Backup File** mode.</li>
+          <li><strong>Verify Planner:</strong> Review the groups on the right side. Change your merge targets or grouping keys under <em>Merge Rules</em> if needed. Toggle notebooks on or off.</li>
+          <li><strong>Execute & Import:</strong> Click <strong>Merge & Export JSON</strong>. Go back to ExtendLM's dashboard, open the Import dialog, upload this newly downloaded optimized JSON file, and replace/refresh your data!</li>
+        </ol>
+        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 0.5rem; padding: 0.75rem; font-size: 0.8rem; margin-top: 0.5rem;">
+          💡 <strong>Tip:</strong> By default, we select the notebook in each scope that already holds the most sources to be the destination target, minimizing total processing operations.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" style="width: auto; padding: 0.5rem 1.5rem;" onclick="closeInstructions()">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Toast Notification -->
+  <div class="toast" id="toast">
+    <div class="toast-icon" id="toastIcon">✓</div>
+    <span id="toastMessage">Successfully loaded database!</span>
+  </div>
+
+  <footer>
+    <p>ExtendLM Scope-Merger & Optimizer — Runs completely offline in your browser. All processing is kept local.</p>
+  </footer>
+
+  <script>
+    // Custom Mock Data utilizing strategic user parameters
+    const DEMO_DB = {
+      "notebooks": [
+        { "id": "nb-miami5-1", "title": "Miami 5 - Membership Ops", "folderId": "folder-selscorp", "tags": ["scope:miami5", "priority:high"] },
+        { "id": "nb-miami5-2", "title": "Miami 5 - Info Repository", "folderId": "folder-selscorp", "tags": ["scope:miami5"] },
+        { "id": "nb-miami5-3", "title": "Miami 5 - Access Protocols", "folderId": "folder-selscorp", "tags": ["scope:miami5"] },
+        { "id": "nb-l7s-1", "title": "L7S - Strategic Ecosystem v1", "folderId": "folder-l7s", "tags": ["scope:l7s"] },
+        { "id": "nb-l7s-2", "title": "L7S - Ecosystem Resources", "folderId": "folder-l7s", "tags": ["scope:l7s"] },
+        { "id": "nb-xlrd-1", "title": "XLRD TECH - Automations", "folderId": "folder-xlrd", "tags": ["scope:xlrd"] },
+        { "id": "nb-xlrd-2", "title": "XLRD TECH - Infrastructure", "folderId": "folder-xlrd", "tags": ["scope:xlrd"] },
+        { "id": "nb-temple-1", "title": "26th Temple - Non-Profit Launch", "folderId": "folder-temple", "tags": ["scope:temple"] }
+      ],
+      "sources": [
+        { "id": "src-1", "title": "Miami 5 Member List.xlsx", "notebookId": "nb-miami5-1", "type": "DRIVE_SHEETS", "status": "Ready" },
+        { "id": "src-2", "title": "Ops Guide v4.pdf", "notebookId": "nb-miami5-1", "type": "PDF", "status": "Ready" },
+        { "id": "src-3", "title": "Miami 5 Info Deck.pdf", "notebookId": "nb-miami5-2", "type": "PDF", "status": "Ready" },
+        { "id": "src-4", "title": "Access Credentials.txt", "notebookId": "nb-miami5-3", "type": "TEXT", "status": "Ready" },
+        { "id": "src-5", "title": "L7S Partnership Proposal.docx", "notebookId": "nb-l7s-1", "type": "DOCX", "status": "Ready" },
+        { "id": "src-6", "title": "Ecosystem Diagram.png", "notebookId": "nb-l7s-2", "type": "IMAGE", "status": "Ready" },
+        { "id": "src-7", "title": "Automation Engine Code.py", "notebookId": "nb-xlrd-1", "type": "TEXT", "status": "Ready" },
+        { "id": "src-8", "title": "Server Setup Guide.md", "notebookId": "nb-xlrd-2", "type": "MARKDOWN", "status": "Ready" },
+        { "id": "src-9", "title": "Temple Mission Statement.pdf", "notebookId": "nb-temple-1", "type": "PDF", "status": "Ready" }
+      ],
+      "folders": [
+        { "id": "folder-selscorp", "name": "SELSCORP" },
+        { "id": "folder-l7s", "name": "L7S Strategic" },
+        { "id": "folder-xlrd", "name": "XLRD TECH" },
+        { "id": "folder-temple", "name": "26th Temple" }
+      ]
+    };
+
+    // State Variables
+    let activeDb = null;
+    let isDemoMode = true;
+    let activeTab = 'planner';
+    let mergeGroups = {};
+    let mapping = {
+      notebooksKey: 'notebooks',
+      sourcesKey: 'sources',
+      notebookIdField: 'id',
+      sourceNotebookIdField: 'notebookId',
+      notebookTagsField: 'tags'
+    };
+    
+    // Pagination for DB Inspector
+    let inspectorPage = 0;
+    const inspectorPageSize = 10;
+
+    // Extension Messaging Config
+    const EXTENSION_ID = 'jefclkefiknlccjcjmkkhlcfkdgcmgcm';
+    let isExtensionAvailable = false;
+
+    // Initialize App
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDemoData();
+      
+      // Setup Drag & Drop UI
+      const dropzone = document.getElementById('dropzone');
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+      });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      // Attempt initial ping to the extension
+      pingExtension();
+
+      // Listen for content script postMessage bridges
+      window.addEventListener('message', (event) => {
+        if (event.data && event.data.source === 'extendlm-extension') {
+          if (event.data.action === 'syncDatabase' && event.data.database) {
+            handleSyncedData(event.data.database, event.data.email);
+          }
+        }
+      });
+
+      // Register PWA Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => console.log('Service Worker registered successfully.'))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      }
+    });
+
+    // Connection Switcher
+    function switchConnMode(mode) {
+      document.querySelectorAll('.conn-tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`btnMode${mode.charAt(0).toUpperCase() + mode.slice(1)}`).classList.add('active');
+
+      document.getElementById('connView-extension').style.display = mode === 'extension' ? 'flex' : 'none';
+      document.getElementById('connView-agent').style.display = mode === 'agent' ? 'flex' : 'none';
+      document.getElementById('connView-cloud').style.display = mode === 'cloud' ? 'flex' : 'none';
+      document.getElementById('connView-file').style.display = mode === 'file' ? 'flex' : 'none';
+    }
+
+    // Check extension status
+    function pingExtension() {
+      const statusEl = document.getElementById('extStatus');
+      const textEl = document.getElementById('extStatusText');
+
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        statusEl.className = 'ext-status connecting';
+        textEl.innerText = 'Pinging...';
+
+        chrome.runtime.sendMessage(EXTENSION_ID, { action: 'ping' }, (response) => {
+          if (chrome.runtime.lastError) {
+            statusEl.className = 'ext-status';
+            textEl.innerText = 'Extension Offline';
+            isExtensionAvailable = false;
+            console.log('Direct extension communication unavailable. Fallback to file mode.');
+          } else {
+            isExtensionAvailable = true;
+            statusEl.className = 'ext-status connected';
+            textEl.innerText = 'Extension Connected';
+            showNotification('ExtendLM Extension detected! Ready to sync.', 'success');
+            
+            syncFromExtension();
+          }
+        });
+      }
+    }
+
+    // Direct Sync logic
+    function syncFromExtension() {
+      const statusEl = document.getElementById('extStatus');
+      const textEl = document.getElementById('extStatusText');
+      const syncBtn = document.getElementById('btnExtSync');
+
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        syncBtn.disabled = true;
+        statusEl.className = 'ext-status connecting';
+        textEl.innerText = 'Syncing...';
+
+        chrome.runtime.sendMessage(EXTENSION_ID, { action: 'exportDatabase' }, (response) => {
+          if (chrome.runtime.lastError || !response) {
+            chrome.runtime.sendMessage(EXTENSION_ID, { action: 'getData' }, (responseFallback) => {
+              if (chrome.runtime.lastError || !responseFallback) {
+                syncBtn.disabled = false;
+                statusEl.className = 'ext-status';
+                textEl.innerText = 'Sync Failed';
+                showNotification('Connection blocked. Verify extension externally_connectable config.', 'error');
+              } else {
+                handleExtensionSyncResponse(responseFallback);
+              }
+            });
+          } else {
+            handleExtensionSyncResponse(response);
+          }
+        });
+      } else {
+        showNotification('Direct connection requires a Chrome-based browser with ExtendLM installed.', 'error');
+      }
+    }
+
+    // Local agent sync (localhost:7723)
+    function syncFromLocalAgent() {
+      const url = document.getElementById('agentUrl').value;
+      const syncBtn = document.getElementById('btnAgentSync');
+      const statusEl = document.getElementById('extStatus');
+      const textEl = document.getElementById('extStatusText');
+
+      syncBtn.disabled = true;
+      statusEl.className = 'ext-status connecting';
+      textEl.innerText = 'Syncing Agent...';
+
+      fetch(`${url}/api/database`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          syncBtn.disabled = false;
+          handleSyncedData(data, 'localhost-agent');
+        })
+        .catch(err => {
+          syncBtn.disabled = false;
+          statusEl.className = 'ext-status';
+          textEl.innerText = 'Agent Offline';
+          showNotification(`Local agent connection failed: ${err.message}`, 'error');
+        });
+    }
+
+    // Beside Cloud JWT sync
+    function syncFromBesideCloud() {
+      const token = document.getElementById('besideToken').value;
+      const syncBtn = document.getElementById('btnCloudSync');
+      const statusEl = document.getElementById('extStatus');
+      const textEl = document.getElementById('extStatusText');
+
+      if (!token) {
+        showNotification('Please enter a valid Beside JWT token.', 'error');
+        return;
+      }
+
+      syncBtn.disabled = true;
+      statusEl.className = 'ext-status connecting';
+      textEl.innerText = 'Syncing Beside...';
+
+      // Standard API endpoints parsed from Beside reverse engineering guide
+      fetch('https://api.prod.tma.hearthands.tech:8443/v1/notebooks', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          syncBtn.disabled = false;
+          handleSyncedData(data, 'beside-cloud');
+        })
+        .catch(err => {
+          syncBtn.disabled = false;
+          statusEl.className = 'ext-status';
+          textEl.innerText = 'Cloud Offline';
+          showNotification(`Beside Cloud connection failed: ${err.message}`, 'error');
+        });
+    }
+
+    function handleExtensionSyncResponse(response) {
+      const syncBtn = document.getElementById('btnExtSync');
+      syncBtn.disabled = false;
+
+      let database = response.database || response.data || response;
+      let email = response.email || 'active-user@gmail.com';
+
+      if (database && (database.notebooks || database.sources)) {
+        handleSyncedData(database, email);
+      } else {
+        showNotification('Invalid data structure received from extension.', 'error');
+      }
+    }
+
+    function handleSyncedData(database, email) {
+      activeDb = database;
+      isDemoMode = false;
+      document.getElementById('demoRibbon').style.display = 'none';
+      document.getElementById('demoBanner').style.display = 'none';
+      document.getElementById('clearBtn').disabled = false;
+
+      const statusEl = document.getElementById('extStatus');
+      const textEl = document.getElementById('extStatusText');
+      statusEl.className = 'ext-status connected';
+      textEl.innerText = `Synced: ${email}`;
+
+      const shortPreview = JSON.stringify(database, null, 2);
+      document.getElementById('jsonPreview').innerText = shortPreview.substring(0, 1000) + (shortPreview.length > 1000 ? '\n... (truncated)' : '');
+
+      showNotification(`Successfully synchronized ${database.notebooks?.length || 0} notebooks!`, 'success');
+      
+      autoDetectMappings(database);
+      recalculateGroups();
+      renderInspectorTable();
+    }
+
+    // Load Demo Database
+    function loadDemoData() {
+      activeDb = JSON.parse(JSON.stringify(DEMO_DB));
+      isDemoMode = true;
+      document.getElementById('demoRibbon').style.display = 'block';
+      document.getElementById('demoBanner').style.display = 'flex';
+      document.getElementById('clearBtn').disabled = false;
+      
+      showNotification('Loaded custom strategic DEMO database.', 'success');
+      updateMappings();
+      recalculateGroups();
+      renderInspectorTable();
+    }
+
+    // Reset Data
+    function clearData() {
+      activeDb = null;
+      isDemoMode = false;
+      document.getElementById('demoRibbon').style.display = 'none';
+      document.getElementById('demoBanner').style.display = 'flex';
+      document.getElementById('clearBtn').disabled = true;
+      document.getElementById('fileInput').value = '';
+      
+      document.getElementById('statNotebooks').innerText = '0';
+      document.getElementById('statSources').innerText = '0';
+      document.getElementById('statSlots').innerText = '0';
+      document.getElementById('statGroups').innerText = '0';
+      
+      document.getElementById('plannerGroupsContainer').innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 3rem;">Please upload a database backup file on the left to begin planner generation.</div>';
+      document.getElementById('jsonPreview').innerText = 'No file uploaded.';
+
+      const statusEl = document.getElementById('extStatus');
+      const textEl = document.getElementById('extStatusText');
+      statusEl.className = 'ext-status';
+      textEl.innerText = 'Extension Offline';
+      
+      renderInspectorTable();
+      showNotification('Database reset. Ready for new input.', 'success');
+    }
+
+    // Handle Uploaded Files
+    function handleFileSelect(input) {
+      if (input.files && input.files[0]) {
+        handleFile(input.files[0]);
+      }
+    }
+
+    function handleFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          activeDb = parsed;
+          isDemoMode = false;
+          document.getElementById('demoRibbon').style.display = 'none';
+          document.getElementById('demoBanner').style.display = 'none';
+          document.getElementById('clearBtn').disabled = false;
+          
+          const shortPreview = JSON.stringify(parsed, null, 2);
+          document.getElementById('jsonPreview').innerText = shortPreview.substring(0, 1000) + (shortPreview.length > 1000 ? '\n... (truncated)' : '');
+          
+          showNotification(`Successfully loaded database "${file.name}"`, 'success');
+          
+          autoDetectMappings(parsed);
+          recalculateGroups();
+          renderInspectorTable();
+        } catch (err) {
+          showNotification('Error parsing database JSON. Verify file format.', 'error');
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Schema mapping auto detection
+    function autoDetectMappings(data) {
+      const keys = Object.keys(data);
+      
+      if (keys.includes('notebooks')) mapping.notebooksKey = 'notebooks';
+      else {
+        const potentialNotebooks = keys.find(k => Array.isArray(data[k]) && k.toLowerCase().includes('notebook'));
+        if (potentialNotebooks) mapping.notebooksKey = potentialNotebooks;
+      }
+      
+      if (keys.includes('sources')) mapping.sourcesKey = 'sources';
+      else {
+        const potentialSources = keys.find(k => Array.isArray(data[k]) && k.toLowerCase().includes('source'));
+        if (potentialSources) mapping.sourcesKey = potentialSources;
+      }
+      
+      document.getElementById('mapNotebooks').value = mapping.notebooksKey;
+      document.getElementById('mapSources').value = mapping.sourcesKey;
+      
+      showNotification(`Detected Notebooks field as "${mapping.notebooksKey}" and Sources as "${mapping.sourcesKey}"`, 'success');
+    }
+
+    function updateMappings() {
+      mapping.notebooksKey = document.getElementById('mapNotebooks').value;
+      mapping.sourcesKey = document.getElementById('mapSources').value;
+      mapping.notebookIdField = document.getElementById('mapNbId').value;
+      mapping.sourceNotebookIdField = document.getElementById('mapSrcNbId').value;
+      mapping.notebookTagsField = document.getElementById('mapNbTags').value;
+      
+      recalculateGroups();
+      renderInspectorTable();
+    }
+
+    function resetMappings() {
+      document.getElementById('mapNotebooks').value = 'notebooks';
+      document.getElementById('mapSources').value = 'sources';
+      document.getElementById('mapNbId').value = 'id';
+      document.getElementById('mapSrcNbId').value = 'notebookId';
+      document.getElementById('mapNbTags').value = 'tags';
+      
+      updateMappings();
+    }
+
+    // Main Grouping Logic
+    function recalculateGroups() {
+      if (!activeDb) return;
+      
+      const notebooks = getNestedValue(activeDb, mapping.notebooksKey) || [];
+      const sources = getNestedValue(activeDb, mapping.sourcesKey) || [];
+      const folders = activeDb.folders || [];
+      
+      const sourceLimit = parseInt(document.getElementById('sourceLimit').value, 10);
+      const groupingType = document.getElementById('scopeGrouping').value;
+      const titleRule = document.getElementById('titleRule').value;
+      
+      mergeGroups = {};
+      
+      const nbSourceCounts = {};
+      notebooks.forEach(nb => {
+        nbSourceCounts[nb[mapping.notebookIdField]] = 0;
+      });
+      
+      sources.forEach(src => {
+        const nbId = src[mapping.sourceNotebookIdField];
+        if (nbSourceCounts[nbId] !== undefined) {
+          nbSourceCounts[nbId]++;
+        }
+      });
+      
+      notebooks.forEach(nb => {
+        const nbId = nb[mapping.notebookIdField];
+        const nbTitle = nb.title || 'Untitled Notebook';
+        const sourceCount = nbSourceCounts[nbId] || 0;
+        const folderId = nb.folderId;
+        const tags = nb[mapping.notebookTagsField] || [];
+        
+        let scope = 'unassigned';
+        
+        if (groupingType === 'title-prefix') {
+          if (nbTitle.includes(titleRule)) {
+            scope = nbTitle.split(titleRule)[0].trim();
+          } else {
+            if (nbTitle.toLowerCase().includes('miami 5')) scope = 'Miami 5';
+            else if (nbTitle.toLowerCase().includes('l7s')) scope = 'L7S';
+            else if (nbTitle.toLowerCase().includes('xlrd')) scope = 'XLRD TECH';
+            else if (nbTitle.toLowerCase().includes('temple')) scope = '26th Temple';
+            else scope = nbTitle;
+          }
+        } else if (groupingType === 'folder') {
+          const folderObj = folders.find(f => f.id === folderId);
+          scope = folderObj ? folderObj.name : 'No Folder';
+        } else if (groupingType === 'tag-prefix') {
+          const scopeTag = tags.find(t => t.startsWith('scope:'));
+          if (scopeTag) {
+            scope = scopeTag.split('scope:')[1].trim().toUpperCase();
+          } else {
+            const checkTags = ['miami5', 'l7s', 'xlrd', 'temple'];
+            const foundTag = tags.find(t => checkTags.includes(t.toLowerCase()));
+            scope = foundTag ? foundTag.toUpperCase() : 'General / No Scope';
+          }
+        } else if (groupingType === 'tag-all') {
+          scope = tags.length > 0 ? tags[0] : 'No Tags';
+        }
+        
+        if (!mergeGroups[scope]) {
+          mergeGroups[scope] = {
+            name: scope,
+            notebooks: [],
+            targetNotebookId: null
+          };
+        }
+        
+        mergeGroups[scope].notebooks.push({
+          id: nbId,
+          title: nbTitle,
+          sourceCount: sourceCount,
+          folderName: folders.find(f => f.id === folderId)?.name || '',
+          tags: tags,
+          selected: sourceCount < sourceLimit
+        });
+      });
+      
+      for (const scope in mergeGroups) {
+        const group = mergeGroups[scope];
+        let maxCount = -1;
+        let targetId = null;
+        
+        group.notebooks.forEach(nb => {
+          if (nb.sourceCount > maxCount) {
+            maxCount = nb.sourceCount;
+            targetId = nb.id;
+          }
+        });
+        
+        group.targetNotebookId = targetId;
+      }
+      
+      renderPlannerGroups();
+      updateDashboardStats();
+    }
+
+    // Dashboard Statistics Counter UI
+    function updateDashboardStats() {
+      if (!activeDb) return;
+      const notebooks = getNestedValue(activeDb, mapping.notebooksKey) || [];
+      const sources = getNestedValue(activeDb, mapping.sourcesKey) || [];
+      
+      document.getElementById('statNotebooks').innerText = notebooks.length;
+      document.getElementById('statSources').innerText = sources.length;
+      
+      let mergeableCount = 0;
+      let groupsCount = Object.keys(mergeGroups).length;
+      
+      for (const scope in mergeGroups) {
+        const group = mergeGroups[scope];
+        let toMerge = group.notebooks.filter(nb => nb.selected && nb.id !== group.targetNotebookId);
+        mergeableCount += toMerge.length;
+      }
+      
+      document.getElementById('statSlots').innerText = mergeableCount;
+      document.getElementById('statSlotsDesc').innerText = `Consolidates down, freeing ${mergeableCount} slot(s)`;
+      document.getElementById('statGroups').innerText = groupsCount;
+    }
+
+    // Render group cards in Planner UI
+    function renderPlannerGroups() {
+      const container = document.getElementById('plannerGroupsContainer');
+      container.innerHTML = '';
+      
+      const scopes = Object.keys(mergeGroups).sort();
+      
+      if (scopes.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 3rem;">No scopes detected. Check your grouping logic or tags.</div>';
+        return;
+      }
+      
+      scopes.forEach(scopeKey => {
+        const group = mergeGroups[scopeKey];
+        if (group.notebooks.length === 0) return;
+        
+        const isOptimized = group.notebooks.some(n => n.selected && n.id !== group.targetNotebookId);
+        
+        let currentCount = group.notebooks.reduce((sum, n) => sum + n.sourceCount, 0);
+        let targetNb = group.notebooks.find(n => n.id === group.targetNotebookId);
+        let targetTitle = targetNb ? targetNb.title : 'None';
+        
+        let checkedNotebooks = group.notebooks.filter(n => n.selected);
+        let mergedSourcesCount = checkedNotebooks.reduce((sum, n) => sum + n.sourceCount, 0);
+        
+        const card = document.createElement('div');
+        card.className = `group-card ${isOptimized ? 'modified' : ''}`;
+        
+        card.innerHTML = `
+          <div class="group-header" onclick="toggleGroupCard(this.parentNode)">
+            <div class="group-info">
+              <div class="group-toggle-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+              <span class="group-tag">SCOPE: ${scopeKey}</span>
+              <span class="group-title">${group.notebooks.length} Notebooks</span>
+            </div>
+            <div class="group-stats">
+              <span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                ${currentCount} Sources total
+              </span>
+              ${isOptimized ? `
+                <span style="color: var(--success); font-weight: 600;">
+                  ➔ Target "${targetTitle}" will hold ${mergedSourcesCount} sources
+                </span>
+              ` : ''}
+            </div>
+          </div>
+          
+          <div class="group-body">
+            <div style="margin-bottom: 0.75rem; font-size: 0.75rem; color: var(--text-muted); display: grid; grid-template-columns: 40px 1fr 150px 150px; padding: 0.25rem 0.5rem; text-transform: uppercase;">
+              <div>Merge</div>
+              <div>Notebook Detail</div>
+              <div>Source Count</div>
+              <div>Merge Destination</div>
+            </div>
+            <div class="notebook-rows-container">
+              ${group.notebooks.map(nb => {
+                const isTarget = nb.id === group.targetNotebookId;
+                return `
+                  <div class="notebook-row">
+                    <div class="nb-select">
+                      <input type="checkbox" class="custom-checkbox" 
+                             ${nb.selected ? 'checked' : ''} 
+                             ${isTarget ? 'disabled checked' : ''} 
+                             onchange="toggleNotebookMerge('${scopeKey}', '${nb.id}', this.checked)">
+                    </div>
+                    <div class="nb-title-col">
+                      <div class="nb-name">${escapeHtml(nb.title)}</div>
+                      <div class="nb-meta">
+                        ${nb.folderName ? `<span>📁 ${escapeHtml(nb.folderName)}</span>` : ''}
+                        ${nb.tags.map(t => `<span style="opacity: 0.7;">🏷️ ${escapeHtml(t)}</span>`).join(' ')}
+                      </div>
+                    </div>
+                    <div class="nb-sources-col">
+                      <span class="badge-sources ${nb.sourceCount >= 100 ? 'limit-alert' : ''}">${nb.sourceCount} sources</span>
+                    </div>
+                    <div class="nb-target-col">
+                      <input type="radio" name="target-${scopeKey}" class="custom-radio" 
+                             ${isTarget ? 'checked' : ''} 
+                             onchange="setGroupTarget('${scopeKey}', '${nb.id}')">
+                      <span style="font-size: 0.75rem; color: ${isTarget ? 'var(--secondary)' : 'var(--text-muted)'}; font-weight: ${isTarget ? '600' : 'normal'};">
+                        ${isTarget ? 'Destination' : 'Target'}
+                      </span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function toggleGroupCard(cardEl) {
+      cardEl.classList.toggle('collapsed');
+    }
+
+    function toggleNotebookMerge(scopeKey, notebookId, isChecked) {
+      const group = mergeGroups[scopeKey];
+      const notebook = group.notebooks.find(n => n.id === notebookId);
+      if (notebook) {
+        notebook.selected = isChecked;
+        updateDashboardStats();
+        renderPlannerGroups();
+      }
+    }
+
+    function setGroupTarget(scopeKey, notebookId) {
+      const group = mergeGroups[scopeKey];
+      group.targetNotebookId = notebookId;
+      
+      group.notebooks.forEach(nb => {
+        if (nb.id === notebookId) {
+          nb.selected = true;
+        }
+      });
+      
+      updateDashboardStats();
+      renderPlannerGroups();
+    }
+
+    // Execute Merge & Download JSON
+    function executeMerge() {
+      if (!activeDb) {
+        showNotification('Please load a database JSON file first.', 'error');
+        return;
+      }
+      
+      const optimizedData = JSON.parse(JSON.stringify(activeDb));
+      const notebooksArray = getNestedValue(optimizedData, mapping.notebooksKey) || [];
+      const sourcesArray = getNestedValue(optimizedData, mapping.sourcesKey) || [];
+      
+      let deletedNotebookCount = 0;
+      let updatedSourcesCount = 0;
+      
+      const notebooksToDelete = new Set();
+      const sourceMoveMap = {};
+      
+      for (const scope in mergeGroups) {
+        const group = mergeGroups[scope];
+        const targetId = group.targetNotebookId;
+        
+        group.notebooks.forEach(nb => {
+          if (nb.selected && nb.id !== targetId) {
+            notebooksToDelete.add(nb.id);
+            sourceMoveMap[nb.id] = targetId;
+          }
+        });
+      }
+      
+      if (notebooksToDelete.size === 0) {
+        showNotification('No merges configured. Please verify checkboxes.', 'error');
+        return;
+      }
+      
+      sourcesArray.forEach(src => {
+        const currentNbId = src[mapping.sourceNotebookIdField];
+        if (sourceMoveMap[currentNbId]) {
+          src[mapping.sourceNotebookIdField] = sourceMoveMap[currentNbId];
+          updatedSourcesCount++;
+        }
+      });
+      
+      const newNotebooksArray = notebooksArray.filter(nb => {
+        const isDeleted = notebooksToDelete.has(nb[mapping.notebookIdField]);
+        if (isDeleted) deletedNotebookCount++;
+        return !isDeleted;
+      });
+      
+      setNestedValue(optimizedData, mapping.notebooksKey, newNotebooksArray);
+      setNestedValue(optimizedData, mapping.sourcesKey, sourcesArray);
+      
+      const blob = new Blob([JSON.stringify(optimizedData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `extendlm_optimized_${Date.now()}.json`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showNotification(`Merged ${deletedNotebookCount} notebooks! Moved ${updatedSourcesCount} sources. File downloaded.`, 'success');
+      
+      activeDb = optimizedData;
+      recalculateGroups();
+      renderInspectorTable();
+    }
+
+    // Tab Navigation
+    function switchTab(tabId) {
+      activeTab = tabId;
+      document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      
+      document.getElementById('tabView-planner').style.display = tabId === 'planner' ? 'block' : 'none';
+      document.getElementById('tabView-inspector').style.display = tabId === 'inspector' ? 'block' : 'none';
+      document.getElementById('tabView-mapper').style.display = tabId === 'mapper' ? 'block' : 'none';
+      
+      if (tabId === 'inspector') {
+        populateInspectorFilters();
+        renderInspectorTable();
+      }
+    }
+
+    // DB Inspector filters
+    function populateInspectorFilters() {
+      if (!activeDb) return;
+      
+      const notebooks = getNestedValue(activeDb, mapping.notebooksKey) || [];
+      const sources = getNestedValue(activeDb, mapping.sourcesKey) || [];
+      
+      const nbFilter = document.getElementById('inspectorNotebookFilter');
+      nbFilter.innerHTML = '<option value="all">All Notebooks</option>';
+      notebooks.forEach(nb => {
+        const option = document.createElement('option');
+        option.value = nb[mapping.notebookIdField];
+        option.innerText = nb.title;
+        nbFilter.appendChild(option);
+      });
+      
+      const typeFilter = document.getElementById('inspectorTypeFilter');
+      typeFilter.innerHTML = '<option value="all">All Types</option>';
+      
+      const types = [...new Set(sources.map(s => s.type).filter(Boolean))];
+      types.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t;
+        option.innerText = t;
+        typeFilter.appendChild(option);
+      });
+    }
+
+    // Render inspector DB table
+    function renderInspectorTable() {
+      const tbody = document.getElementById('inspectorTableBody');
+      tbody.innerHTML = '';
+      
+      if (!activeDb) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No data loaded.</td></tr>';
+        return;
+      }
+      
+      const notebooks = getNestedValue(activeDb, mapping.notebooksKey) || [];
+      const sources = getNestedValue(activeDb, mapping.sourcesKey) || [];
+      
+      const searchQuery = document.getElementById('inspectorSearch').value.toLowerCase();
+      const nbFilterVal = document.getElementById('inspectorNotebookFilter').value;
+      const typeFilterVal = document.getElementById('inspectorTypeFilter').value;
+      
+      let filtered = sources.filter(src => {
+        const titleMatch = (src.title || '').toLowerCase().includes(searchQuery);
+        const nbMatch = nbFilterVal === 'all' || src[mapping.sourceNotebookIdField] === nbFilterVal;
+        const typeMatch = typeFilterVal === 'all' || src.type === typeFilterVal;
+        return titleMatch && nbMatch && typeMatch;
+      });
+      
+      const totalCount = filtered.length;
+      let paginated = filtered.slice(inspectorPage * inspectorPageSize, (inspectorPage + 1) * inspectorPageSize);
+      
+      if (paginated.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No matching records found.</td></tr>';
+        document.getElementById('inspectorTableCounter').innerText = 'Showing 0-0 of 0 sources';
+        return;
+      }
+      
+      paginated.forEach(src => {
+        const nbObj = notebooks.find(n => n[mapping.notebookIdField] === src[mapping.sourceNotebookIdField]);
+        const nbTitle = nbObj ? nbObj.title : 'Unknown / Orphaned';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${escapeHtml(src.title)}</strong></td>
+          <td><span class="source-type-tag">${escapeHtml(src.type || 'UNKNOWN')}</span></td>
+          <td><span style="color: var(--primary); font-weight: 500;">🤖 ${escapeHtml(nbTitle)}</span></td>
+          <td>
+            <span class="source-status status-ready">
+              <span class="status-dot"></span>
+              ${escapeHtml(src.status || 'Ready')}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      const startRange = (inspectorPage * inspectorPageSize) + 1;
+      const endRange = Math.min((inspectorPage + 1) * inspectorPageSize, totalCount);
+      document.getElementById('inspectorTableCounter').innerText = `Showing ${startRange}-${endRange} of ${totalCount} sources`;
+      
+      document.getElementById('prevPageBtn').disabled = inspectorPage === 0;
+      document.getElementById('nextPageBtn').disabled = endRange >= totalCount;
+    }
+
+    function changeInspectorPage(direction) {
+      inspectorPage += direction;
+      renderInspectorTable();
+    }
+
+    // Modal Controls
+    function openInstructions() {
+      document.getElementById('instructionsModal').classList.add('active');
+    }
+
+    function closeInstructions() {
+      document.getElementById('instructionsModal').classList.remove('active');
+    }
+
+    // Notification System
+    function showNotification(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const message = document.getElementById('toastMessage');
+      
+      toast.className = `toast active toast-${type}`;
+      icon.innerText = type === 'success' ? '✓' : '✕';
+      message.innerText = msg;
+      
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 4000);
+    }
+
+    // Helpers for JSON Object Traversal
+    function getNestedValue(obj, path) {
+      if (!obj || !path) return undefined;
+      return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+    }
+
+    function setNestedValue(obj, path, value) {
+      const parts = path.split('.');
+      const last = parts.pop();
+      const parent = parts.reduce((acc, part) => acc && acc[part], obj);
+      if (parent) {
+        parent[last] = value;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+  </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

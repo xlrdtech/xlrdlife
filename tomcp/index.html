@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>toMCP — Live Sites as MCP Servers</title>
+<meta name="description" content="Two toMCP servers live: hitthe.link and xen.xlrd.org wrapped as MCP — agents read live pages as markdown, no browser." />
+<meta name="theme-color" content="#000000" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#000;--bg-surface:#060808;--border:rgba(0,220,130,.12);--border-bright:rgba(0,220,130,.25);
+    --accent:#00dc82;--accent-dim:rgba(0,220,130,.5);--accent-faint:rgba(0,220,130,.08);
+    --text:#c8d0c0;--text-bright:#e8f0e0;--text-dim:#6a7666;--text-muted:#3a423a;
+    --f-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;--f-display:'Share Tech Mono',monospace;--f-serif:'Fraunces',serif;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);font-family:var(--f-mono);-webkit-font-smoothing:antialiased;overflow-wrap:break-word;word-break:normal;hyphens:none}
+  body{min-height:100vh;line-height:1.55;position:relative}
+  .vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(120% 80% at 50% -10%,rgba(0,220,130,.06),transparent 60%);z-index:0}
+  .wrap{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:clamp(28px,7vw,72px) clamp(20px,5vw,32px)}
+  .eyebrow{font-family:var(--f-display);letter-spacing:.32em;text-transform:uppercase;color:var(--accent);font-size:12px;opacity:.85}
+  h1{font-family:var(--f-serif);font-weight:340;font-size:clamp(40px,10vw,82px);line-height:.96;color:var(--text-bright);margin:16px 0 0;letter-spacing:-.01em}
+  h1 em{font-style:italic;color:var(--accent)}
+  .lede{font-family:var(--f-serif);font-size:clamp(17px,3.2vw,22px);color:var(--text);margin-top:20px;max-width:52ch;font-weight:320}
+  .rule{height:1px;background:linear-gradient(90deg,var(--border-bright),transparent);margin:38px 0}
+  .mcp{background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;position:relative;overflow:hidden}
+  .mcp::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.03));opacity:.6}
+  .mcp .name{font-family:var(--f-display);font-size:18px;color:var(--text-bright);letter-spacing:.04em}
+  .mcp .target{font-size:12px;color:var(--accent-dim);margin:4px 0 14px}
+  .mcp .tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .tool{font-size:11px;letter-spacing:.06em;padding:5px 11px;border-radius:8px;border:1px solid var(--border-bright);background:var(--accent-faint);color:var(--text-bright)}
+  .mcp p{font-size:14px;color:var(--text);opacity:.92}
+  .badge{display:inline-block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);border:1px solid var(--border-bright);border-radius:6px;padding:3px 8px;margin-left:8px;vertical-align:middle}
+  pre{background:#040605;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;color:var(--text-dim);overflow-x:auto;margin-top:10px}
+  footer{margin-top:48px;font-size:12px;color:var(--text-muted);letter-spacing:.06em}
+  footer b{color:var(--text-dim);font-weight:500}
+</style>
+</head>
+<body>
+<div class="vig"></div>
+<main class="wrap">
+  <div class="eyebrow">Self&nbsp;Exec · Infrastructure</div>
+  <h1>toMCP<em>.</em></h1>
+  <p class="lede">Live sites, wrapped as MCP servers. Any agent reads a real page as clean markdown — no browser, no scraping, no auth dance. Two are live and verified.</p>
+
+  <div class="rule"></div>
+
+  <div class="mcp">
+    <div class="name">tomcp-vvsvei <span class="badge">verified live</span></div>
+    <div class="target">target → hitthe.link</div>
+    <div class="tools"><span class="tool">fetch_page(path)</span><span class="tool">search(query)</span></div>
+    <p>Fetches any hitthe.link page and returns it as markdown; full-text search across the site. Verified: <code>fetch_page("")</code> returned the live VVSVEI interface (voice·vision·sms shell).</p>
+    <pre>fetch_page("/vvsvei")  → "VVSVEI · voice vision sms · Xen …"</pre>
+  </div>
+
+  <div class="mcp">
+    <div class="name">xen-xlrd-org <span class="badge">verified live</span></div>
+    <div class="target">target → xen.xlrd.org</div>
+    <div class="tools"><span class="tool">fetch_page(path)</span></div>
+    <p>Fetches any xen.xlrd.org page as markdown. Verified: <code>fetch_page("")</code> returned the live "Xenphone OS — iOS 27 · dark" home.</p>
+    <pre>fetch_page("")  → "Xenphone OS — iOS 27 · dark …"</pre>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="mcp">
+    <div class="name">The pattern</div>
+    <p>toMCP turns a deployed web property into an agent-readable surface. An agent (Claude, the trinity, any MCP client) can read what's actually live — current copy, current state — and reason over it without rendering a browser. The "godly" extension: harvest each page's API calls into a mapped DB and call services directly instead of driving UI.</p>
+  </div>
+
+  <footer><b>toMCP</b> — 2 servers live (tomcp-vvsvei · xen-xlrd-org) · Self&nbsp;Exec · 2026-06-12</footer>
+</main>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

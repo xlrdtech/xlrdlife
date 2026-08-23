@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>57 READY - Composio connect results</title>
+<style>
+  :root{--bg:#0a0b0d;--card:#13161b;--line:#23272f;--ink:#eef2f6;--dim:#8b94a3;--faint:#5b6472;
+    --gold:#d8b46a;--good:#3ecf8e;--warn:#ffcf6b;--cfg:#ff8f6b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 ui-sans-serif,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:26px 16px 90px}
+  h1{font-size:25px;margin:0 0 2px}h1 .g{color:var(--gold)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 16px}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
+  .stat{flex:1 1 150px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+  .stat .n{font:800 26px/1 ui-monospace,Menlo,monospace}
+  .stat .k{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-top:5px}
+  .stat.ok .n{color:var(--good)}
+  .stat.cl .n{color:var(--gold)}
+  .bar{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,var(--bg) 76%,rgba(10,11,13,0));padding:12px 0 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .prog{flex:1 1 240px;min-width:200px}
+  .prog .track{height:10px;background:#1b1f27;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .prog .fill{height:100%;background:linear-gradient(90deg,#34d17a,var(--good));width:0;transition:width .3s}
+  .prog .lbl{font:600 12px/1.4 ui-monospace,Menlo,monospace;color:var(--faint);margin-top:5px}
+  button{border:none;border-radius:9px;padding:10px 15px;font-size:13px;font-weight:800;cursor:pointer}
+  .b-batch{background:linear-gradient(180deg,#e8c878,var(--gold));color:#1a1407}
+  .b-ghost{background:transparent;border:1px solid var(--line);color:var(--dim);font-weight:600}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.12em;margin:26px 0 10px;font-weight:700;color:var(--faint)}
+  h2 .c{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:middle}
+  h2 .ct{color:var(--faint);font-weight:600;margin-left:6px}
+  .empty{color:var(--faint);font-size:12px;background:var(--card);border:1px dashed var(--line);border-radius:11px;padding:14px}
+  .grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 12px;flex:1 1 200px;max-width:240px;display:flex;flex-direction:column;gap:8px}
+  .card.active{border-color:rgba(62,207,142,.4)}
+  .card.done{opacity:.5;border-color:rgba(62,207,142,.4)}
+  .nm{font:700 14px/1.2 ui-monospace,Menlo,monospace;display:flex;align-items:center;gap:7px}
+  .nm .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:0 0 auto}
+  .card.active .nm .dot,.card.done .nm .dot{background:var(--good)}
+  .cat{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+  .row{display:flex;gap:6px}
+  .row a,.row .mk,.row .badge{flex:1;text-align:center;text-decoration:none;font:700 11px/1 ui-monospace,Menlo,monospace;padding:8px 0;border-radius:7px}
+  .row a.connect{background:rgba(216,180,106,.16);color:var(--gold);border:1px solid rgba(216,180,106,.4)}
+  .row .badge{background:rgba(62,207,142,.14);color:var(--good);border:1px solid rgba(62,207,142,.4);cursor:default}
+  .row .mk{background:transparent;border:1px solid var(--line);color:var(--dim);cursor:pointer}
+  .card.done .row .mk{color:var(--good);border-color:rgba(62,207,142,.4)}
+  .note{background:#15130c;border:1px solid #3a3320;border-radius:11px;padding:12px 14px;color:var(--dim);font-size:12px;margin:16px 0 0}
+  .note b{color:var(--gold)}
+  .links{margin:14px 0 0;font-size:12px}.links a{color:var(--gold);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>57 READY <span class="g">·</span> Composio connect results</h1>
+  <p class="sub">Live outcome of the last initiate run. Anything that connected with zero action from you shows green below. Everything else has a one-tap authorize button using its fresh link.</p>
+
+  <div class="stats">
+    <div class="stat ok"><div class="n" id="s-active">0</div><div class="k">auto-connected · no click needed</div></div>
+    <div class="stat cl"><div class="n" id="s-click">57</div><div class="k">need your authorize click</div></div>
+    <div class="stat"><div class="n" id="s-left">57</div><div class="k">remaining to do</div></div>
+  </div>
+
+  <div class="bar">
+    <div class="prog"><div class="track"><div class="fill" id="fill"></div></div><div class="lbl" id="lbl">0 / 57 authorized</div></div>
+    <button class="b-batch" onclick="openNext(5)">Open next 5 &#9656;</button>
+    <button class="b-batch" onclick="openNext(10)">Open next 10 &#9656;</button>
+    <button class="b-ghost" onclick="resetDone()">reset</button>
+  </div>
+
+  <h2><span class="c" style="background:var(--good)"></span>Active now - connected, no action needed<span class="ct" id="ct-active"></span></h2>
+  <div class="grid" id="active"></div>
+  <div class="empty" id="active-empty">None auto-connected on this run. All 57 below need a single authorize click.</div>
+
+  <h2><span class="c" style="background:var(--gold)"></span>Authorize &amp; go - fresh links<span class="ct" id="ct-click"></span></h2>
+  <div class="grid" id="ready"></div>
+
+  <div class="note"><b>Heads up on link expiry:</b> the <b>connect.composio.dev/link/...</b> authorize links are fresh from this run but expire in roughly <b>10 minutes</b>. If a Connect button bounces or errors, that link aged out, so use the durable <b>dashboard.composio.dev/xlrdtech/default</b> path instead (that one never expires). Tap <b>Open next 5/10</b> to fire several authorize tabs at once, then come back and mark each &#10003;. Progress saves to this device.</div>
+
+  <div class="links"><a href="/auth/">&#8592; back to full auth console</a></div>
+</div>
+<script>
+const ORG='xlrdtech', PROJ='default';
+const cx = s => 'https://dashboard.composio.dev/'+ORG+'/'+PROJ+'/toolkits/'+s;
+// ACTIVE: toolkits that connected with no qi action (real data from this run).
+const ACTIVE=[];
+// NEEDS-CLICK: real fresh redirect_url per toolkit from this initiate run.
+const CLICK=[
+{t:"slack",u:"https://connect.composio.dev/link/lk_2vD9X8sgMBkz"},
+{t:"discord",u:"https://connect.composio.dev/link/lk_9Wy-BqbHZVpM"},
+{t:"whatsapp",u:"https://connect.composio.dev/link/lk_JYkea2EWQkfn"},
+{t:"telegram",u:"https://connect.composio.dev/link/lk_dbF9Ayp9fr5D"},
+{t:"microsoft_teams",u:"https://connect.composio.dev/link/lk_Za-5T-8SY165"},
+{t:"dialpad",u:"https://connect.composio.dev/link/lk_3de3EXLplj8v"},
+{t:"gmail",u:"https://connect.composio.dev/link/lk_wxom9C4j7VxU"},
+{t:"outlook",u:"https://connect.composio.dev/link/lk_SIO5CxWv8cX9"},
+{t:"googledrive",u:"https://connect.composio.dev/link/lk_ByC-q-TYLkg5"},
+{t:"googledocs",u:"https://connect.composio.dev/link/lk_096Ydmx7n0Bi"},
+{t:"googlesheets",u:"https://connect.composio.dev/link/lk_taVr9nJlHRxb"},
+{t:"googleslides",u:"https://connect.composio.dev/link/lk_Dv_IniARLtTQ"},
+{t:"googlecalendar",u:"https://connect.composio.dev/link/lk_GGhy6F8V1WW8"},
+{t:"googletasks",u:"https://connect.composio.dev/link/lk_ZnI15HstMS5A"},
+{t:"googlephotos",u:"https://connect.composio.dev/link/lk_wWcRbcHK2Zbg"},
+{t:"google_analytics",u:"https://connect.composio.dev/link/lk_OgNC83d2yEpk"},
+{t:"one_drive",u:"https://connect.composio.dev/link/lk_h6PyssX-L9Im"},
+{t:"excel",u:"https://connect.composio.dev/link/lk_s7hEfCJ15NtG"},
+{t:"notion",u:"https://connect.composio.dev/link/lk_lfNc5gL_vxfr"},
+{t:"todoist",u:"https://connect.composio.dev/link/lk__td3y_mUcbgX"},
+{t:"make",u:"https://connect.composio.dev/link/lk_u4tqf9hwJ8T1"},
+{t:"hubspot",u:"https://connect.composio.dev/link/lk_1EWgd-lqcjHJ"},
+{t:"stripe",u:"https://connect.composio.dev/link/lk_cQ6Q1t0MUTmI"},
+{t:"square",u:"https://connect.composio.dev/link/lk_xk6egbzJJeqH"},
+{t:"ko_fi",u:"https://connect.composio.dev/link/lk_l6ZmvgJ3xpvi"},
+{t:"linkedin",u:"https://connect.composio.dev/link/lk_u9gYzqtvqCTh"},
+{t:"github",u:"https://connect.composio.dev/link/lk_gTcxbuE5ssjw"},
+{t:"supabase",u:"https://connect.composio.dev/link/lk_srrLe0R3Chj5"},
+{t:"cloudflare",u:"https://connect.composio.dev/link/lk_OGKalSxfPRFh"},
+{t:"vercel",u:"https://connect.composio.dev/link/lk_L66G5LqJoGM6"},
+{t:"docker_hub",u:"https://connect.composio.dev/link/lk_4fnhoRZHrAgo"},
+{t:"digital_ocean",u:"https://connect.composio.dev/link/lk_yK6sWVEHHd7-"},
+{t:"elasticsearch",u:"https://connect.composio.dev/link/lk_Bxm7GxMX8x6V"},
+{t:"context7_mcp",u:"https://connect.composio.dev/link/lk_0KoA-cBj5Ysj"},
+{t:"perplexityai",u:"https://connect.composio.dev/link/lk_ZxyuZD2PNg9B"},
+{t:"heygen",u:"https://connect.composio.dev/link/lk_nQ56eiEjBapl"},
+{t:"elevenreader",u:"https://connect.composio.dev/link/lk__NoHlgHR6VmJ"},
+{t:"canva",u:"https://connect.composio.dev/link/lk_QTPu_nPXpg5q"},
+{t:"figma",u:"https://connect.composio.dev/link/lk_5TEUUTtGP4hp"},
+{t:"mobbin_mcp",u:"https://connect.composio.dev/link/lk_FlNPONnhSRbm"},
+{t:"youtube",u:"https://connect.composio.dev/link/lk_zOP4R5wmQDyE"},
+{t:"facebook",u:"https://connect.composio.dev/link/lk_5Sy8SaM31aTJ"},
+{t:"browserbase_tool",u:"https://connect.composio.dev/link/lk_SCvzMekd5BJM"},
+{t:"anchor_browser",u:"https://connect.composio.dev/link/lk_1EskUcxxzAjm"},
+{t:"cloudflare_browser_rendering",u:"https://connect.composio.dev/link/lk_9SrH1lqmeu7C"},
+{t:"browserless",u:"https://connect.composio.dev/link/lk_Yngxl4tCHzlG"},
+{t:"firecrawl",u:"https://connect.composio.dev/link/lk_VoadwZSMXKqz"},
+{t:"apify_mcp",u:"https://connect.composio.dev/link/lk_GXyCc7yr7V8L"},
+{t:"screenshot_fyi",u:"https://connect.composio.dev/link/lk_g5yqKRyxwcNv"},
+{t:"cal",u:"https://connect.composio.dev/link/lk_MaWMaGcvLNuZ"},
+{t:"etermin",u:"https://connect.composio.dev/link/lk_HF7eoEDGrHiz"},
+{t:"zoom",u:"https://connect.composio.dev/link/lk_M_ROhSkm-J9P"},
+{t:"googlemeet",u:"https://connect.composio.dev/link/lk_Xx44MQpb5hG-"},
+{t:"granola_mcp",u:"https://connect.composio.dev/link/lk_CEMnLO4WQy7U"},
+{t:"anthropic_administrator",u:"https://connect.composio.dev/link/lk_VblNH_rnn0eH"},
+{t:"slackbot",u:"https://connect.composio.dev/link/lk_TqyobF0Upoco"},
+{t:"discordbot",u:"https://connect.composio.dev/link/lk_yWzNfhTqeaha"}
+];
+// durable fallback if a fresh link is empty/expired
+CLICK.forEach(c=>{ if(!c.u){ c.u=cx(c.t); } });
+
+const K='auth-ready-done-v1';
+let DONE={}; try{DONE=JSON.parse(localStorage.getItem(K)||'{}');}catch(_){}
+function save(){localStorage.setItem(K,JSON.stringify(DONE));}
+
+function activeCard(t){
+  return '<div class="card active" data-id="'+t+'">'+
+    '<div class="nm"><span class="dot"></span>'+t+'</div>'+
+    '<div class="row"><span class="badge">&#10003; active</span></div></div>';
+}
+function clickCard(c){
+  const d=!!DONE[c.t];
+  return '<div class="card'+(d?' done':'')+'" data-id="'+c.t+'" data-url="'+c.u+'">'+
+    '<div class="nm"><span class="dot"></span>'+c.t+'</div>'+
+    '<div class="row"><a class="connect" href="'+c.u+'" target="_blank" rel="noopener" onclick="mark(\''+c.t+'\',true)">Connect</a>'+
+    '<span class="mk" onclick="toggle(\''+c.t+'\')">'+(d?'&#10003; done':'mark &#10003;')+'</span></div></div>';
+}
+function render(){
+  document.getElementById('active').innerHTML=ACTIVE.map(activeCard).join('');
+  document.getElementById('active-empty').style.display=ACTIVE.length?'none':'block';
+  document.getElementById('ready').innerHTML=CLICK.map(clickCard).join('');
+  const done=CLICK.filter(c=>DONE[c.t]).length;
+  document.getElementById('fill').style.width=(CLICK.length?100*done/CLICK.length:0)+'%';
+  document.getElementById('lbl').textContent=done+' / '+CLICK.length+' authorized';
+  document.getElementById('s-active').textContent=ACTIVE.length;
+  document.getElementById('s-click').textContent=CLICK.length;
+  document.getElementById('s-left').textContent=CLICK.length-done;
+  document.getElementById('ct-active').textContent=ACTIVE.length;
+  document.getElementById('ct-click').textContent=CLICK.length;
+}
+function toggle(t){DONE[t]=!DONE[t];save();render();}
+function mark(t,v){DONE[t]=v;save();setTimeout(render,50);}
+function openNext(n){
+  const pend=CLICK.filter(c=>!DONE[c.t]).slice(0,n);
+  pend.forEach((c,i)=>setTimeout(()=>window.open(c.u,'_blank'),i*400));
+}
+function resetDone(){DONE={};save();render();}
+render();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

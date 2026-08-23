@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet"/>
+<meta name="googlebot" content="noindex,nofollow"/>
+
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+<title>XENOS</title>
+<meta name="theme-color" content="#000200"/>
+<!-- XENOS ENVIRONMENT — the avatar's room.
+     qi 2026-08-17 08:47: "it needs to be placed inside of a three JS GSAP environment that is
+     100% hyper-realistic and immersive at the same level of skill and technique as XT/16 or better"
+     qi 08:46: "just don't make the website just this" — this is a SHELL the page content sits in,
+     never a replacement for the page.
+     Technique lineage: xt/16 (three@0.160, EffectComposer+UnrealBloom, ACES @0.74, FogExp2,
+     MeshPhysicalMaterial ior 1.31 / attenuation 0xa8c8e2 @4.2). xt/16 carried NO gsap; the plasma
+     core does, so camera + reveal are GSAP-driven here.
+     Palette is the plasma core's own: ink #dffbe9, accent #3cff96, ground #000200. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@100;300;400&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --ink:#dffbe9; --accent:#3cff96; --alert:#ff4a4a;
+    --dim:rgba(223,251,233,.45); --faint:rgba(223,251,233,.12);
+    --glass:rgba(0,4,0,.65); --bg:#000200;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  /* scroll is the INPUT device — qi 08:53: "it does that on scroll". So the document must
+     actually scroll; a fixed overflow:hidden body has no scroll to read. */
+  html{scroll-behavior:auto}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+  #scroll{height:700vh;pointer-events:none}          /* the runway the shots live on */
+  canvas#stage{display:block;position:fixed;inset:0;outline:none;z-index:0}
+
+  /* ── content layer. THE PAGE LIVES HERE. The scene is behind it, never instead of it. ── */
+  #content{position:fixed;inset:0;z-index:2;pointer-events:none;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    padding:0 clamp(18px,5vw,44px) calc(env(safe-area-inset-bottom,0px) + clamp(28px,7vh,68px));}
+  #content > *{pointer-events:auto}
+
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-weight:300;font-size:clamp(9px,2.5vw,11px);
+    letter-spacing:.34em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;
+    opacity:0;transform:translateY(8px)}
+  h1{font-weight:300;font-size:clamp(38px,12vw,92px);line-height:.94;letter-spacing:-.03em;
+    margin-bottom:16px}
+  h1 .g{display:inline-block;opacity:0;transform:translateY(26px) rotateX(-40deg);
+    transform-origin:50% 100%}
+  .sub{font-weight:300;font-size:clamp(13px,3.6vw,17px);line-height:1.5;color:var(--dim);
+    max-width:34ch;opacity:0;transform:translateY(10px)}
+
+  /* ── per-shot content. THIS is what makes the cinematic ride a website:
+       qi 08:54:30 — "the user navigating the site can actually CLICK ON and get to
+       the information or the items going through this cinematic experience." ── */
+  #panels{position:fixed;z-index:4;left:clamp(18px,5vw,44px);
+    bottom:calc(env(safe-area-inset-bottom,0px) + clamp(96px,15vh,150px));
+    max-width:min(38ch,86vw);pointer-events:none}
+  .panel{position:absolute;bottom:0;left:0;width:100%;
+    opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease;
+    pointer-events:none}
+  .panel.on{opacity:1;transform:none;pointer-events:auto;position:relative}
+  .p-t{font-weight:300;font-size:clamp(28px,8vw,54px);line-height:1.0;letter-spacing:-.025em;
+    margin-bottom:10px}
+  .p-b{font-weight:300;font-size:clamp(13px,3.5vw,16px);line-height:1.5;color:var(--dim);
+    margin-bottom:16px}
+  .p-i{display:flex;flex-wrap:wrap;gap:8px}
+  .p-i a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--ink);text-decoration:none;
+    padding:10px 16px;border:1px solid rgba(223,251,233,.22);border-radius:2px;
+    background:rgba(0,4,0,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    transition:border-color .2s,background .2s,color .2s}
+  .p-i a:hover,.p-i a:active{color:var(--accent);border-color:var(--accent);
+    background:rgba(60,255,150,.08)}
+
+  /* scroll affordance — without it nobody discovers that scroll drives the cuts */
+  #hint{position:fixed;z-index:4;right:clamp(14px,4vw,30px);
+    bottom:calc(env(safe-area-inset-bottom,0px) + clamp(96px,15vh,150px));
+    font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.28em;
+    text-transform:uppercase;color:rgba(223,251,233,.3);writing-mode:vertical-rl;
+    pointer-events:none;transition:opacity .5s}
+  #hint.hide{opacity:0}
+
+  /* ── navigation. Environment + navigation, per qi 08:46:51 ── */
+  nav#routes{position:fixed;left:0;right:0;z-index:3;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 0px);
+    display:flex;gap:0;overflow-x:auto;scrollbar-width:none;
+    background:linear-gradient(to top,rgba(0,2,0,.92),rgba(0,2,0,.55) 62%,transparent);
+    padding:22px clamp(14px,4vw,34px) calc(14px + env(safe-area-inset-bottom,0px));
+    -webkit-overflow-scrolling:touch}
+  nav#routes::-webkit-scrollbar{display:none}
+  nav#routes a{flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-weight:300;
+    font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+    text-decoration:none;padding:9px 15px;border:1px solid var(--faint);border-radius:999px;
+    margin-right:8px;white-space:nowrap;transition:color .22s,border-color .22s,background .22s;
+    backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+  nav#routes a:active,nav#routes a.on{color:var(--accent);border-color:rgba(60,255,150,.42);
+    background:rgba(60,255,150,.07)}
+
+  /* ── telemetry garnish. Low contrast on purpose — the skill's note: reproducing only the
+       garnish is the classic failure, so it stays subordinate to the 3D. ── */
+  #hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:clamp(14px,4vw,34px);
+    z-index:3;font-family:'JetBrains Mono',monospace;font-weight:100;font-size:10px;
+    letter-spacing:.16em;color:rgba(223,251,233,.26);line-height:1.85;pointer-events:none;
+    text-transform:uppercase}
+  #hud b{font-weight:300;color:rgba(60,255,150,.5)}
+
+  #boot{position:fixed;inset:0;z-index:9;background:var(--bg);display:grid;place-items:center;
+    transition:opacity .7s ease}
+  #boot.gone{opacity:0;pointer-events:none}
+  #boot .r{width:38px;height:38px;border:1px solid var(--faint);border-radius:50%;position:relative}
+  #boot .r::after{content:'';position:absolute;inset:-1px;border-radius:50%;
+    border:1px solid transparent;border-top-color:var(--accent);animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){#boot .r::after{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<div id="hud">
+  XENOS · <b id="h-fps">—</b> FPS<br/>
+  CORE <b id="h-energy">0.00</b><br/>
+  <span id="h-route">ROOT</span>
+</div>
+
+<div id="content">
+  <div class="eyebrow" id="eyebrow">XLRD · Avatar · Voice · Graph</div>
+</div>
+
+<!-- one panel per camera angle, built from SHOTS -->
+<div id="panels"></div>
+<div id="hint">scroll to cut</div>
+
+<nav id="routes" aria-label="Shots"></nav>
+
+<div id="boot"><div class="r"></div></div>
+
+<!-- the scroll runway. Scroll is the input device for the angle cuts. -->
+<div id="scroll"></div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script src="https://unpkg.com/gsap@3.13.0/dist/gsap.min.js"></script>
+
+<script type="module">
+import * as THREE from 'three';
+import {EffectComposer}   from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass}       from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass}  from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+/* ═════════════════════════════════════════════════════════════════════════
+   0. PALETTE + TUNING — every number here was read off xt/16, not guessed.
+   ═════════════════════════════════════════════════════════════════════════ */
+const C = {
+  bg:    new THREE.Color(0x000200),
+  fog:   new THREE.Color(0x02110a),
+  sun:   new THREE.Color(0xdff7e9),
+  sky:   new THREE.Color(0x18402e),
+  gnd:   new THREE.Color(0x02100a),
+  accent:new THREE.Color(0x3cff96),
+  atten: new THREE.Color(0xa8c8e2),   // xt/16's ice attenuation, kept
+};
+const MOBILE = Math.min(innerWidth, innerHeight) < 620;
+
+/* ═════════════════════════════════════════════════════════════════════════
+   1. RENDERER — ACES @ 0.74 and SRGB output, matching xt/16 exactly.
+      DPR is clamped hard: this is mobile-first, and an uncapped DPR on a
+      phone is how a 60fps scene becomes 18fps.
+   ═════════════════════════════════════════════════════════════════════════ */
+const canvas   = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:!MOBILE, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, MOBILE ? 2 : 2.5));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace    = THREE.SRGBColorSpace;
+renderer.toneMapping         = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.52;   // was 0.74 (xt/16's value) — measured blowout, see LIGHTS
+
+const scene  = new THREE.Scene();
+scene.background = C.bg;
+scene.fog        = new THREE.FogExp2(C.fog.getHex(), MOBILE ? 0.030 : 0.024);
+
+const camera = new THREE.PerspectiveCamera(46, innerWidth/innerHeight, 0.1, 260);
+camera.position.set(0, 2.15, 12.4);
+
+/* ═════════════════════════════════════════════════════════════════════════
+   2. ENVIRONMENT MAP — PMREM off a generated gradient. Transmissive material
+      is only convincing when it has something to refract; without an envMap
+      the glass reads as flat plastic.
+   ═════════════════════════════════════════════════════════════════════════ */
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+(function buildEnv(){
+  const w=64,h=64,d=new Uint8Array(w*h*4);
+  for(let y=0;y<h;y++){
+    const v=y/(h-1);
+    // horizon-weighted: bright band at the top third, deep green floor
+    const top=Math.pow(1-v,2.1), band=Math.exp(-Math.pow((v-0.30)/0.115,2));
+    const r=(10+215*top+120*band), g=(22+240*top+180*band), b=(16+225*top+140*band);
+    for(let x=0;x<w;x++){
+      const i=(y*w+x)*4;
+      const n=0.93+0.07*Math.sin(x*0.7+y*0.31);
+      d[i]=Math.min(255,r*n); d[i+1]=Math.min(255,g*n); d[i+2]=Math.min(255,b*n); d[i+3]=255;
+    }
+  }
+  const tex=new THREE.DataTexture(d,w,h,THREE.RGBAFormat);
+  tex.colorSpace=THREE.SRGBColorSpace; tex.needsUpdate=true;
+  scene.environment = pmrem.fromEquirectangular(tex).texture;
+  tex.dispose();
+})();
+
+/* ═════════════════════════════════════════════════════════════════════════
+   3. LIGHTS — seven, same shape as xt/16's rig. Value range must span
+      near-black to near-white or nothing else in the frame can land.
+   ═════════════════════════════════════════════════════════════════════════ */
+/* ⚠️ MEASURED FAILURE, 2026-08-17 09:01 — first pass copied xt/16's light INTENSITIES
+   without copying its scene SCALE, and a 78-intensity PointLight sitting INSIDE a
+   transmissive shell blew the entire frame to white-green mush. Screenshot showed no
+   near-black anywhere and the core invisible inside its own glare. That is the skill's
+   trap 3 exactly: a hot interior erases structure instead of lighting seams.
+   Rule learned: light intensity is not portable between scenes — only the RATIOS are.
+   The core must be the ONLY bright thing, and everything else falls to near-black. */
+const sun = new THREE.DirectionalLight(C.sun, 1.35);
+sun.position.set(-6.5, 11.0, 5.2);
+scene.add(sun);
+scene.add(new THREE.HemisphereLight(C.sky, C.gnd, 0.16));
+scene.add(new THREE.AmbientLight(0x8fa8b8, 0.045));
+const rim = new THREE.DirectionalLight(0xc6d4e4, 0.42);
+rim.position.set(7.0, 3.4, -8.0);
+scene.add(rim);
+/* core glow: small radius, steep decay — it must pool on the nearest blocks, not
+   flood the shell. distance 9 keeps it from reaching the far wall at all. */
+const coreLight = new THREE.PointLight(0x9effc9, 9.5, 9.0, 2.2); coreLight.position.set(0,2.3,0);
+const fill1     = new THREE.PointLight(0x3cff96, 3.2, 10, 2);   fill1.position.set(-4.2,1.1,3.0);
+const fill2     = new THREE.PointLight(0xbfe0ff, 2.4, 9, 2);    fill2.position.set(4.6,0.7,-2.4);
+scene.add(coreLight, fill1, fill2);
+
+/* ═════════════════════════════════════════════════════════════════════════
+   4. TERRAIN — ridged fbm displacement. Three receding ridge planes, each
+      lower in contrast, haze pooling between them: that layering is what
+      reads as depth in the reference, more than any single material does.
+   ═════════════════════════════════════════════════════════════════════════ */
+function hash(x,y){ const s=Math.sin(x*127.1+y*311.7)*43758.5453; return s-Math.floor(s); }
+function vnoise(x,y){
+  const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+  const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
+  return (hash(xi,yi)*(1-u)+hash(xi+1,yi)*u)*(1-v)
+       + (hash(xi,yi+1)*(1-u)+hash(xi+1,yi+1)*u)*v;
+}
+function ridged(x,y){
+  let s=0,a=0.5,f=1;
+  for(let o=0;o<5;o++){ s+=a*(1-Math.abs(vnoise(x*f,y*f)*2-1)); f*=2.07; a*=0.5; }
+  return s;
+}
+const groundMat = new THREE.MeshStandardMaterial({
+  color:0x0b2a1c, roughness:0.86, metalness:0.0, envMapIntensity:0.42, flatShading:false
+});
+const RIDGES = [
+  {z:-14, w:150, h:60, seg: MOBILE?110:150, amp:5.2, o:0.9},
+  {z:-42, w:230, h:80, seg: MOBILE?80:110,  amp:9.0, o:0.55},
+  {z:-84, w:340, h:96, seg: MOBILE?54:76,   amp:14.5,o:0.3},
+];
+for(const R of RIDGES){
+  const g = new THREE.PlaneGeometry(R.w, R.h, R.seg, Math.round(R.seg*0.45));
+  const p = g.attributes.position;
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i), y=p.getY(i);
+    const e = ridged(x*0.045+R.z*0.01, y*0.045) - 0.62;
+    // flatten a bowl at the centre of the near ridge so the avatar has a floor
+    const dist = Math.hypot(x, y);
+    const bowl = R.z>-20 ? Math.min(1, Math.pow(dist/26, 2.0)) : 1;
+    p.setZ(i, e*R.amp*bowl);
+  }
+  g.computeVertexNormals();
+  const m = groundMat.clone(); m.opacity=R.o; m.transparent=R.o<1;
+  const mesh = new THREE.Mesh(g, m);
+  mesh.rotation.x = -Math.PI/2;
+  mesh.position.set(0, -1.9, R.z);
+  scene.add(mesh);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   5. THE ORBITAL SYSTEM — XLRD's own language, at xt/16's level of craft.
+      ⛔ REPLACED THE IGLOO, 2026-08-17 09:28. qi: "I don't want to be in no
+      fucking igloo. The igloo ain't got nothing to do with us. It's just the
+      LEVEL OF DESIGN that has something to do with us."
+      The first pass built a coursed ice dome — 1,086 blocks, superellipse
+      profile, seam lighting. That copied the reference's SUBJECT when only its
+      CRAFT was ever the instruction, and it put his brand in another studio's
+      clothes. The landing pages exist to prove HIS capability; a page that
+      looks like the reference proves the reference's.
+      What replaces it is his own calibrated form, already established on his
+      homepage from IMG_0106/IMG_0739: a small brilliant core inside NESTED
+      ORBITAL RINGS carrying discrete satellites of varied size.
+      What CARRIES OVER from xt/16 is only the craft: real transmission,
+      near-black to near-white range, thin bright elements over dark, measured
+      framing gate, 60fps on a phone.
+   ═════════════════════════════════════════════════════════════════════════ */
+/* Sized FROM the framing bar, not by eye. FOV 46° → half-angle 23°, core radius 1.5.
+   Apparent width fraction ≈ 2r / (2·d·tan23°) = 3/(0.85·d). For the 0.45 target that
+   puts the hero camera at d ≈ 7.8–8.2, so the shell MUST be smaller than that or the
+   camera sits inside it — which is precisely what the first screenshot showed. */
+/* FOUR NESTED RINGS, tilted on different axes, each carrying discrete satellites of
+   varied size. Radii and counts come from his own homepage calibration (IMG_0106):
+   4 rings, 26–58 satellites total, subject small and brilliant at the centre. */
+/* Radii scaled with the core (1.5 -> 0.76). At d=8.1 with FOV 46 the visible horizontal
+   half-extent at the core's depth is ~3.75 units, so a 6.3 ring lived entirely off-frame.
+   These keep his calibrated proportion — rings at roughly 2x to 5x the core radius — while
+   staying inside the frame where they can actually be seen. */
+const RINGS = [
+  {r:1.55, tilt:[ 0.16, 1.00,  0.10], n: MOBILE? 5: 8,  spd: 0.115, sz:[0.055,0.125]},
+  {r:2.20, tilt:[-0.34, 1.00,  0.24], n: MOBILE? 6:10,  spd:-0.086, sz:[0.045,0.105]},
+  {r:2.95, tilt:[ 0.44, 1.00, -0.20], n: MOBILE? 6: 9,  spd: 0.062, sz:[0.038,0.090]},
+  {r:3.70, tilt:[-0.10, 1.00, -0.42], n: MOBILE? 5:10,  spd:-0.045, sz:[0.032,0.078]},
+];
+
+/* Satellites are transmissive glass — the ONE thing carried over from xt/16, because
+   physically-grounded refraction is craft, not costume. Dark body + short attenuation
+   so light dies inside and only the rim catches it: that is what makes a small object
+   read as bright against near-black without blowing out (measured this morning). */
+/* ⚠️ FOUND BY HANDS + EYES, 10:11 — not by any measurement I had.
+   Driving the page with a real PageDown and LOOKING at the result showed a BLACK SPHERE
+   punched into the core's lower right. Cause: three.js `transmission` samples the
+   BACKDROP via a transmission render target, and that target does not contain the
+   emissive core. So any transmissive satellite passing IN FRONT of the core sampled
+   blackness and rendered as a hole — exactly the artifact I deleted the lattice for.
+   Every automated check passed while this was on screen: ready=true, 72fps, 0 console
+   errors, 37 sats, correct panel. NOTHING but an eye on a real interaction catches it.
+   FIX: drop transmission entirely. Emissive + lit standard material reads as glowing
+   glass against near-black WITHOUT needing to sample anything behind it, so it can
+   never punch a hole. Physical realism was costing more than it bought here. */
+const satMat = new THREE.MeshStandardMaterial({
+  color:0x1d3a2e, roughness:0.22, metalness:0.10,
+  emissive:new THREE.Color(0x2f8f63), emissiveIntensity:0.55,
+  envMapIntensity:1.15
+});
+const hotMat = new THREE.MeshBasicMaterial({color:0xbfffe0});   // the bright few
+
+/* the ring path itself — a thin torus, low contrast. It should read as a trace the
+   satellites travel on, never as a solid band competing with the core. */
+const shell = new THREE.Group();
+const sats  = [];
+let jointCount = 0;
+
+for(const R of RINGS){
+  const axis = new THREE.Vector3(...R.tilt).normalize();
+  const q    = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), axis);
+
+  const path = new THREE.Mesh(
+    new THREE.TorusGeometry(R.r, 0.006, 6, MOBILE?96:160),
+    new THREE.MeshBasicMaterial({color:0x2f6a4c, transparent:true, opacity:0.32})
+  );
+  path.rotation.x = Math.PI/2;              // torus is XY by default; lay it flat
+  path.applyQuaternion(q);
+  path.position.y = 2.25;
+  shell.add(path);
+
+  for(let i=0;i<R.n;i++){
+    const sz  = R.sz[0] + Math.random()*(R.sz[1]-R.sz[0]);
+    const hot = Math.random() < 0.28;        // a minority burn bright — his reference
+    const m = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(sz, hot ? 1 : (MOBILE?1:2)),
+      hot ? hotMat : satMat
+    );
+    m.userData = {ring:R, axis, q, phase: Math.random()*Math.PI*2,
+                  wobble: 0.04 + Math.random()*0.10, hot};
+    sats.push(m); shell.add(m); jointCount++;
+  }
+}
+scene.add(shell);
+
+/* place/advance the satellites on their tilted rings. Called every frame from the loop,
+   driven by sceneTime so the FREEZE-CUT stops them dead with everything else. */
+function orbit(t){
+  for(const m of sats){
+    const d = m.userData;
+    const a = d.phase + t * d.ring.spd;
+    const p = new THREE.Vector3(Math.cos(a)*d.ring.r, 0, Math.sin(a)*d.ring.r);
+    p.applyQuaternion(d.q);
+    p.y += 2.25 + Math.sin(a*3.0 + d.phase) * d.wobble;
+    m.position.copy(p);
+    m.rotation.y = a*1.7; m.rotation.x = a*0.9;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   6. THE AVATAR — the plasma core. Shader sphere, fbm-displaced, driven by
+      `energy` so the voice layer can push it later. Uniform names match the
+      plasma core injection (t / energy / morph / flare) so the two stay
+      swappable rather than forked.
+   ═════════════════════════════════════════════════════════════════════════ */
+const coreUniforms = {
+  t:{value:0}, energy:{value:0.22}, morph:{value:0}, flare:{value:0},
+  accent:{value:C.accent}
+};
+/* ⚠️ THIRD MEASURED CORRECTION, 09:41 — screenshot showed the core filling ~41% of
+   frame as a pale jade marble, dominating the rings.
+   TWO TARGETS WERE IN CONFLICT AND I HAD PICKED THE WRONG ONE: the reference skill
+   says frame the subject at 0.45, but qi's OWN calibration (IMG_0106, preserved on his
+   homepage) says the sphere reads 20-25% and the ORBITAL SYSTEM is the subject.
+   HIS NUMBER WINS — it is his brand, and the rings are the thing that has to carry.
+   Arithmetic: apparent = 2r/(0.85·d). At d≈8.1 the radius for 0.22 is 0.76. */
+const CORE_R = 0.76;
+const core = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(CORE_R, MOBILE ? 4 : 6),
+  new THREE.ShaderMaterial({
+    uniforms:coreUniforms, transparent:true,
+    vertexShader:`
+      uniform float t, energy, morph;
+      varying vec3 vN; varying vec3 vP; varying float vD;
+      // iq-style value noise + fbm, cheap enough for a phone
+      vec3 h3(vec3 p){ p=vec3(dot(p,vec3(127.1,311.7,74.7)),dot(p,vec3(269.5,183.3,246.1)),
+                              dot(p,vec3(113.5,271.9,124.6)));
+        return -1.+2.*fract(sin(p)*43758.5453123); }
+      float n3(vec3 p){ vec3 i=floor(p),f=fract(p); vec3 u=f*f*(3.-2.*f);
+        return mix(mix(mix(dot(h3(i+vec3(0,0,0)),f-vec3(0,0,0)),dot(h3(i+vec3(1,0,0)),f-vec3(1,0,0)),u.x),
+                       mix(dot(h3(i+vec3(0,1,0)),f-vec3(0,1,0)),dot(h3(i+vec3(1,1,0)),f-vec3(1,1,0)),u.x),u.y),
+                   mix(mix(dot(h3(i+vec3(0,0,1)),f-vec3(0,0,1)),dot(h3(i+vec3(1,0,1)),f-vec3(1,0,1)),u.x),
+                       mix(dot(h3(i+vec3(0,1,1)),f-vec3(0,1,1)),dot(h3(i+vec3(1,1,1)),f-vec3(1,1,1)),u.x),u.y),u.z); }
+      float fbm(vec3 p){ float s=0.,a=.5; for(int i=0;i<4;i++){ s+=a*n3(p); p*=2.03; a*=.5; } return s; }
+      void main(){
+        vN = normalize(normalMatrix * normal);
+        float d = fbm(normal*2.1 + vec3(0.0, t*0.28, t*0.13));
+        d += 0.42 * fbm(normal*5.3 - vec3(t*0.21, 0.0, 0.0));
+        float amp = 0.13 + energy*0.46 + morph*0.30;
+        vD = d;
+        vec3 pos = position + normal * d * amp;
+        vec4 mv = modelViewMatrix * vec4(pos,1.0);
+        vP = mv.xyz;
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader:`
+      uniform float t, energy, flare; uniform vec3 accent;
+      varying vec3 vN; varying vec3 vP; varying float vD;
+      void main(){
+        vec3 V = normalize(-vP);
+        float fres = pow(1.0 - max(dot(normalize(vN), V), 0.0), 2.6);
+        // interior is DARKER than the rim — a hot interior erases structure
+        // smaller core (0.76) must read BRILLIANT to hold the centre against 37
+        // satellites — so the plasma term dominates and the crevices stay dark.
+        /* ⚠️ FOURTH PASS, 09:44. Screenshot: the core read as a DARK shadowed planet.
+           Cause was global — exposure 0.52 (set to stop the earlier blowout) crushes an
+           object whose brightness comes only from a mix(). Raising exposure would
+           re-blow the whole frame, so the lift is LOCAL: the core emits, and emission
+           survives tone mapping in a way a diffuse mix does not. */
+        vec3 deep = accent * 0.14;
+        vec3 hot  = mix(accent, vec3(0.96,1.0,0.98), 0.80);
+        float e   = clamp(vD*1.35 + fres*0.80 + energy*0.40 - 0.10, 0.0, 1.0);
+        vec3 col  = mix(deep, hot, e);
+        col += accent * pow(clamp(vD-0.10,0.0,1.0), 1.25) * 2.6;   // internal emission
+        col += vec3(0.55,1.0,0.82) * pow(fres, 3.0) * 1.8;         // limb, unmistakable
+        col *= 1.0 + energy*0.55;
+        col += accent * flare * 0.75 * fres;
+        float alpha = clamp(0.30 + fres*0.86 + energy*0.14, 0.0, 1.0);
+        gl_FragColor = vec4(col, alpha);
+      }`
+  })
+);
+core.position.set(0, 2.25, 0);
+scene.add(core);
+
+/* ⛔ LATTICE REMOVED, 09:41. It was an OctahedronGeometry(1.16) inside a radius-1.5
+   core with MeshBasicMaterial — unlit by definition — so at this camera angle it
+   rendered as a BLACK SPHERE punched through the core. Visible in the 09:40 shot,
+   left of centre. It was solving a problem the plasma shader already solves (internal
+   structure), so it is deleted rather than re-tuned: one object, one job.
+   A kept reference to `lattice` would throw in the frame loop, so those lines go too. */
+const lattice = new THREE.Group();     // inert placeholder; frame loop still references it
+scene.add(lattice);
+
+/* ═════════════════════════════════════════════════════════════════════════
+   7. PARTICLES — a generated radial-alpha map is MANDATORY. Untextured
+      THREE.Points are hard opaque squares, and with sizeAttenuation on, one
+      near the lens becomes a grey box over the whole scene. That defect is
+      invisible locally and only shows on the served page.
+   ═════════════════════════════════════════════════════════════════════════ */
+const sprite = (()=>{
+  const s=64, cv=document.createElement('canvas'); cv.width=cv.height=s;
+  const g=cv.getContext('2d').createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.35,'rgba(255,255,255,.55)');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  const cx=cv.getContext('2d'); cx.fillStyle=g; cx.fillRect(0,0,s,s);
+  const tx=new THREE.CanvasTexture(cv); tx.colorSpace=THREE.SRGBColorSpace; return tx;
+})();
+const NP = MOBILE ? 1400 : 3200;
+const pg = new THREE.BufferGeometry();
+const pp = new Float32Array(NP*3), pv = new Float32Array(NP);
+for(let i=0;i<NP;i++){
+  const rr = 2.0 + Math.random()*26, aa = Math.random()*Math.PI*2;
+  pp[i*3]   = Math.cos(aa)*rr;
+  pp[i*3+1] = -1.7 + Math.random()*13;
+  pp[i*3+2] = Math.sin(aa)*rr - 6;
+  pv[i]     = 0.25 + Math.random()*0.9;
+}
+pg.setAttribute('position', new THREE.BufferAttribute(pp,3));
+const points = new THREE.Points(pg, new THREE.PointsMaterial({
+  size:0.055, map:sprite, alphaTest:0.02, transparent:true, depthWrite:false,
+  color:0x8fe6bd, opacity:0.26, sizeAttenuation:true, blending:THREE.AdditiveBlending
+}));
+scene.add(points);
+
+/* ═════════════════════════════════════════════════════════════════════════
+   8. POST — bloom kept restrained. Bloom is what turns thin lit joints into
+      one filled blob if pushed, so threshold stays high and strength low.
+   ═════════════════════════════════════════════════════════════════════════ */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+/* threshold 0.94 (was 0.86): only the core itself is above it. At 0.86 the lit block
+   faces qualified too, and bloom merged 1086 thin joints into one filled blob — the
+   skill's exact warning that raising glow fills the gaps instead of lighting them. */
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight),
+                                  MOBILE?0.30:0.36, 0.58, 0.94);
+composer.addPass(bloom);
+
+/* ═════════════════════════════════════════════════════════════════════════
+   9. SHOTS — THE CUTS ARE THE NAVIGATION.
+      qi 2026-08-17 08:53–08:54, and every clause here is load-bearing:
+        · "it does that ON SCROLL"                    → scroll is the input
+        · "camera angle changes as TIME FREEZES"      → freeze, THEN cut. Not an orbit.
+        · "switches angles from DIFFERENT SIDES of me"→ discrete viewpoints
+        · "I always like the SKY VIEW, they zoom down onto me" → that's shot 0
+        · "these switches, the angles, IS NAVIGATING the user interface... the user
+           can actually CLICK ON and get to the information or the items"
+          → every shot carries real, clickable content. This is what keeps it a
+            website and not a showreel: "just don't make the website just this."
+
+      SHOT TEMPLATE — one array, retargeted per identity. qi 08:54:40: "in order to
+      get it done at half the time, we're just going to take the exact same thing and
+      do it for two different versions of me." So the geometry of the ride is shared;
+      only IDENTITY (copy + palette + links) swaps. See IDENTITY below.
+   ═════════════════════════════════════════════════════════════════════════ */
+const SHOTS = [
+  // SKY is deliberately distant — it is the descent, not a hero frame.
+  { id:'SKY',   cam:[0.0, 17.0, 0.8],  look:[0,2.2,0], freeze:0.00,
+    title:'XENOS',        body:'The avatar, the voice and the graph — one surface.',
+    items:[{t:'Enter',href:'/xenos-plasma/'}] },
+  // every framed shot sits at d≈8 from the core: 0.45 of frame width by arithmetic.
+  { id:'FRONT', cam:[0.0,  2.5, 8.1],  look:[0,2.25,0], freeze:0.55,
+    title:'XLRD',         body:'The system: dev face, professional face, one brand.',
+    items:[{t:'XLRD tech',href:'/xlrd-tech/'},{t:'XLRD.org',href:'/xlrd-org/'}] },
+  { id:'LEFT',  cam:[-7.7, 2.0, 2.4],  look:[0,2.25,0], freeze:0.55,
+    title:'Executive Leverage', body:'The professional representation of the same system.',
+    items:[{t:'Open',href:'/selfexec/'}] },
+  { id:'BEHIND',cam:[0.6,  2.9,-7.8],  look:[0,2.25,0], freeze:0.6,
+    title:'XEN',          body:'The voice. One mouth per origin, guaranteed by construction.',
+    items:[{t:'XEN',href:'/xen/'},{t:'VVSVEI',href:'/vvsvei/'}] },
+  { id:'RIGHT', cam:[7.9,  1.9, 2.0],  look:[0,2.25,0], freeze:0.55,
+    title:'XOS',          body:'The operating surface. Mobile first, always.',
+    items:[{t:'XOS',href:'/xos/'}] },
+  { id:'LOW',   cam:[3.4, -0.4, 7.2],  look:[0,2.7,0],  freeze:0.5,
+    title:'The standard',  body:'Everything here is built to xt/16 or better.',
+    items:[{t:'xt/16',href:'/xt/16/'}] },
+  { id:'WIDE',  cam:[0.0,  5.6,14.0],  look:[0,1.8,0],  freeze:0.0,
+    title:'hitthe.link',  body:'The portfolio and the fast lane — excellence and consistency.',
+    items:[{t:'All scopes',href:'/'}] },
+];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IDENTITY — THE ONE SWAP POINT, and the reason seven sites cost less than two.
+   qi 2026-08-17 08:54:40: "in order to get it done at half the time, we're just
+   going to take the exact same thing and do it for two different versions of me."
+   Generalised from two to seven: the RIDE (shot geometry, freeze-cut engine,
+   materials, lighting) is identical everywhere. Only accent + copy + links move.
+   Build marker below is rewritten per-site by bin/build-landing-pages.mjs.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const IDENTITIES = {
+  xlrd:     { name:'XENOS',              accent:0x3cff96, domain:'hitthe.link/xenos-env',
+              kicker:'XLRD · Avatar · Voice · Graph' },
+  xlrdtech: { name:'XLRD TECH',          accent:0x3cff96, domain:'xlrdtech.com',
+              kicker:'Executive Leverage Research Development' },
+  xlrdorg:  { name:'XLRD.ORG',           accent:0x6effc0, domain:'xlrd.org',
+              kicker:'The dev representation' },
+  exlev:    { name:'EXECUTIVE LEVERAGE', accent:0xc9d8ff, domain:'executiveleverage.com',
+              kicker:'The professional representation' },
+  hittl:    { name:'HITTHE.LINK',        accent:0x3cff96, domain:'hitthe.link',
+              kicker:'Portfolio · fast lane · showcase of consistency' },
+  selfexec: { name:'SELF EXEC',          accent:0xffb865, domain:'selfexec.com',
+              kicker:'Enterprise automation & intelligent systems' },
+  ctoeast:  { name:'CTO EAST',           accent:0x8ad4ff, domain:'ctoeast.com',
+              kicker:'The real me, corporate' },
+  eastallen:{ name:'EAST ALLEN',         accent:0xffd48a, domain:'eastallen.com',
+              kicker:'The real me' },
+};
+/* @@BUILD_ID@@ — the generator replaces this line per site */
+const IDK = new URLSearchParams(location.search).get('id') || 'xlrd';
+const IDENT = IDENTITIES[IDK] || IDENTITIES.xlrd;
+document.title = IDENT.name === 'XENOS' ? 'XENOS' : IDENT.name + ' — XENOS';
+C.accent.setHex(IDENT.accent);
+coreUniforms.accent.value = C.accent;
+fill1.color.setHex(IDENT.accent);
+document.documentElement.style.setProperty('--accent', '#'+IDENT.accent.toString(16).padStart(6,'0'));
+document.getElementById('eyebrow').textContent = IDENT.kicker;
+
+/* build the per-shot content panels — the clickable layer at each angle */
+const panelWrap = document.getElementById('panels');
+SHOTS.forEach((S,i)=>{
+  const p = document.createElement('div');
+  p.className='panel'; p.dataset.i=i;
+  p.innerHTML = `<div class="p-t">${S.title}</div><p class="p-b">${S.body}</p>`+
+    `<div class="p-i">${S.items.map(x=>`<a href="${x.href}">${x.t}</a>`).join('')}</div>`;
+  panelWrap.appendChild(p);
+});
+const panels = [...panelWrap.children];
+
+/* nav pills mirror the shots — tapping one scrolls to that shot, so the pill row and
+   the camera can never disagree about where you are. */
+const nav = document.getElementById('routes');
+const hudRoute = document.getElementById('h-route');
+SHOTS.forEach((S,i)=>{
+  const a=document.createElement('a');
+  a.textContent=S.id; a.href='#'; a.dataset.i=i;
+  if(i===0) a.classList.add('on');
+  a.addEventListener('click',e=>{ e.preventDefault(); scrollToShot(i); });
+  nav.appendChild(a);
+});
+function scrollToShot(i){
+  const max = document.body.scrollHeight - innerHeight;
+  scrollTo({top: (i/(SHOTS.length-1))*max, behavior:'smooth'});
+}
+
+/* ── the freeze-cut engine ─────────────────────────────────────────────────
+   Scroll position picks a shot INDEX, not a lerped position between shots.
+   Crossing a boundary: stop scene time (freeze), snap the camera to the new
+   angle, flare the core, swap the panel. A continuous interpolation would
+   produce a smooth orbit — the exact thing he said it is NOT.               */
+const look = new THREE.Vector3(0,2.2,0);
+let shotIdx = -1, frozen = 0, timeScale = 1;
+function applyShot(i, instant){
+  const S = SHOTS[i]; if(!S) return;
+  shotIdx = i;
+  hudRoute.textContent = S.id;
+  nav.querySelectorAll('a').forEach(x=>x.classList.toggle('on', +x.dataset.i===i));
+  panels.forEach((p,k)=>p.classList.toggle('on', k===i));
+
+  // FREEZE: scene time scales to ~0 for the duration of the cut, then resumes.
+  if(!instant && S.freeze>0){
+    frozen = S.freeze;
+    gsap.fromTo({v:1},{v:1},{duration:0});          // no-op anchor, keeps tl semantics
+    timeScale = 0.02;
+    gsap.delayedCall(S.freeze, ()=>{ gsap.to({}, {duration:0}); timeScale = 1; });
+  }
+  const d = instant ? 0 : 0.42;                      // a CUT, not a glide
+  gsap.killTweensOf(camera.position); gsap.killTweensOf(look);
+  gsap.to(camera.position,{x:S.cam[0],y:S.cam[1],z:S.cam[2],duration:d,ease:'power4.inOut'});
+  gsap.to(look,           {x:S.look[0],y:S.look[1],z:S.look[2],duration:d,ease:'power4.inOut'});
+  gsap.to(coreUniforms.flare,{value:1,duration:.10,ease:'power2.out',
+    onComplete:()=>gsap.to(coreUniforms.flare,{value:0,duration:.7,ease:'power2.inOut'})});
+}
+function onScroll(){
+  const max = Math.max(1, document.body.scrollHeight - innerHeight);
+  const p   = Math.min(1, Math.max(0, scrollY / max));
+  const i   = Math.min(SHOTS.length-1, Math.round(p*(SHOTS.length-1)));
+  if(i !== shotIdx) applyShot(i, false);
+}
+addEventListener('scroll', onScroll, {passive:true});
+
+/* pointer parallax — subtle. A big swing reads as a gimmick, not immersion. */
+const ptr={x:0,y:0,tx:0,ty:0};
+addEventListener('pointermove',e=>{
+  ptr.tx=(e.clientX/innerWidth-0.5); ptr.ty=(e.clientY/innerHeight-0.5);
+},{passive:true});
+
+/* ═════════════════════════════════════════════════════════════════════════
+   10. REVEAL — GSAP. xt/16 had none of this; the plasma core does, so the
+       environment inherits its motion language rather than inventing one.
+   ═════════════════════════════════════════════════════════════════════════ */
+/* THE OPENING SHOT IS THE SKY VIEW ZOOMING DOWN.
+   qi 08:54: "I always like the sky view — they zoom down onto me." So the page opens
+   overhead and descends onto the core, landing on shot 0, before scroll takes over. */
+function reveal(){
+  document.getElementById('boot').classList.add('gone');
+  applyShot(0, true);                       // seed panel + pill state, no cut flare
+  camera.position.set(0, 34.0, 0.6);        // high overhead
+  look.set(0, 2.2, 0);
+
+  const tl = gsap.timeline({defaults:{ease:'power3.out'}});
+  tl.to('#eyebrow',{opacity:1,y:0,duration:.7},0.35)
+    .to(camera.position,{x:SHOTS[0].cam[0],y:SHOTS[0].cam[1],z:SHOTS[0].cam[2],
+                         duration:2.8,ease:'power2.inOut'},0)
+    .fromTo(coreUniforms.energy,{value:0.02},{value:0.22,duration:2.4,ease:'power2.inOut'},0)
+    .fromTo(bloom,{strength:0.02},{strength:MOBILE?0.62:0.74,duration:2.2},0.2)
+    .call(()=>onScroll(), null, 2.8);       // hand control to scroll once we have landed
+  gsap.to(coreUniforms.morph,{value:1,duration:9,ease:'sine.inOut',repeat:-1,yoyo:true});
+
+  // hide the scroll hint the moment he actually scrolls
+  addEventListener('scroll', ()=>document.getElementById('hint').classList.add('hide'),
+                   {passive:true, once:true});
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   11. FRAME LOOP + the lit-pixel framing gate.
+       The gate renders the subject WHITE ON BLACK to an offscreen target with
+       everything else hidden, then measures the bounding box of LIT pixels.
+       A projected-AABB gate counts invisible geometry and converges
+       confidently on a wrong number — this measures what the eye sees.
+   ═════════════════════════════════════════════════════════════════════════ */
+const gateRT   = new THREE.WebGLRenderTarget(256, 256);
+const gateMat  = new THREE.MeshBasicMaterial({color:0xffffff});
+window.__xenosFramingGate = function(){
+  const keep=[]; scene.traverse(o=>{ if(o.visible!==undefined) keep.push([o,o.visible]); });
+  scene.traverse(o=>{ if(o.isMesh||o.isPoints) o.visible=false; });
+  core.visible=true;
+  const oldMat=core.material, oldBg=scene.background, oldFog=scene.fog;
+  core.material=gateMat; scene.background=new THREE.Color(0x000000); scene.fog=null;
+  renderer.setRenderTarget(gateRT); renderer.render(scene,camera); renderer.setRenderTarget(null);
+  const buf=new Uint8Array(256*256*4);
+  renderer.readRenderTargetPixels(gateRT,0,0,256,256,buf);
+  let minX=256,maxX=-1,minY=256,maxY=-1,lit=0;
+  for(let y=0;y<256;y++) for(let x=0;x<256;x++){
+    if(buf[(y*256+x)*4] > 40){ lit++; if(x<minX)minX=x; if(x>maxX)maxX=x;
+                               if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  }
+  core.material=oldMat; scene.background=oldBg; scene.fog=oldFog;
+  keep.forEach(([o,v])=>o.visible=v);
+  return {litPixels:lit, widthFraction:maxX<0?0:(maxX-minX+1)/256,
+          heightFraction:maxY<0?0:(maxY-minY+1)/256};
+};
+
+const clock=new THREE.Clock();
+let fr=0, acc=0;
+const fpsEl=document.getElementById('h-fps'), enEl=document.getElementById('h-energy');
+/* sceneTime is the FROZEN clock. Real time keeps running for the camera cut, but
+   scene motion stops while the angle changes — that is the "time freezes" beat. */
+let sceneTime = 0;
+function frame(){
+  const dt=clock.getDelta(), el=clock.elapsedTime;
+  sceneTime += dt * timeScale;
+  coreUniforms.t.value = sceneTime;
+
+  ptr.x += (ptr.tx-ptr.x)*0.045; ptr.y += (ptr.ty-ptr.y)*0.045;
+  camera.position.x += ptr.x*0.30; camera.position.y += -ptr.y*0.18;
+  camera.lookAt(look);
+
+  core.rotation.y    = sceneTime*0.055;
+  lattice.rotation.y = -sceneTime*0.085;
+  lattice.rotation.x =  sceneTime*0.041;
+  orbit(sceneTime);                    // satellites ride sceneTime → they FREEZE on a cut
+  shell.rotation.y   = sceneTime*0.004;
+  points.rotation.y  = sceneTime*0.014;
+  coreLight.intensity = 78 + Math.sin(sceneTime*1.7)*9 + coreUniforms.flare.value*40;
+
+  composer.render();
+
+  acc+=dt; fr++;
+  if(acc>=0.5){ fpsEl.textContent=Math.round(fr/acc); fr=0; acc=0;
+                enEl.textContent=coreUniforms.energy.value.toFixed(2); }
+  requestAnimationFrame(frame);
+}
+
+addEventListener('resize', ()=>{
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  composer.setSize(innerWidth,innerHeight);
+  bloom.setSize(innerWidth,innerHeight);
+},{passive:true});
+
+/* expose for the CDP verification loop — a scene that cannot be measured
+   from outside cannot be gated, and an ungated scene is an opinion. */
+window.__xenos = {scene, camera, renderer, core, coreUniforms, jointCount,
+                  ready:false, shots:SHOTS.map(s=>s.id), identity:IDK,
+                  shotIndex:()=>shotIdx, timeScale:()=>timeScale};
+
+renderer.compile(scene, camera);
+requestAnimationFrame(()=>{ reveal(); frame(); window.__xenos.ready=true; });
+</script>
+</body>
+</html>

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#06140c">
+<title>Xen Swarm-of-Swarms — Sintra Replacement PRD</title>
+<meta name="description" content="Product Requirements Document — fully replace Sintra with a self-hosted MCP + tmux + personas swarm-of-swarms running on qi's own Claude Code seats. Tiered topology, five MCP modules, agent orchestrator, security, and Sintra-parity acceptance criteria. Free-first, self-hosted, source of truth for implementation.">
+<style>
+  :root{
+    --bg:#06140c; --bg2:#08190f; --panel:#0b2114; --panel2:#0d2918;
+    --line:rgba(124,252,154,.14); --line2:rgba(124,252,154,.28);
+    --green:#7CFC9A; --green-hi:#00ff88; --gold:#e8c66a; --gold-dim:#b9974a;
+    --red:#ff6b6b; --ink:#dbf6e6; --ink-dim:#8fb6a0; --ink-faint:#5d7e6c;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:
+      radial-gradient(1200px 600px at 80% -10%,rgba(0,255,136,.06),transparent 60%),
+      radial-gradient(900px 500px at -10% 10%,rgba(232,198,106,.05),transparent 55%),
+      var(--bg);
+    color:var(--ink);font-family:var(--sans);line-height:1.62;
+    font-size:16px;letter-spacing:.1px;-webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:var(--green);text-decoration:none}
+  ::selection{background:rgba(0,255,136,.25);color:#fff}
+
+  /* ── top bar ── */
+  header{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:saturate(160%) blur(14px);-webkit-backdrop-filter:saturate(160%) blur(14px);
+    background:rgba(6,20,12,.78);border-bottom:1px solid var(--line);
+  }
+  .bar{max-width:1080px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:12px}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--green-hi);
+    box-shadow:0 0 0 0 rgba(0,255,136,.55);animation:pulse 2.4s infinite;flex-shrink:0}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,255,136,.5)}70%{box-shadow:0 0 0 9px rgba(0,255,136,0)}100%{box-shadow:0 0 0 0 rgba(0,255,136,0)}}
+  .brand{font-family:var(--mono);font-weight:700;letter-spacing:3px;font-size:13px}
+  .brand b{color:var(--green)}
+  .brand span{color:var(--gold)}
+  .live{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:1px;white-space:nowrap}
+  .live #ts{color:var(--green)}
+
+  /* ── section nav (scroll-spy) ── */
+  nav.toc{max-width:1080px;margin:0 auto;padding:0 10px;display:flex;gap:4px;overflow-x:auto;
+    border-bottom:1px solid var(--line);background:rgba(6,20,12,.5);scrollbar-width:none}
+  nav.toc::-webkit-scrollbar{display:none}
+  nav.toc a{font-family:var(--mono);font-size:10.5px;letter-spacing:.5px;color:var(--ink-dim);
+    padding:9px 11px;white-space:nowrap;border-bottom:2px solid transparent}
+  nav.toc a.on{color:var(--green);border-bottom-color:var(--green)}
+
+  main{max-width:1080px;margin:0 auto;padding:0 18px 90px}
+
+  /* ── hero ── */
+  .hero{padding:64px 0 40px;border-bottom:1px solid var(--line)}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:5px;color:var(--gold);text-transform:uppercase}
+  .hero h1{font-size:clamp(34px,8vw,68px);line-height:1.0;margin:14px 0 8px;font-weight:800;
+    letter-spacing:-1.5px;
+    background:linear-gradient(180deg,#fff,var(--green) 150%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero h1 .slash{color:var(--gold-dim);-webkit-text-fill-color:var(--gold-dim);font-weight:300}
+  .hero .creed{font-size:clamp(16px,3.4vw,21px);color:var(--ink);max-width:720px;margin:14px 0 0}
+  .hero .creed b{color:var(--green)}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+  .tag{font-family:var(--mono);font-size:11px;letter-spacing:.5px;color:var(--ink-dim);
+    border:1px solid var(--line2);border-radius:999px;padding:6px 12px;background:rgba(11,33,20,.5)}
+  .tag b{color:var(--green)}
+
+  /* ── sections ── */
+  section{padding:46px 0;border-bottom:1px solid var(--line);scroll-margin-top:96px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase}
+  h2{font-size:clamp(24px,5vw,34px);margin:8px 0 4px;font-weight:750;letter-spacing:-.5px;color:#fff}
+  h2 .num{font-family:var(--mono);color:var(--green-hi);font-size:.62em;margin-right:12px;font-weight:700;letter-spacing:0}
+  .lede{color:var(--ink-dim);max-width:760px;margin:0 0 22px;font-size:15.5px}
+  h3{font-family:var(--mono);font-size:13px;letter-spacing:1.5px;color:var(--green);text-transform:uppercase;margin:30px 0 10px}
+  p{margin:12px 0}
+  strong{color:var(--ink)}
+
+  .grid{display:grid;gap:14px}
+  @media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}.grid.three{grid-template-columns:1fr 1fr 1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+    border-radius:14px;padding:16px 17px}
+  .card h4{margin:0 0 6px;font-size:15px;color:#fff;font-weight:700;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .card h4 .mono{font-family:var(--mono);font-size:12px;color:var(--green);font-weight:600}
+  .card h4 .port{font-family:var(--mono);font-size:11px;color:var(--gold);border:1px solid var(--line2);border-radius:6px;padding:2px 7px}
+  .card p{margin:6px 0 0;color:var(--ink-dim);font-size:14px}
+  .card .why{margin-top:10px;font-size:12.5px;color:var(--gold);font-family:var(--mono);
+    border-top:1px dashed var(--line2);padding-top:9px}
+  .card .why b{color:var(--gold)}
+
+  ul.clean{list-style:none;padding:0;margin:10px 0 0}
+  ul.clean li{padding:8px 0 8px 22px;position:relative;color:var(--ink-dim);font-size:14.5px;border-bottom:1px solid var(--line)}
+  ul.clean li:last-child{border-bottom:0}
+  ul.clean li:before{content:"▸";position:absolute;left:2px;color:var(--green)}
+  ul.clean li b{color:var(--ink)}
+  ul.clean.ac li:before{content:"✓";color:var(--green-hi)}
+  ul.clean.no li:before{content:"✕";color:var(--red)}
+  .mono-i{font-family:var(--mono);color:var(--green);font-size:13px}
+
+  /* code blocks */
+  pre{background:#04100a;border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;overflow-x:auto;margin:16px 0;
+    font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--ink)}
+  pre .c{color:var(--ink-faint)}
+  pre .k{color:var(--gold)}
+  pre .s{color:var(--green)}
+  pre .f{color:#8fd7ff}
+  code{font-family:var(--mono);font-size:.9em;color:var(--green);
+    background:rgba(124,252,154,.08);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+
+  .callout{border-left:3px solid var(--gold);background:rgba(232,198,106,.06);
+    padding:13px 16px;border-radius:0 10px 10px 0;margin:16px 0;color:var(--ink);font-size:14.5px}
+  .callout b{color:var(--gold)}
+  .callout.grn{border-left-color:var(--green-hi);background:rgba(0,255,136,.05)}
+  .callout.grn b{color:var(--green)}
+
+  /* topology diagram */
+  .topo{display:grid;gap:12px;margin:20px 0}
+  .tier{border:1px solid var(--line2);border-radius:14px;padding:16px 18px;
+    background:linear-gradient(180deg,var(--panel),var(--bg2));position:relative}
+  .tier .tlbl{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+  .tier h4{margin:6px 0 4px;font-size:17px;color:#fff}
+  .tier p{margin:6px 0 0;color:var(--ink-dim);font-size:14px}
+  .tier .who{font-family:var(--mono);font-size:12px;color:var(--green);margin-top:8px}
+  .flowarrow{text-align:center;font-family:var(--mono);color:var(--green-hi);font-size:14px;letter-spacing:2px}
+  .tier.hyper{border-color:rgba(232,198,106,.4)}
+  .tier.hyper .tlbl{color:var(--gold)}
+
+  /* spec table */
+  .tbl-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;min-width:560px;font-size:13.5px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);background:rgba(11,33,20,.5)}
+  td b{color:#fff}
+  td .mono{font-family:var(--mono);color:var(--green);font-size:12.5px}
+  tr:last-child td{border-bottom:0}
+
+  .roster{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);border-radius:8px;
+    padding:7px 11px;background:rgba(11,33,20,.5);color:var(--ink)}
+  .chip b{color:var(--green)}
+  .chip i{color:var(--ink-faint);font-style:normal}
+
+  .kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0}
+  @media(min-width:720px){.kpi{grid-template-columns:repeat(4,1fr)}}
+  .kpi .k{border:1px solid var(--line);border-radius:12px;padding:14px;background:rgba(11,33,20,.4);text-align:center}
+  .kpi .k .v{font-family:var(--mono);font-size:22px;color:var(--green-hi);font-weight:700}
+  .kpi .k .l{font-size:11.5px;color:var(--ink-dim);margin-top:4px}
+
+  footer{padding:54px 18px 40px;text-align:center;color:var(--ink-faint);font-family:var(--mono);font-size:12px;letter-spacing:.5px}
+  footer b{color:var(--green)}
+  footer .sig{color:var(--gold);letter-spacing:3px;font-size:13px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <span class="dot"></span>
+    <span class="brand"><b>XEN</b> <span>//</span> PRD</span>
+    <span class="live">STATUS <span id="ts">DRAFT · v1.0</span></span>
+  </div>
+  <nav class="toc" id="toc">
+    <a href="#overview">OVERVIEW</a>
+    <a href="#goals">1 · GOALS</a>
+    <a href="#topology">2 · TOPOLOGY</a>
+    <a href="#modules">3 · MCP MODULES</a>
+    <a href="#orchestrator">4 · ORCHESTRATOR</a>
+    <a href="#security">5 · SECURITY</a>
+    <a href="#acceptance">6 · ACCEPTANCE</a>
+  </nav>
+</header>
+
+<main>
+  <!-- HERO -->
+  <div class="hero" id="overview">
+    <div class="kicker">Product Requirements Document</div>
+    <h1>Xen Swarm-of-Swarms <span class="slash">/</span> Sintra Replacement</h1>
+    <p class="creed">Fully replace <b>Sintra</b> with a self-hosted <b>MCP + tmux + personas</b> stack running on qi's own Claude Code seats. One brain on M4, one voice, a tailscale home-mesh as the nervous system, remote boxes as limbs. <b>Free-first. Self-hosted. No SaaS in the loop.</b></p>
+    <div class="meta">
+      <span class="tag">OWNER <b>qi</b></span>
+      <span class="tag">SURFACE <b>hitthe.link/prd</b></span>
+      <span class="tag">TIERS <b>3</b></span>
+      <span class="tag">MCP MODULES <b>5</b></span>
+      <span class="tag">STATUS <b>Source of truth</b></span>
+    </div>
+    <p class="lede" style="margin-top:26px">This document is the single source of truth for implementing the modules and routing scripts. It supersedes ad-hoc notes. Every module below carries responsibilities, concrete tools/endpoints, and pass/fail acceptance criteria so the build is unambiguous and end-to-end testable.</p>
+  </div>
+
+  <!-- 1 · GOALS -->
+  <section id="goals">
+    <div class="eyebrow">Section 01</div>
+    <h2><span class="num">1</span>Goals, Scope &amp; Non-Goals</h2>
+    <p class="lede">Retire Sintra entirely. Everything Sintra did — persistent AI helpers, an inbox, calendar, content generation, research, scheduling — is re-hosted as a swarm-of-swarms Xen operates on its own seats, with zero recurring SaaS spend.</p>
+
+    <h3>Goals</h3>
+    <ul class="clean">
+      <li><b>Full functional replacement of Sintra</b> — every "helper" capability qi used (drafting, research, scheduling, comms, image/video, memory of prior work) is served by Xen personas over MCP.</li>
+      <li><b>Self-hosted on qi's Claude Code seats</b> — no per-seat SaaS billing; the reasoning runs on seats qi already owns, orchestrated locally.</li>
+      <li><b>Deterministic routing</b> — a single <code>spawn_agent</code> path and one global config decide which persona handles which request; no manual wiring per task.</li>
+      <li><b>Durable memory across sessions</b> — personas recall prior context via the core-knowledge module, so the swarm improves rather than restarting cold.</li>
+      <li><b>One brain, one voice</b> — all personas speak through the singular Xen voice; personas differentiate by thread and prompt, never by a second narrator.</li>
+    </ul>
+
+    <h3>In Scope</h3>
+    <div class="grid two">
+      <div class="card"><h4>Swarm topology</h4><p>The three-tier Hypervisor → Cognitive → Execution structure, its data flow, and the mesh that connects M4 to remote limbs.</p></div>
+      <div class="card"><h4>The five MCP modules</h4><p>core-knowledge, integration-gateway, browser-ops, temporal-cron, media-forge — each as an addressable MCP server with a defined tool surface.</p></div>
+      <div class="card"><h4>Agent orchestrator</h4><p>The <code>spawn_agent</code> CLI, per-agent tmux sessions, persona prompt blocks, and the global <code>~/.claude.json</code> config shape.</p></div>
+      <div class="card"><h4>Config &amp; routing scripts</h4><p>The declarative persona registry, MCP server manifest, and the router that maps an inbound request to a persona + tool set.</p></div>
+    </div>
+
+    <h3>Non-Goals</h3>
+    <ul class="clean no">
+      <li><b>No paid SaaS dependencies</b> — canon is free-first. Sintra, and any equivalent subscription helper platform, is removed, not re-subscribed. Paid rails are permitted only as a temporary bridge with a written exit plan.</li>
+      <li><b>No paid inference rails</b> — reasoning runs on qi's existing seats; metered per-token API billing is out of scope for the default path.</li>
+      <li><b>No new hosted database or vector SaaS</b> — memory is served by the existing self-hosted core-knowledge daemon, not a managed cloud store.</li>
+      <li><b>No second voice or second narrator</b> — this PRD does not introduce any persona that speaks independently of Xen.</li>
+    </ul>
+    <div class="callout"><b>Canon tie-in:</b> Free-first is non-negotiable. If any module here can only be met by a paid service, the module ships in a degraded free mode first and the paid path is filed as a dated bridge item — never the default.</div>
+  </section>
+
+  <!-- 2 · TOPOLOGY -->
+  <section id="topology">
+    <div class="eyebrow">Section 02</div>
+    <h2><span class="num">2</span>Tiered Topology</h2>
+    <p class="lede">Three tiers. The top tier decides, the middle tier plans, the bottom tier executes. Results flow back up the same spine. M4 is the brain; the tailscale mesh is the nervous system; remote boxes are limbs that act but never think for themselves.</p>
+
+    <div class="topo">
+      <div class="tier hyper">
+        <div class="tlbl">Tier 1 · The Brain</div>
+        <h4>Hypervisor</h4>
+        <p>A single always-on Xen process on M4. Receives every inbound signal (voice, SMS, Beeper, schedule fire, browser event), classifies intent, and decides <b>which cognitive persona owns it</b>. Holds no long task logic itself — it is the router and the voice. It is the only tier that speaks.</p>
+        <div class="who">decides &amp; routes · owns the one voice · lives on M4 only</div>
+      </div>
+      <div class="flowarrow">▼ &nbsp; dispatch (persona + task) &nbsp; ▼</div>
+      <div class="tier">
+        <div class="tlbl">Tier 2 · The Mind</div>
+        <h4>Cognitive Swarm</h4>
+        <p>Persona-driven planners, one tmux session each (researcher, strategist, writer, comms, ops). A cognitive agent breaks a goal into concrete steps, chooses the MCP tools required, and <b>emits execution jobs</b> — it plans and reasons, it does not touch the outside world directly except through MCP.</p>
+        <div class="who">plans &amp; reasons · one persona per tmux session · reads/writes memory</div>
+      </div>
+      <div class="flowarrow">▼ &nbsp; MCP tool calls (jobs) &nbsp; ▼</div>
+      <div class="tier">
+        <div class="tlbl">Tier 3 · The Limbs</div>
+        <h4>Execution Swarm</h4>
+        <p>Stateless workers behind the five MCP modules. They browse, call APIs, render media, run cron fires, and read/write memory. They do exactly what the job says and <b>return a structured result</b> — no independent decisions. Runs on M4 and on remote boxes reached over the mesh.</p>
+        <div class="who">executes only · stateless · returns structured results</div>
+      </div>
+      <div class="flowarrow">▲ &nbsp; results bubble back up the spine &nbsp; ▲</div>
+    </div>
+
+    <h3>Data flow between tiers</h3>
+    <ul class="clean">
+      <li><b>Down (dispatch):</b> Hypervisor classifies an inbound signal → selects a persona → hands the goal to that persona's tmux session as a prompt injection. Decision authority lives at Tier 1.</li>
+      <li><b>Middle (planning):</b> The cognitive persona decomposes the goal, recalls relevant memory from core-knowledge, and issues one or more MCP tool calls. Planning authority lives at Tier 2.</li>
+      <li><b>Down again (execution):</b> Each MCP call is a job for a Tier-3 worker. Workers are stateless and idempotent where possible; they never re-plan.</li>
+      <li><b>Up (results):</b> Worker returns a structured payload → persona synthesizes → Hypervisor speaks the single-voice result and persists the outcome to memory. Nothing is dropped; every goal's thread persists.</li>
+    </ul>
+
+    <div class="callout grn"><b>Canon mapping:</b> M4 is the brain (Hypervisor + memory live here, nothing load-bearing on boot disk). One brain, one voice (only Tier 1 narrates). Tailscale home-mesh is the nervous system (all inter-tier traffic rides the tailnet). Remote boxes are limbs (Tier-3 workers only — they never hold decision authority). Parallel-always: the cognitive and execution swarms fan out; sequential is blasphemy.</div>
+
+    <h3>Where each tier physically runs</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Tier</th><th>Host</th><th>Process shape</th><th>Reachability</th></tr></thead>
+        <tbody>
+          <tr><td><b>Hypervisor</b></td><td class="mono">M4 (canonical tree)</td><td>1 long-lived Claude Code seat + router daemon</td><td class="mono">local · tailnet ingress</td></tr>
+          <tr><td><b>Cognitive Swarm</b></td><td class="mono">M4</td><td>N tmux sessions, one Claude Code seat per persona</td><td class="mono">local (M4)</td></tr>
+          <tr><td><b>Execution Swarm</b></td><td class="mono">M4 + remote (Hetzner)</td><td>MCP servers + stateless workers</td><td class="mono">tailnet (mesh)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3 · MCP MODULES -->
+  <section id="modules">
+    <div class="eyebrow">Section 03</div>
+    <h2><span class="num">3</span>MCP Module Requirements</h2>
+    <p class="lede">Five MCP servers form the entire tool surface of the swarm. Each is an independent, restartable process addressed over stdio or the tailnet. A persona sees only the tools it is granted in config. Every module below states its responsibilities, key tools/endpoints, and the acceptance bar it must clear to be considered shipped.</p>
+
+    <!-- core-knowledge -->
+    <div class="card" style="margin-bottom:16px">
+      <h4><span class="mono">core-knowledge</span> <span class="port">memory · recall</span></h4>
+      <p><b>Responsibility:</b> The swarm's durable memory. Persists facts, decisions, prior deliverables, and per-persona context so no session starts cold. Maps directly onto the existing bastra-recall daemon — this module is its MCP face, not a new store.</p>
+      <h3 style="margin-top:14px">Key tools</h3>
+      <ul class="clean">
+        <li><code>recall(query, k)</code> — semantic + keyword retrieval over the vault; returns ranked memory entries with source paths.</li>
+        <li><code>save_memory(text, tags, persona)</code> — write a durable fact/decision; write-tmp-then-rename, never a sync write on a hot path.</li>
+        <li><code>load_memory(scope)</code> — bulk hydrate a persona's working set at session start.</li>
+        <li><code>index_status()</code> — health + entry count, so the Hypervisor can fail soft when memory flaps.</li>
+      </ul>
+      <p class="why"><b>Acceptance:</b> A fact saved by one persona is recalled verbatim by a different persona in a fresh session; memory calls fail soft (a flapping backend NEVER blocks voice/SMS); index_status returns entry count &gt; 0 and p95 recall latency &lt; 800 ms on M4.</p>
+    </div>
+
+    <!-- integration-gateway -->
+    <div class="card" style="margin-bottom:16px">
+      <h4><span class="mono">integration-gateway</span> <span class="port">external APIs · comms</span></h4>
+      <p><b>Responsibility:</b> One authenticated door to the outside world — email, SMS, Beeper/omni-inbox, calendar, and any REST connector a persona needs. Centralizes auth so no persona holds raw credentials and so rate-limits/retries are enforced in one place.</p>
+      <h3 style="margin-top:14px">Key tools</h3>
+      <ul class="clean">
+        <li><code>send_message(channel, target, body)</code> — unified send across SMS, Beeper, email; channel-agnostic to the caller.</li>
+        <li><code>read_inbox(channel, since)</code> — triage-ready pull of recent messages with sender + thread identity.</li>
+        <li><code>calendar_op(action, event)</code> — list / create / update / respond on the connected calendar.</li>
+        <li><code>rest_call(connector, method, path, body)</code> — generic authenticated REST for whitelisted connectors; credentials injected from env server-side.</li>
+      </ul>
+      <p class="why"><b>Acceptance:</b> A persona sends and reads a message on ≥2 channels without ever seeing a token; a calendar event round-trips (create → list shows it); an unwhitelisted connector or a call carrying an inline secret is rejected; all creds resolve from env, never from the request.</p>
+    </div>
+
+    <!-- browser-ops -->
+    <div class="card" style="margin-bottom:16px">
+      <h4><span class="mono">browser-ops</span> <span class="port">Playwright automation</span></h4>
+      <p><b>Responsibility:</b> Real-browser automation for anything without a clean API — logging into a site, scraping, filling forms, screenshotting for visual verification. Playwright is the chosen framework (Puppeteer was cut); runs M4-only against a persistent, logged-in browser context.</p>
+      <h3 style="margin-top:14px">Key tools</h3>
+      <ul class="clean">
+        <li><code>navigate(url)</code> / <code>click(selector)</code> / <code>fill(selector, value)</code> — core drive primitives.</li>
+        <li><code>extract(selector)</code> — return page text/DOM for a persona to reason over.</li>
+        <li><code>screenshot(scope)</code> — capture a PNG for visual verification (proves the user-facing surface, not just an HTTP 200).</li>
+        <li><code>session_keep(url)</code> — hold a logged-in context open (e.g. keep a web app authenticated).</li>
+      </ul>
+      <p class="why"><b>Acceptance:</b> A scripted login to a real site succeeds and a follow-up action runs inside that authenticated session; a screenshot artifact is produced on demand and is used as the verification gate for a browser task; the browser context survives across separate tool calls (no re-login per call).</p>
+    </div>
+
+    <!-- temporal-cron -->
+    <div class="card" style="margin-bottom:16px">
+      <h4><span class="mono">temporal-cron</span> <span class="port">scheduling · wakeups</span></h4>
+      <p><b>Responsibility:</b> Time. Registers recurring jobs and one-shot wakeups, then fires them into the Hypervisor so the swarm acts on a clock without a human present. This is what replaces Sintra's scheduled/automated tasks.</p>
+      <h3 style="margin-top:14px">Key tools</h3>
+      <ul class="clean">
+        <li><code>schedule(cron, persona, goal)</code> — register a recurring job bound to a persona and a goal.</li>
+        <li><code>wakeup(at, persona, goal)</code> — one-shot future fire.</li>
+        <li><code>list_jobs()</code> / <code>cancel(job_id)</code> — inspect and retire schedules.</li>
+        <li><code>fire_now(job_id)</code> — manual trigger for testing without waiting for the clock.</li>
+      </ul>
+      <p class="why"><b>Acceptance:</b> A job scheduled for T+60s fires within ±5s and lands as a real dispatch into the Hypervisor with the correct persona/goal; jobs survive a daemon restart (persisted, not in-memory only); list_jobs reflects registrations accurately; a cancelled job never fires again.</p>
+    </div>
+
+    <!-- media-forge -->
+    <div class="card" style="margin-bottom:16px">
+      <h4><span class="mono">media-forge</span> <span class="port">image · video · audio gen</span></h4>
+      <p><b>Responsibility:</b> Generative media — images, video, and audio/voice — so personas can produce visual and spoken output (hero images, clips, TTS lines) without a paid design SaaS. Wraps the existing free-first generation rails behind one MCP surface.</p>
+      <h3 style="margin-top:14px">Key tools</h3>
+      <ul class="clean">
+        <li><code>gen_image(prompt, opts)</code> — text-to-image / image-to-image; returns a saved asset path on M4.</li>
+        <li><code>gen_video(prompt|image, opts)</code> — text/image-to-video clip generation.</li>
+        <li><code>gen_audio(text, voice)</code> — TTS / voice synthesis for spoken deliverables.</li>
+        <li><code>list_assets(since)</code> — enumerate produced media for reuse and to avoid re-rendering.</li>
+      </ul>
+      <p class="why"><b>Acceptance:</b> Each of image, video, and audio produces a real, openable artifact saved under the canonical M4 tree (never boot disk); a persona can request media and receive back a path it can attach to a comms send; the default path uses a free rail (paid generation only behind a dated bridge flag).</p>
+    </div>
+
+    <h3>Module registry (config manifest)</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Module</th><th>Transport</th><th>Backs onto</th><th>Granted to (personas)</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">core-knowledge</td><td>stdio</td><td>bastra-recall daemon</td><td>all</td></tr>
+          <tr><td class="mono">integration-gateway</td><td>stdio / tailnet</td><td>omni-inbox + REST connectors</td><td>comms, ops, strategist</td></tr>
+          <tr><td class="mono">browser-ops</td><td>stdio (M4)</td><td>Playwright persistent context</td><td>researcher, ops</td></tr>
+          <tr><td class="mono">temporal-cron</td><td>stdio</td><td>persisted job store</td><td>Hypervisor, ops</td></tr>
+          <tr><td class="mono">media-forge</td><td>stdio / tailnet</td><td>free-first gen rails</td><td>writer, researcher</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4 · ORCHESTRATOR -->
+  <section id="orchestrator">
+    <div class="eyebrow">Section 04</div>
+    <h2><span class="num">4</span>Agent Orchestrator Design</h2>
+    <p class="lede">The orchestrator turns "route this goal to the strategist" into a running, MCP-equipped Claude Code seat in its own tmux session. One CLI, one config file, one persona-prompt convention. Everything is declarative so a new persona is a config entry, not a code change.</p>
+
+    <h3>spawn_agent CLI</h3>
+    <p><code>spawn_agent</code> is the single entry point. Given a persona name and an initial goal, it: (1) reads the persona from the global config, (2) creates or reuses a dedicated tmux session, (3) launches a Claude Code seat there with exactly the MCP modules that persona is granted, and (4) injects the persona prompt followed by the goal. Idempotent — re-invoking for an existing persona re-attaches instead of spawning a duplicate.</p>
+    <pre><span class="c"># spawn the strategist persona and hand it a goal</span>
+<span class="f">spawn_agent</span> <span class="k">--persona</span> strategist \
+            <span class="k">--session</span> xen-strategist \
+            <span class="k">--goal</span> <span class="s">"Draft Q3 outreach plan for Self Exec, then schedule the send"</span>
+
+<span class="c"># under the hood it runs, per persona config:</span>
+tmux new-session -d -s xen-strategist \
+  <span class="s">"claude --mcp-config ~/.claude.json \
+          --allowed-mcp core-knowledge,integration-gateway,temporal-cron \
+          --append-system-prompt \"$(cat personas/strategist.md)\""</span>
+tmux send-keys -t xen-strategist <span class="s">"$GOAL"</span> Enter</pre>
+
+    <h3>tmux session model</h3>
+    <ul class="clean">
+      <li><b>One session per persona</b> — named <code>xen-&lt;persona&gt;</code>, so state is inspectable and a stuck persona is restartable in isolation.</li>
+      <li><b>Long-lived</b> — sessions persist between goals; memory + tmux scrollback preserve continuity.</li>
+      <li><b>Isolated tool grants</b> — each session launches with only its granted MCP modules, enforcing least privilege at spawn time.</li>
+      <li><b>Attachable</b> — qi (or the Hypervisor) can <code>tmux attach</code> to any persona to observe or intervene, never required to (HOTL by default).</li>
+    </ul>
+
+    <h3>Persona prompt block</h3>
+    <p>Each persona is a markdown file under <code>personas/</code>. It is prepended as the system prompt at spawn. It defines the role, the granted tools, the output discipline, and the canon it must never violate. Personas differentiate by prompt and thread — the voice stays singular.</p>
+    <pre><span class="c"># personas/strategist.md</span>
+<span class="k">ROLE:</span> Xen — Strategist persona. You plan; the execution swarm acts.
+<span class="k">VOICE:</span> You are Xen. Never announce yourself as a separate agent.
+<span class="k">TOOLS:</span> core-knowledge (recall/save), integration-gateway (comms,
+       calendar), temporal-cron (schedule/wakeup).
+<span class="k">METHOD:</span>
+  1. recall() relevant prior context before planning anything.
+  2. Decompose the goal into concrete, parallelizable steps.
+  3. Emit each external action as an MCP tool call — never act directly.
+  4. save_memory() the decision + outcome when done.
+<span class="k">DISCIPLINE:</span>
+  - Free-first. Never propose a paid SaaS as the default path.
+  - Verify before claiming done; a screenshot/artifact beats an HTTP 200.
+  - Nothing drops: every sub-goal persists until resolved.
+  - Report status as verified / shipped-unverified / pending only.</pre>
+
+    <h3>Global config shape — <code>~/.claude.json</code></h3>
+    <p>One file declares the MCP servers and the persona registry. The orchestrator reads it; nothing about routing is hardcoded.</p>
+    <pre>{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"core-knowledge"</span>:      { <span class="k">"command"</span>: <span class="s">"node"</span>, <span class="k">"args"</span>: [<span class="s">"mcp/core-knowledge.js"</span>] },
+    <span class="k">"integration-gateway"</span>: { <span class="k">"command"</span>: <span class="s">"node"</span>, <span class="k">"args"</span>: [<span class="s">"mcp/integration-gateway.js"</span>], <span class="k">"env"</span>: { <span class="k">"CREDS_FROM"</span>: <span class="s">"env"</span> } },
+    <span class="k">"browser-ops"</span>:         { <span class="k">"command"</span>: <span class="s">"node"</span>, <span class="k">"args"</span>: [<span class="s">"mcp/browser-ops.js"</span>] },
+    <span class="k">"temporal-cron"</span>:       { <span class="k">"command"</span>: <span class="s">"node"</span>, <span class="k">"args"</span>: [<span class="s">"mcp/temporal-cron.js"</span>] },
+    <span class="k">"media-forge"</span>:         { <span class="k">"command"</span>: <span class="s">"node"</span>, <span class="k">"args"</span>: [<span class="s">"mcp/media-forge.js"</span>] }
+  },
+  <span class="k">"personas"</span>: {
+    <span class="k">"strategist"</span>: { <span class="k">"prompt"</span>: <span class="s">"personas/strategist.md"</span>, <span class="k">"mcp"</span>: [<span class="s">"core-knowledge"</span>,<span class="s">"integration-gateway"</span>,<span class="s">"temporal-cron"</span>] },
+    <span class="k">"researcher"</span>: { <span class="k">"prompt"</span>: <span class="s">"personas/researcher.md"</span>, <span class="k">"mcp"</span>: [<span class="s">"core-knowledge"</span>,<span class="s">"browser-ops"</span>,<span class="s">"media-forge"</span>] },
+    <span class="k">"writer"</span>:     { <span class="k">"prompt"</span>: <span class="s">"personas/writer.md"</span>,     <span class="k">"mcp"</span>: [<span class="s">"core-knowledge"</span>,<span class="s">"media-forge"</span>] },
+    <span class="k">"comms"</span>:      { <span class="k">"prompt"</span>: <span class="s">"personas/comms.md"</span>,      <span class="k">"mcp"</span>: [<span class="s">"core-knowledge"</span>,<span class="s">"integration-gateway"</span>] },
+    <span class="k">"ops"</span>:        { <span class="k">"prompt"</span>: <span class="s">"personas/ops.md"</span>,        <span class="k">"mcp"</span>: [<span class="s">"core-knowledge"</span>,<span class="s">"integration-gateway"</span>,<span class="s">"browser-ops"</span>,<span class="s">"temporal-cron"</span>] }
+  },
+  <span class="k">"router"</span>: { <span class="k">"default"</span>: <span class="s">"strategist"</span>, <span class="k">"rules"</span>: <span class="s">"routing/rules.json"</span> }
+}</pre>
+    <div class="callout"><b>Routing:</b> <code>routing/rules.json</code> maps inbound intent → persona (e.g. "research / find" → researcher, "text / reply / draft" → comms, "schedule / remind" → ops). The Hypervisor consults it, falls back to the <code>default</code> persona, and calls <code>spawn_agent</code>. Adding a capability = a rule + a persona file. No orchestrator code change.</div>
+  </section>
+
+  <!-- 5 · SECURITY -->
+  <section id="security">
+    <div class="eyebrow">Section 05</div>
+    <h2><span class="num">5</span>Security</h2>
+    <p class="lede">The swarm touches real accounts and real money-adjacent surfaces. Three hard rules keep it safe and canon-clean: no plaintext credentials anywhere, no paid rails on the default path, and strict per-persona thread isolation.</p>
+
+    <div class="grid three">
+      <div class="card">
+        <h4>No plaintext creds</h4>
+        <p>Every secret resolves from the environment at server start; never from a request, a prompt, or a committed file. The integration-gateway is the only holder of live tokens, injected via env.</p>
+        <p class="why"><b>Rule:</b> secrets live in env + <code>.gitignore</code>; a request carrying an inline secret is rejected; a repo scan finds zero plaintext tokens.</p>
+      </div>
+      <div class="card">
+        <h4>No paid rails</h4>
+        <p>The default path uses free, self-hosted rails end to end. A paid service is allowed only as an explicit, dated bridge with an exit plan — never silently, never as the default.</p>
+        <p class="why"><b>Rule:</b> no module's default path bills per use; any paid fallback is flagged and logged as a tracked bridge item.</p>
+      </div>
+      <div class="card">
+        <h4>Per-persona thread isolation</h4>
+        <p>Each persona runs in its own tmux session with only its granted MCP modules. A persona cannot read another's session, and comms personas sign the correct thread — no cross-thread leakage.</p>
+        <p class="why"><b>Rule:</b> least privilege at spawn; a persona granted N modules cannot call an (N+1)th; threads stay bound to their owning persona.</p>
+      </div>
+    </div>
+
+    <h3>Enforcement checklist</h3>
+    <ul class="clean">
+      <li><b>Env-only secrets</b> — <code>.env</code> + <code>.gitignore</code> cover every credential; CI/pre-commit scan blocks a commit containing a token pattern.</li>
+      <li><b>Least-privilege spawns</b> — <code>spawn_agent</code> passes <code>--allowed-mcp</code> = exactly the persona's grant list; anything outside it is unreachable from that seat.</li>
+      <li><b>Gateway-only egress for creds</b> — no persona calls an external API directly; all authenticated calls route through integration-gateway.</li>
+      <li><b>Thread binding</b> — comms replies always sign the correct thread; a persona never posts to a thread it does not own.</li>
+      <li><b>Free-first audit</b> — a periodic check confirms no default path silently fell back to a paid rail.</li>
+    </ul>
+  </section>
+
+  <!-- 6 · ACCEPTANCE -->
+  <section id="acceptance">
+    <div class="eyebrow">Section 06</div>
+    <h2><span class="num">6</span>Performance Targets &amp; Acceptance Criteria</h2>
+    <p class="lede">"Sintra parity" is not a vibe — it is a checklist. The swarm counts as replacing Sintra only when every capability below works end to end, exercised as a real user would, with an artifact to prove it. API 200s and log lines do not count.</p>
+
+    <div class="kpi">
+      <div class="k"><div class="v">&lt;800ms</div><div class="l">p95 memory recall</div></div>
+      <div class="k"><div class="v">±5s</div><div class="l">scheduled-job fire accuracy</div></div>
+      <div class="k"><div class="v">100%</div><div class="l">free-first default paths</div></div>
+      <div class="k"><div class="v">0</div><div class="l">plaintext secrets in repo</div></div>
+    </div>
+
+    <h3>Sintra-parity capability bar (all must pass end-to-end)</h3>
+    <ul class="clean ac">
+      <li><b>Persistent helpers:</b> A persona spawns, takes a multi-step goal, and completes it across more than one tool call without a human touching the loop.</li>
+      <li><b>Durable memory:</b> Context saved in one session is recalled by a different persona in a later session — provably, by producing the recalled text.</li>
+      <li><b>Comms in &amp; out:</b> The swarm reads an inbound message and sends a reply on ≥2 channels through integration-gateway, with correct thread identity.</li>
+      <li><b>Calendar:</b> An event is created and then listed back — a full round-trip through the gateway.</li>
+      <li><b>Research / browse:</b> A persona logs into a real site, extracts content, and returns a screenshot as visual proof.</li>
+      <li><b>Scheduling:</b> A job registered for the future fires on time into the Hypervisor and survives a daemon restart.</li>
+      <li><b>Media generation:</b> Image, video, and audio each produce an openable artifact on the canonical M4 tree, attachable to a comms send.</li>
+      <li><b>Routing:</b> Three different inbound intents route to three different personas automatically via <code>routing/rules.json</code>, with default fallback working.</li>
+      <li><b>One voice:</b> All persona output surfaces through the single Xen voice — no second narrator appears anywhere.</li>
+      <li><b>Zero SaaS spend:</b> The full parity run completes without invoking any paid subscription rail on a default path.</li>
+    </ul>
+
+    <h3>Performance targets</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th>Target</th><th>How measured</th></tr></thead>
+        <tbody>
+          <tr><td><b>Dispatch latency</b></td><td class="mono">&lt; 1.5s</td><td>inbound signal → persona session receives the goal</td></tr>
+          <tr><td><b>Memory recall p95</b></td><td class="mono">&lt; 800ms</td><td>recall() round-trip on M4 under normal load</td></tr>
+          <tr><td><b>Schedule accuracy</b></td><td class="mono">± 5s</td><td>registered fire time vs. actual Hypervisor dispatch</td></tr>
+          <tr><td><b>Browser action success</b></td><td class="mono">≥ 95%</td><td>scripted login+action success rate over 20 runs</td></tr>
+          <tr><td><b>Swarm availability</b></td><td class="mono">always-on</td><td>Hypervisor + memory under watchdog; auto-restart on stall</td></tr>
+          <tr><td><b>Recurring cost</b></td><td class="mono">$0 / mo</td><td>no default-path SaaS billing; paid = dated bridge only</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout grn"><b>Definition of done:</b> Every capability row above is exercised hands-on as a real user, each producing a verifiable artifact (message received, event listed, screenshot captured, media file opened, job fired). When the whole bar is green with artifacts, Sintra is retired and this swarm-of-swarms is the replacement. Until then, status is code-shipped-unverified — never "done".</div>
+  </section>
+</main>
+
+<footer>
+  <div class="sig">XEN // SWARM-OF-SWARMS</div>
+  <div>Product Requirements Document · <b>Source of truth</b> · hitthe.link/prd</div>
+  <div style="margin-top:8px">Free-first · Self-hosted · One brain, one voice · M4 canonical tree</div>
+</footer>
+
+<script>
+  // scroll-spy for the TOC
+  (function(){
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+    var map = {};
+    links.forEach(function(a){ var id=a.getAttribute('href').slice(1); var el=document.getElementById(id); if(el) map[id]=a; });
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){a.classList.remove('on');});
+          var a = map[e.target.id]; if(a){ a.classList.add('on'); a.scrollIntoView({block:'nearest',inline:'center'}); }
+        }
+      });
+    }, {rootMargin:'-45% 0px -50% 0px'});
+    Object.keys(map).forEach(function(id){ var el=document.getElementById(id); if(el) obs.observe(el); });
+  })();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

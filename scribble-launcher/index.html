@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Scribble Launcher — Scribble a letter. Get where you're going.</title>
+<meta name="description" content="Scribble Launcher: a modern revival of the Nokia Z Launcher. Draw a letter anywhere to instantly find apps and contacts. Smart suggestions, aliases, hide items.">
+<style>
+  :root{
+    --bg:#0b0d12; --bg2:#12151d;
+    --ink:#eef1f7; --dim:#8b93a7; --faint:#5b6478;
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+    --accent:#5b8cff; --accent2:#7aa2ff; --glass:rgba(20,24,33,.72);
+    --ok:#39d98a; --warn:#ffcc55;
+    --r:22px;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:var(--font);
+    background:
+      radial-gradient(1200px 800px at 20% -10%, #1a2740 0%, transparent 55%),
+      radial-gradient(1000px 700px at 100% 110%, #201a33 0%, transparent 50%),
+      #06070b;
+    color:var(--ink);
+    display:grid;place-items:center;min-height:100vh;
+    padding:26px 12px;overflow-x:hidden;
+  }
+
+  /* ---- stage ---- */
+  .stage{display:flex;gap:40px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:1180px}
+
+  /* ---- copy rail ---- */
+  .rail{max-width:340px;min-width:270px}
+  .rank{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--accent2);font-weight:700}
+  .rail h1{font-size:2.5rem;line-height:1.02;letter-spacing:-.03em;margin:12px 0 8px;text-wrap:balance;
+    background:linear-gradient(120deg,#fff 40%,var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .tag{color:var(--dim);font-size:1.02rem;line-height:1.55;margin-bottom:22px}
+  .hints{display:flex;flex-direction:column;gap:10px}
+  .hint{display:flex;gap:11px;align-items:flex-start;font-size:.86rem;color:var(--dim);line-height:1.4}
+  .hint b{color:var(--ink);font-weight:600}
+  .hk{flex:0 0 auto;min-width:34px;text-align:center;font-size:.72rem;font-weight:700;color:var(--accent2);
+    border:1px solid var(--line2);border-radius:8px;padding:3px 7px;background:rgba(91,140,255,.08)}
+
+  /* ---- phone ---- */
+  .phone{
+    position:relative;width:340px;height:720px;border-radius:52px;
+    background:linear-gradient(160deg,#20242e,#0c0e13);
+    padding:12px;box-shadow:0 40px 90px -20px rgba(0,0,0,.8), inset 0 0 0 1.5px rgba(255,255,255,.06);
+    flex:0 0 auto;
+  }
+  .screen{
+    position:relative;width:100%;height:100%;border-radius:42px;overflow:hidden;
+    background:linear-gradient(180deg,#0d1017,#0a0c11);
+    display:flex;flex-direction:column;
+    touch-action:none;
+  }
+  /* home wallpaper */
+  .screen::before{content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(600px 400px at 80% 0%, rgba(91,140,255,.18), transparent 60%),
+      radial-gradient(500px 400px at 0% 100%, rgba(122,90,255,.15), transparent 60%);
+    pointer-events:none}
+
+  /* island */
+  .island{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#000;border-radius:18px;z-index:40}
+
+  /* status bar */
+  .status{position:relative;z-index:20;display:flex;justify-content:space-between;align-items:center;
+    padding:16px 24px 4px;font-size:13px;font-weight:600;letter-spacing:.02em}
+  .status .r{display:flex;gap:6px;align-items:center}
+  .bat{width:22px;height:11px;border:1.4px solid #fff;border-radius:3px;position:relative;opacity:.9}
+  .bat::after{content:"";position:absolute;top:2px;left:1.5px;bottom:2px;width:70%;background:#fff;border-radius:1px}
+  .bat::before{content:"";position:absolute;right:-3px;top:3px;height:5px;width:2px;background:#fff;border-radius:1px}
+
+  /* content */
+  .content{position:relative;z-index:10;flex:1;display:flex;flex-direction:column;padding:6px 18px 0;min-height:0}
+
+  /* search pill */
+  .searchwrap{position:relative;z-index:22;margin:8px 4px 14px}
+  .search{width:100%;display:flex;align-items:center;gap:10px;
+    background:var(--glass);border:1px solid var(--line2);border-radius:16px;padding:11px 14px;
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+  .search svg{flex:0 0 auto;opacity:.7}
+  .search input{flex:1;background:none;border:none;outline:none;color:var(--ink);font:inherit;font-size:15px}
+  .search input::placeholder{color:var(--faint)}
+  .search .clr{opacity:.5;font-size:18px;cursor:pointer;display:none;line-height:1}
+  .search.has .clr{display:block}
+
+  .label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:2px 2px 9px}
+
+  /* suggestions row */
+  .sugg{display:flex;gap:14px;overflow-x:auto;padding:2px 2px 14px;scrollbar-width:none}
+  .sugg::-webkit-scrollbar{display:none}
+  .sugg .app{flex:0 0 auto}
+
+  /* app grid / list */
+  .listwrap{flex:1;overflow-y:auto;scrollbar-width:none;padding-bottom:80px}
+  .listwrap::-webkit-scrollbar{display:none}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 6px}
+
+  .app{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;user-select:none;
+    transition:transform .12s ease}
+  .app:active{transform:scale(.9)}
+  .ic{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:24px;
+    box-shadow:0 8px 18px -8px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.16);position:relative}
+  .app .nm{font-size:11px;color:var(--dim);text-align:center;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .app .alias{position:absolute;top:-5px;right:-5px;background:var(--accent);color:#fff;font-size:8px;font-weight:800;
+    padding:2px 5px;border-radius:7px;letter-spacing:.04em}
+  .contact .ic{border-radius:50%}
+
+  /* result count */
+  .rescount{font-size:11px;color:var(--faint);margin:0 2px 8px;letter-spacing:.02em}
+
+  /* scribble overlay */
+  #ink{position:absolute;inset:0;z-index:30;pointer-events:none}
+  .reco{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:31;
+    font-size:170px;font-weight:800;color:rgba(255,255,255,.09);pointer-events:none;
+    letter-spacing:-.04em;transition:opacity .25s;opacity:0;text-transform:uppercase}
+  .reco.show{opacity:1}
+  .scribhint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:25;
+    font-size:11px;color:var(--faint);letter-spacing:.05em;pointer-events:none;transition:opacity .3s;
+    background:rgba(0,0,0,.35);padding:6px 13px;border-radius:20px;backdrop-filter:blur(8px);white-space:nowrap}
+
+  /* dock */
+  .dock{position:absolute;bottom:14px;left:14px;right:14px;z-index:22;
+    background:var(--glass);border:1px solid var(--line);border-radius:26px;
+    padding:12px 14px;display:flex;justify-content:space-around;
+    backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+  .dock .app .nm{display:none}
+
+  /* context menu */
+  .menu{position:absolute;z-index:60;background:rgba(24,28,38,.96);border:1px solid var(--line2);
+    border-radius:14px;padding:6px;min-width:160px;backdrop-filter:blur(20px);
+    box-shadow:0 20px 50px -10px rgba(0,0,0,.7);display:none;font-size:13.5px}
+  .menu.show{display:block}
+  .menu button{width:100%;text-align:left;background:none;border:none;color:var(--ink);font:inherit;
+    padding:9px 11px;border-radius:9px;cursor:pointer;display:flex;gap:9px;align-items:center}
+  .menu button:hover{background:rgba(255,255,255,.08)}
+  .menu .sep{height:1px;background:var(--line);margin:4px 6px}
+
+  /* alias editor / sheet */
+  .sheet{position:absolute;inset:0;z-index:70;background:rgba(6,8,12,.55);backdrop-filter:blur(10px);
+    display:none;align-items:flex-end}
+  .sheet.show{display:flex}
+  .sheetcard{width:100%;background:linear-gradient(180deg,#161a24,#0f1219);border-top-left-radius:28px;border-top-right-radius:28px;
+    border:1px solid var(--line2);border-bottom:none;padding:20px 20px 26px;transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.9,.25,1)}
+  .sheet.show .sheetcard{transform:translateY(0)}
+  .grab{width:38px;height:4px;border-radius:3px;background:var(--line2);margin:0 auto 16px}
+  .sheetcard h3{font-size:1.05rem;margin-bottom:4px}
+  .sheetcard p.sub{font-size:.8rem;color:var(--dim);margin-bottom:16px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .field label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .field input,.field select{background:#0c0e13;border:1px solid var(--line2);border-radius:11px;padding:11px 13px;
+    color:var(--ink);font:inherit;font-size:14px;outline:none}
+  .field input:focus,.field select:focus{border-color:var(--accent)}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:12px;font:inherit;font-weight:700;
+    font-size:14px;cursor:pointer;width:100%;margin-top:4px}
+  .btn.ghost{background:rgba(255,255,255,.06);color:var(--ink)}
+  .hiddenlist{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .chip{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:20px;padding:6px 11px;font-size:12.5px;
+    display:flex;gap:7px;align-items:center;cursor:pointer}
+  .chip:hover{border-color:var(--accent)}
+  .chip small{color:var(--accent2);font-weight:700}
+  .empty{color:var(--faint);font-size:12.5px;font-style:italic}
+
+  /* toast */
+  .toast{position:absolute;bottom:92px;left:50%;transform:translateX(-50%) translateY(20px);z-index:65;
+    background:rgba(24,28,38,.96);border:1px solid var(--line2);border-radius:14px;padding:10px 16px;font-size:13px;
+    opacity:0;transition:all .28s;pointer-events:none;backdrop-filter:blur(20px);white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="rail">
+    <div class="rank">№ 03 · Launcher Countdown</div>
+    <h1>Scribble Launcher</h1>
+    <p class="tag">Scribble a letter. Get where you're going. A modern revival of the Nokia&nbsp;Z idea — draw anywhere and apps surface instantly.</p>
+    <div class="hints">
+      <div class="hint"><span class="hk">✎</span><span><b>Scribble</b> a letter anywhere on the screen — the grid filters live as it's recognized.</span></div>
+      <div class="hint"><span class="hk">⌨</span><span><b>Or type</b> in the search pill — same instant filter, keyboard fallback.</span></div>
+      <div class="hint"><span class="hk">↻</span><span><b>Suggestions</b> re-rank by time of day &amp; usage.</span></div>
+      <div class="hint"><span class="hk">⋯</span><span><b>Right-click / long-press</b> any app to hide it or set an alias.</span></div>
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="screen" id="screen">
+      <div class="island"></div>
+      <div class="status">
+        <span id="clock">9:41</span>
+        <span class="r">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="#fff"><path d="M8 2.6c2 0 3.8.8 5.1 2l1.3-1.4A9.4 9.4 0 0 0 8 .5 9.4 9.4 0 0 0 1.6 3.2L2.9 4.6A7.3 7.3 0 0 1 8 2.6Z"/><path d="M8 6.2c1 0 2 .4 2.7 1.1l1.4-1.4A6 6 0 0 0 8 4.2a6 6 0 0 0-4.1 1.7l1.4 1.4A3.8 3.8 0 0 1 8 6.2Z"/><circle cx="8" cy="10" r="1.6"/></svg>
+          <span class="bat"></span>
+        </span>
+      </div>
+
+      <div class="content">
+        <div class="searchwrap">
+          <div class="search" id="searchbox">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="q" placeholder="Scribble or type…" autocomplete="off" spellcheck="false">
+            <span class="clr" id="clr">✕</span>
+          </div>
+        </div>
+
+        <div id="homeview">
+          <div class="label">Suggestions</div>
+          <div class="sugg" id="sugg"></div>
+          <div class="label">All apps &amp; contacts</div>
+          <div class="listwrap"><div class="grid" id="grid"></div></div>
+        </div>
+
+        <div id="resultview" style="display:none">
+          <div class="rescount" id="rescount"></div>
+          <div class="listwrap"><div class="grid" id="resgrid"></div></div>
+        </div>
+      </div>
+
+      <div class="reco" id="reco"></div>
+      <canvas id="ink"></canvas>
+
+      <div class="dock" id="dock"></div>
+      <div class="scribhint" id="scribhint">✎ scribble a letter anywhere</div>
+
+      <div class="menu" id="menu"></div>
+      <div class="toast" id="toast"></div>
+
+      <!-- alias / manage sheet -->
+      <div class="sheet" id="sheet">
+        <div class="sheetcard">
+          <div class="grab"></div>
+          <h3 id="sheetTitle">Manage</h3>
+          <p class="sub" id="sheetSub"></p>
+          <div id="sheetBody"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+
+/* ---------- data ---------- */
+const PALETTES={
+  Phone:'#34c759',Messages:'#30d158',Camera:'#3a3f4b',Photos:'linear-gradient(145deg,#ff5e7e,#ffb04a)',
+  Music:'linear-gradient(145deg,#fb3b5c,#fc6d3f)',Maps:'linear-gradient(145deg,#4a90ff,#38d39f)',
+  Mail:'linear-gradient(145deg,#38b6ff,#2b6bff)',Notes:'linear-gradient(145deg,#ffd54a,#ffb300)',
+  Calendar:'#f5f5f7',Clock:'#111318',Weather:'linear-gradient(145deg,#4aa8ff,#8ad0ff)',
+  Settings:'linear-gradient(145deg,#8e97a6,#5b6478)',Files:'linear-gradient(145deg,#4aa8ff,#3a7bff)',
+  Wallet:'linear-gradient(145deg,#2b2f3a,#12151d)',Store:'linear-gradient(145deg,#2b6bff,#00c2ff)',
+  Health:'linear-gradient(145deg,#ff4d6d,#ff8a5b)',Podcasts:'linear-gradient(145deg,#a15bff,#6d3bff)',
+  Browser:'linear-gradient(145deg,#4aa8ff,#38d39f)',Calculator:'#2a2e38',Reminders:'linear-gradient(145deg,#ff6a5b,#ff3b5c)',
+  YouTube:'#ff3b30',Instagram:'linear-gradient(145deg,#feda75,#d62976,#4f5bd5)',WhatsApp:'#25d366',
+  Spotify:'#1db954',Uber:'#111318',Bank:'linear-gradient(145deg,#0a5,#083)'
+};
+const APPS=[
+  ['Phone','📞'],['Messages','💬'],['Camera','📷'],['Photos','🌄'],['Music','🎵'],['Maps','🗺️'],
+  ['Mail','✉️'],['Notes','📝'],['Calendar','📅'],['Clock','⏰'],['Weather','⛅'],['Settings','⚙️'],
+  ['Files','📁'],['Wallet','💳'],['Store','🛍️'],['Health','❤️'],['Podcasts','🎙️'],['Browser','🌐'],
+  ['Calculator','🧮'],['Reminders','✅'],['YouTube','▶️'],['Instagram','📸'],['WhatsApp','🟢'],
+  ['Spotify','🎧'],['Uber','🚗'],['Bank','🏦']
+].map(([n,e])=>({name:n,emoji:e,type:'app'}));
+const CONTACTS=[
+  ['Ava Reyes','#ff6a8b'],['Marcus Bell','#4a90ff'],['Nina Park','#38d39f'],['Omar Haddad','#ffb04a'],
+  ['Sophie Lin','#a15bff'],['Diego Torres','#ff5e7e'],['Ivy Chen','#38b6ff'],['Ravi Kapoor','#f5a623']
+].map(([n,c])=>({name:n,color:c,type:'contact',emoji:n.split(' ').map(w=>w[0]).join('')}));
+const ITEMS=[...APPS,...CONTACTS];
+
+/* usage model (frequency 0..1) + time buckets */
+ITEMS.forEach(it=>it.freq=Math.random()*.5);
+['Phone','Messages','Music','Browser','Instagram'].forEach(n=>{const it=ITEMS.find(x=>x.name===n);if(it)it.freq=.9-Math.random()*.15;});
+const TIME_SUGG={morning:['Clock','Weather','Mail','Calendar','Ava Reyes'],
+  afternoon:['Messages','Maps','Browser','Notes','Marcus Bell'],
+  evening:['Music','Photos','YouTube','Podcasts','Nina Park'],
+  night:['Clock','Reminders','Spotify','Health','Sophie Lin']};
+
+/* persisted state */
+const state={hidden:new Set(),alias:{}};
+try{Object.assign(state.alias,JSON.parse(localStorage.getItem('scr_alias')||'{}'));
+    (JSON.parse(localStorage.getItem('scr_hidden')||'[]')).forEach(n=>state.hidden.add(n));}catch(e){}
+const save=()=>{try{localStorage.setItem('scr_alias',JSON.stringify(state.alias));
+  localStorage.setItem('scr_hidden',JSON.stringify([...state.hidden]));}catch(e){}};
+
+/* ---------- icon render ---------- */
+function iconEl(it){
+  const app=document.createElement('div');
+  app.className='app'+(it.type==='contact'?' contact':'');
+  app.dataset.name=it.name;
+  const ic=document.createElement('div');ic.className='ic';
+  if(it.type==='contact'){ic.style.background=it.color;ic.style.fontSize='18px';ic.style.fontWeight='700';ic.textContent=it.emoji;}
+  else{ic.style.background=PALETTES[it.name]||'#2a2e38';ic.textContent=it.emoji;}
+  if(state.alias[it.name]){const a=document.createElement('span');a.className='alias';a.textContent=state.alias[it.name];ic.appendChild(a);}
+  const nm=document.createElement('div');nm.className='nm';nm.textContent=it.name;
+  app.append(ic,nm);
+  app.addEventListener('click',()=>openApp(it));
+  app.addEventListener('contextmenu',e=>{e.preventDefault();showMenu(e,it);});
+  let lp;app.addEventListener('touchstart',e=>{lp=setTimeout(()=>showMenu(e.touches[0],it),480);},{passive:true});
+  app.addEventListener('touchend',()=>clearTimeout(lp));
+  app.addEventListener('touchmove',()=>clearTimeout(lp));
+  return app;
+}
+
+function bucket(){const h=new Date().getHours();return h<11?'morning':h<17?'afternoon':h<22?'evening':'night';}
+
+function renderHome(){
+  const grid=$('#grid');grid.innerHTML='';
+  ITEMS.filter(it=>!state.hidden.has(it.name)).forEach(it=>grid.appendChild(iconEl(it)));
+  const sugg=$('#sugg');sugg.innerHTML='';
+  const names=TIME_SUGG[bucket()];
+  const chosen=names.map(n=>ITEMS.find(x=>x.name===n)).filter(x=>x&&!state.hidden.has(x.name));
+  ITEMS.filter(it=>!state.hidden.has(it.name)&&!chosen.includes(it)).sort((a,b)=>b.freq-a.freq).slice(0,2).forEach(x=>chosen.push(x));
+  chosen.slice(0,6).forEach(it=>sugg.appendChild(iconEl(it)));
+}
+/* dock = 4 highest-freq apps */
+function renderDock(){
+  const dock=$('#dock');dock.innerHTML='';
+  ITEMS.filter(it=>it.type==='app'&&!state.hidden.has(it.name)).sort((a,b)=>b.freq-a.freq).slice(0,4)
+    .forEach(it=>dock.appendChild(iconEl(it)));
+}
+
+/* ---------- filtering ---------- */
+function matches(it,q){
+  q=q.toLowerCase();
+  if(!q)return false;
+  if(state.alias[it.name]&&state.alias[it.name].toLowerCase().startsWith(q))return true;
+  const n=it.name.toLowerCase();
+  if(n.startsWith(q))return true;
+  // any word starts with q (contacts: "bell")
+  if(n.split(' ').some(w=>w.startsWith(q)))return true;
+  return false;
+}
+function filter(q){
+  if(!q){showHome();return;}
+  const res=ITEMS.filter(it=>!state.hidden.has(it.name)&&matches(it,q));
+  $('#homeview').style.display='none';
+  $('#resultview').style.display='block';
+  const rg=$('#resgrid');rg.innerHTML='';
+  res.forEach(it=>rg.appendChild(iconEl(it)));
+  $('#rescount').textContent=res.length?`${res.length} match${res.length>1?'es':''} for “${q}”`:`No matches for “${q}” — scribble another letter`;
+}
+function showHome(){$('#resultview').style.display='none';$('#homeview').style.display='block';}
+
+/* ---------- search box ---------- */
+const q=$('#q');
+q.addEventListener('input',()=>{const v=q.value.trim();$('#searchbox').classList.toggle('has',!!v);filter(v);});
+$('#clr').addEventListener('click',()=>{q.value='';$('#searchbox').classList.remove('has');showHome();});
+
+/* ---------- scribble recognizer ---------- */
+const cv=$('#ink'),ctx=cv.getContext('2d'),reco=$('#reco');
+function sizeCanvas(){const r=$('#screen').getBoundingClientRect();cv.width=r.width;cv.height=r.height;}
+addEventListener('resize',sizeCanvas);setTimeout(sizeCanvas,50);
+let drawing=false,pts=[],trail=[],raf=null;
+const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+function isInteractive(t){return t.closest('.app,.search,.dock,.menu,.sheet,.searchwrap');}
+
+$('#screen').addEventListener('pointerdown',e=>{
+  if(isInteractive(e.target))return;
+  drawing=true;pts=[];addPt(e);cv.style.pointerEvents='none';
+  $('#scribhint').style.opacity='0';
+});
+addEventListener('pointermove',e=>{if(drawing)addPt(e);});
+addEventListener('pointerup',()=>{if(drawing){drawing=false;recognize();}});
+
+function addPt(e){
+  const r=cv.getBoundingClientRect();
+  const x=e.clientX-r.left,y=e.clientY-r.top;
+  pts.push([x,y]);trail.push([x,y,1]);
+  if(!raf)raf=requestAnimationFrame(drawTrail);
+}
+function drawTrail(){
+  raf=null;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.lineCap='round';ctx.lineJoin='round';
+  for(let i=1;i<trail.length;i++){
+    const [x1,y1,a1]=trail[i-1],[x2,y2]=trail[i];
+    ctx.strokeStyle=`rgba(122,162,255,${a1})`;
+    ctx.lineWidth=5*a1;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  }
+  let alive=false;
+  for(const p of trail){p[2]-=reduced?0.2:0.045;if(p[2]>0)alive=true;}
+  while(trail.length&&trail[0][2]<=0)trail.shift();
+  if(alive||drawing)raf=requestAnimationFrame(drawTrail);
+  else ctx.clearRect(0,0,cv.width,cv.height);
+}
+
+/* very lightweight single-stroke A–Z heuristic recognizer.
+   Uses normalized direction histogram + start/end geometry → best candidate letter.
+   Not perfect handwriting OCR, but reliably distinguishes gross letter shapes. */
+function recognize(){
+  if(pts.length<4)return;
+  // normalize
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);
+  const w=Math.max(1,maxx-minx),h=Math.max(1,maxy-miny);
+  const N=pts.map(([x,y])=>[(x-minx)/w,(y-miny)/h]);
+  const start=N[0],end=N[N.length-1];
+  // features
+  const dx=end[0]-start[0],dy=end[1]-start[1];
+  let len=0;for(let i=1;i<N.length;i++){len+=Math.hypot(N[i][0]-N[i-1][0],N[i][1]-N[i-1][1]);}
+  const aspect=w/h;
+  // count vertical vs horizontal travel
+  let vt=0,hz=0;for(let i=1;i<N.length;i++){vt+=Math.abs(N[i][1]-N[i-1][1]);hz+=Math.abs(N[i][0]-N[i-1][0]);}
+  // closedness
+  const closed=Math.hypot(end[0]-start[0],end[1]-start[1])<0.22;
+  // direction changes
+  let turns=0;for(let i=2;i<N.length;i++){
+    const a1=Math.atan2(N[i-1][1]-N[i-2][1],N[i-1][0]-N[i-2][0]);
+    const a2=Math.atan2(N[i][1]-N[i-1][1],N[i][0]-N[i-1][0]);
+    let d=Math.abs(a2-a1);if(d>Math.PI)d=2*Math.PI-d;if(d>0.9)turns++;
+  }
+
+  let g='';
+  if(closed && len>1.3){g='O';}
+  else if(vt>hz*2.2 && Math.abs(dx)<0.3){g='I';}            // vertical line
+  else if(hz>vt*2.2 && Math.abs(dy)<0.3){g='—';}            // horizontal → treat as narrow
+  else if(turns>=3 && aspect>0.6){g=dy<0?'M':'W';}
+  else if(turns>=2 && len>1.6){g='S';}
+  else if(dy>0.4 && dx>0.2 && turns<=1){g='L';}             // down then right
+  else if(dy<-0.4 && Math.abs(dx)<0.4){g='V';}              // up-ish
+  else if(dx>0.4 && dy<0.4 && turns<=1){g='C';}
+  else if(turns===1 && dy>0.3){g='N';}
+  else g='';
+
+  // pick a letter we actually have items for; map ambiguous glyphs to nearest useful letter
+  const have=new Set(ITEMS.flatMap(it=>{
+    const s=[it.name[0].toUpperCase()];
+    it.name.split(' ').forEach(w=>s.push(w[0].toUpperCase()));
+    if(state.alias[it.name])s.push(state.alias[it.name][0].toUpperCase());
+    return s;
+  }));
+  let letter=g;
+  if(!have.has(letter)){
+    // fallback: choose by dominant orientation → common letters present
+    const cand=['M','C','P','S','W','N','B','O','I','R','H','A','Y','U','V','D'].filter(c=>have.has(c));
+    letter=cand[0]||'M';
+  }
+  showReco(letter);
+  q.value=(q.value+letter).slice(0,12);
+  $('#searchbox').classList.add('has');
+  filter(q.value.trim());
+}
+let recoT;
+function showReco(l){
+  reco.textContent=l;reco.classList.add('show');
+  clearTimeout(recoT);recoT=setTimeout(()=>reco.classList.remove('show'),650);
+}
+
+/* ---------- context menu ---------- */
+const menu=$('#menu');
+function showMenu(e,it){
+  menu.innerHTML='';
+  const mk=(icon,txt,fn)=>{const b=document.createElement('button');b.innerHTML=`<span>${icon}</span><span>${txt}</span>`;b.onclick=()=>{hideMenu();fn();};menu.appendChild(b);};
+  mk('▶️','Open',()=>openApp(it));
+  mk('🏷️',state.alias[it.name]?'Edit alias':'Add alias',()=>aliasEditor(it));
+  const sep=document.createElement('div');sep.className='sep';menu.appendChild(sep);
+  mk('🙈','Hide from home',()=>{state.hidden.add(it.name);save();renderAll();toast(`${it.name} hidden`);});
+  const r=$('#screen').getBoundingClientRect();
+  let x=(e.clientX||e.pageX)-r.left, y=(e.clientY||e.pageY)-r.top;
+  menu.classList.add('show');
+  const mw=menu.offsetWidth,mh=menu.offsetHeight;
+  x=Math.min(x,r.width-mw-8);y=Math.min(y,r.height-mh-8);
+  menu.style.left=x+'px';menu.style.top=y+'px';
+}
+function hideMenu(){menu.classList.remove('show');}
+addEventListener('pointerdown',e=>{if(!e.target.closest('#menu'))hideMenu();},true);
+
+/* ---------- sheet: alias editor + manage hidden ---------- */
+const sheet=$('#sheet');
+function openSheet(title,sub,html){$('#sheetTitle').textContent=title;$('#sheetSub').textContent=sub;$('#sheetBody').innerHTML=html;sheet.classList.add('show');}
+function closeSheet(){sheet.classList.remove('show');}
+sheet.addEventListener('click',e=>{if(e.target===sheet)closeSheet();});
+
+function aliasEditor(it){
+  openSheet('Alias',`Type a shortcut for “${it.name}”. Scribble or type it to jump straight here.`,
+    `<div class="field"><label>Shortcut alias</label><input id="aliasIn" maxlength="6" placeholder="e.g. yt" value="${state.alias[it.name]||''}"></div>
+     <button class="btn" id="aliasSave">Save alias</button>
+     ${state.alias[it.name]?'<button class="btn ghost" id="aliasDel" style="margin-top:8px">Remove alias</button>':''}`);
+  const inp=$('#aliasIn');inp.focus();
+  $('#aliasSave').onclick=()=>{const v=inp.value.trim().toLowerCase();if(v){state.alias[it.name]=v;}save();renderAll();closeSheet();toast(`Alias “${v}” → ${it.name}`);};
+  const del=$('#aliasDel');if(del)del.onclick=()=>{delete state.alias[it.name];save();renderAll();closeSheet();toast('Alias removed');};
+}
+function manageHidden(){
+  const items=[...state.hidden];
+  const body=items.length
+    ? `<p style="font-size:12.5px;color:var(--dim);margin-bottom:10px">Tap to unhide.</p><div class="hiddenlist">${items.map(n=>`<span class="chip" data-n="${n}">${n} <small>show</small></span>`).join('')}</div>`
+    : `<p class="empty">Nothing hidden. Long-press any app to hide it.</p>`;
+  openSheet('Hidden apps',`${items.length} hidden`,body);
+  sheet.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{state.hidden.delete(c.dataset.n);save();renderAll();manageHidden();toast(`${c.dataset.n} restored`);});
+}
+
+/* ---------- open app (simulated) ---------- */
+function openApp(it){
+  const item=ITEMS.find(x=>x.name===it.name);if(item)item.freq=Math.min(1,item.freq+0.05);
+  q.value='';$('#searchbox').classList.remove('has');showHome();
+  toast(`Opening ${it.name}…`);
+}
+
+/* ---------- toast ---------- */
+let tT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),1400);}
+
+/* ---------- clock ---------- */
+function tick(){const d=new Date();let h=d.getHours(),m=d.getMinutes();const ap=h>=12?'':'';h=h%12||12;$('#clock').textContent=`${h}:${String(m).padStart(2,'0')}`;}
+tick();setInterval(tick,10000);
+
+/* long-press the "Suggestions"/label area? add a manage entry via double-tap dock is overkill — add gear in search */
+// add a small manage affordance: double-click the Suggestions label opens hidden manager
+document.addEventListener('DOMContentLoaded',()=>{});
+$('#homeview')&&$('#homeview');
+
+function renderAll(){renderHome();renderDock();}
+renderAll();
+
+/* manage hidden: double-click the "Suggestions" label */
+$('#screen').addEventListener('dblclick',e=>{
+  const lab=e.target.closest('.label');
+  if(lab&&/Suggestions/i.test(lab.textContent))manageHidden();
+});
+
+/* hide scribble hint after first draw permanently-ish */
+</script>
+</body>
+</html>

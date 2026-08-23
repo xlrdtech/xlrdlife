@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VEINOM · Voice-control every web AI, your browser & comms</title>
+<meta name="description" content="VEINOM is your voice OS avatar. Control ChatGPT, Claude, Gemini, Perplexity, Grok and every web AI by voice. Hear every reply in Ava's voice. Drive your browser hands-free. One command to install.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#00FF88">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-128.png">
+
+<!-- Open Graph -->
+<meta property="og:title" content="VEINOM · Your Voice OS Avatar">
+<meta property="og:description" content="Control every web AI, your browser, and your comms by voice. One command. Hands-free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://hitthe.link/claude/veinom/">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0A1F12; --bg-deep:#06170D; --bg-elev:rgba(20,60,35,.25);
+    --fg:#F0EAD6; --fg-dim:#A8C0A4; --fg-mute:#6B8B72;
+    --accent:#00FF88; --accent-hi:#5FFF9E; --accent-glow:rgba(0,255,136,.35);
+    --line:rgba(176,255,200,.12); --line-strong:rgba(176,255,200,.22);
+    --r-card:18px; --r-pill:9999px;
+    --sans:'Inter','SF Pro Text',-apple-system,system-ui,sans-serif;
+    --mono:'JetBrains Mono','SF Mono',ui-monospace,monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:var(--bg); color:var(--fg);
+    font-family:var(--sans); -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a { color:inherit; text-decoration:none; }
+  .mono { font-family:var(--mono); }
+
+  /* ── Fixed nav ── */
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px clamp(16px,4vw,40px);
+    background:rgba(6,23,13,.72); backdrop-filter:blur(18px) saturate(1.2);
+    -webkit-backdrop-filter:blur(18px) saturate(1.2);
+    border-bottom:1px solid var(--line);
+  }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.01em; font-size:18px; }
+  .brand .mark {
+    background:linear-gradient(180deg,#fff,#b9c4d6 55%,#8997b4);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    font-weight:800;
+  }
+  .brand .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.5;transform:scale(1.25);} }
+  nav .links { display:flex; align-items:center; gap:clamp(12px,2.5vw,28px); font-size:13px; }
+  nav .links a { color:var(--fg-dim); transition:color .15s; }
+  nav .links a:hover { color:var(--accent); }
+  nav .cta {
+    background:var(--accent); color:var(--bg-deep); font-weight:700; font-size:13px;
+    padding:9px 18px; border-radius:var(--r-pill);
+    box-shadow:0 6px 20px -8px var(--accent-glow);
+    transition:transform .15s, box-shadow .15s;
+  }
+  nav .cta:hover { transform:translateY(-1px); box-shadow:0 10px 28px -8px var(--accent-glow); }
+  @media (max-width:640px){ nav .links a:not(.cta){ display:none; } }
+
+  /* ── Hero ── */
+  .hero {
+    position:relative; min-height:100svh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:120px clamp(20px,5vw,40px) 80px; overflow:hidden;
+  }
+  .hero video {
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; z-index:0; opacity:.5;
+  }
+  .hero .vignette {
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:radial-gradient(ellipse 90% 75% at 50% 45%, transparent 30%, rgba(6,23,13,.7) 80%, rgba(3,11,5,.92) 100%);
+  }
+  .hero .inner { position:relative; z-index:2; max-width:920px; }
+  .badge {
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--accent); padding:7px 16px; border-radius:var(--r-pill);
+    border:1px solid var(--accent-glow); background:rgba(0,255,136,.08); margin-bottom:28px;
+  }
+  .hero h1 {
+    font-size:clamp(40px,8vw,84px); font-weight:800; letter-spacing:-.03em; line-height:.98;
+    margin-bottom:22px;
+  }
+  .hero h1 .shine {
+    background:linear-gradient(110deg,#5d6878 0%,#b9c4d6 20%,#fff 38%,#e8eef7 48%,#fff 58%,#818c9c 80%,#b9c4d6 100%);
+    background-size:220% 100%;
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    animation:shine 6s linear infinite;
+  }
+  @keyframes shine { 0%{background-position:100% 50%;} 100%{background-position:-120% 50%;} }
+  .hero p.lede {
+    font-size:clamp(16px,2.4vw,22px); color:var(--fg-dim); font-weight:300;
+    max-width:680px; margin:0 auto 18px; line-height:1.5;
+  }
+  .identity {
+    font-family:var(--mono); font-size:13px; color:var(--fg-mute); letter-spacing:.03em;
+    max-width:560px; margin:0 auto 36px; line-height:1.7;
+  }
+  /* one-command install box */
+  .install-box {
+    display:inline-flex; align-items:center; gap:12px;
+    background:rgba(3,11,5,.7); border:1px solid var(--line-strong);
+    border-radius:var(--r-pill); padding:8px 8px 8px 22px; margin-bottom:18px;
+    backdrop-filter:blur(10px); max-width:96vw;
+  }
+  .install-box code { font-family:var(--mono); font-size:clamp(11px,1.6vw,14px); color:var(--accent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .install-box button {
+    background:var(--accent); color:var(--bg-deep); border:0; font-family:var(--mono); font-weight:700;
+    font-size:12px; padding:9px 16px; border-radius:var(--r-pill); cursor:pointer; flex-shrink:0;
+    transition:background .15s;
+  }
+  .install-box button:hover { background:var(--accent-hi); }
+  .hero-ctas { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
+  .btn-primary {
+    background:var(--accent); color:var(--bg-deep); font-weight:700; font-size:15px;
+    padding:15px 30px; border-radius:var(--r-card);
+    box-shadow:0 12px 32px -10px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,.4);
+    transition:transform .15s, box-shadow .15s;
+  }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 18px 44px -10px var(--accent-glow); }
+  .btn-ghost {
+    border:1px solid var(--line-strong); color:var(--fg); font-weight:600; font-size:15px;
+    padding:15px 30px; border-radius:var(--r-card); background:rgba(10,18,40,.3);
+    backdrop-filter:blur(8px); transition:border-color .15s, background .15s;
+  }
+  .btn-ghost:hover { border-color:var(--accent); background:rgba(0,255,136,.08); }
+
+  /* ── Sections ── */
+  section.block { padding:clamp(60px,10vw,120px) clamp(20px,5vw,40px); max-width:1140px; margin:0 auto; }
+  .eyebrow { font-family:var(--mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); margin-bottom:14px; text-align:center; }
+  h2.section-title { font-size:clamp(28px,4.5vw,44px); font-weight:700; letter-spacing:-.02em; text-align:center; margin-bottom:14px; }
+  p.section-sub { text-align:center; color:var(--fg-dim); font-size:17px; max-width:600px; margin:0 auto 48px; line-height:1.55; }
+
+  /* feature grid */
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px; }
+  .card {
+    background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+    border:1px solid var(--line-strong); border-radius:var(--r-card); padding:28px;
+    backdrop-filter:blur(14px); transition:border-color .2s, transform .2s;
+  }
+  .card:hover { border-color:var(--accent-glow); transform:translateY(-3px); }
+  .card .ico { font-size:26px; margin-bottom:14px; }
+  .card h3 { font-size:18px; font-weight:600; margin-bottom:8px; }
+  .card p { color:var(--fg-dim); font-size:14.5px; line-height:1.55; }
+
+  /* supported sites */
+  .sites { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+  .site-chip {
+    font-family:var(--mono); font-size:13px; color:var(--fg-dim);
+    border:1px solid var(--line); border-radius:var(--r-pill); padding:9px 18px;
+    background:rgba(20,60,35,.18); transition:all .15s;
+  }
+  .site-chip:hover { color:var(--accent); border-color:var(--accent-glow); }
+
+  /* pricing */
+  .pricing { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; align-items:stretch; }
+  .tier {
+    background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+    border:1px solid var(--line-strong); border-radius:var(--r-card); padding:32px;
+    display:flex; flex-direction:column;
+  }
+  .tier.featured { border-color:var(--accent); box-shadow:0 0 40px -12px var(--accent-glow); background:linear-gradient(145deg,rgba(0,255,136,.10),rgba(0,255,136,.02)); }
+  .tier .name { font-family:var(--mono); font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin-bottom:10px; }
+  .tier .price { font-size:40px; font-weight:800; letter-spacing:-.02em; margin-bottom:4px; }
+  .tier .price small { font-size:15px; font-weight:400; color:var(--fg-mute); }
+  .tier .price-note { font-size:13px; color:var(--fg-mute); margin-bottom:20px; }
+  .tier ul { list-style:none; margin-bottom:26px; flex:1; }
+  .tier li { font-size:14.5px; color:var(--fg-dim); padding:7px 0 7px 26px; position:relative; line-height:1.45; }
+  .tier li::before { content:"✓"; position:absolute; left:0; color:var(--accent); font-weight:700; }
+  .tier .tier-cta {
+    display:block; text-align:center; font-weight:700; font-size:14px;
+    padding:13px; border-radius:var(--r-pill); transition:all .15s;
+  }
+  .tier .tier-cta.solid { background:var(--accent); color:var(--bg-deep); }
+  .tier .tier-cta.solid:hover { background:var(--accent-hi); }
+  .tier .tier-cta.ghost { border:1px solid var(--line-strong); color:var(--fg); }
+  .tier .tier-cta.ghost:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* how it works */
+  .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; counter-reset:step; }
+  .step { padding:24px; border-left:2px solid var(--line-strong); }
+  .step .n { font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:.12em; margin-bottom:10px; }
+  .step h4 { font-size:17px; font-weight:600; margin-bottom:6px; }
+  .step p { color:var(--fg-dim); font-size:14px; line-height:1.5; }
+
+  footer {
+    border-top:1px solid var(--line); padding:48px clamp(20px,5vw,40px); text-align:center;
+    color:var(--fg-mute); font-family:var(--mono); font-size:12px; letter-spacing:.08em;
+  }
+  footer .flinks { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; margin-bottom:20px; }
+  footer .flinks a { color:var(--fg-dim); }
+  footer .flinks a:hover { color:var(--accent); }
+  footer .mark { background:linear-gradient(180deg,#fff,#b9c4d6,#8997b4); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; font-weight:800; font-family:var(--sans); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#top" class="brand"><span class="dot"></span><span class="mark">VEINOM</span></a>
+  <div class="links">
+    <a href="#features">Features</a>
+    <a href="#sites">Sites</a>
+    <a href="#pricing">Pricing</a>
+    <a href="app/">Web App</a>
+    <a href="onboarding/" class="cta">Get Started</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <video autoplay muted loop playsinline preload="auto" poster="assets/bg-poster.jpg">
+    <source src="assets/bg-loop.mp4" type="video/mp4">
+  </video>
+  <div class="vignette"></div>
+  <div class="inner">
+    <div class="badge"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);"></span>Voice OS Avatar · v1</div>
+    <h1>Control every web AI<br>by <span class="shine">voice.</span></h1>
+    <p class="lede">VEINOM wraps ChatGPT, Claude, Gemini, Perplexity, Grok & every web chat. Speak your prompt. Hear every reply in Ava's voice. Drive your browser hands-free.</p>
+    <p class="identity">"I am your voice OS avatar.<br>I evolved and adapt to your needs.<br>Together we will reshape the digital world."</p>
+
+    <div class="install-box">
+      <code id="installCmd">irm https://hitthe.link/claude/veinom/install.ps1 | iex</code>
+      <button onclick="copyInstall()" id="copyBtn">COPY</button>
+    </div>
+    <div class="hero-ctas">
+      <a href="onboarding/" class="btn-primary">Get Started Free →</a>
+      <a href="app/" class="btn-ghost">Open Web App</a>
+    </div>
+  </div>
+</header>
+
+<section class="block" id="features">
+  <div class="eyebrow">What VEINOM does</div>
+  <h2 class="section-title">Your hands-free operating layer</h2>
+  <p class="section-sub">Not another chatbot. The voice layer that sits on top of every AI tool you already use.</p>
+  <div class="grid">
+    <div class="card"><div class="ico">🎙️</div><h3>Speak to inject</h3><p>Talk naturally. VEINOM transcribes, types into any chat's input, and sends — across every supported site.</p></div>
+    <div class="card"><div class="ico">🔊</div><h3>Hear every reply</h3><p>Each assistant response is read aloud in Ava's premium neural voice. Eyes-free, hands-free.</p></div>
+    <div class="card"><div class="ico">⚡</div><h3>VAD barge-in</h3><p>Talk over Ava and she stops instantly. Real-time conversation, not walkie-talkie turns.</p></div>
+    <div class="card"><div class="ico">🌐</div><h3>Browser control</h3><p>"Open ChatGPT." "New tab." "Click send." "Scroll down." Drive the whole browser by command.</p></div>
+    <div class="card"><div class="ico">💎</div><h3>Glass everywhere</h3><p>Every wrapped site is re-skinned in the VEINOM glass theme — forest green, emerald, cream. One look.</p></div>
+    <div class="card"><div class="ico">🔁</div><h3>Mirror to your TUI</h3><p>Every prompt and reply pipes to your command center for automanifestation. The loop is yours.</p></div>
+  </div>
+</section>
+
+<section class="block" id="sites">
+  <div class="eyebrow">Works everywhere</div>
+  <h2 class="section-title">One voice. Every AI.</h2>
+  <p class="section-sub">Native adapters for the chats you live in — plus a generic fallback for anything else.</p>
+  <div class="sites">
+    <span class="site-chip">ChatGPT</span><span class="site-chip">Claude</span><span class="site-chip">Gemini</span>
+    <span class="site-chip">Perplexity</span><span class="site-chip">Grok</span><span class="site-chip">Sintra</span>
+    <span class="site-chip">Poe</span><span class="site-chip">Mistral</span><span class="site-chip">DeepSeek</span>
+    <span class="site-chip">Copilot</span><span class="site-chip">Meta AI</span><span class="site-chip">Character.AI</span>
+    <span class="site-chip">HF Chat</span><span class="site-chip">+ any web chat</span>
+  </div>
+</section>
+
+<section class="block">
+  <div class="eyebrow">Setup</div>
+  <h2 class="section-title">Live in 60 seconds</h2>
+  <p class="section-sub">One command in your terminal. One click to load. One tap for the mic.</p>
+  <div class="steps">
+    <div class="step"><div class="n">STEP 01</div><h4>Run one command</h4><p>Paste the installer in your terminal — it sets up the Ava voice server and downloads the extension.</p></div>
+    <div class="step"><div class="n">STEP 02</div><h4>Load the extension</h4><p>Chrome, Edge, Brave, Arc, or Orion on iOS. Two clicks, then pin it.</p></div>
+    <div class="step"><div class="n">STEP 03</div><h4>Grant the mic</h4><p>One tap. Ava greets you. The voice loop is live.</p></div>
+    <div class="step"><div class="n">STEP 04</div><h4>Talk</h4><p>Open any AI chat and just speak. VEINOM does the rest.</p></div>
+  </div>
+</section>
+
+<section class="block" id="pricing">
+  <div class="eyebrow">Pricing</div>
+  <h2 class="section-title">Free to start. Pro to fly.</h2>
+  <p class="section-sub">Open and no-login by default. Upgrade when you want hosted voice and cross-device sync.</p>
+  <div class="pricing">
+    <div class="tier">
+      <div class="name">Free</div>
+      <div class="price">$0</div>
+      <div class="price-note">Forever · no login</div>
+      <ul>
+        <li>Every supported chat site</li>
+        <li>Voice in + voice out</li>
+        <li>VAD barge-in</li>
+        <li>Browser voice control</li>
+        <li>Your own local Ava server</li>
+        <li>Glass theme on every site</li>
+      </ul>
+      <a href="onboarding/" class="tier-cta ghost">Install Free</a>
+    </div>
+    <div class="tier featured">
+      <div class="name">Pro</div>
+      <div class="price">$11<small>/mo</small></div>
+      <div class="price-note">or $111/yr · Square or PayPal</div>
+      <ul>
+        <li>Everything in Free</li>
+        <li>Hosted Ava — no local server</li>
+        <li>Works on mobile + away from home</li>
+        <li>Cross-device transcript sync</li>
+        <li>Browser-control macros</li>
+        <li>Three-LLM grounding trio</li>
+        <li>Priority adapters</li>
+      </ul>
+      <a href="onboarding/?tier=pro" class="tier-cta solid">Go Pro</a>
+    </div>
+    <div class="tier">
+      <div class="name">Operator</div>
+      <div class="price">Custom</div>
+      <div class="price-note">Fleet · white-label</div>
+      <ul>
+        <li>Everything in Pro</li>
+        <li>Fleet deploy across a team</li>
+        <li>White-label branding</li>
+        <li>Custom adapters on request</li>
+        <li>Direct operator support</li>
+      </ul>
+      <a href="mailto:lord@xlrd.org?subject=VEINOM%20Operator" class="tier-cta ghost">Contact</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="flinks">
+    <a href="app/">Web App</a>
+    <a href="onboarding/">Get Started</a>
+    <a href="#pricing">Pricing</a>
+    <a href="https://hitthe.link/veinom/extension/">Install</a>
+    <a href="https://hitthe.link/vei/">VEI</a>
+  </div>
+  <div><span class="mark">VEINOM</span> · by XLRD TECH · Voice OS Avatar · Competing with Grok & Agy</div>
+</footer>
+
+<script>
+  function copyInstall() {
+    const cmd = document.getElementById('installCmd').textContent;
+    navigator.clipboard.writeText(cmd).then(() => {
+      const b = document.getElementById('copyBtn');
+      b.textContent = 'COPIED ✓';
+      setTimeout(() => b.textContent = 'COPY', 1800);
+    });
+  }
+  /* PWA service worker */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

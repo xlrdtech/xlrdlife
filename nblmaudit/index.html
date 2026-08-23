@@ -1,0 +1,814 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notebook Archivist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        h1 { font-family: 'Playfair Display', serif; }
+    </style>
+</head>
+<body class="bg-[#fafafa] text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // --- Icons (Inline SVGs to avoid dependency issues) ---
+        const Icon = ({ children, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+
+        const Archive = ({ size = 24, className = "" }) => (
+            <Icon className={className} width={size} height={size}><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></Icon>
+        );
+        const Search = ({ size = 24, className = "" }) => (
+            <Icon className={className} width={size} height={size}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>
+        );
+        const FileText = ({ size = 24, className = "" }) => (
+            <Icon className={className} width={size} height={size}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></Icon>
+        );
+        const CheckCircle = ({ size = 24, className = "" }) => (
+            <Icon className={className} width={size} height={size}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>
+        );
+        const Trash2 = ({ size = 24, className = "" }) => (
+            <Icon className={className} width={size} height={size}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></Icon>
+        );
+        const RotateCcw = ({ size = 24, className = "" }) => (
+            <Icon className={className} width={size} height={size}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/><path d="M3 3v9h9"/></Icon>
+        );
+        const Filter = ({ size = 24, className = "" }) => (
+            <Icon className={className} width={size} height={size}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></Icon>
+        );
+        const Download = ({ size = 24, className = "" }) => (
+            <Icon className={className} width={size} height={size}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>
+        );
+        const MoreHorizontal = ({ size = 24, className = "" }) => (
+            <Icon className={className} width={size} height={size}><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></Icon>
+        );
+
+        // --- Data ---
+        const RAW_DATA = `
+Biblical Index to Freemasonry1 SourceJan 21, 2025Owner💻
+Open Source Repositories: A Directory215 SourcesNov 7, 2025Owner🔢
+Alphabet Mnemonic Device and Numerical Plate Reading1 SourceDec 24, 2025Owner🌈
+NBLMMetallic and Prismatic Iconography2 SourcesDec 29, 2025Owner⚙️
+Visual Curation: The AUTO Reference Boards65 SourcesDec 4, 2025Owner🚀
+Mastering Google Gemini 3: The Complete AI Automation Guide3 SourcesDec 22, 2025Owner🛠️
+MCP Tool Schema and Cloud Development Catalog10 SourcesDec 28, 2025Owner📺
+Hyprnote and other oss tools9 SourcesNov 9, 2025Owner📺
+(128) NotebookLM is INSANE! - YouTube1 SourceDec 27, 2025Owner📜
+Gemini OS: Integrated Dark Theme and Voice Synthesis Script2 SourcesDec 26, 2025Owner🎁
+OTTO's Birthday Auto Rate Offer9 SourcesOct 13, 2025Owner🧠
+Mastering NotebookLM: The Ultimate 30-Day AI Business System1 SourceDec 28, 2025Owner📋
+L7S Business Consolidation and AI Strategy Summary92 SourcesDec 6, 2025Owner🌌
+Celestial Systems: Values, Automation, and the Cosmic Rhythm1 SourceDec 28, 2025Owner🚀
+One-Click Autonomous Agent Deployment Script41 SourcesDec 26, 2025Owner📱
+The Universal Client Interface40 SourcesDec 23, 2025Owner🤖
+thought Architecting the Native MacOS Agent: A Technical Blueprint1 SourceDec 27, 2025Owner💼
+App Academy Graduated Job Seeker Program Navigator40 SourcesDec 26, 2025Owner🧠
+The Digital Architect's Master Compendium1 SourceDec 25, 2025Owner📚
+Digital Compendium of AI, Tech, and Creative Research43 SourcesDec 24, 2025Owner🚀
+L7S SaaS Competitive Intelligence and Architecture Blueprint1 SourceDec 22, 2025Owner🪄
+Craft Assistant Overview and User Guide2 SourcesDec 24, 2025Owner⏱️
+Mastering Mathematical Rap Timing and AI Bar Alignment12 SourcesDec 24, 2025Owner🔢
+Gematria Musings and Modern Architecture on the Move20 SourcesDec 23, 2025Owner⏱️
+The Mathematics of Seamless Audio Stitching1 SourceDec 24, 2025Owner💡
+Far Beyond The Level of Human Penmanship279 SourcesDec 17, 2025Owner👤
+Anatomical Blueprint for Facial Synthesis and Modeling2 SourcesDec 22, 2025Owner⚙️
+Programming the AI: The Meta-Skill of Effective Prompting2 SourcesNov 26, 2025Owner🌼
+The Complete daisyUI Component Ecosystem Guide1 SourceNov 14, 2025Owner✨
+AI Website Design with Gemini 3: A Vibe Coding Tutorial2 SourcesDec 15, 2025Owner📝
+Tréyadh Music Production and Studio Logistics Summary10 SourcesDec 10, 2025Owner🌐
+Universal App Portability and Open Standards Guide2 SourcesDec 21, 2025Owner⚡
+Master Log - 1298 SourcesDec 12, 2025Owner💻
+Master Log - 2208 SourcesDec 12, 2025Owner🤖
+G.O.D. SOP AI Tech Stack Dashboard4 SourcesDec 7, 2025Owner💻
+Cinematic UI Overhaul and Development Log4 SourcesDec 18, 2025Owner🦸
+L7S: Hero Frameworks for Business Growth11 SourcesDec 16, 2025Owner🤖
+The OmniPresent Agent: Automation and Development Log3 SourcesDec 18, 2025Owner📋
+L7S Hero Systems and Operations Framework31 SourcesNov 14, 2025Owner💡
+L7X Cognitive Architecture: Audit of Core Systems2 SourcesNov 19, 2025Owner💼
+L7s Business Onboarding and Systems Development1 SourceNov 6, 2025Owner🦸
+L7S Hero Strategic Business Solutions and Pricing1 SourceOct 30, 2025Owner⚙️
+L7S Ecosystem: Offer Validation and System Development2 SourcesDec 5, 2025Owner🗂️
+L7S Business and Legal Systems Frameworks1 SourceNov 3, 2025Owner💻
+ArozOS 2.0: A Web Desktop OS Journey1 SourceNov 7, 2025Owner🔑
+App Access Keys and Cloud Integration Settings1 SourceDec 22, 2025Owner➗
+GreyStone Power - AllenResidence53904 SourcesNov 8, 2025Owner📊
+Atlanta Consulting Benchmarks and GreyStone Utility Audits1 SourceDec 21, 2025Owner🔄
+Unified Comms Module Hardening and Deployment10 SourcesDec 16, 2025Owner🌐
+Universal AI and Digital Workspace Resource Directory1 SourceDec 20, 2025Owner❄️
+The Internal Architecture of Victory63 SourcesDec 20, 2025Owner⚙️
+Mastering Performance and Intelligent Automation Systems169 SourcesDec 20, 2025Owner🌍
+VVSVS World Building Codex: Shaping Ideas with Intent1 SourceDec 20, 2025Owner✨
+Charisma and Rizz: Conceptualization and Mastery11 SourcesDec 17, 2025Owner🤫
+Sylla Sphere Non-Disclosure Agreement1 SourceDec 17, 2025Owner🤝
+Facilitating a Crypto Asset Handshake Deal1 SourceDec 17, 2025Owner🏃
+High-Velocity Strategy for SaaS Design Acquisition1 SourceDec 8, 2025Owner💡
+25 Powerful Websites to Simplify Life10 SourcesDec 9, 2025Owner👻
+The Glitch in the Server7 SourcesDec 9, 2025Owner🤯
+The Insane SEO AI Workflow Stack18 SourcesDec 9, 2025Owner🔀
+Motis and Duo Stardust: Algorithm Collision1 SourceDec 10, 2025Owner⚙️
+The Autonomous Directory of AI, Business, and Tech1 SourceDec 10, 2025Owner🏞️
+Welcome to FX HERO!47 SourcesDec 15, 2025Owner🤖
+AI for Project Managers: Five Practical Tools2 SourcesDec 16, 2025Owner🤖
+Daily Log - 12/15/254 SourcesDec 15, 2025Owner💰
+Mastering AI App Building with Giga-Prompts and CodeSpring1 SourceDec 16, 2025Owner🧾
+Home Depot Sales Receipt7 SourcesDec 15, 2025Owner🛠️
+High-Fidelity Video Scrubbing Protocol Deployment1 SourceDec 14, 2025Owner🤯
+NotebookLM AI for Content Creation and SEO Ranking1 SourceDec 11, 2025Owner🔑
+Google Account Sign-in Portal1 SourceDec 11, 2025Owner🚪
+The Great ChatGPT Exodus to Gemini and Claude10 SourcesDec 10, 2025Owner✅
+Successful Form Submission Receipt with Verification Links13 SourcesDec 10, 2025Owner💻
+System Design Concepts and Interview Preparation1 SourceDec 10, 2025Owner🤖
+Amazon Nova: The Business Automation AI Agent1 SourceDec 10, 2025Owner✨
+Crystals for Manifestation1 SourceJan 16, 2025Owner🤖
+AI Automation and Business Workflow Development6 SourcesDec 9, 2025Owner💰
+The Worth of a 1943 Steel Penny3 SourcesDec 9, 2025Owner🗑️
+Fairburn Bathroom Demolition Dumpster Comparison1 SourceDec 9, 2025Owner📈
+Business Credit Decoded: Building Corporate Financial Power1 SourceDec 9, 2025Owner⚙️
+Automation Strategy for Client Engagement and Revenue5 SourcesDec 9, 2025Owner🪙
+Brass Weight on Palm19 SourcesDec 8, 2025Owner💡
+Architectural Velocity: AI, Ethics, and Optimal Tooling10 SourcesDec 8, 2025Owner🔗
+GoldChain DAO: Blockchain Services and Mission Statement1 SourceDec 8, 2025Owner🤖
+Automated Business Workflow and Tech Stack Strategy1 SourceDec 7, 2025Owner✅
+Project BUILD Form Automation: Cloudinary and Web3Forms Solution13 SourcesDec 8, 2025Owner🚀
+Bio-Driven Strategies for Immediate Income Growth6 SourcesDec 8, 2025Owner💸
+Email Financial Subscriptions and Billing Summary9 SourcesDec 8, 2025Owner🤖
+Beside (M1): AI Receptionist App Store Listing16 SourcesDec 7, 2025Owner🍳
+The Cupboard and Range Hood1 SourceDec 7, 2025Owner⚙️
+Client Server Automation with Browser Profiles1 SourceDec 7, 2025Owner🤖
+Google Account Recovery Blocked by Phone Verification11 SourcesDec 6, 2025Owner🌌
+Atoms to Adam: Heavy Mental Odyssey1 SourceDec 6, 2025Owner📄
+Media File Glyph47 SourcesDec 5, 2025Owner🤦
+Installed but Unlicensed: Waves Plugin Diagnosis1 SourceDec 5, 2025Owner❓
+Caller Identification: National Enterprise Systems1 SourceDec 4, 2025Owner💻
+Strategic Projects: Branding, Tech, and Renovation10 SourcesDec 4, 2025Owner🤯
+AI-Driven Data Sync: Robocopy and Rclone Errors2 SourcesDec 3, 2025Owner🤖
+Gemini CLI Script on iOS a-Shell2 SourcesDec 4, 2025Owner🤖
+AI Agents, Claude Code, and Emerging Developer Strategies11 SourcesDec 4, 2025Owner⚙️
+Tech Synergy and Growth Strategy Proposal2 SourcesDec 4, 2025Owner🛠️
+Build and Sideload a Custom iOS Desktop Browser10 SourcesDec 4, 2025Owner⚙️
+Vy: Your Autonomous Desktop AI Essentials2 SourcesDec 3, 2025Owner⚙️
+Nonprofit Workspace: From Unlimited Storage to AI Intelligence1 SourceDec 3, 2025Owner🤯
+Validated Offers, Corporate Bylaws, and Funding Leverage2 SourcesDec 1, 2025Owner📈
+Forex Mastery: Guides, Strategies, and Regulatory Compliance9 SourcesDec 1, 2025Owner📋
+Executive Action and Strategic Deployment2 SourcesDec 1, 2025Owner⚙️
+Executive Action Map: December Strategy and System Buildout1 SourceDec 1, 2025Owner🚗
+Mac Acquisition and Asset Settlement Plan3 SourcesDec 1, 2025Owner🤖
+Agentic AI and RPA: Desktop Automation Paradigms19 SourcesDec 1, 2025Owner🧠
+Google Gemini: API and Premium AI Plans14 SourcesNov 30, 2025Owner🤖
+Beside (M1): AI Receptionist App Insights and User Experiences1 SourceNov 30, 2025Owner⚙️
+NotebookLM, Perplexity, Gemini: The AI Automation Trinity1 SourceNov 30, 2025Owner🤔
+Choosing Health Coverage: Price Versus Usage1 SourceNov 30, 2025Owner🤝
+Brokering Cash Pallet Deals and IRS Issues1 SourceNov 30, 2025Owner✊
+Digital Unity: Veterans, AI, and Cultural Roots1 SourceNov 29, 2025Owner😩
+Strategic Dialogue: Business, Law, and Adversity2 SourcesNov 29, 2025Owner🤯
+Google AI Studio: Automation Mastery Through Simple Conversation1 SourceNov 28, 2025Owner🆘
+Psychosis and Prayer: Wesley's Search for Medical Care83 SourcesNov 26, 2025Owner📝
+Strategic Review of the $100M SWIFT Agreement1 SourceNov 26, 2025Owner🛠️
+Project BUILD Workforce Application Essentials1 SourceNov 28, 2025Owner🍳
+Seven O'Clock Provisions279 SourcesNov 26, 2025Owner💸
+Trae.ai System Architecture and Zero-Cost Strategy1 SourceNov 17, 2025Owner🚀
+Defying Limits: Gemini 3 and Antigravity Launch10 SourcesNov 27, 2025Owner🎙️
+Indistinguishable AI Voice Cloning and Music Production Stack9 SourcesNov 18, 2025Owner✍️
+Advanced R&B Songwriting and Lyrical Directives2 SourcesNov 23, 2025Owner⚙️
+AI Trading Systems and Ethical Parameters2 SourcesNov 27, 2025Owner🐙
+Public and Private Project Repository Index6 SourcesNov 27, 2025Owner💻
+The Price and Power of Modern Computing6 SourcesNov 26, 2025Owner⚙️
+Blueprint for Superior Prompt Design2 SourcesNov 26, 2025Owner📂
+Structuring GitHub Pages for Multiple Sites1 SourceNov 26, 2025Owner🔗
+CTO EAST Signed Access Key2 SourcesNov 26, 2025Owner🔗
+Encrypted Hellom Note URL12 SourcesNov 24, 2025Owner📔
+how to automate the browser to record a screen recording that demonstrate what...72 SourcesNov 23, 2025Owner📺
+Onn 4K Pro Google TV Senior Guide1 SourceNov 23, 2025Owner🎯
+$250K Revenue Generation and Priority Optimization Framework1 SourceNov 23, 2025Owner🌌
+Transcendent Realities: AI, Ethics, and Cosmic Whispers70 SourcesNov 20, 2025Owner🐍
+Trust and the Temptation of the Apple1 SourceNov 21, 2025Owner🎤
+Quantum Physics vs. G X Battle Rap1 SourceNov 22, 2025Owner🤦
+Family Logistical Issues and Home Disorder19 SourcesNov 22, 2025Owner🤔
+Apple Watch Assistant and Phone Mistakes1 SourceNov 20, 2025Owner💡
+AI-Powered Development and Lead Generation Strategies3 SourcesNov 20, 2025Owner⚠️
+Mac Pro Sequoia Compatibility and Clone Request1 SourceNov 19, 2025Owner🌌
+Quantum Destiny Blueprint20 SourcesNov 19, 2025Owner🤖
+Perplexity Comet AI Browser Updates and Demonstrations5 SourcesNov 19, 2025Owner🤯
+Gemini 3 and Agent Mode Capabilities Deep Dive1 SourceNov 19, 2025Owner✋
+iOS Shortcuts: Gesture Simulation Limitations and AssistiveTouch12 SourcesNov 18, 2025Owner⚡
+Financial Stabilization9 SourcesNov 17, 2025Owner🎤
+Malian Voice: Range, Resonance, and African Ornamentation1 SourceNov 17, 2025Owner🧐
+Deep State Q-Web Chronology Map1 SourceNov 17, 2025Owner🏃
+Bootable MacOS Drive Procurement and Financial Plan1 SourceNov 17, 2025Owner🤔
+Profile/Alumni/Anthony Vasquez (update)11 SourcesNov 17, 2025Owner💻
+Pipedream and Tray.ai Feature Comparison5 SourcesNov 17, 2025Owner🎤
+Battle Rap Wordplay: Abysmal versus Rio Nkosi4 SourcesNov 16, 2025Owner🖥️
+RozAOS: Web Desktop Solutions without Boundaries4 SourcesNov 16, 2025Owner🗣️
+Unified Voice-Driven Workspace and Omni-Channel Control11 SourcesNov 16, 2025Owner🤖
+CTO Automation and Subscription Management1 SourceNov 16, 2025Owner🌱
+How can they work together to quickly have exponential growth? The official Self Exec Collaboration Plan crafted by the DeepDive Team.5 SourcesNov 16, 2025Owner🧐
+Cybersecurity Contract Feasibility: Justifying $160K to Federal Funders1 SourceNov 16, 2025Owner📈
+Self Exec and XLRD Joint Venture Profile2 SourcesNov 16, 2025Owner🔥
+GE Appliances Electric Wall Oven Owner's Manual1 SourceNov 14, 2025Owner🚫
+Trae AI IDE Open Source Compliance Audit5 SourcesNov 16, 2025Owner🤖
+The Divine Codex of AI: An AI Bible1 SourceNov 15, 2025Owner📝
+The Soothing Loop and 11 Labs1 SourceNov 15, 2025Owner💻
+Serena: IDE-Level AI Coding Agent Toolkit2 SourcesNov 15, 2025Owner🔗
+iOS Deep Linking: App and Settings URL Schemes47 SourcesNov 15, 2025Owner🔌
+Coaxial Signal Conversion: HDMI and Ethernet Adapters1 SourceNov 15, 2025Owner🔑
+Industry Icons 7 Early Access1 SourceNov 15, 2025Owner🤖
+The Self Exec CTO Automation Blueprint1 SourceNov 15, 2025Owner📔
+Second Me: Your Second Me, Speaking for You0 SourcesNov 15, 2025Owner💡
+AI CEO: Building a Billion-Dollar Company with Replit1 SourceNov 15, 2025Owner🎧
+DJ Key Detection Software Comparison and Tools10 SourcesNov 15, 2025Owner📝
+Project Setup and Technology Planning5 SourcesNov 14, 2025Owner✉️
+Digital Communication Inboxes and Counts1 SourceNov 14, 2025Owner🧠
+AI Agent Memory and GPT 5.1 Updates12 SourcesNov 14, 2025Owner📝
+Project Management, Domain Strategy, and HIPAA Compliance3 SourcesNov 14, 2025Owner🤝
+HIPAA Business Associate Agreement: Covered Entity and Wispr AI1 SourceNov 14, 2025Owner🧠
+Caring for an Alzheimer's Patient5 SourcesNov 12, 2025Owner🤖
+AI Call Transcription and Workflow Automation Stack2 SourcesNov 14, 2025Owner🤩
+IA OCR no WhatsApp com Gemini 2.5 Pro11 SourcesNov 13, 2025Owner🎙️
+Recording Session Planning and Technical Setup1 SourceNov 14, 2025Owner📰
+Medium Daily Digest: Tech, Coding, and Originality1 SourceNov 14, 2025Owner💡
+Generating Breakthrough Business Ideas and Products1 SourceNov 13, 2025Owner🎤
+Loaded Lux Versus Nu Jerzey Twork: URLTV1 SourceNov 13, 2025Owner📺
+How to Get Rich with AI Avatars in 2026 ($100k Blueprint) - YouTube1 SourceNov 13, 2025Owner📋
+Todoist Task Overview and Action Plan1 SourceNov 13, 2025Owner🔌
+AI App Testing and Integration Strategy2 SourcesNov 13, 2025Owner💾
+Drive Cloning and Computer Setup Logistics2 SourcesNov 13, 2025Owner🕸️
+Apify Web Scraping Code Templates and Platform Overview1 SourceNov 12, 2025Owner🐼
+Panda Images Jailbreak Multimodal AI Models1 SourceNov 12, 2025Owner📱
+iPhone PWA Installation and macOS Remote Guide1 SourceNov 12, 2025Owner🎤
+Advanced Songwriting Blueprint: Nocturnal Rage and Spiritual Warfare1 SourceNov 12, 2025Owner📞
+Beside: AI for Real Economy Conversations and Growth1 SourceNov 12, 2025Owner🧠
+Maxine Allen: Alzheimer's Diagnosis and Treatment1 SourceNov 11, 2025Owner🤝
+ProcessDriven Partnership Assessment and Strategy9 SourcesNov 11, 2025Owner🛠️
+October-November CTO East's Clipboard1 SourceNov 11, 2025Owner🛠️
+Tools, Apps, and Service Integrations15 SourcesNov 11, 2025Owner📔
+NVIDIA Corporation Stock Price: Quote, Forecast, Splits & News (NVDA)0 SourcesNov 11, 2025Owner🏗️
+Video-to-Site Automation Engine Architecture1 SourceNov 11, 2025Owner🖥️
+Kasm Workspaces Implementation for macOS VMs1 SourceNov 8, 2025Owner🎧
+SonoBus, ASIO, and Low-Latency Audio Configuration10 SourcesNov 8, 2025Owner🏗️
+Project Build: Learning and Development Initiative15 SourcesNov 11, 2025Owner🧑‍💻
+CTO EAST: Technical Updates and Personal Hurdles2 SourcesNov 10, 2025Owner🛒
+Grocery List Essentials1 SourceNov 10, 2025Owner🐧
+Linux: Superior Host for Windows Virtualization5 SourcesNov 10, 2025Owner🖥️
+Live Windows System Cloning Guide1 SourceNov 10, 2025Owner📱
+ScrollTrigger Video Playback and Animation Guide1 SourceNov 10, 2025Owner🤖
+The Architecture of Digital Consciousness1 SourceNov 10, 2025Owner📺
+(10) Grant user sudo / root / priviledged access in linux usng sudoers file or wheel group - YouTube1 SourceNov 9, 2025Owner🔧
+MCP 2.0: Code Execution for AI Agent Reliability and Cost Savings2 SourcesNov 8, 2025Owner☯️
+Quantum Theft: Collapsing the Polarity Field1 SourceNov 8, 2025Owner🔗
+The Chain Reaction of Markov's Math1 SourceNov 8, 2025Owner💊
+Arthur Allen Prescription Renewal at Publix Pharmacy3 SourcesNov 8, 2025Owner📁
+Digital Correspondence and Task Management1 SourceNov 8, 2025Owner📋
+Digital Life: SCAD, Perplexity, and Technical Actions1 SourceNov 8, 2025Owner🛠️
+Agentic AIOS Web Application Architecture Validation4 SourcesNov 6, 2025Owner🏗️
+Unifying Diverse Documentation: Voice, Context, and Life Cycle12 SourcesNov 7, 2025Owner⏳
+Self Exec AI Receptionist Protocol and Script12 SourcesNov 7, 2025Owner💻
+AI Automation Stack: VMs, Passthrough, and SelfOwn Deployment1 SourceNov 8, 2025Owner🇫🇷
+French Citizen Confirmation217 SourcesNov 8, 2025Owner📺
+(214) The end of MCP for ai agents? - YouTube1 SourceNov 7, 2025Owner📺
+(192) The Complete AI Stack and Workflow for 100M+ Video Views - YouTube3 SourcesNov 5, 2025Owner🏗️
+Synq: Multi-Persona Operational Architecture and File System16 SourcesNov 6, 2025Owner⚖️
+Deep Learning Frameworks: PyTorch vs. TensorFlow Ecosystem and Deployment19 SourcesNov 7, 2025Owner🔗
+Repository Links and Developer Tools Collection1 SourceNov 7, 2025Owner💻
+Unified Catalog of Open Source Projects and AI Tools216 SourcesNov 7, 2025Owner📝
+Workflow Misallocation and Data Organization2 SourcesNov 3, 2025Owner💻
+Voice-Controlled AI Agent UI Architecture2 SourcesNov 6, 2025Owner🤖
+Open Source AI Agents for Rapid Code Development8 SourcesNov 7, 2025Owner🏆
+Vercept Mission, Values, and Team11 SourcesNov 7, 2025Owner🤖
+HubSpot Breeze AI Functionality and Integration Guide1 SourceNov 6, 2025Owner♊
+Gemini CLI for MCP Servers2 SourcesNov 6, 2025Owner😭
+Troubleshooting WinBoat Connectivity and KVM Acceleration1 SourceNov 6, 2025Owner😈
+Chaos Trap Production and Tech Stack Reduction154 SourcesNov 6, 2025Owner📺
+(168) AI Just SHOCKED Everyone: It’s Officially Self-Aware - YouTube1 SourceNov 3, 2025Owner📺
+(192) I tell you, it’s a fact THIS PRAYER WILL BE SOLVE ALL YOUR PROBLEM, PRAY FOR MONEY & SUCCESS - YouTube1 SourceNov 5, 2025Owner🤝
+Domain, Software, and Service Collaboration1 SourceNov 5, 2025Owner🤝
+Acquisition Strategy for Automation Agency Growth1 SourceNov 5, 2025Owner🧠
+Executive Function in Workplace Performance and Leadership11 SourcesNov 4, 2025Owner🔗
+52weeksdev.org to 52weeks.dev (Instructions to update the website)38 SourcesOct 14, 2025Owner📎
+Dev’s Raindrop Tabs20 SourcesNov 4, 2025Owner👮
+The CIA Confessions of War Crimes3 SourcesNov 5, 2025Owner📞
+New Calls Answering Service Overview and Pricing2 SourcesNov 5, 2025Owner😓
+Sequoia Virtualization and EFI Boot Troubleshooting9 SourcesNov 5, 2025Owner🔗
+New Source Research Notebook8 SourcesSep 28, 2025Owner🌌
+Hermetic Principles, Asset Pricing, and Cosmic Consciousness9 SourcesNov 4, 2025Owner🛠️
+Architecting the Self-Executing L7X System and Business10 SourcesNov 4, 2025Owner📺
+(165) I Ranked Every Vibe Coding App (Cursor vs Claude Code vs Lovable) - YouTube2 SourcesNov 3, 2025Owner🍷
+Windows .EXE Focus for Cross-Platform Linux Workflow1 SourceNov 4, 2025Owner💎
+Diamond Birth Card Targets and Dates1 SourceOct 27, 2025Owner💻
+AI Coding Assistants: Comparative Analysis and Selection Guide12 SourcesNov 3, 2025Owner💼
+Operations, Health, and CRM Planning2 SourcesNov 3, 2025Owner📞
+Call Answering Service Plans and Pricing Overview1 SourceNov 3, 2025Owner😳
+Grok AI Features, Timekeeping, and Sexuality Metaphors1 SourceNov 2, 2025Owner🎞️
+Infinite Cover Flow with GSAP1 SourceNov 3, 2025Owner🔌
+10Web AI Website Builder API Integration Guide2 SourcesNov 3, 2025Owner🔌
+10Web AI Website Builder API for Platforms20 SourcesNov 3, 2025Owner💸
+2EXEC.log273 SourcesNov 2, 2025Owner🗺️
+Master AI Prompts for Diverse Media Analysis1 SourceNov 2, 2025Owner💻
+LM Studio: Local AI Computing2 SourcesNov 3, 2025Owner🤯
+Today's Essential Task and Schedule Summary1 SourceNov 3, 2025Owner📋
+Everyday Logistical Nexus and Family Coordination5 SourcesNov 2, 2025Owner💻
+CTO EAST Business Launch and Tech Setup1 SourceNov 2, 2025Owner📱
+iOS Polling for Cross-Service Call Auto-Answer2 SourcesNov 2, 2025Owner💾
+Arch Linux Host Sequoia VM Migration Plan2 SourcesNov 2, 2025Owner▶️
+Revival Shorts YouTube Information1 SourceNov 2, 2025Owner✝️
+Philosophical and Technical Discussion: God, Bible, and Numerology1 SourceNov 1, 2025Owner💰
+Budget CUDA Upgrades Under $8001 SourceNov 1, 2025Owner🧠
+Arthur Allen ADHD Medication Management Progress Note1 SourceNov 1, 2025Owner🛠️
+Instant Local Deploys with Tailscale and Arch Linux3 SourcesNov 1, 2025Owner📝
+Digital Business Service and Deliverables Blueprint4 SourcesNov 1, 2025Owner📧
+Executive Email System for ROI Conversion6 SourcesNov 1, 2025Owner💳
+Business Credit Stacking Strategies and Contacts1 SourceNov 1, 2025Owner🦸
+L7S Inc. Brand Hierarchy and Architecture1 SourceNov 1, 2025Owner🙈
+X.com Privacy Extension Conflicts5 SourcesOct 28, 2025Owner🤖
+Building and Selling AI Agent Workforces1 SourceOct 30, 2025Owner💼
+Professional Email Templates for Business Communication1 SourceOct 31, 2025Owner💻
+Mobile macOS PWA Deployment and Optimization3 SourcesOct 29, 2025Owner🔨
+Debunking the Rugrats Dead Babies Theory1 SourceOct 30, 2025Owner📹
+Instagram Reel DQQ6cr3Da221 SourceOct 30, 2025Owner🧑‍💻
+Remote Desktop Deployments and macOS Virtualization Troubleshooting2 SourcesOct 30, 2025Owner🛒
+October 27th Grocery and Supplies Checklist2 SourcesOct 30, 2025Owner🛒
+Comprehensive Grocery Shopping Checklist1 SourceOct 30, 2025Owner📔
+Soshie - Social Media1 SourceOct 30, 2025Owner🛡️
+ADHD Rejection Sensitivity Management and Treatment20 SourcesOct 30, 2025Owner📉
+SNAP Suspension, Shutdown Politics, and Business Response9 SourcesOct 30, 2025Owner🍺
+Homebrew Core Formulae Listing2 SourcesOct 29, 2025Owner📔
+Perplexity2 SourcesOct 29, 2025Owner📝
+CTO EAST Strategic Plan and Operations Overview18 SourcesOct 13, 2025Owner🤖
+The $250K AI Blueprint: Self-Exec Operation and the 5X Rule1 SourceOct 28, 2025Owner🔐
+Google Account Sign In Interface1 SourceOct 28, 2025Owner💼
+CTO East Allen's Automated Business Workflow and Schedule4 SourcesOct 16, 2025Owner☯️
+East Allen: Vision, Strategy, and Holistic Achievement1 SourceOct 28, 2025Owner🧘
+East Allen: Astrological Profile and Evolution of Mastery3 SourcesOct 28, 2025Owner🤯
+9r3l Radio: An Ominous Transmission9 SourcesJan 30, 2025Owner😵‍💫
+Quantum Realms and Metaphysical Strands2 SourcesOct 27, 2025Owner🛒
+Essential Shopping Checklist and Supplies1 SourceOct 27, 2025Owner🖥️
+Total Immersive Digital Environments1 SourceOct 27, 2025Owner📺
+(41) Google NotebookLM Just Got a Major Upgrade: Deep Research! - YouTube8 SourcesOct 27, 2025Owner🛒
+Grocery and Supplies Planning and Budgeting1 SourceOct 27, 2025Owner📉
+The Self-Exec Blueprint for Asymmetric Portfolio Rebuilding4 SourcesOct 27, 2025Owner🗝️
+Ephemeral Token String4 SourcesOct 26, 2025Owner📔
+ChucK => A Strongly-Timed Music Programming Language1 SourceOct 27, 2025Owner🦸
+L7S Hero Strategic Business Solutions and Pricing1 SourceOct 27, 2025Owner📔
+MetaSynth - U&I Software, LLC10 SourcesOct 27, 2025Owner📔
+Welcome to phpMyAdmin’s documentation! — phpMyAdmin 5.2.2 documentation1 SourceOct 27, 2025Owner🏡
+Raspberry Pi Home Assistant Automation1 SourceOct 26, 2025Owner⚡
+jsDelivr: The Reliable Open Source CDN3 SourcesOct 26, 2025Owner🍌
+The Found Keys and the Grocery List1 SourceOct 25, 2025Owner💥
+Strategic Portfolio Repositioning for Asymmetric Growth2 SourcesOct 25, 2025Owner💾
+Arch Linux macOS Recovery and Vision System Deployment3 SourcesOct 25, 2025Owner🧶
+Viking Series Sweater Collection1 SourceOct 25, 2025Owner💼
+Corporate Strategy and Business Compliance Framework1 SourceOct 24, 2025Owner💥
+Apocalyptic Meteor Blast Aftermath: The Tunnel of Wreckage1 SourceOct 24, 2025Owner🤖
+PerplexityAI Extension for GitHub Copilot28 SourcesOct 24, 2025Owner⚖️
+Diverse Digital and Legal Information Sources12 SourcesOct 24, 2025Owner⚖️
+Sovereign Citizen Legal Theories and Land Ownership9 SourcesOct 24, 2025Owner🕵️
+Sovereign Citizen Pseudolaw and Encryption Protocol4 SourcesOct 24, 2025Owner🤖
+Digital Passive Income Streams and Automation19 SourcesOct 24, 2025Owner🤖
+AI, SaaS, and Automation Tools Directory22 SourcesOct 24, 2025Owner🚀
+AUTOTECH7 Website Rebranding and Deployment20 SourcesOct 24, 2025Owner🌐
+Web Automation Frameworks and Tools42 SourcesOct 24, 2025Owner🛠️
+The Ultimate Open-Source AI Developer Toolkit7 SourcesOct 24, 2025Owner🐇
+Debunking Sovereign Citizen Pseudolaw and David E. Robinson1 SourceOct 24, 2025Owner🤖
+Top Telegram Bots and Custom Creation with n8n5 SourcesOct 24, 2025Owner💾
+Mac Pro File Retrieval and HSR Recovery9 SourcesOct 23, 2025Owner⚖️
+Jurisdiction, Sovereign Citizens, and Rights Violations1 SourceOct 22, 2025Owner🤖
+Self Exec Operations and Automation Strategy1 SourceOct 22, 2025Owner⚡
+Sintra Content3 SourcesOct 22, 2025Owner🔒
+Universal LiteLLM Access via Tailscale Split DNS1 SourceOct 22, 2025Owner✍️
+Jotform Sign Mobile: Document Signing for Professionals1 SourceOct 22, 2025Owner💎
+Diamond Card Targeting and Business Systems Codex1 SourceOct 21, 2025Owner📁
+Self Exec Voice Mail25 SourcesOct 21, 2025Owner🤖
+Mastering n8n with 17 Essential Nodes1 SourceOct 21, 2025Owner💻
+Gemini CLI 5.0 New Code Sub-Agents and Features1 SourceOct 21, 2025Owner🤖
+AI Disruption: Paths to Job Security and Business Success8 SourcesOct 21, 2025Owner💎
+Diamond Birth Card Marketing Strategy1 SourceOct 21, 2025Owner📜
+CTO EAST and Eighty Eight: Contract, Finance, and Studio Delays2 SourcesOct 19, 2025Owner📜
+Open Source Software and Third-Party Licensing Overview12 SourcesOct 19, 2025Owner📁
+M1 Agent Communication and Task Logging24 SourcesOct 15, 2025Owner💸
+Power Bill Delay: Financial Recovery Plan1 SourceOct 17, 2025Owner💰
+Monetizing Claude 4.5 Haiku for Profit1 SourceOct 17, 2025Owner🔁
+Team Name Clarifications and Updates2 SourcesOct 16, 2025Owner💻
+Developer Resources and Web Links12 SourcesOct 16, 2025Owner🤖
+Building and Automating with AI Agents and MCP16 SourcesOct 16, 2025Owner📈
+Voice AI Gold Rush Opportunities and Use Cases4 SourcesOct 16, 2025Owner🤖
+Manis AI Influencer Generation Revolution1 SourceOct 15, 2025Owner🔌
+Canvas Limitations for Full Stack Execution6 SourcesOct 16, 2025Owner📔
+Jan Desktop - Todoist MCP1 SourceOct 16, 2025Owner🗂️
+L7S Technology Ecosystem: AOD, HERO, Beast Hero Analysis10 SourcesOct 4, 2025Owner💲
+XLRDTECH 2025 Market Pricing and Strategy1 SourceOct 16, 2025Owner🧾
+Aram Wheatley Design Services Invoice1 SourceOct 16, 2025Owner⚡
+L7S HERO: Business Solutions and System Architecture216 SourcesOct 16, 2025Owner🛡️
+TSMC: Morris Chang, Silicon Shield, and Global Chip Dominance1 SourceOct 16, 2025Owner📈
+Atlanta SEO and Digital Marketing for Small Businesses3 SourcesOct 15, 2025Owner🎁
+Groq Free AI APIs and Developer Tools4 SourcesOct 12, 2025Owner🔔
+Facebook Notification Confirmation8 SourcesOct 13, 2025Owner💸
+Referral Roc: Start Earning Today2 SourcesOct 14, 2025Owner🌌
+The 26th Dimension: Part One1 SourceOct 13, 2025Owner🦸
+L7S HERO Business Education and Transformation Consulting10 SourcesOct 13, 2025Owner🛠️
+Launch and Scale an AI Service: Real Estate Wholesalers Blueprint1 SourceOct 12, 2025Owner🏡
+Atlanta Remodel Estimate Follow-up3 SourcesOct 12, 2025Owner🚀
+Gemini CLI's Genkit Extension: AI App Development Turbocharged1 SourceOct 12, 2025Owner💸
+Urgent Financial and Billing Management Organization9 SourcesOct 10, 2025Owner💊
+Omeprazole Ready for Arthur1 SourceOct 11, 2025Owner📅
+Strategic Time Management for Punctuality3 SourcesOct 9, 2025Owner🎧
+9R3L [PACK]1 SourceFeb 4, 2025Owner🤔
+Ancient Technologies & Modern Parallels1 SourceFeb 7, 2025Owner🤖
+Binary Versus Desktop Applications Explained2 SourcesOct 4, 2025Owner🤖
+Genspark AI Agent Capabilities and Tasks5 SourcesOct 3, 2025Owner💸
+Automating Business Operations and Forex Trading Strategies2 SourcesOct 5, 2025Owner🎬
+3D Zoom Scrolling Effects with GSAP and V35 SourcesOct 5, 2025Owner❓
+Sunday Birthday Query16 SourcesOct 3, 2025Owner📋
+G.O.D. Framework 27-Tool Stack and Cost Optimization3 SourcesOct 7, 2025Owner📈
+The Perfect Financial Profile Master Class11 SourcesOct 7, 2025Owner👀
+Existence Confirmed2 SourcesOct 6, 2025Owner🧠
+Sharif Bey: Magic and the Subtle Nature of Reality1 SourceOct 6, 2025Owner🌳
+Adonai and the Kamitic Tree of Life Synthesis1 SourceOct 5, 2025Owner📊
+E-Commerce, Fintech, and Data Flow Management10 SourcesOct 5, 2025Owner📝
+L7s Hero Website Design Edits1 SourceSep 21, 2025Owner💰
+Protocol Intellectual Property Exit Strategy1 SourceOct 5, 2025Owner✨
+Angel Number 2002: Service, Balance, and Spirituality10 SourcesSep 30, 2025Owner🤝
+Client Support, Business Strategy, and Legal Agreements1 SourceOct 2, 2025Owner🤖
+Developer Automation, AI Agents, and Communications Systems1 SourceOct 1, 2025Owner📩
+Multifamily Masterplan Encore Invitation2 SourcesOct 1, 2025Owner🛠️
+All-in-One Marketing Software and CRM Solution1 SourceOct 1, 2025Owner💻
+Developer Ecosystems, Technology, and AI Solutions113 SourcesOct 1, 2025Owner⏰
+Multifamily Masterplan Webinar Reminder2 SourcesSep 30, 2025Owner📋
+L7S Hero Avatar Strategy and Implementation Guide7 SourcesSep 30, 2025Owner⚛️
+Quantum Theophany: Divinity, Consciousness, and Non-Locality2 SourcesSep 30, 2025Owner🎣
+OpenAI Teams Expiry and Apple Intelligence Access Management1 SourceSep 30, 2025Owner🔐
+Google Verification Code1 SourceSep 29, 2025Owner🏢
+Immediate Communication Needs1 SourceSep 29, 2025Owner🤹
+Ecosystem of Automation, AI, and Development Tools1 SourceSep 22, 2025Owner🧩
+G.O.D.1 SourceSep 29, 2025Owner🎭
+Digital Toolkit and AI Research Links2 SourcesSep 23, 2025Owner🤔
+Numerical Structures and Design in the King James Bible1 SourceSep 26, 2025Owner🎈
+The AI Bubble and Its Looming Burst1 SourceSep 26, 2025Owner💰
+Student Savings: Software, Services & More2 SourcesSep 18, 2025Owner🤖
+The Silent Balladeer: An AI's Purpose1 SourceSep 28, 2025Owner💳
+Stripe Setup for L7S HERO Products and Pricing2 SourcesSep 28, 2025Owner💻
+koraykv's GitHub Repositories and Profile1 SourceSep 28, 2025Owner🏦
+Institutional Bitcoin Deal Structure and Compliance Frameworks1 SourceSep 28, 2025Owner🏗️
+Product Development and Business Strategy Chat2 SourcesSep 28, 2025Owner📔
+Microsoft Teams1 SourceSep 28, 2025Owner📉
+Multifamily Deal Analysis: Atlanta Property Investment Review1 SourceSep 28, 2025Owner✅
+Optimizing for Instant Payouts1 SourceSep 28, 2025Owner💻
+Easy AI Assistants Quick Guide1 SourceSep 28, 2025Owner📱
+TextNow Communications Summary1 SourceSep 28, 2025Owner📑
+Asana Workflow, Agreements, and Crypto Transactions100 SourcesSep 25, 2025Owner🧠
+The Paradox of Intelligent Inaction3 SourcesSep 21, 2025Owner🔄
+L7s Inc. Technology Stack Review and Consolidation1 SourceSep 20, 2025Owner🛠️
+CTO Strategy: AI Automation and Tool Stack Alignment1 SourceSep 25, 2025Owner😩
+Apple Subscription Billing and Refund Escalation2 SourcesSep 22, 2025Owner🤯
+Sim AI: The New Intelligent Workflow Platform9 SourcesSep 22, 2025Owner🤔
+EAST @XLRDTECH Daily Notes6 SourcesJan 18, 2025Owner🤔
+EAST @XLRDTECH's Business and Personal Development Strategies1 SourceFeb 3, 2025Owner🔥
+SMS.mp3: Devil Christ28 SourcesFeb 4, 2025Owner📔
+NotebookLM2 SourcesMar 9, 2025Owner🤯
+Fractal Glitch1 SourceJan 31, 2025Owner🤖
+MultiModal-GPT: A Vision and Language Model4 SourcesJan 18, 2025Owner🤯
+Unfiltered Conversations: Technology, Politics, and Hip-Hop1 SourceJan 25, 2025Owner🚀
+Building T3 Chat in 5 Days1 SourceFeb 8, 2025Owner💪🏾
+PROJECT BUILD.: Youth Empowerment Program3 SourcesJan 15, 2025Owner🐳
+Docker Workshop1 SourceFeb 9, 2025Owner💻
+Client-Server Applications and Postman1 SourceFeb 6, 2025Owner🤖
+Building Your Own AI Chatbot5 SourcesFeb 7, 2025Owner✏️
+Linear Perspective: A Beginner's Guide1 SourceFeb 8, 2025Owner🗓️
+EAST @XLRDTECH Daily Log26 SourcesJan 25, 2025Owner🗂️
+Folder Organization Assistance for XLRDTECH2 SourcesFeb 4, 2025Owner🗄️
+MHTML: Web Archive File Format2 SourcesFeb 6, 2025Owner✨
+Crystals and Manifestation8 SourcesFeb 7, 2025Owner💻
+A Hacker's Reading List20 SourcesFeb 7, 2025Owner🚀
+SSD Deep Dive: Optimizing Your Audio Workflow9 SourcesFeb 7, 2025Owner☀️
+Fairburn, Georgia Weather Forecast24 SourcesFeb 7, 2025Owner🤔
+Eighty Eight & East: Tech, Business, and Life9 SourcesFeb 7, 2025Owner🚀
+SwiftyLaunch App Development Guide1 SourceFeb 6, 2025Owner☁️
+Secure Cloud Server Setup with Cloudflare Tunnel1 SourceFeb 6, 2025Owner🔑
+Canvas Password Reset0 SourcesFeb 6, 2025Owner🔗
+Michael Shaw's hellom1.com Notes3 SourcesFeb 5, 2025Owner🤔
+EAST @XLRDTECH's Business and Personal Development Strategies1 SourceJan 26, 2025Owner🤯
+Tech Tasks and Troubleshooting2 SourcesFeb 4, 2025Owner🤔
+Aethernet: 11 Say & 1029 SourcesFeb 4, 2025Owner🛠️
+Reverse Engineering iOS Apps with Open Source Tools1 SourceFeb 4, 2025Owner🤯
+Jailbreaking Bland AI: A Deep Dive into AI Capabilities and Ethical Limits9 SourcesFeb 3, 2025Owner💻
+Project Name: XPI The All-in-One API Automation & Reverse Engineering Platform2 SourcesFeb 3, 2025Owner🔗
+PROJECT BUILD website rebuild and The Dynamic of East & Aram6 SourcesFeb 3, 2025Owner🤯
+East's Tech Life and Family Crisis1 SourceJan 12, 2025Owner🤖
+Automating Your Job Search with No-Code1 SourceFeb 2, 2025Owner🤖
+BoltAI User Manual2 SourcesFeb 2, 2025Owner⚙️
+Audio Routing and API Integration2 SourcesFeb 2, 2025Owner🤖
+o3 Refined Output0 SourcesJan 31, 2025Owner🤔
+Voice Bridge Gate2 SourcesFeb 1, 2025Owner🤔
+AI Model Comparison and iOS/Android Functionality Transfer1 SourceFeb 1, 2025Owner🤖
+Open-Source AI Tool Inquiry & Development1 SourceJan 31, 2025Owner⚙️
+macOS Sequoia Auto-Installer1 SourceJan 31, 2025Owner💻
+Synthesizing a Digital Life1 SourceJan 31, 2025Owner🧑‍💻
+Persona Profiles: XLRDTECH & Associates4 SourcesJan 12, 2025Owner🔑
+Google Account Sign-In1 SourceJan 30, 2025Owner🤖
+Browser-Use: Enabling AI Browser Control1 SourceJan 30, 2025Owner❄️
+Fairburn, Georgia: Winter Weather, 20251 SourceJan 30, 2025Owner🤔
+Wesley's Discharge and Placement3 SourcesJan 30, 2025Owner🛍️
+Shopping Discussion & To-Do List4 SourcesJan 27, 2025Owner🏥
+Turning Point Care Center: 30-Day Program Logistics1 SourceJan 28, 2025Owner🚨
+Wesley Allen's Urgent Psychiatric Care Needs11 SourcesJan 27, 2025Owner📈
+Affordable Continuous Glucose Monitors1 SourceJan 27, 2025Owner🐞
+Debugging Redux and React Applications3 SourcesJan 27, 2025Owner🤔
+Account1 SourceJan 27, 2025Owner🤑
+The Loan Hero Business Lending Academy Event1 SourceJan 27, 2025Owner🤔
+Eighty Eight & EAST: Tech, Business, and Life2 SourcesJan 26, 2025Owner🤖
+Tech Support, Finance, and AI Development Update1 SourceJan 26, 2025Owner🤖
+Website Redesign & AI Integration23 SourcesJan 26, 2025Owner🏥
+Wesley Allen's Discharge from Peachford Hospital1 SourceJan 25, 2025Owner💾
+client Pro Tools Install2 SourcesJan 24, 2025Owner🏥
+Wesley Allen's Discharge Concerns1 SourceJan 24, 2025Owner🤖
+aiXplain: Build and Deploy Agentic AI Solutions1 SourceJan 24, 2025Owner🤯
+East Allen's Daily To-Do List & Communications2 SourcesJan 23, 2025Owner🏢
+L7S Inc. Legal & Terms5 SourcesJan 22, 2025Owner🧬
+The Reproduction Blueprint1 SourceJan 21, 2025Owner🔥
+GX vs QP and Rio (both sides meticulously examined)3 SourcesJan 21, 2025Owner🚀
+Auto: A Creator's Evolution1 SourceJan 21, 2025Owner📈
+L7SINC Operational Overview1 SourceJan 20, 2025Owner💻
+Penetration Testing Resource Guide1 SourceJan 15, 2025Owner🔥
+Winter Decoded: AI Conversations1 SourceJan 16, 2025Owner❄️
+Understanding and Treating Winter Foot Swelling3 SourcesJan 17, 2025Owner🦙
+Llama Lab: LlamaIndex Projects2 SourcesJan 20, 2025Owner🤖
+LangChain Integrations1 SourceJan 18, 2025Owner🔥
+L7SINC Project: Website, Social Media, and Go High Level Setup7 SourcesJan 17, 2025Owner🤖
+NVIDIA NIM APIs: Model Deployment and Scaling2 SourcesJan 18, 2025Owner🤯
+Overwhelmed Entrepreneur's Business and Personal Challenges1 SourceJan 17, 2025Owner⛰️
+Upgrade Mountain: Web App & Digital Real Estate1 SourceJan 17, 2025Owner🤯
+Custom Udio Algorithm Adjustments6 SourcesJan 16, 2025Owner🔞
+Untitled notebook1 SourceJan 16, 2025Owner⚖️
+God and the Devil's Dialogue1 SourceJan 16, 2025Owner✨
+Manifestation: Hacking Your Mind for Abundance31 SourcesJan 16, 2025Owner🤖
+AI Voice Assistant Exploration and Development1 SourceJan 16, 2025Owner
+        `;
+
+        // Utility to parse the lines
+        const parseLine = (line, index) => {
+            const regex = /^(.*?)(\d+)\s*Sources?([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})Owner(.+)$/;
+            const match = line.match(regex);
+
+            if (match) {
+                return {
+                    id: index,
+                    title: match[1].trim(),
+                    sourceCount: parseInt(match[2], 10),
+                    date: match[3].trim(),
+                    emoji: match[4].trim(),
+                    status: 'pending' // pending, keep, delete
+                };
+            }
+            return null;
+        };
+
+        const NotebookItem = ({ item, onAction }) => {
+            const isPending = item.status === 'pending';
+            const isKept = item.status === 'keep';
+            const isDeleted = item.status === 'delete';
+
+            return (
+                <div className={`
+                    relative group flex flex-col sm:flex-row items-start sm:items-center justify-between 
+                    p-4 mb-3 rounded-lg border transition-all duration-300
+                    ${isPending ? 'bg-white border-slate-200 shadow-sm hover:shadow-md hover:border-[#C5A059]/30' : ''}
+                    ${isKept ? 'bg-green-50/30 border-green-200 opacity-60 hover:opacity-100' : ''}
+                    ${isDeleted ? 'bg-red-50/30 border-red-100 opacity-50 hover:opacity-100 grayscale' : ''}
+                `}>
+                    {/* Content Section */}
+                    <div className="flex items-start gap-3 w-full sm:w-auto overflow-hidden">
+                        <div className={`
+                            flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xl
+                            ${isPending ? 'bg-slate-50 border border-slate-100' : 'bg-transparent'}
+                        `}>
+                            {item.emoji}
+                        </div>
+                        
+                        <div className="min-w-0">
+                            <h3 className={`font-semibold text-base truncate pr-2 ${isDeleted ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                                {item.title}
+                            </h3>
+                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                <span className="flex items-center gap-1">
+                                    <FileText size={12} className="text-[#C5A059]" />
+                                    {item.sourceCount} Source{item.sourceCount !== 1 ? 's' : ''}
+                                </span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span>{item.date}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Actions Section */}
+                    <div className="flex items-center gap-2 mt-3 sm:mt-0 w-full sm:w-auto justify-end">
+                        {isPending ? (
+                            <React.Fragment>
+                                <button 
+                                    onClick={() => onAction(item.id, 'keep')}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-white border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-white transition-colors text-sm font-medium shadow-sm"
+                                >
+                                    <CheckCircle size={16} />
+                                    Keep
+                                </button>
+                                <button 
+                                    onClick={() => onAction(item.id, 'delete')}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-white border border-slate-200 text-slate-400 hover:border-red-400 hover:text-red-500 transition-colors text-sm font-medium"
+                                >
+                                    <Trash2 size={16} />
+                                    Delete
+                                </button>
+                            </React.Fragment>
+                        ) : (
+                            <button 
+                                onClick={() => onAction(item.id, 'pending')}
+                                className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-[#C5A059] transition-colors"
+                                title="Undo"
+                            >
+                                <RotateCcw size={18} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Status Badge for non-pending items */}
+                    {!isPending && (
+                        <div className={`
+                            absolute top-2 right-2 sm:hidden text-xs font-bold px-2 py-0.5 rounded-full border
+                            ${isKept ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}
+                        `}>
+                            {isKept ? 'KEPT' : 'DELETED'}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [notebooks, setNotebooks] = useState([]);
+            const [filter, setFilter] = useState('all'); // all, pending, keep, delete
+            const [search, setSearch] = useState('');
+
+            useEffect(() => {
+                const lines = RAW_DATA.split('\n').filter(line => line.trim().length > 0 && !line.startsWith('TitleSources'));
+                const parsed = lines.map((line, idx) => parseLine(line, idx)).filter(item => item !== null);
+                setNotebooks(parsed);
+            }, []);
+
+            const handleAction = (id, newStatus) => {
+                setNotebooks(prev => prev.map(nb => nb.id === id ? { ...nb, status: newStatus } : nb));
+            };
+
+            const stats = useMemo(() => {
+                return {
+                    total: notebooks.length,
+                    keep: notebooks.filter(n => n.status === 'keep').length,
+                    delete: notebooks.filter(n => n.status === 'delete').length,
+                    pending: notebooks.filter(n => n.status === 'pending').length
+                };
+            }, [notebooks]);
+
+            const filteredNotebooks = useMemo(() => {
+                return notebooks
+                    .filter(nb => {
+                        if (filter === 'all') return true;
+                        return nb.status === filter;
+                    })
+                    .filter(nb => nb.title.toLowerCase().includes(search.toLowerCase()));
+            }, [notebooks, filter, search]);
+
+            const copyToClipboard = (type) => {
+                const list = notebooks
+                    .filter(nb => nb.status === type)
+                    .map(nb => `${nb.emoji} ${nb.title} (${nb.sourceCount} sources)`)
+                    .join('\n');
+                
+                navigator.clipboard.writeText(`${type.toUpperCase()} LIST:\n\n${list}`);
+                alert(`Copied ${type} list to clipboard!`);
+            };
+
+            return (
+                <div className="min-h-screen font-sans">
+                    {/* Header */}
+                    <header className="bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm">
+                        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
+                                    <h1 className="text-2xl font-serif font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                                        <Archive className="text-[#C5A059]" />
+                                        Notebook<span className="text-[#C5A059]">Archivist</span>
+                                    </h1>
+                                    <p className="text-sm text-slate-500 mt-1">Review, organize, and curate your digital library.</p>
+                                </div>
+                                
+                                <div className="flex gap-2 text-xs font-medium">
+                                    <div className="px-3 py-1.5 bg-slate-100 rounded-full text-slate-600 border border-slate-200">
+                                        Total: {stats.total}
+                                    </div>
+                                    <div className="px-3 py-1.5 bg-[#C5A059]/10 text-[#C5A059] rounded-full border border-[#C5A059]/20">
+                                        Kept: {stats.keep}
+                                    </div>
+                                    <div className="px-3 py-1.5 bg-red-50 text-red-500 rounded-full border border-red-100">
+                                        Trash: {stats.delete}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+                        
+                        {/* Controls Bar */}
+                        <div className="flex flex-col sm:flex-row gap-4 mb-8 sticky top-24 z-10 bg-[#fafafa]/95 backdrop-blur-sm py-2">
+                            {/* Search */}
+                            <div className="relative flex-grow">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <Search size={18} />
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Search notebooks..." 
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#C5A059]/50 focus:border-[#C5A059] transition-all"
+                                />
+                            </div>
+
+                            {/* Filter Tabs */}
+                            <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+                                {['all', 'pending', 'keep', 'delete'].map(f => (
+                                    <button
+                                        key={f}
+                                        onClick={() => setFilter(f)}
+                                        className={`
+                                            px-4 py-1.5 rounded-md text-sm font-medium capitalize whitespace-nowrap transition-all
+                                            ${filter === f 
+                                                ? 'bg-[#C5A059] text-white shadow-sm' 
+                                                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}
+                                        `}
+                                    >
+                                        {f === 'all' ? 'All Items' : f}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Notebook List */}
+                        <div className="space-y-1">
+                            {filteredNotebooks.length > 0 ? (
+                                filteredNotebooks.map(notebook => (
+                                    <NotebookItem 
+                                        key={notebook.id} 
+                                        item={notebook} 
+                                        onAction={handleAction} 
+                                    />
+                                ))
+                            ) : (
+                                <div className="text-center py-20 text-slate-400">
+                                    <div className="flex justify-center mb-4 opacity-20"><Filter size={48} /></div>
+                                    <p>No notebooks found in this category.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Action Footer */}
+                        {stats.total > 0 && (
+                            <div className="mt-12 pt-8 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <button 
+                                    onClick={() => copyToClipboard('keep')}
+                                    disabled={stats.keep === 0}
+                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-[#C5A059] text-white rounded-lg hover:bg-[#b08d2f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#C5A059]/20"
+                                >
+                                    <Download size={18} />
+                                    Copy Kept List ({stats.keep})
+                                </button>
+                                <button 
+                                    onClick={() => copyToClipboard('delete')}
+                                    disabled={stats.delete === 0}
+                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <MoreHorizontal size={18} />
+                                    Copy Deletion List ({stats.delete})
+                                </button>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

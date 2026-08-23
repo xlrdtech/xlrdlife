@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catalog — Xen AUA Endpoints</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:    #060606;
+    --paper:  #0d0d0d;
+    --char:   #1a1a1a;
+    --cream:  #f4eee4;
+    --bone:   #d8d0c0;
+    --dust:   #5a5a5a;
+    --volt:   #00ff88;
+    --gold:   #ffcc40;
+    --rust:   #ff4a3d;
+    --steel:  #6ad4ff;
+    --rose:   #ff5e9c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: var(--volt); color: var(--ink); }
+  html, body {
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* dotted matrix backdrop */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: radial-gradient(circle at 1px 1px, rgba(244,238,228,0.04) 1px, transparent 0);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse at top, black 30%, transparent 90%);
+  }
+
+  main { position: relative; z-index: 1; }
+
+  /* ── Hero ──────────────────────────────────────────────────────────── */
+  .hero {
+    padding: 80px 40px 60px;
+    max-width: 1480px; margin: 0 auto;
+    border-bottom: 1px solid rgba(244,238,228,0.1);
+  }
+  .crumb {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+    margin-bottom: 40px;
+  }
+  .crumb a { color: var(--volt); text-decoration: none; }
+  .hero h1 {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: clamp(64px, 9vw, 144px);
+    line-height: 0.92;
+    letter-spacing: -0.035em;
+    color: var(--cream);
+    margin-bottom: 40px;
+    max-width: 1200px;
+  }
+  .hero h1 em { color: var(--volt); font-style: italic; }
+  .hero p {
+    font-family: 'Instrument Serif', serif;
+    font-size: 24px; font-style: italic;
+    color: var(--bone);
+    max-width: 760px;
+    line-height: 1.35;
+  }
+
+  /* search + filter */
+  .controls {
+    max-width: 1480px; margin: 0 auto;
+    padding: 32px 40px;
+    border-bottom: 1px solid rgba(244,238,228,0.1);
+    display: grid; grid-template-columns: 1fr auto; gap: 32px;
+    align-items: center;
+  }
+  .search {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--cream);
+    padding: 16px 0 16px 36px;
+    color: var(--cream);
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    font-style: italic;
+    width: 100%;
+    outline: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23f4eee4' stroke-width='2'><circle cx='11' cy='11' r='8'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
+    background-repeat: no-repeat;
+    background-position: 0 center;
+    background-size: 22px;
+  }
+  .search::placeholder { color: var(--dust); font-style: italic; }
+  .filters {
+    display: flex; gap: 0;
+    border: 1px solid rgba(244,238,228,0.15);
+  }
+  .filters button {
+    background: transparent; border: 0;
+    color: var(--bone);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 12px 18px;
+    cursor: pointer;
+    border-right: 1px solid rgba(244,238,228,0.1);
+    transition: background 0.2s, color 0.2s;
+  }
+  .filters button:last-child { border-right: 0; }
+  .filters button:hover { color: var(--cream); }
+  .filters button.active { background: var(--volt); color: var(--ink); font-weight: 500; }
+
+  /* ── Catalog grid ──────────────────────────────────────────────────── */
+  .cat {
+    max-width: 1480px; margin: 0 auto;
+    padding: 48px 40px 80px;
+  }
+  .category {
+    margin-bottom: 80px;
+  }
+  .category-head {
+    display: grid; grid-template-columns: 80px 1fr auto; gap: 32px;
+    align-items: baseline;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--cream);
+    margin-bottom: 0;
+  }
+  .category-num {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 48px; line-height: 1;
+    color: var(--volt);
+  }
+  .category-title {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: clamp(36px, 4.5vw, 64px);
+    line-height: 1;
+    color: var(--cream);
+  }
+  .category-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+  }
+
+  .entries { display: grid; gap: 0; }
+  .entry {
+    display: grid;
+    grid-template-columns: 90px 1fr 1.3fr 110px;
+    gap: 32px;
+    padding: 28px 0;
+    border-bottom: 1px solid rgba(244,238,228,0.08);
+    align-items: baseline;
+    transition: background 0.4s, padding 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+  }
+  .entry:hover {
+    background: linear-gradient(90deg, rgba(0,255,136,0.04), transparent 50%);
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .entry .method {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    color: var(--volt);
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid var(--volt);
+    display: inline-block;
+    border-radius: 2px;
+  }
+  .entry .method.POST { color: var(--gold); border-color: var(--gold); }
+  .entry .method.AGENT { color: var(--rose); border-color: var(--rose); }
+  .entry .path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--cream);
+    word-break: break-all;
+  }
+  .entry .path .arg { color: var(--volt); }
+  .entry .desc {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--bone);
+    line-height: 1.35;
+  }
+  .entry .go {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--volt);
+    text-decoration: none;
+    transition: letter-spacing 0.3s;
+    text-align: right;
+    padding-top: 2px;
+  }
+  .entry .go::after {
+    content: ' →';
+    transition: margin-left 0.3s;
+  }
+  .entry:hover .go::after { margin-left: 6px; }
+
+  /* hidden = filtered out */
+  .entry.hide, .category.hide { display: none; }
+
+  /* ── Closing ─────────────────────────────────────────────────────── */
+  .pull {
+    max-width: 1480px; margin: 0 auto;
+    padding: 80px 40px;
+    border-top: 1px solid rgba(244,238,228,0.1);
+    text-align: center;
+  }
+  .pull-quote {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: clamp(36px, 5vw, 64px);
+    line-height: 1.1;
+    color: var(--cream);
+    max-width: 1100px; margin: 0 auto 24px;
+    letter-spacing: -0.02em;
+  }
+  .pull-quote em { color: var(--volt); }
+  .pull-attr {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+  }
+  .pull-attr a { color: var(--volt); text-decoration: none; }
+
+  footer {
+    padding: 32px 40px;
+    border-top: 1px solid rgba(244,238,228,0.1);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+    display: grid; grid-template-columns: 1fr auto;
+    max-width: 1480px; margin: 0 auto;
+  }
+  footer a { color: var(--volt); text-decoration: none; }
+
+  @media (max-width: 880px) {
+    .controls { grid-template-columns: 1fr; }
+    .filters { overflow-x: auto; }
+    .entry { grid-template-columns: 70px 1fr; gap: 12px 16px; }
+    .entry .desc { grid-column: 1 / -1; }
+    .entry .go { grid-column: 1 / -1; text-align: left; padding-top: 0; }
+    footer { grid-template-columns: 1fr; gap: 6px; }
+  }
+</style>
+<style>.xen-build-stamp{position:fixed;top:14px;right:14px;z-index:9999;background:rgba(5,5,5,0.85);backdrop-filter:blur(8px);border:1px solid rgba(0,255,136,0.3);padding:6px 12px;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#00ff88;border-radius:2px;text-decoration:none}.xen-build-stamp:hover{background:#00ff88;color:#050505}.xen-build-stamp .sep{color:#666;margin:0 6px}</style></head>
+<body><a class="xen-build-stamp" href="https://hitthe.link/lab/" title="Build telemetry">BUILT IN 89s<span class="sep">·</span>20.7KB<span class="sep">·</span>SEE LAB</a>
+
+<main>
+
+<section class="hero">
+  <div class="crumb"><a href="https://tui.xlrd.org/aua">XEN · AUA v0.1</a> &nbsp;·&nbsp; The Catalog</div>
+  <h1>Every <em>URL</em> is a verb.<br>This is the index.</h1>
+  <p>Twenty-something agentic URLs. Click any one. Each path is an instruction; each query string a payload; each response a side-effect that ran or a model that spoke.</p>
+</section>
+
+<section class="controls">
+  <input type="text" id="search" class="search" placeholder="filter by path, verb, or description…" aria-label="Search endpoints">
+  <div class="filters" role="tablist">
+    <button class="active" data-filter="all">All</button>
+    <button data-filter="llm">LLM</button>
+    <button data-filter="pane">Pane</button>
+    <button data-filter="vision">Vision</button>
+    <button data-filter="files">Files</button>
+    <button data-filter="peer">A2A</button>
+    <button data-filter="ui">UI</button>
+  </div>
+</section>
+
+<section class="cat" id="cat">
+
+  <div class="category" data-cat="llm">
+    <div class="category-head">
+      <div class="category-num">i.</div>
+      <h2 class="category-title">Language models</h2>
+      <div class="category-count">06 routes</div>
+    </div>
+    <div class="entries">
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/query<span class="arg">?q=…</span></div>
+        <div class="desc">Vanity short alias for Qwen — the fastest local model. Sub-7-second voice replies.</div>
+        <a class="go" href="https://tui.xlrd.org/query?q=hello">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/qwen<span class="arg">?q=…</span></div>
+        <div class="desc">Qwen 3, six hundred million parameters. Lightning quick. Best for short voice turns.</div>
+        <a class="go" href="https://tui.xlrd.org/qwen?q=hello">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/deepseek<span class="arg">?q=…</span></div>
+        <div class="desc">DeepSeek R1 eight billion. Internal reasoning. Slower; smarter on multi-step problems.</div>
+        <a class="go" href="https://tui.xlrd.org/deepseek?q=hello">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/hermes<span class="arg">?q=…</span></div>
+        <div class="desc">Hermes 3 eight billion. Balanced general-purpose. The Goldilocks of the lineup.</div>
+        <a class="go" href="https://tui.xlrd.org/hermes?q=hello">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/qwen-coder<span class="arg">?q=…</span></div>
+        <div class="desc">Qwen Coder thirty billion. Slow because it spills to CPU on a six-gigabyte card. Worth it for code.</div>
+        <a class="go" href="https://tui.xlrd.org/qwen-coder?q=hello">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/ask<span class="arg">?q=…&amp;m=…</span></div>
+        <div class="desc">Universal escape hatch. Any Ollama model. Caller picks the brain.</div>
+        <a class="go" href="https://tui.xlrd.org/ask?q=hello&m=qwen3:0.6b">try</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="category" data-cat="pane">
+    <div class="category-head">
+      <div class="category-num">ii.</div>
+      <h2 class="category-title">Claude pane</h2>
+      <div class="category-count">04 routes</div>
+    </div>
+    <div class="entries">
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/tui<span class="arg">?q=…</span></div>
+        <div class="desc">Drop text into the live Claude Code pane. Claude responds in-pane; the response narrates via Ava.</div>
+        <a class="go" href="https://tui.xlrd.org/tui?q=hello">try</a>
+      </div>
+      <div class="entry">
+        <span class="method AGENT">GET</span>
+        <div class="path">/tui<span class="arg">?q=…&amp;await=1</span></div>
+        <div class="desc">Godmode loop entrypoint. Returns a request id; pair with /await for Siri unlimited turns.</div>
+        <a class="go" href="https://tui.xlrd.org/tui?q=hi&await=1">try</a>
+      </div>
+      <div class="entry">
+        <span class="method AGENT">GET</span>
+        <div class="path">/await<span class="arg">/&lt;id&gt;</span></div>
+        <div class="desc">Long-poll until Claude responds to a tagged turn. The other half of the godmode loop.</div>
+        <a class="go" href="https://tui.xlrd.org/await/example?nowait=1">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/q<span class="arg">?q=…</span></div>
+        <div class="desc">Two-character alias for /tui. For when every keystroke costs you something.</div>
+        <a class="go" href="https://tui.xlrd.org/q?q=hi">try</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="category" data-cat="vision">
+    <div class="category-head">
+      <div class="category-num">iii.</div>
+      <h2 class="category-title">Vision</h2>
+      <div class="category-count">03 routes</div>
+    </div>
+    <div class="entries">
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/screen<span class="arg">?q=…</span></div>
+        <div class="desc">Take a screenshot, ask UI-TARS to describe what's on it, narrate the description.</div>
+        <a class="go" href="https://tui.xlrd.org/screen?q=describe%20briefly">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/click<span class="arg">?q=…</span></div>
+        <div class="desc">Screenshot, find the described target, click it. Voice-controlled cursor.</div>
+        <a class="go" href="https://tui.xlrd.org/click?q=settings%20icon">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/uitars<span class="arg">?q=…</span></div>
+        <div class="desc">Direct UI-TARS proxy. Same as /screen by default but exposes the underlying vision tool.</div>
+        <a class="go" href="https://tui.xlrd.org/uitars?q=what+is+on+screen">try</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="category" data-cat="files">
+    <div class="category-head">
+      <div class="category-num">iv.</div>
+      <h2 class="category-title">Files</h2>
+      <div class="category-count">06 routes</div>
+    </div>
+    <div class="entries">
+      <div class="entry">
+        <span class="method POST">POST</span>
+        <div class="path">/file<span class="arg">?name=&amp;q=</span></div>
+        <div class="desc">Raw binary upload. Any file type, up to one hundred megabytes. Sends a path reference into the pane.</div>
+        <a class="go" href="#raw">curl</a>
+      </div>
+      <div class="entry">
+        <span class="method POST">POST</span>
+        <div class="path">/file<span class="arg"> (JSON base64)</span></div>
+        <div class="desc">iOS-friendly base64 upload. JSON body with content_base64, filename, q.</div>
+        <a class="go" href="#json">curl</a>
+      </div>
+      <div class="entry">
+        <span class="method POST">POST</span>
+        <div class="path">/file<span class="arg"> (JSON url)</span></div>
+        <div class="desc">Server fetches a remote URL, saves it locally, injects a path reference.</div>
+        <a class="go" href="#urlfetch">curl</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/share/</div>
+        <div class="desc">JSON index of every file stored in ~/.xen/uploads. Sorted newest first.</div>
+        <a class="go" href="https://tui.xlrd.org/share/">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/share<span class="arg">/&lt;name&gt;</span></div>
+        <div class="desc">Stream any shared file with proper MIME type. Public, CDN-accelerated.</div>
+        <a class="go" href="https://tui.xlrd.org/share/godmode-siri.html">try</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/share<span class="arg">/&lt;name&gt;?dl=1</span></div>
+        <div class="desc">Same as above but forces a Save-As download via Content-Disposition.</div>
+        <a class="go" href="https://tui.xlrd.org/share/godmode-siri.html?dl=1">try</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="category" data-cat="peer">
+    <div class="category-head">
+      <div class="category-num">v.</div>
+      <h2 class="category-title">Agent-to-agent</h2>
+      <div class="category-count">01 route</div>
+    </div>
+    <div class="entries">
+      <div class="entry">
+        <span class="method POST">POST</span>
+        <div class="path">/peer<span class="arg"> {from, text}</span></div>
+        <div class="desc">Inbound from another Claude session. Injects with origin tag, narrates "Peer X says …".</div>
+        <a class="go" href="#peer">curl</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="category" data-cat="ui">
+    <div class="category-head">
+      <div class="category-num">vi.</div>
+      <h2 class="category-title">Editorial pages</h2>
+      <div class="category-count">05 routes</div>
+    </div>
+    <div class="entries">
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/</div>
+        <div class="desc">The home plate. A single search box wired to /qwen for one-shot URL-bar use.</div>
+        <a class="go" href="/">visit</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/aua</div>
+        <div class="desc">The AUA manifesto. The premise, the six tenets, the field comparison, the call to begin.</div>
+        <a class="go" href="https://tui.xlrd.org/aua">visit</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/status</div>
+        <div class="desc">Live telemetry dashboard. Polls /health every five seconds. Pillars, backends, audit tape.</div>
+        <a class="go" href="https://tui.xlrd.org/status">visit</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/endpoints</div>
+        <div class="desc">This page. The catalog of every AUA at tui.xlrd.org. Filter, search, dispatch.</div>
+        <a class="go" href="https://tui.xlrd.org/endpoints">visit</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/godmode</div>
+        <div class="desc">Animated parallax walkthrough for the Siri unlimited-conversation shortcut. Six actions.</div>
+        <a class="go" href="https://tui.xlrd.org/godmode">visit</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/possess-siri</div>
+        <div class="desc">VoiceOver-friendly install walkthrough with copy-to-clipboard buttons.</div>
+        <a class="go" href="https://tui.xlrd.org/possess-siri">visit</a>
+      </div>
+      <div class="entry">
+        <span class="method">GET</span>
+        <div class="path">/health</div>
+        <div class="desc">Liveness check. Returns service, port, auth state, platform, backend availability.</div>
+        <a class="go" href="https://tui.xlrd.org/health">try</a>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<section class="pull">
+  <div class="pull-quote">An AUA is to a REST API what a <em>poem</em> is to a function call.</div>
+  <div class="pull-attr">— <a href="https://tui.xlrd.org/aua">qi · AUA manifesto</a></div>
+</section>
+
+<footer>
+  <div>XEN · Endpoint Catalog · AUA v0.1</div>
+  <div>tui.xlrd.org · <a href="https://tui.xlrd.org/aua">manifesto</a> · <a href="https://tui.xlrd.org/status">live</a></div>
+</footer>
+
+</main>
+
+<script>
+  // Filter + search
+  const searchEl = document.getElementById('search');
+  const filterButtons = document.querySelectorAll('.filters button');
+  const categories = document.querySelectorAll('.category');
+  const entries = document.querySelectorAll('.entry');
+
+  let currentFilter = 'all';
+
+  function apply() {
+    const query = searchEl.value.toLowerCase().trim();
+    categories.forEach(cat => {
+      let visibleCount = 0;
+      const cards = cat.querySelectorAll('.entry');
+      cards.forEach(entry => {
+        const text = entry.textContent.toLowerCase();
+        const matchSearch = !query || text.includes(query);
+        const matchFilter = currentFilter === 'all' || cat.dataset.cat === currentFilter;
+        const show = matchSearch && matchFilter;
+        entry.classList.toggle('hide', !show);
+        if (show) visibleCount++;
+      });
+      cat.classList.toggle('hide', visibleCount === 0);
+    });
+  }
+
+  searchEl.addEventListener('input', apply);
+  filterButtons.forEach(b => b.addEventListener('click', () => {
+    filterButtons.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentFilter = b.dataset.filter;
+    apply();
+  }));
+</script>
+
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>
+
+

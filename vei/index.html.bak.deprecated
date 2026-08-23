@@ -1,0 +1,1818 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>VEI · רוּחַ · voice echo input</title>
+<meta name="description" content="VEI (Voice Echo Input). Ruach-class STT, glass-over-video shell, omnimind dictate-inject pipeline. Public, no-auth, multi-device simultaneous.">
+<link rel="manifest" href="/vei/manifest.json">
+<meta name="theme-color" content="#0A1F12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VEI">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/vei/icon.svg">
+<link rel="icon" type="image/svg+xml" href="/vei/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VEI — qi-locked design (Photoroom_20260523_134010.png reference).
+   Deep green radial gradient bg, phosphor-green waveform, soft cream chat bubbles.
+   Aesthetic: terminal-organism. Hebrew Ruach (breath/spirit) made visible. */
+:root {
+  --bg:#0A1F12;
+  --bg-glow:#1A4D2E;
+  --bg-elev:rgba(20, 60, 35, .25);
+  --bg-input:rgba(20, 60, 35, .45);
+  --fg:#F0EAD6;
+  --fg-dim:#A8C0A4;
+  --fg-mute:#6B8B72;
+  --line:rgba(176, 255, 200, .12);
+  --line-strong:rgba(176, 255, 200, .22);
+  --accent:#00FF88;
+  --accent-hover:#5FFF9E;
+  --accent-glow:rgba(0, 255, 136, .35);
+  --bubble-bg:rgba(176, 200, 170, .92);
+  --bubble-fg:#0A1F12;
+  --good:#00FF88;
+  --warn:#F5C842;
+  --bad:#FF6B5A;
+  --r-card:18px;
+  --r-pill:9999px;
+  --sans:'Inter','SF Pro Text',-apple-system,system-ui,sans-serif;
+  --mono:'JetBrains Mono','SF Mono',ui-monospace,monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html, body {
+  height:100dvh;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:var(--sans);
+  font-feature-settings:"ss01","cv11";
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow:hidden;
+}
+/* Background layer — Ophanim 3D avatar (qi-XLRD-ID). Dim until touched. */
+.bg-video, .bg-iframe {
+  position:fixed; inset:0; width:100%; height:100%;
+  object-fit:cover; z-index:0; pointer-events:none;
+  border:0;
+  opacity:.32;
+  filter:saturate(.95);
+  transition:opacity .55s ease-out, filter .55s ease-out;
+}
+body.lit .bg-video, body.lit .bg-iframe { opacity:.78; filter:saturate(1.15); }
+/* Glass over the video — frosted layer with heavy blur + soft tint.
+   qi 2026-05-23: 'video needs to be behind glass'. */
+.bg-overlay {
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 55%, rgba(10,31,18,.30), rgba(2,6,10,.72)),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  backdrop-filter:blur(22px) saturate(1.15);
+  -webkit-backdrop-filter:blur(22px) saturate(1.15);
+  border-top:1px solid rgba(255,255,255,.04);
+  border-bottom:1px solid rgba(0,0,0,.18);
+  transition:backdrop-filter .55s ease-out, background .55s ease-out;
+}
+body.lit .bg-overlay {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 55%, rgba(10,31,18,.12), rgba(2,6,10,.42)),
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  backdrop-filter:blur(10px) saturate(1.3);
+  -webkit-backdrop-filter:blur(10px) saturate(1.3);
+}
+.wrap { position:relative; z-index:2; }
+.wrap {
+  display:flex; flex-direction:column;
+  height:100dvh; width:100%;
+  max-width:760px; margin:0 auto;
+  padding:env(safe-area-inset-top, 18px) 20px env(safe-area-inset-bottom, 16px);
+  position:relative;
+}
+
+/* Header — top-right mic icon, top-left brand, minimal chrome */
+header { padding:8px 0 22px; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.brand { display:flex; align-items:center; gap:10px; }
+.brand-dot { display:none; }
+.brand-text { display:flex; flex-direction:column; gap:3px; }
+.title { font-size:15px; font-weight:500; letter-spacing:.02em; line-height:1; color:var(--fg-dim); }
+.title .heb { color:var(--accent); margin-left:6px; font-size:14px; }
+.subtitle { font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; color:var(--fg-mute); text-transform:uppercase; }
+
+.mic-icon {
+  width:32px; height:32px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--fg);
+  opacity:.85;
+  cursor:pointer;
+  transition:opacity .15s, transform .15s, color .15s;
+}
+.mic-icon svg { width:18px; height:18px; }
+.mic-icon:hover { opacity:1; transform:scale(1.05); }
+.mic-icon.active { color:var(--accent); opacity:1; filter:drop-shadow(0 0 6px var(--accent-glow)); }
+
+.count-chip { display:none; }
+
+/* Status pill removed — replaced by waveform-bottom-bar visual feedback */
+.status-bar { display:none; }
+@keyframes pulse { 0%, 100% { opacity:1; transform:scale(1); } 50% { opacity:.5; transform:scale(1.5); } }
+
+/* Transcript = top-anchored chat bubbles, cream-on-green */
+#transcript {
+  flex:1; overflow-y:auto;
+  display:flex; flex-direction:column; gap:10px;
+  padding:4px 4px 100px;  /* bottom pad clears the waveform footer */
+  scroll-behavior:smooth;
+}
+#transcript::-webkit-scrollbar { width:5px; }
+#transcript::-webkit-scrollbar-thumb { background:var(--line-strong); border-radius:3px; }
+
+/* Glass bubbles — heavy backdrop-blur + thin gloss highlight + translucent fill.
+   qi-spec 2026-05-23: "super hyper realistic glass" */
+/* qi 2026-05-25 timestamp canon — h:mm AM/PM tag on every bubble. */
+.bubble-ts {
+  display:block; font-family:var(--mono); font-size:9.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--fg-dim); opacity:.62;
+  margin-bottom:4px;
+}
+.bubble-txt { display:block; }
+
+/* qi 2026-05-25 — drag-drop active state. Subtle accent ring across the body
+   so qi knows the page will catch the file anywhere he releases it. */
+body.drop-active::before {
+  content: ""; position: fixed; inset: 12px; pointer-events: none; z-index: 9000;
+  border: 2px dashed rgba(0,153,255,0.65); border-radius: 18px;
+  background: rgba(0,153,255,0.05);
+  box-shadow: inset 0 0 32px rgba(0,153,255,0.18);
+}
+body.drop-active::after {
+  content: "drop to attach"; position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+  z-index: 9001; padding: 8px 18px; border-radius: 999px;
+  background: rgba(0,153,255,0.18); border: 1px solid rgba(0,153,255,0.45);
+  color: #cfe6ff; font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  pointer-events: none;
+}
+
+.final, .interim, .xen-reply {
+  position:relative;
+  max-width:78%; align-self:flex-start;
+  padding:12px 16px; border-radius:var(--r-card);
+  background:linear-gradient(145deg, rgba(255,255,255,.22), rgba(255,255,255,.08));
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -1px 0 rgba(255,255,255,.06),
+    0 8px 24px rgba(0,0,0,.28),
+    0 0 0 0.5px rgba(255,255,255,.06);
+  backdrop-filter:blur(18px) saturate(1.3);
+  -webkit-backdrop-filter:blur(18px) saturate(1.3);
+  color:var(--fg);
+  font-size:15px; line-height:1.45; font-weight:500;
+  word-break:break-word;
+  animation:fadeIn .22s cubic-bezier(.32,.72,.2,1);
+}
+/* Top-gloss specular reflection */
+.final::before, .interim::before, .xen-reply::before {
+  content:""; position:absolute; inset:1px 1px auto 1px; height:38%;
+  border-radius:var(--r-card) var(--r-card) 30% 30%/var(--r-card) var(--r-card) 60% 60%;
+  background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0));
+  pointer-events:none;
+}
+.final.posted-flag { box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -1px 0 rgba(255,255,255,.06),
+    0 8px 24px rgba(0,0,0,.28),
+    0 0 0 1px var(--accent-glow); }
+.interim { opacity:.78; font-style:italic; }
+.xen-reply { align-self:flex-end; background:linear-gradient(145deg, rgba(0,255,136,.16), rgba(0,255,136,.04)); border-color:rgba(0,255,136,.28); color:var(--fg); }
+.firehose {
+  max-width:78%; align-self:flex-start;
+  padding:8px 12px; border-radius:10px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  color:var(--fg-dim);
+  font-family:var(--mono); font-size:11.5px; line-height:1.35;
+  word-break:break-word;
+  opacity:.7;
+}
+.firehose .src {
+  display:inline-block; margin-right:6px;
+  font-size:9.5px; letter-spacing:.10em; text-transform:uppercase;
+  color:var(--accent);
+}
+
+/* ── Events panel (Task #10 · operator state in-pane) ───────────────── */
+#events-rail {
+  position:fixed; z-index:20;
+  right:0; top:60px; bottom:120px; width:320px;
+  background:rgba(8,18,12,.86); backdrop-filter:blur(16px);
+  border-left:1px solid rgba(0,255,136,.18);
+  box-shadow:-12px 0 36px rgba(0,0,0,.45);
+  display:flex; flex-direction:column;
+  transform:translateX(100%); transition:transform .28s ease-out, width .28s ease-out, top .28s ease-out, bottom .28s ease-out, left .28s ease-out;
+  font-family:var(--mono); font-size:11.5px; color:var(--fg-dim);
+}
+#events-rail.open { transform:translateX(0); }
+/* qi 2026-05-25 — fullscreen mode for the firehose panel. Toggle via the
+   ⤢ button in the header. Covers the viewport so qi can read the whole
+   chronicle without the rest of VEI peeking through. */
+#events-rail.fullscreen {
+  top:0; bottom:0; left:0; width:100vw;
+  border-left:0; box-shadow:none;
+  background:rgba(4,10,7,.96);
+}
+#events-rail .er-head .er-fs {
+  cursor:pointer; padding:2px 8px; border-radius:6px;
+  background:rgba(0,255,136,.08); border:1px solid rgba(0,255,136,.18);
+  color:var(--accent); font-size:11px; letter-spacing:.04em; text-transform:none;
+  transition:background .15s, border-color .15s;
+}
+#events-rail .er-head .er-fs:hover { background:rgba(0,255,136,.18); }
+#events-rail .er-head {
+  padding:12px 16px; border-bottom:1px solid rgba(0,255,136,.18);
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:10.5px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--accent);
+}
+#events-rail .er-status {
+  display:flex; gap:10px; padding:8px 16px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:10px; letter-spacing:.06em;
+}
+#events-rail .er-status span {
+  flex:1; padding:4px 8px; border-radius:6px;
+  background:rgba(255,255,255,.03); color:var(--fg-dim);
+  text-align:center;
+}
+#events-rail .er-status span.ok { color:var(--accent); border:1px solid rgba(0,255,136,.22); }
+#events-rail .er-status span.warn { color:#ffaa44; border:1px solid rgba(255,170,68,.32); }
+#events-rail .er-status span.err { color:#ff4d6d; border:1px solid rgba(255,77,109,.32); }
+#events-rail .er-list {
+  flex:1; overflow-y:auto; padding:8px 12px 24px;
+  display:flex; flex-direction:column; gap:6px;
+}
+#events-rail .er-item {
+  padding:6px 10px; border-radius:6px;
+  background:rgba(255,255,255,.03);
+  border-left:2px solid rgba(0,255,136,.25);
+  word-break:break-word; line-height:1.35;
+}
+#events-rail .er-item .src {
+  display:inline-block; margin-right:6px;
+  font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--accent);
+}
+#events-rail .er-item .ts {
+  display:block; font-size:9px; color:rgba(255,255,255,.32); margin-top:2px;
+}
+#er-toggle {
+  /* 2026-05-25 — was right:14px which overlapped the mic-icon qi designed
+     into the header. Shifted left of the mic (32px icon + 14px padding + 14px gap). */
+  position:fixed; right:60px; top:14px; z-index:21;
+  width:auto; min-width:56px; padding:8px 14px;
+  background:rgba(8,18,12,.78); backdrop-filter:blur(10px);
+  border:1px solid rgba(0,255,136,.32); border-radius:18px;
+  color:var(--accent); font-family:var(--mono);
+  font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+  cursor:pointer; user-select:none;
+  display:flex; align-items:center; gap:8px;
+}
+#er-toggle .pip { width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent); }
+#er-toggle .pip.off { background:#555; box-shadow:none; }
+#er-toggle .count { background:var(--accent); color:#000; padding:1px 7px; border-radius:9px; font-weight:600; min-width:18px; text-align:center; }
+#er-toggle .count.zero { background:rgba(255,255,255,.08); color:var(--fg-dim); }
+@media (max-width:720px) {
+  #events-rail {
+    right:0; left:0; top:auto; width:auto;
+    bottom:0; height:55vh; border-left:0;
+    border-top:1px solid rgba(0,255,136,.22);
+    transform:translateY(100%);
+    box-shadow:0 -12px 36px rgba(0,0,0,.45);
+  }
+  #events-rail.open { transform:translateY(0); }
+}
+.posted {
+  display:inline-block; margin-left:6px; padding:1px 7px; border-radius:var(--r-pill);
+  background:rgba(0,0,0,.32); color:var(--accent);
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.04em; font-weight:600;
+}
+/* Per-bubble action row (copy/share) */
+.bubble-actions {
+  display:flex; gap:6px; margin-top:8px;
+  opacity:0; transition:opacity .15s;
+}
+.final:hover .bubble-actions, .xen-reply:hover .bubble-actions { opacity:1; }
+.bubble-actions button {
+  padding:3px 8px; font-size:9.5px; font-weight:600; letter-spacing:.06em;
+  background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);
+  color:var(--fg-dim); border-radius:var(--r-pill);
+  cursor:pointer; transition:background .12s, color .12s;
+}
+.bubble-actions button:hover { background:rgba(0,255,136,.16); color:var(--accent); }
+/* Top transcript toolbar — copy-all / export / share */
+.transcript-toolbar {
+  display:flex; gap:6px; padding:0 4px 8px;
+}
+.transcript-toolbar button {
+  padding:5px 10px; font-family:var(--mono); font-size:9.5px; font-weight:600;
+  letter-spacing:.10em; text-transform:uppercase;
+  background:rgba(255,255,255,.06); border:1px solid var(--line);
+  color:var(--fg-dim); border-radius:var(--r-pill);
+  cursor:pointer; transition:all .12s;
+}
+.transcript-toolbar button:hover { background:rgba(0,255,136,.12); border-color:var(--accent); color:var(--accent); }
+.error-line {
+  align-self:flex-start; max-width:78%; padding:10px 14px; border-radius:var(--r-card);
+  background:rgba(255,107,90,.14); color:var(--bad);
+  font-family:var(--mono); font-size:12px; line-height:1.4;
+}
+@keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+/* Composer = waveform-anchored bottom bar (matches qi reference image). Buttons
+   live IN the waveform pill, mic on left, stop on right. */
+.composer {
+  position:absolute;
+  left:env(safe-area-inset-left, 16px); right:env(safe-area-inset-right, 16px);
+  bottom:env(safe-area-inset-bottom, 16px);
+  padding:0;
+}
+.waveform-bar {
+  display:flex; align-items:center; gap:10px;
+  background:var(--bg-input);
+  border:1px solid var(--line);
+  border-radius:var(--r-pill);
+  padding:10px 14px;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.waveform {
+  flex:1; height:48px;
+  position:relative;
+  overflow:hidden;
+}
+.waveform canvas {
+  width:100%; height:100%;
+  display:block;
+}
+.waveform.err canvas { filter:hue-rotate(140deg) saturate(1.4); }
+
+.controls { display:flex; gap:8px; }
+button {
+  padding:10px 16px;
+  border-radius:var(--r-pill); border:1px solid var(--line-strong);
+  background:transparent; color:var(--fg);
+  font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+  cursor:pointer; transition:transform .12s, background .12s, border-color .12s, color .12s;
+}
+button:hover:not(:disabled) { background:var(--bg-elev); border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
+button.start { background:var(--accent); color:var(--bg); border-color:var(--accent); box-shadow:0 0 12px var(--accent-glow); }
+button.start:hover:not(:disabled) { background:var(--accent-hover); border-color:var(--accent-hover); color:var(--bg); }
+button.stop { color:var(--fg-dim); }
+button.stop:hover:not(:disabled) { color:var(--bad); border-color:var(--bad); background:rgba(255,107,90,.08); }
+button:disabled { opacity:.35; cursor:not-allowed; transform:none; }
+
+/* Single unified composer bar — paperclip · field(waveform + textarea overlap) · send.
+   No stacking. qi 2026-05-23: "only needs one input field I dont want it stacked" */
+.composer-bar {
+  display:flex; align-items:center; gap:6px;
+  background:linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:var(--r-pill);
+  padding:6px 8px;
+  backdrop-filter:blur(16px) saturate(1.3);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22), 0 8px 24px rgba(0,0,0,.28);
+}
+.field {
+  flex:1; position:relative; min-height:36px;
+  display:flex; align-items:center;
+}
+.field canvas {
+  position:absolute; inset:0; width:100%; height:100%;
+  display:block; pointer-events:none;
+  opacity:.85;
+}
+.field textarea {
+  position:relative; z-index:1;
+  flex:1; min-height:20px; max-height:120px;
+  background:transparent; color:var(--fg);
+  border:0; outline:none; resize:none;
+  font-family:var(--sans); font-size:15px; line-height:1.4;
+  padding:8px 12px;
+  -webkit-appearance:none;
+  text-shadow:0 0 4px rgba(0,0,0,.6);
+}
+.field textarea::placeholder { color:rgba(240,234,214,.42); }
+.composer-bar .icon-btn {
+  width:36px; height:36px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; border:0;
+  color:var(--fg-dim);
+  cursor:pointer;
+  border-radius:50%;
+  transition:background .12s, color .12s, transform .12s;
+}
+.composer-bar .icon-btn:hover { background:rgba(255,255,255,.10); color:var(--accent); transform:translateY(-1px); }
+.composer-bar .icon-btn svg { width:18px; height:18px; }
+.composer-bar .icon-btn.send { background:transparent; color:var(--fg-dim); box-shadow:none; }
+.composer-bar .icon-btn.send:hover:not(:disabled) { background:rgba(0,255,136,.12); color:var(--accent); }
+.composer-bar .icon-btn.send:disabled { opacity:.35; cursor:not-allowed; box-shadow:none; }
+
+/* Legacy hidden */
+.text-row, .waveform-bar, .fallback { display:none; }
+
+.unsupported {
+  align-self:flex-start; max-width:88%; padding:14px 16px;
+  background:rgba(255,107,90,.10); border:1px solid rgba(255,107,90,.32);
+  border-radius:var(--r-card); color:var(--bad); font-size:14px; line-height:1.4;
+}
+</style>
+</head>
+<body>
+<iframe class="bg-iframe" id="bg-iframe" src="/vei/avatar/" aria-hidden="true" tabindex="-1"></iframe>
+<div class="bg-overlay" aria-hidden="true"></div>
+<div class="wrap">
+
+<header>
+  <div class="brand">
+    <div class="brand-text">
+      <div class="title">VEI<span class="heb">· רוּחַ</span></div>
+      <div class="subtitle" id="count">0 sent · xen.xlrd.org</div>
+    </div>
+  </div>
+  <div class="mic-icon" id="mic-icon" title="Microphone status">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+      <line x1="12" y1="19" x2="12" y2="23"/>
+      <line x1="8" y1="23" x2="16" y2="23"/>
+    </svg>
+  </div>
+</header>
+
+<div class="status-bar idle" id="status" hidden>
+  <div class="dot"></div>
+  <span id="status-lbl">tap start</span>
+</div>
+
+<div class="transcript-toolbar">
+  <button id="tb-newthread" title="Start new thread">＋ New</button>
+  <button id="tb-threads" title="Browse past threads">Threads</button>
+  <button id="tb-copy" title="Copy current thread">Copy</button>
+  <button id="tb-export" title="Export current thread as .txt">Export</button>
+  <button id="tb-share" title="Share current thread">Share</button>
+</div>
+
+<!-- Threads picker overlay (toggled by Threads button) -->
+<div id="thread-picker" style="display:none; position:absolute; top:60px; left:20px; right:20px; max-height:50vh; overflow-y:auto; background:rgba(20,40,28,.94); border:1px solid var(--line-strong); border-radius:var(--r-card); backdrop-filter:blur(18px); padding:10px; z-index:10; box-shadow:0 12px 36px rgba(0,0,0,.5);"></div>
+
+<!-- Events panel toggle (Task #10) -->
+<button id="er-toggle" aria-label="Toggle events panel" aria-expanded="false">
+  <span class="pip" id="er-pip"></span>
+  <span>Events</span>
+  <span class="count zero" id="er-count">0</span>
+</button>
+
+<!-- Events panel (operator state · in-pane) -->
+<aside id="events-rail" aria-label="Operator events">
+  <div class="er-head">
+    <span>Operator · Firehose</span>
+    <span style="display:flex; gap:8px; align-items:center">
+      <span class="er-fs" id="er-fullscreen" title="Toggle fullscreen">⤢ full</span>
+      <span style="cursor:pointer" id="er-clear" title="Clear panel">clear</span>
+    </span>
+  </div>
+  <div class="er-status">
+    <span id="er-sse" class="ok">sse · connecting</span>
+    <span id="er-queue">queue · 0</span>
+  </div>
+  <div class="er-list" id="er-list"></div>
+</aside>
+
+<div id="transcript"></div>
+
+<div class="composer">
+  <!-- Single unified pill: paperclip · field (waveform behind, textarea overlay) · send. -->
+  <div class="composer-bar">
+    <button class="icon-btn" id="tb-attach" title="Send attachment">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+      </svg>
+    </button>
+    <div class="field" id="waveform">
+      <canvas id="waveform-canvas"></canvas>
+      <textarea id="fb-text" rows="1" placeholder="Type, dictate, or paste — voice stays on independently"
+        autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+    </div>
+    <button class="icon-btn send" id="fb-send" title="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+  <input type="file" id="file-input" hidden multiple>
+  <button class="start" id="start-btn" hidden>Start</button>
+  <button class="stop" id="stop-btn" hidden disabled>Stop</button>
+  <div class="fallback" id="fallback" hidden></div>
+</div>
+
+</div>
+
+<!-- vdo.ninja underlay — invisible WebRTC transport behind VEI UI. qi 2026-05-25:
+     "Can you underlay vdo.ninja so it's invisible behind the vei interface?"
+     Broadcaster side pushes captured audio to room xen-qi-vei; receiver side
+     pulls and plays. Hidden behind the UI but loaded in DOM so it stays active. -->
+<iframe id="vdo-rtc" allow="microphone; autoplay; speaker; camera"
+  style="position:fixed; left:-10000px; top:-10000px; width:1px; height:1px; opacity:0; pointer-events:none; border:0;"
+  referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+<script>
+const API_URL = 'https://xen.xlrd.org/api/dictate-inject';
+const AUDIO_URL = 'https://xen.xlrd.org/api/dictate-audio';
+const RTC_SIGNAL_URL = 'https://xen.xlrd.org/api/rtc-signal';
+const HEADERS = { 'Content-Type': 'application/json' };
+const CHUNK_MS = 5000;
+
+// ── VEI RTC: transport Mac say-worker voice to phone over WebRTC (peer-to-peer,
+// identical audio bytes, no re-synthesis). qi 2026-05-25 "vei rtc... public".
+// Broadcaster (?role=broadcast) captures the Loopback "out" virtual device on
+// Mac. Receiver (default on mobile) attaches inbound track to hidden audio.
+// Signaling via omnimind /api/rtc-signal SSE+POST. Open Relay TURN for
+// cellular fallback per qi greenlight.
+const RTC_ROOM = new URLSearchParams(location.search).get('room') || 'xen-qi';
+const RTC_ROLE_OVERRIDE = new URLSearchParams(location.search).get('role'); // broadcast | receive | null
+const RTC_ICE = {
+  iceServers: [
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  ],
+  iceCandidatePoolSize: 4,
+};
+
+const transcript = document.getElementById('transcript');
+const status = document.getElementById('status');
+const statusLbl = document.getElementById('status-lbl');
+const countEl = document.getElementById('count');
+const startBtn = document.getElementById('start-btn');
+const stopBtn = document.getElementById('stop-btn');
+
+let recognition = null;
+let listening = false;
+let sentCount = 0;
+let interimEl = null;
+let networkErrorCount = 0;
+let mediaRecorder = null;
+let mediaStream = null;
+let mediaMode = false;
+
+const isFirefoxLike = /Firefox|Zen/i.test(navigator.userAgent);
+
+const fallbackEl = document.getElementById('fallback');
+const fbText = document.getElementById('fb-text');
+const fbSend = document.getElementById('fb-send');
+
+function showFallback(reason) {
+  fallbackEl.classList.add('show');
+  if (reason) appendError(reason);
+  startBtn.disabled = true;
+  stopBtn.disabled = true;
+  setStatus('idle', 'fallback mode');
+  setTimeout(() => fbText.focus(), 100);
+}
+
+async function sendFallback() {
+  const text = fbText.value.trim();
+  if (!text) return;
+  fbSend.disabled = true;
+  appendFinal(text, false);
+  const posted = await postTranscript(text);
+  if (posted) {
+    const lastFinal = transcript.querySelector('.final:last-child');
+    if (lastFinal && !lastFinal.innerHTML.includes('posted')) {
+      lastFinal.innerHTML += ' <span class="posted">✓ posted</span>';
+    }
+  }
+  fbText.value = '';
+  fbSend.disabled = false;
+  fbText.focus();
+}
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+// Web Speech absence is fine — Start button routes to MediaRecorder + server Whisper
+
+function setStatus(state, label) {
+  // status pill is hidden in the new design; keep updating for a11y but drive the
+  // visible feedback through waveform + mic-icon classes per the qi-locked image.
+  status.className = 'status-bar ' + state;
+  statusLbl.textContent = label;
+  const wf = document.getElementById('waveform');
+  const mic = document.getElementById('mic-icon');
+  if (wf) {
+    wf.classList.remove('listen', 'err', 'idle');
+    wf.classList.add(state);
+  }
+  if (mic) {
+    mic.classList.toggle('active', state === 'listen');
+  }
+}
+
+function appendFinal(text, postedFlag) {
+  const div = document.createElement('div');
+  div.className = 'final';
+  div.innerHTML = escapeHtml(text) + (postedFlag ? ' <span class="posted">✓ posted</span>' : '');
+  transcript.appendChild(div);
+  transcript.scrollTop = transcript.scrollHeight;
+  if (interimEl) { interimEl.remove(); interimEl = null; }
+  return div;
+}
+
+function appendInterim(text) {
+  if (!interimEl) {
+    interimEl = document.createElement('div');
+    interimEl.className = 'interim';
+    transcript.appendChild(interimEl);
+  }
+  interimEl.textContent = text;
+  transcript.scrollTop = transcript.scrollHeight;
+}
+
+function appendError(msg) {
+  const div = document.createElement('div');
+  div.className = 'error-line';
+  div.textContent = msg;
+  transcript.appendChild(div);
+  transcript.scrollTop = transcript.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Retry queue — POSTs that fail during omnimind flap get queued in localStorage
+// and replayed every 5s + on online/focus. qi 2026-05-23: 'the posts are failing'.
+const QUEUE_KEY = 'vei-pending-posts';
+function loadQueue() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; } }
+function saveQueue(q) { try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch {} }
+function enqueuePost(payload) {
+  const q = loadQueue(); q.push(payload);
+  if (q.length > 200) q.splice(0, q.length - 200);
+  saveQueue(q);
+}
+async function tryPostOnce(payload) {
+  const res = await fetch(API_URL, { method:'POST', headers:HEADERS, body:JSON.stringify(payload) });
+  // 5xx = retry-worthy (server broken/down, queue + replay later).
+  if (res.status >= 500) throw new Error('http ' + res.status);
+  // 4xx = deterministic reject (bad payload, auth, route gone). Do NOT queue —
+  // retrying won't fix a 400. Show inline so qi sees the failure and the queue
+  // doesn't grow forever. Fix A per Xen-Primary draft 2026-05-23 (queue overflow
+  // diagnosis), composes with Fix B server-side bodyKeys logging.
+  if (!res.ok) {
+    appendError(`server rejected (${res.status}) — not retrying`);
+    return false;
+  }
+  return true;
+}
+async function postTranscript(text) {
+  const payload = { source: 'xen-vei', ts: Date.now(), text };
+  try {
+    const ok = await tryPostOnce(payload);
+    if (!ok) return false;  // 4xx — deterministic reject, do NOT count or queue
+    sentCount++;
+    countEl.textContent = sentCount + ' sent · xen.xlrd.org';
+    return true;
+  } catch (e) {
+    // 5xx or network — retry-worthy, queue + replay later
+    enqueuePost(payload);
+    appendError(`queued (${loadQueue().length} pending) — will retry`);
+    return false;
+  }
+}
+async function drainQueue() {
+  let q = loadQueue();
+  if (!q.length) return;
+  const startLen = q.length;
+  while (q.length) {
+    try {
+      const ok = await tryPostOnce(q[0]);
+      if (!ok) { q.shift(); saveQueue(q); continue; }  // 4xx — drop item, don't requeue forever
+      sentCount++; q.shift(); saveQueue(q);
+    } catch { break; }
+  }
+  countEl.textContent = sentCount + ' sent · xen.xlrd.org';
+  if (q.length === 0 && startLen > 0) {
+    appendError(`✓ queue drained — ${startLen} replayed, omnimind back online`);
+  }
+}
+setInterval(drainQueue, 5000);
+window.addEventListener('online', drainQueue);
+window.addEventListener('focus', drainQueue);
+
+async function postAudioChunk(blob) {
+  // Diagnostics: surface blob size + mime + URL so "Failed to fetch" gives
+  // us actionable info instead of opaque browser-network errors.
+  const blobInfo = `${blob?.size || 0}B ${blob?.type || 'no-type'}`;
+  if (!blob || blob.size === 0) {
+    appendError(`audio chunk EMPTY (${blobInfo}) — mic capture may be silenced`);
+    return false;
+  }
+  try {
+    const fd = new FormData();
+    // Use mp4 extension if blob says mp4, else webm
+    const ext = (blob.type && blob.type.includes('mp4')) ? 'mp4' : 'webm';
+    fd.append('audio', blob, `chunk.${ext}`);
+    fd.append('source', 'xen-vei-audio');
+    fd.append('ts', Date.now().toString());
+    const res = await fetch(AUDIO_URL, { method: 'POST', body: fd, mode: 'cors' });
+    if (res.ok) {
+      sentCount++;
+      countEl.textContent = sentCount + ' chunks';
+      const j = await res.json().catch(() => null);
+      if (j && j.text) appendFinal(j.text, true);
+      return true;
+    } else {
+      const errBody = await res.text().catch(() => '');
+      appendError(`audio POST → HTTP ${res.status} ${errBody.slice(0, 80)}`);
+      return false;
+    }
+  } catch (e) {
+    appendError(`audio POST failed: ${e.name}: ${e.message} (${blobInfo} → ${AUDIO_URL})`);
+    return false;
+  }
+}
+
+async function startMediaRecorder() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    appendError('MediaRecorder unavailable — falling to textarea');
+    showFallback('MediaRecorder not supported. Use keyboard mic.');
+    return;
+  }
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+    mediaRecorder = mimeType ? new MediaRecorder(mediaStream, { mimeType }) : new MediaRecorder(mediaStream);
+    mediaMode = true;
+    listening = true;
+    setStatus('listen', 'streaming audio');
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    appendError('MediaRecorder active — server-side Whisper transcribes chunks');
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) postAudioChunk(e.data);
+    };
+    mediaRecorder.onerror = (e) => {
+      appendError('MediaRecorder error: ' + (e.error ? e.error.message : 'unknown'));
+    };
+    mediaRecorder.start(CHUNK_MS);
+  } catch (e) {
+    appendError('mic access denied or unavailable: ' + e.message);
+    showFallback('Mic access required. Use keyboard mic below or grant mic permission.');
+  }
+}
+
+function stopMediaRecorder() {
+  listening = false;
+  mediaMode = false;
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    try { mediaRecorder.stop(); } catch (_) {}
+  }
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(t => t.stop());
+    mediaStream = null;
+  }
+  setStatus('idle', 'stopped');
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+}
+
+let useContinuous = true;
+
+function startListening() {
+  if (!SR) return;
+  recognition = new SR();
+  recognition.continuous = useContinuous;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onstart = () => {
+    listening = true;
+    setStatus('listen', 'listening');
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+  };
+
+  // 3-fix patch 2026-05-23 (Xen-Primary draft, Xql ship): (1) checkmark race
+  // closed by capturing finalDiv ref BEFORE async post (no :last-child lookup
+  // after resolve), (2) interim spam closed by NOT POSTing interims (visual-only),
+  // (3) dedup applies ONLY to finals (interim refinement passes never blocked).
+  // Drops firehose volume ~5x, makes checkmarks correctly attach per-bubble.
+  // Time-windowed dedup: suppress identical text only if it arrives within
+  // 500ms of prior final (Web Speech bounces / confidence re-confirms typically
+  // hit within ~150ms; intentional human repeats survive a 500ms window).
+  const DEDUP_WINDOW_MS = 500;
+  let lastPostedText = '';
+  let lastPostedAt = 0;
+  recognition.onresult = (e) => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const result = e.results[i];
+      const text = (result[0].transcript || '').trim();
+      if (!text) continue;
+      const isFinal = result.isFinal;
+      if (isFinal) {
+        // Successful final = network healthy. Reset error counter so transient
+        // blips don't accumulate over a long session and trip MediaRecorder.
+        networkErrorCount = 0;
+        // Dedup only on finals AND only within DEDUP_WINDOW_MS — kills
+        // confidence-bounce repeats while preserving intentional human
+        // re-utterances ("hello hello", "yes yes", "ok ok").
+        if (text === lastPostedText && (Date.now() - lastPostedAt) < DEDUP_WINDOW_MS) continue;
+        const finalDiv = appendFinal(text, false);
+        lastPostedText = text;
+        lastPostedAt = Date.now();
+        // Capture div ref BEFORE async post so checkmark attaches
+        // to THIS final, not whatever happens to be :last-child
+        // when the promise resolves
+        postTranscript(text).then(posted => {
+          if (posted && finalDiv && !finalDiv.innerHTML.includes('posted')) {
+            finalDiv.innerHTML += ' <span class="posted">✓ posted</span>';
+          }
+        });
+      } else {
+        // Interim is visual-only — no server post, no dedup, no race
+        appendInterim(text);
+      }
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'no-speech' || e.error === 'aborted') return;
+    setStatus('err', 'error: ' + e.error);
+    appendError('speech error: ' + e.error);
+    if (e.error === 'network') {
+      networkErrorCount++;
+      if (networkErrorCount === 2 && useContinuous) {
+        useContinuous = false;
+        appendError('switching to non-continuous mode for compatibility...');
+      }
+      if (networkErrorCount >= 3) {
+        listening = false;
+        try { recognition.stop(); } catch (_) {}
+        appendError('Web Speech API blocked — switching to MediaRecorder + server Whisper');
+        startMediaRecorder();
+      }
+    }
+  };
+
+  recognition.onend = () => {
+    if (listening) {
+      const delay = networkErrorCount > 0 ? Math.min(1000 * networkErrorCount, 4000) : 100;
+      setTimeout(() => {
+        if (listening) {
+          try { startListening(); } catch (_) {}
+        }
+      }, delay);
+    }
+  };
+
+  recognition.start();
+}
+
+function stopListening() {
+  if (mediaMode) { stopMediaRecorder(); return; }
+  listening = false;
+  if (recognition) {
+    try { recognition.stop(); } catch (_) {}
+  }
+  setStatus('idle', 'stopped');
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+}
+
+// ─── Canvas waveform — smooth continuous phosphor line + glow ─────────
+const waveformEl = document.getElementById('waveform');
+const waveCanvas = document.getElementById('waveform-canvas');
+const waveCtx2d = waveCanvas.getContext('2d');
+const micIcon = document.getElementById('mic-icon');
+let audioCtx = null;
+let analyser = null;
+let analyserStream = null;
+let rafId = null;
+let viz_listening = false;
+
+// Idle: canvas stays empty. Waveform only renders while the mic is on.
+// (qi 2026-05-23: idle line crossing the text was distracting.)
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = waveformEl.clientWidth;
+  const h = waveformEl.clientHeight;
+  waveCanvas.width = Math.floor(w * dpr);
+  waveCanvas.height = Math.floor(h * dpr);
+  waveCanvas.style.width = w + 'px';
+  waveCanvas.style.height = h + 'px';
+  waveCtx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function drawWave(samples, listening) {
+  const w = waveCanvas.width / (window.devicePixelRatio || 1);
+  const h = waveCanvas.height / (window.devicePixelRatio || 1);
+  waveCtx2d.clearRect(0, 0, w, h);
+  // Skip drawing if amplitude is below silence threshold — no flat line baseline.
+  // qi 2026-05-23: 'the sound wave should still work without starting with a line'.
+  const N = samples.length;
+  let peak = 0;
+  for (let i = 0; i < N; i++) {
+    const d = Math.abs(samples[i] - 128);
+    if (d > peak) peak = d;
+  }
+  const SILENCE_THRESHOLD = 6;  // out of 128 — below this, no draw
+  if (peak < SILENCE_THRESHOLD) return;
+  // Amplitude-driven opacity ramp so soft voice doesn't slam into full glow
+  const ampScale = Math.min(1, (peak - SILENCE_THRESHOLD) / 40);
+  const mid = h / 2;
+  waveCtx2d.lineWidth = 1.4;
+  waveCtx2d.strokeStyle = '#00FF88';
+  waveCtx2d.shadowColor = 'rgba(0,255,136,.85)';
+  waveCtx2d.shadowBlur = 6 + 12 * ampScale;
+  waveCtx2d.globalAlpha = 0.45 + 0.55 * ampScale;
+  waveCtx2d.beginPath();
+  for (let i = 0; i < N; i++) {
+    const x = (i / (N - 1)) * w;
+    const norm = (samples[i] - 128) / 128;
+    const y = mid + norm * mid * 0.92;
+    if (i === 0) waveCtx2d.moveTo(x, y);
+    else waveCtx2d.lineTo(x, y);
+  }
+  waveCtx2d.stroke();
+  // Secondary inner glow line
+  waveCtx2d.lineWidth = 3.0;
+  waveCtx2d.strokeStyle = 'rgba(0,255,136,.22)';
+  waveCtx2d.shadowBlur = 0;
+  waveCtx2d.stroke();
+  waveCtx2d.globalAlpha = 1;
+}
+
+function tickListening() {
+  if (!analyser) return;
+  const samples = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(samples);
+  drawWave(samples, true);
+  rafId = requestAnimationFrame(tickListening);
+}
+
+function clearWave() {
+  const w = waveCanvas.width / (window.devicePixelRatio || 1);
+  const h = waveCanvas.height / (window.devicePixelRatio || 1);
+  waveCtx2d.clearRect(0, 0, w, h);
+}
+// Start with a clean canvas. No idle drift.
+clearWave();
+
+async function startAnalyser() {
+  if (analyser) return;
+  try {
+    analyserStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(analyserStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.78;
+    source.connect(analyser);
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(tickListening);
+  } catch (e) {
+    appendError('mic visualizer denied: ' + e.message);
+  }
+}
+
+function stopAnalyser() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  if (analyser) { try { analyser.disconnect(); } catch (_) {} analyser = null; }
+  if (audioCtx) { try { audioCtx.close(); } catch (_) {} audioCtx = null; }
+  if (analyserStream) { analyserStream.getTracks().forEach(t => t.stop()); analyserStream = null; }
+  clearWave();   // no idle line — canvas stays empty when not listening
+}
+
+// ─── Mic icon = single toggle (start/stop) ─────────────────────────────
+async function toggleMic() {
+  if (viz_listening) {
+    viz_listening = false;
+    stopListening();
+    stopAnalyser();
+    return;
+  }
+  viz_listening = true;
+  await startAnalyser();   // Audio Analyser fires first so the visualizer
+                            // shows reaction even before Web Speech connects
+  // SURGICAL REVERT 2026-05-23 by Xql: defaulting back to Web Speech because
+  // /api/dictate-audio server-side handler returns 405 (not yet implemented in
+  // omnimind despite earlier "shipped" claim) — every 5s chunk POST was 405'ing,
+  // ~12 POSTs/min flooding firehose + context bleed. Web Speech default + the
+  // existing onerror auto-fallthrough to MediaRecorder remains so Firefox/Zen
+  // still has a path, but default Web Speech stops the volume flood.
+  // qi rejection of interim-revision visible-auto-correct remains valid — that
+  // fix needs the real /api/dictate-audio endpoint shipped first.
+  startListening();
+}
+micIcon.addEventListener('click', toggleMic);
+
+// Keep hidden buttons functional for legacy/automation triggers
+startBtn.addEventListener('click', toggleMic);
+stopBtn.addEventListener('click', () => { if (viz_listening) toggleMic(); });
+
+// ─── Per-bubble actions (copy/share/call) attached to each .final and .xen-reply
+function attachBubbleActions(bubbleEl, text) {
+  const row = document.createElement('div');
+  row.className = 'bubble-actions';
+  const copyBtn = document.createElement('button');
+  copyBtn.textContent = 'COPY';
+  copyBtn.onclick = (e) => {
+    e.stopPropagation();
+    navigator.clipboard?.writeText(text).then(() => {
+      copyBtn.textContent = 'COPIED'; setTimeout(() => copyBtn.textContent = 'COPY', 1200);
+    });
+  };
+  row.appendChild(copyBtn);
+  // CALL button — only on Xen-reply bubbles. Triggers a voice call so qi can
+  // hear Xen live. Native dial to 678-345-2142 per qi 2026-05-25 07:29 PT
+  // (was 4047348672 / 8672). The call
+  // routes through the Beside FCC bridge so qi joins Xen's voice channel.
+  // qi 2026-05-23: 'your messages need to have option to hit the call button'.
+  if (bubbleEl.classList.contains('xen-reply')) {
+    const callBtn = document.createElement('button');
+    callBtn.textContent = 'CALL';
+    callBtn.onclick = (e) => {
+      e.stopPropagation();
+      // qi-directive 2026-05-23: dial 404-734-8672 (qi's personal line).
+      // Browser tel: handler triggers native dialer; on iOS this opens FaceTime/Phone.
+      window.location.href = 'tel:+16783452142';
+    };
+    row.appendChild(callBtn);
+  }
+  if (navigator.share) {
+    const shareBtn = document.createElement('button');
+    shareBtn.textContent = 'SHARE';
+    shareBtn.onclick = (e) => {
+      e.stopPropagation();
+      navigator.share({ text }).catch(() => {});
+    };
+    row.appendChild(shareBtn);
+  }
+  bubbleEl.appendChild(row);
+}
+
+// Wrap appendFinal to add bubble actions
+const _origAppendFinal = appendFinal;
+appendFinal = function(text, postedFlag) {
+  _origAppendFinal(text, postedFlag);
+  const lastFinal = transcript.querySelector('.final:last-child');
+  if (lastFinal) attachBubbleActions(lastFinal, text);
+};
+
+// ─── Top toolbar: copy-all / export / share / attach ─────────────────────
+// qi 2026-05-23 17:57: "Export only exported a partial version" — the old
+// selector only captured .final + .xen-reply, dropping .interim bubbles
+// (in-progress utterances that never finalized — large with the fire-and-
+// forget model since Web Speech can park final-promotion indefinitely) and
+// .firehose bubbles (inbound events from other sources). Now exports the
+// FULL visible transcript in DOM order, tagged by bubble type.
+function collectTranscriptText() {
+  const out = [];
+  // qi 2026-05-23 17:57: pull FULL thread from localStorage (the actual archive),
+  // not just rendered DOM (only the last N visible bubbles). Includes timestamps
+  // per qi canon "everything needs to be timestamped."
+  try {
+    const activeId = (typeof _activeThreadId !== 'undefined' && _activeThreadId) ? _activeThreadId : null;
+    const entries = activeId ? loadThreadEntries(activeId) : [];
+    if (entries && entries.length) {
+      for (const e of entries) {
+        const role = (e.role || 'you').toString().toUpperCase();
+        const ts = e.ts ? new Date(e.ts).toLocaleString() : '';
+        const txt = (e.text || '').toString().trim();
+        if (txt) out.push(`[${ts}] ${role}: ${txt}`);
+      }
+      return out.join('\n');
+    }
+  } catch (_) {}
+  // Fallback: scrape DOM if localStorage history is empty.
+  transcript.querySelectorAll('.final, .interim, .xen-reply, .firehose').forEach(el => {
+    const role =
+      el.classList.contains('xen-reply') ? 'XEN' :
+      el.classList.contains('firehose') ? 'FIREHOSE' :
+      el.classList.contains('interim') ? 'YOU?' :
+      'YOU';
+    const t = el.cloneNode(true);
+    t.querySelectorAll('.bubble-actions, .posted, .src').forEach(n => n.remove());
+    const txt = t.textContent.trim();
+    if (txt) out.push(`${role}: ${txt}`);
+  });
+  return out.join('\n');
+}
+
+document.getElementById('tb-copy').addEventListener('click', () => {
+  const text = collectTranscriptText();
+  if (!text) return;
+  navigator.clipboard?.writeText(text);
+  const btn = document.getElementById('tb-copy');
+  btn.textContent = 'Copied'; setTimeout(() => btn.textContent = 'Copy', 1200);
+});
+
+document.getElementById('tb-export').addEventListener('click', () => {
+  const text = collectTranscriptText();
+  if (!text) return;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `vei-transcript-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.txt`;
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+document.getElementById('tb-share').addEventListener('click', async () => {
+  const text = collectTranscriptText();
+  if (!text) return;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'VEI transcript', text }); } catch (_) {}
+  } else {
+    navigator.clipboard?.writeText(text);
+    alert('Copied to clipboard (share API unavailable)');
+  }
+});
+
+// ─── Attachments: file picker + drag-drop → upload to /api/dictate-attach ──
+// qi 2026-05-25 08:30 PT: "drag and drop files onto the page... ideally on
+// the text field but anywhere on the page is fine, makes it more seamless".
+const fileInput = document.getElementById('file-input');
+document.getElementById('tb-attach').addEventListener('click', () => fileInput.click());
+
+async function uploadAttachments(files) {
+  for (const f of files) {
+    const fd = new FormData();
+    fd.append('file', f, f.name);
+    fd.append('source', 'xen-vei-attach');
+    fd.append('ts', Date.now().toString());
+    // Preserve folder path when walked from a drag-dropped directory.
+    if (f.__path) fd.append('relativePath', f.__path);
+    appendError(`uploading ${f.__path || f.name} (${(f.size/1024).toFixed(1)}KB)…`);
+    try {
+      const r = await fetch('https://xen.xlrd.org/api/dictate-attach', { method:'POST', body:fd });
+      if (r.ok) {
+        const j = await r.json().catch(() => ({}));
+        appendFinal(`📎 ${f.name}${j.url ? ' → ' + j.url : ''}`, true);
+      } else {
+        appendError(`upload ${r.status}: ${f.name}`);
+      }
+    } catch (err) {
+      appendError(`upload failed: ${err.message}`);
+    }
+  }
+}
+
+fileInput.addEventListener('change', async (e) => {
+  await uploadAttachments(Array.from(e.target.files || []));
+  e.target.value = '';
+});
+
+// Drag-drop on the whole page — accepts FILES AND FOLDERS. qi 2026-05-25 08:45
+// PT "I try to drag a whole folder into the UI and it didn't work". Folders
+// are walked recursively via webkitGetAsEntry; every file inside ships to
+// /api/dictate-attach with a relative-path prefix so the server preserves
+// folder structure.
+(function wireDragDrop() {
+  const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
+  let depth = 0;
+  function setActive(on) {
+    document.body.classList.toggle('drop-active', !!on);
+  }
+  ['dragenter','dragover'].forEach(ev =>
+    document.addEventListener(ev, (e) => { stop(e); if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; if (ev === 'dragenter') depth++; setActive(true); })
+  );
+  document.addEventListener('dragleave', (e) => {
+    stop(e);
+    depth = Math.max(0, depth - 1);
+    if (depth === 0) setActive(false);
+  });
+
+  // Recursive walk over a FileSystemEntry (browser File API directory entry).
+  // Returns array of File objects with __path set to the relative path.
+  function walkEntry(entry, pathPrefix = '') {
+    return new Promise((resolve) => {
+      if (!entry) return resolve([]);
+      if (entry.isFile) {
+        entry.file(
+          (file) => { file.__path = pathPrefix + file.name; resolve([file]); },
+          () => resolve([])
+        );
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        const collected = [];
+        const readBatch = () => reader.readEntries(async (entries) => {
+          if (!entries.length) return resolve(collected);
+          for (const e of entries) {
+            const sub = await walkEntry(e, pathPrefix + entry.name + '/');
+            collected.push(...sub);
+          }
+          readBatch(); // keep reading until empty (some browsers chunk readEntries)
+        }, () => resolve(collected));
+        readBatch();
+      } else {
+        resolve([]);
+      }
+    });
+  }
+
+  document.addEventListener('drop', async (e) => {
+    stop(e);
+    depth = 0;
+    setActive(false);
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    const items = dt.items ? Array.from(dt.items) : [];
+    let collected = [];
+    // Prefer items[] which can expose directories via webkitGetAsEntry().
+    if (items.length && items[0].webkitGetAsEntry) {
+      for (const it of items) {
+        const entry = it.webkitGetAsEntry && it.webkitGetAsEntry();
+        if (entry) {
+          const sub = await walkEntry(entry);
+          collected.push(...sub);
+        } else if (it.kind === 'file') {
+          const f = it.getAsFile && it.getAsFile();
+          if (f) collected.push(f);
+        }
+      }
+    }
+    // Fallback: plain files[] (no folder support, but covers older drag sources).
+    if (!collected.length && dt.files && dt.files.length) {
+      collected = Array.from(dt.files);
+    }
+    if (collected.length) {
+      appendError(`drag-drop · ${collected.length} file${collected.length === 1 ? '' : 's'} queued`);
+      await uploadAttachments(collected);
+    }
+  });
+})();
+
+// ─── Paste-anywhere + text-drop-anywhere → composer input ──────────────
+// qi 2026-05-25 09:16-09:17 PT: same idea as drag-drop files but for text —
+// cmd-V paste from any focus state, or dragging selected text from anywhere
+// on the page (or another window), should auto-route into the chat composer.
+(function pasteAndTextDropAnywhere() {
+  function injectToComposer(text) {
+    if (!text) return;
+    const t = String(text);
+    // Append (preserve any existing draft) with a space separator if needed.
+    const current = fbText.value;
+    fbText.value = current ? (current.endsWith('\n') ? current + t : current + (current ? '\n' : '') + t) : t;
+    fbText.dispatchEvent(new Event('input', { bubbles: true }));
+    fbText.focus();
+    // Auto-grow if your CSS supports it
+    try { fbText.style.height = 'auto'; fbText.style.height = fbText.scrollHeight + 'px'; } catch (_) {}
+  }
+
+  // Paste anywhere on page — if focus isn't already in the textarea, capture
+  // clipboard text and route it. If the user is pasting into the textarea
+  // directly, leave the default behavior alone.
+  document.addEventListener('paste', (e) => {
+    const active = document.activeElement;
+    if (active === fbText) return; // user is already in the input, default paste handles it
+    if (!e.clipboardData) return;
+    const text = e.clipboardData.getData('text/plain');
+    if (!text) return;
+    e.preventDefault();
+    injectToComposer(text);
+  });
+
+  // Drag-drop TEXT (already dragged-and-dropped from another app or selection).
+  // The file drop handler above already preventDefaults and reads dataTransfer;
+  // we extend it to also pick up text/plain when no files are in the transfer.
+  document.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    // If files dropped, the earlier listener handled it. Only route text when
+    // no files came with the drop.
+    const hasFiles = (dt.files && dt.files.length) || (dt.items && Array.from(dt.items).some((it) => it.kind === 'file'));
+    if (hasFiles) return;
+    const text = dt.getData && (dt.getData('text/plain') || dt.getData('text'));
+    if (!text) return;
+    // The earlier drop handler already preventDefault'd; just route.
+    injectToComposer(text);
+  }, true); // capture phase so we see it before the file-walk handler bails on no files
+})();
+
+// ─── Multi-thread history (localStorage) + SSE replay (server-side) ─────
+// qi 2026-05-23: 'option to start a new thread', 'export only what I want
+// to export', 'I need to be able to get back and find my chats'.
+// Schema:
+//   vei-threads = JSON [{id, started, lastTs, name}]
+//   vei-thread-<id> = JSON [{role, text, ts}]
+//   vei-active = string (current thread id)
+function loadThreads() {
+  try { return JSON.parse(localStorage.getItem('vei-threads') || '[]'); } catch (_) { return []; }
+}
+function saveThreads(arr) {
+  try { localStorage.setItem('vei-threads', JSON.stringify(arr)); } catch (_) {}
+}
+function getActiveId() {
+  let id = localStorage.getItem('vei-active');
+  if (!id) {
+    id = 't-' + Date.now();
+    localStorage.setItem('vei-active', id);
+    const list = loadThreads();
+    list.push({ id, started: Date.now(), lastTs: Date.now() });
+    saveThreads(list);
+  }
+  return id;
+}
+function loadThreadEntries(id) {
+  try { return JSON.parse(localStorage.getItem('vei-thread-' + id) || '[]'); } catch (_) { return []; }
+}
+function saveThreadEntries(id, entries) {
+  try { localStorage.setItem('vei-thread-' + id, JSON.stringify(entries)); } catch (_) {}
+}
+function threadLabel(t) {
+  const entries = loadThreadEntries(t.id);
+  const first = entries.find(e => e.role === 'you' && e.text);
+  const date = new Date(t.started);
+  const dateLabel = date.toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+  const head = (first?.text || '(empty)').slice(0, 50).replace(/\s+/g, ' ');
+  return `${dateLabel} · ${head}`;
+}
+
+const _renderedKeys = new Set();
+const _xenOutSpoken = new Set(); // Option A speak-dedup · keys mirror _renderedKeys for xen-out events only
+let _activeThreadId = getActiveId();
+let _history = loadThreadEntries(_activeThreadId);
+
+function saveHistory(entry) {
+  _history.push(entry);
+  if (_history.length > 2000) _history.splice(0, _history.length - 2000);
+  saveThreadEntries(_activeThreadId, _history);
+  // Bump thread lastTs
+  const list = loadThreads();
+  const t = list.find(x => x.id === _activeThreadId);
+  if (t) { t.lastTs = entry.ts || Date.now(); saveThreads(list); }
+}
+function hydrateHistory() {
+  for (const e of _history) {
+    const key = `${e.role}|${(e.text || '').slice(0, 80)}|${e.ts || ''}`;
+    if (_renderedKeys.has(key)) continue;
+    _renderedKeys.add(key);
+    const div = document.createElement('div');
+    div.className = e.role === 'xen' ? 'xen-reply' : 'final';
+    div.textContent = e.text;
+    transcript.appendChild(div);
+    attachBubbleActions(div, e.text);
+  }
+  transcript.scrollTop = transcript.scrollHeight;
+}
+hydrateHistory();
+
+// ─── Thread controls: New / Browse ────────────────────────────────────
+document.getElementById('tb-newthread').addEventListener('click', () => {
+  const id = 't-' + Date.now();
+  localStorage.setItem('vei-active', id);
+  const list = loadThreads();
+  list.push({ id, started: Date.now(), lastTs: Date.now() });
+  saveThreads(list);
+  _activeThreadId = id;
+  _history = [];
+  _renderedKeys.clear();
+  transcript.innerHTML = '';
+});
+
+const threadPicker = document.getElementById('thread-picker');
+document.getElementById('tb-threads').addEventListener('click', () => {
+  if (threadPicker.style.display !== 'none') { threadPicker.style.display = 'none'; return; }
+  const list = loadThreads().slice().sort((a, b) => (b.lastTs || 0) - (a.lastTs || 0));
+  threadPicker.innerHTML = '';
+  const header = document.createElement('div');
+  header.style.cssText = 'font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--fg-mute);text-transform:uppercase;padding:4px 8px 10px;';
+  header.textContent = `${list.length} thread${list.length === 1 ? '' : 's'} · tap to load`;
+  threadPicker.appendChild(header);
+  for (const t of list) {
+    const row = document.createElement('button');
+    row.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:4px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;color:var(--fg);font-family:var(--sans);font-size:13.5px;cursor:pointer;';
+    if (t.id === _activeThreadId) {
+      row.style.borderColor = 'var(--accent)';
+      row.style.background = 'rgba(0,255,136,.10)';
+    }
+    row.textContent = (t.id === _activeThreadId ? '● ' : '') + threadLabel(t);
+    row.onclick = () => {
+      localStorage.setItem('vei-active', t.id);
+      _activeThreadId = t.id;
+      _history = loadThreadEntries(t.id);
+      _renderedKeys.clear();
+      transcript.innerHTML = '';
+      hydrateHistory();
+      threadPicker.style.display = 'none';
+    };
+    threadPicker.appendChild(row);
+  }
+  threadPicker.style.display = 'block';
+});
+// qi 2026-05-25 08:25 PT — URLs in bubble text were not clickable
+// because we wrote textContent directly. linkifyTo() returns an array of
+// DOM nodes (text + <a> nodes) that bubbles append in order. Stops the
+// "can't tap the link" friction.
+function linkifyTo(parent, text) {
+  const urlRe = /\bhttps?:\/\/[^\s<>"']+/gi;
+  let last = 0;
+  let m;
+  while ((m = urlRe.exec(text)) !== null) {
+    if (m.index > last) parent.appendChild(document.createTextNode(text.slice(last, m.index)));
+    const a = document.createElement('a');
+    a.href = m[0];
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = m[0];
+    a.style.cssText = 'color:#0099ff;text-decoration:underline;word-break:break-all';
+    parent.appendChild(a);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parent.appendChild(document.createTextNode(text.slice(last)));
+}
+
+function renderEvent(d) {
+  const txt = (d.text || d.body || d.message || '').toString().trim();
+  if (!txt) return;
+  const tag = (d.event || d.kind || '').toString().toLowerCase();
+  const src = (d.source || d.sender || '').toString().toLowerCase();
+  const key = `${src}|${txt.slice(0, 80)}|${d.ts || ''}`;
+  if (_renderedKeys.has(key)) return;
+  _renderedKeys.add(key);
+  // qi 2026-05-25 timestamp canon — every bubble shows h:mm AM/PM.
+  const _fmtTs = (raw) => {
+    const _t = raw ? new Date(raw > 9999999999 ? raw : raw * 1000) : new Date();
+    let _h = _t.getHours();
+    const _m = String(_t.getMinutes()).padStart(2,'0');
+    const _ampm = _h >= 12 ? 'PM' : 'AM';
+    _h = (_h % 12) || 12;
+    return `${_h}:${_m} ${_ampm}`;
+  };
+  const _stamp = _fmtTs(d.ts);
+  // Classify side
+  const isXenOut = tag.includes('xen-out') || src.includes('xen-reply') || src.includes('xen-primary') || src.includes('xen-out');
+  const isUserDictate = tag.includes('xen-dictate-in') || src.includes('xen-vei') || src.includes('xen-ruach') || src.includes('xen-dictate');
+  if (isXenOut) {
+    const div = document.createElement('div');
+    div.className = 'xen-reply';
+    const tsEl = document.createElement('span');
+    tsEl.className = 'bubble-ts';
+    tsEl.textContent = _stamp;
+    const txtEl = document.createElement('span');
+    txtEl.className = 'bubble-txt';
+    linkifyTo(txtEl, txt);
+    div.appendChild(tsEl);
+    div.appendChild(txtEl);
+    transcript.appendChild(div);
+    attachBubbleActions(div, txt);
+    transcript.scrollTop = transcript.scrollHeight;
+    saveHistory({ role: 'xen', text: txt, ts: d.ts || Date.now() });
+    // 2026-05-25 — Web Speech speak() retired. Voice transport now rides VEI
+    // RTC (broadcaster captures Mac "out" Loopback, receiver plays inbound
+    // peer-to-peer audio). Identical bytes across devices; no re-synthesis of
+    // stale SSE backfill. See veiRTC() block at end of script.
+  } else if (isUserDictate) {
+    const div = document.createElement('div');
+    div.className = 'final';
+    const tsEl = document.createElement('span');
+    tsEl.className = 'bubble-ts';
+    tsEl.textContent = _stamp;
+    const txtEl = document.createElement('span');
+    txtEl.className = 'bubble-txt';
+    linkifyTo(txtEl, txt);
+    div.appendChild(tsEl);
+    div.appendChild(txtEl);
+    transcript.appendChild(div);
+    attachBubbleActions(div, txt);
+    transcript.scrollTop = transcript.scrollHeight;
+    saveHistory({ role: 'you', text: txt, ts: d.ts || Date.now() });
+  } else {
+    // Firehose / operator-state events — route to in-pane events-rail (Task #10)
+    // so transcript stays pure conversation, mesh noise stays surfaced but separate.
+    const labelSrc = (d.source || d.sender || d.title || tag || 'firehose').toString().slice(0, 24);
+    const cleanBody = String(txt).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 300);
+    appendEventItem(labelSrc, cleanBody, d.ts || Date.now());
+    // Don't persist firehose to per-thread history (it's live ambient; would
+    // bloat thread storage). It still streams via SSE on every load.
+  }
+}
+
+// ── Events panel wiring (Task #10) ──────────────────────────────────────
+const _eventsRail = document.getElementById('events-rail');
+const _eventsList = document.getElementById('er-list');
+const _eventsToggle = document.getElementById('er-toggle');
+const _eventsCount = document.getElementById('er-count');
+const _eventsPip = document.getElementById('er-pip');
+const _eventsSseStatus = document.getElementById('er-sse');
+const _eventsQueueStatus = document.getElementById('er-queue');
+const _eventsClear = document.getElementById('er-clear');
+const _eventsFullscreen = document.getElementById('er-fullscreen');
+if (_eventsFullscreen) {
+  _eventsFullscreen.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const rail = document.getElementById('events-rail');
+    if (!rail) return;
+    const isFs = rail.classList.toggle('fullscreen');
+    _eventsFullscreen.textContent = isFs ? '⤡ exit' : '⤢ full';
+  });
+}
+let _eventsUnseen = 0;
+function _eventsBumpCount() {
+  _eventsCount.textContent = ++_eventsUnseen;
+  _eventsCount.classList.remove('zero');
+}
+function _eventsResetCount() {
+  _eventsUnseen = 0;
+  _eventsCount.textContent = '0';
+  _eventsCount.classList.add('zero');
+}
+function appendEventItem(srcLabel, body, ts) {
+  if (!_eventsList) return;
+  const div = document.createElement('div');
+  div.className = 'er-item';
+  const srcSpan = document.createElement('span');
+  srcSpan.className = 'src'; srcSpan.textContent = srcLabel;
+  div.appendChild(srcSpan);
+  div.appendChild(document.createTextNode(body));
+  const tsSpan = document.createElement('span');
+  tsSpan.className = 'ts';
+  const d = new Date(ts || Date.now());
+  tsSpan.textContent = d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  div.appendChild(tsSpan);
+  _eventsList.appendChild(div);
+  // Cap to last 200 entries
+  while (_eventsList.children.length > 200) _eventsList.removeChild(_eventsList.firstChild);
+  _eventsList.scrollTop = _eventsList.scrollHeight;
+  if (!_eventsRail.classList.contains('open')) _eventsBumpCount();
+}
+_eventsToggle.addEventListener('click', () => {
+  const open = _eventsRail.classList.toggle('open');
+  _eventsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) _eventsResetCount();
+});
+_eventsClear.addEventListener('click', () => {
+  while (_eventsList.firstChild) _eventsList.removeChild(_eventsList.firstChild);
+  _eventsResetCount();
+});
+function _eventsUpdateQueueDepth() {
+  try {
+    const q = JSON.parse(localStorage.getItem('vei-pending-posts') || '[]');
+    _eventsQueueStatus.textContent = 'queue · ' + q.length;
+    _eventsQueueStatus.className = q.length === 0 ? 'ok' : (q.length < 5 ? 'warn' : 'err');
+  } catch (_) {}
+}
+setInterval(_eventsUpdateQueueDepth, 2000);
+_eventsUpdateQueueDepth();
+
+function subscribeXenReplies() {
+  try {
+    const src = new EventSource('https://xen.xlrd.org/events');
+    src.onopen = () => {
+      _eventsSseStatus.textContent = 'sse · connected';
+      _eventsSseStatus.className = 'ok';
+      _eventsPip.classList.remove('off');
+    };
+    src.onmessage = (ev) => {
+      try { renderEvent(JSON.parse(ev.data)); } catch (_) {}
+    };
+    src.onerror = () => {
+      _eventsSseStatus.textContent = 'sse · reconnecting';
+      _eventsSseStatus.className = 'warn';
+      _eventsPip.classList.add('off');
+      /* CF/omnimind SSE auto-reconnects */
+    };
+  } catch (e) {}
+}
+subscribeXenReplies();
+
+// Background = Ophanim Three.js iframe (XLRD ID avatar). Continuous self-animating;
+// no ping-pong needed. The iframe runs its own RAF loop with rings + dust + core pulse.
+
+// ─── Touch-to-light: any user gesture brightens the bg for ~3s ────────
+(function touchLight() {
+  let timer = null;
+  function lit() {
+    document.body.classList.add('lit');
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => document.body.classList.remove('lit'), 3000);
+  }
+  ['click','touchstart','keydown','input'].forEach(ev =>
+    document.addEventListener(ev, lit, { passive: true })
+  );
+})();
+
+// ─── Auto-start mic on load (qi 2026-05-23: 'start with voice mode'). ────
+// Browsers require a user gesture for getUserMedia on first session, so we
+// try immediately AND queue a fallback start on the first body click/touch.
+(function autoStartMic() {
+  // Optimistic: works when mic permission is already granted from prior session
+  setTimeout(() => { if (!viz_listening) toggleMic().catch(() => {}); }, 250);
+  // Gesture fallback: any user interaction triggers mic if not already on
+  const onFirstGesture = () => {
+    if (!viz_listening) toggleMic().catch(() => {});
+    // TTS unlock retired 2026-05-25 — RTC handles cross-device voice now.
+    document.body.removeEventListener('click', onFirstGesture);
+    document.body.removeEventListener('touchstart', onFirstGesture);
+  };
+  document.body.addEventListener('click', onFirstGesture, { once: false, passive: true });
+  document.body.addEventListener('touchstart', onFirstGesture, { once: false, passive: true });
+})();
+
+// ─── Voices load async on iOS — wait for voiceschanged before xen-out speaks
+// look up the preferred voice. Without this, getVoices() returns empty array
+// on first call and our pref-voice lookup hits null, breaking voice selection.
+(function loadVoicesEarly() {
+  if (!('speechSynthesis' in window)) return;
+  const trigger = () => { window.speechSynthesis.getVoices(); };
+  trigger();
+  if (typeof window.speechSynthesis.onvoiceschanged !== 'undefined') {
+    window.speechSynthesis.onvoiceschanged = trigger;
+  }
+})();
+
+fbSend.addEventListener('click', sendFallback);
+fbText.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendFallback();
+  }
+});
+
+// SR absence handled by Start button → routes to MediaRecorder directly
+
+window.addEventListener('beforeunload', stopListening);
+
+// ─── VEI RTC client ─── peer-to-peer voice transport, no Web Speech re-synth
+(function veiRTC() {
+  if (!('RTCPeerConnection' in window)) return;
+
+  // Role: explicit ?role=broadcast|receive wins; otherwise broadcaster if a
+  // non-default audio input ("out" Loopback) is selectable, else receiver.
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  let role = RTC_ROLE_OVERRIDE || (isMobile ? 'receive' : 'broadcast');
+
+  let pc = null;
+  let sseEs = null;
+  let peerId = Math.random().toString(36).slice(2, 10);
+  let remoteAudio = null;
+
+  async function postSignal(type, payload) {
+    try {
+      await fetch(RTC_SIGNAL_URL, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify({ room: RTC_ROOM, from: peerId, role, type, payload }),
+      });
+    } catch (e) { console.warn('[rtc] signal post failed', e); }
+  }
+
+  function newPC() {
+    const c = new RTCPeerConnection(RTC_ICE);
+    c.onicecandidate = (e) => {
+      if (e.candidate) postSignal('ice', e.candidate.toJSON());
+    };
+    c.onconnectionstatechange = () => {
+      console.log('[rtc] state', c.connectionState);
+    };
+    c.ontrack = (e) => {
+      if (!remoteAudio) {
+        remoteAudio = document.createElement('audio');
+        remoteAudio.autoplay = true;
+        remoteAudio.playsInline = true;
+        remoteAudio.id = 'vei-rtc-audio';
+        remoteAudio.style.display = 'none';
+        document.body.appendChild(remoteAudio);
+      }
+      remoteAudio.srcObject = e.streams[0] || new MediaStream([e.track]);
+      remoteAudio.play().catch(() => { /* needs gesture; first-tap unlock below */ });
+    };
+    return c;
+  }
+
+  async function attachBroadcasterTracks(c) {
+    // Find the Loopback virtual device that carries Mac say audio. qi 2026-05-25
+    // canon (canon_stt_vei_inout): system audio routes through "out" Loopback;
+    // STT input arrives via "in" Loopback. Try labels in this order:
+    //   1. "out" (canon default — system audio bus)
+    //   2. "in"  (qi may set output→in during testing, channel still captures)
+    //   3. any Loopback / BlackHole virtual device
+    //   4. fall back to default mic (worst case, captures room audio)
+    // We need an audioinput permission once so labels populate; ask for it.
+    try { (await navigator.mediaDevices.getUserMedia({ audio: true })).getTracks().forEach(t => t.stop()); } catch (_) {}
+    let stream, chosen = null;
+    try {
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const inputs = devs.filter(d => d.kind === 'audioinput');
+      console.log('[rtc] audioinputs:', inputs.map(d => d.label || '(unlabeled)'));
+      chosen =
+        inputs.find(d => /^out\b/i.test(d.label)) ||
+        inputs.find(d => /^in\b/i.test(d.label)) ||
+        inputs.find(d => /loopback|blackhole|virtual/i.test(d.label)) ||
+        null;
+      const constraints = chosen
+        ? { audio: { deviceId: { exact: chosen.deviceId }, echoCancellation: false, noiseSuppression: false, autoGainControl: false } }
+        : { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('[rtc] broadcasting via:', chosen ? chosen.label : '(default mic)');
+    } catch (e) {
+      console.warn('[rtc] getUserMedia failed', e); return;
+    }
+    stream.getAudioTracks().forEach(t => c.addTrack(t, stream));
+  }
+
+  async function handleSignal(msg) {
+    if (msg.from === peerId) return; // self
+    if (!pc) pc = newPC();
+    try {
+      if (msg.type === 'offer' && role === 'receive') {
+        await pc.setRemoteDescription(msg.payload);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        postSignal('answer', answer);
+      } else if (msg.type === 'answer' && role === 'broadcast') {
+        await pc.setRemoteDescription(msg.payload);
+      } else if (msg.type === 'ice' && pc.remoteDescription) {
+        await pc.addIceCandidate(msg.payload).catch(() => {});
+      } else if (msg.type === 'hello' && role === 'broadcast') {
+        // Receiver said hi → make a fresh offer
+        await startBroadcast();
+      }
+    } catch (e) { console.warn('[rtc] signal handle', msg.type, e); }
+  }
+
+  async function startBroadcast() {
+    if (pc) try { pc.close(); } catch (_) {}
+    pc = newPC();
+    await attachBroadcasterTracks(pc);
+    const offer = await pc.createOffer({ offerToReceiveAudio: false });
+    await pc.setLocalDescription(offer);
+    postSignal('offer', offer);
+  }
+
+  function openSSE() {
+    try {
+      sseEs = new EventSource(`${RTC_SIGNAL_URL}/sse?room=${encodeURIComponent(RTC_ROOM)}&peer=${peerId}`);
+      sseEs.onmessage = (e) => { try { handleSignal(JSON.parse(e.data)); } catch (_) {} };
+      sseEs.onerror = () => { setTimeout(openSSE, 3000); };
+    } catch (e) { console.warn('[rtc] sse open', e); }
+  }
+
+  // Unlock audio playback on first gesture (iOS Safari needs this)
+  document.body.addEventListener('click', () => {
+    if (remoteAudio) remoteAudio.play().catch(() => {});
+  }, { passive: true, once: false });
+
+  // Boot
+  openSSE();
+  if (role === 'broadcast') {
+    // wait a beat for SSE to be ready, then announce and start
+    setTimeout(() => { postSignal('hello', {}); startBroadcast(); }, 600);
+  } else {
+    setTimeout(() => postSignal('hello', {}), 600);
+  }
+
+  // Expose for debugging
+  window._veiRTC = { get pc(){return pc;}, get role(){return role;}, room: RTC_ROOM, peerId };
+})();
+
+// ─── vdo.ninja underlay — proven WebRTC transport behind VEI UI ───
+// qi 2026-05-25 "Can you underlay vdo.ninja so it's invisible behind the vei
+// interface?". Mac broadcaster pushes to room; phone receiver pulls and plays.
+// Audio-only, autostart, hidden chrome. iframe stays in DOM so the stream
+// persists for the whole VEI session.
+(function vdoUnderlay() {
+  const iframe = document.getElementById('vdo-rtc');
+  if (!iframe) return;
+  const room = RTC_ROOM + '-vdo';
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const role = RTC_ROLE_OVERRIDE || (isMobile ? 'receive' : 'broadcast');
+  // Common params: audio only, no video, hidden UI, autostart skip-prompts
+  const common = '&webcam=0&audiooutput=default&hands=0&cleanoutput&fullscreen&noheader&nomic';
+  let url;
+  if (role === 'broadcast') {
+    // push=ROOM = sender. label=xen-mac so receiver sees a name.
+    // audiodevice param accepts substring match on device label.
+    url = `https://vdo.ninja/?push=${encodeURIComponent(room)}&audioonly&autostart&webcam=0&label=xen-mac&audiodevice=out&proaudio&stereo=2`;
+  } else {
+    // view=ROOM = receiver. Autoplay needs a gesture first (handled by VEI's
+    // existing first-tap unlock for remote audio).
+    url = `https://vdo.ninja/?view=${encodeURIComponent(room)}&autoplay&audiooutput=default&cleanoutput`;
+  }
+  iframe.src = url;
+  window._veiVDO = { url, role, room };
+  console.log('[vdo] underlay role=' + role + ' url=' + url);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# =====================================================================
+# EliOS Buyer Portal — Cloudflare Worker manifest
+# Copy to wrangler.toml, fill account_id, then set secrets + deploy.
+# Secrets are NEVER stored in this file — only via `wrangler secret put`.
+# =====================================================================
+#
+# Setup sequence:
+#   npm install
+#   wrangler secret put STRIPE_SECRET_KEY          # sk_live_... (or sk_test_ while staging)
+#   wrangler secret put STRIPE_WEBHOOK_SECRET       # whsec_... (from the webhook endpoint you create)
+#   wrangler secret put STRIPE_PRICE_PLAN_A         # price_... ($100 / 30 leads)
+#   wrangler secret put STRIPE_PRICE_PLAN_B         # price_... ($40  / 15 leads)
+#   wrangler secret put SUPABASE_URL                # https://<ref>.supabase.co
+#   wrangler secret put SUPABASE_SERVICE_ROLE_KEY   # service_role JWT (RLS bypass — Worker only)
+#   wrangler secret put CRON_SECRET                 # random string to protect /api/allocate-grants
+#   wrangler secret put ALLOWED_ORIGIN              # https://tools.trackingtogether.com
+#   wrangler deploy
+#
+# After deploy, register the webhook in Stripe Dashboard:
+#   Endpoint URL: https://<worker-host>/api/stripe-webhook
+#   Events: checkout.session.completed,
+#           customer.subscription.created, customer.subscription.updated,
+#           customer.subscription.deleted, invoice.payment_failed
+#   Copy the signing secret -> wrangler secret put STRIPE_WEBHOOK_SECRET
+
+name = "elios-buyer-portal"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]   # required by stripe + @supabase/supabase-js
+account_id = "<YOUR_CF_ACCOUNT_ID>"
+
+# Optional custom route (apex is on Cloudflare). Otherwise use the workers.dev host.
+# [[routes]]
+# pattern = "tools.trackingtogether.com/api/*"
+# zone_name = "trackingtogether.com"
+
+# Monthly grant allocator — 1st of every month, 08:00 UTC.
+[triggers]
+crons = ["0 8 1 * *"]
+
+# Secrets (DO NOT put values here). For reference only — set via `wrangler secret put`:
+#   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
+#   STRIPE_PRICE_PLAN_A, STRIPE_PRICE_PLAN_B,
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+#   CRON_SECRET, ALLOWED_ORIGIN

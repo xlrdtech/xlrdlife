@@ -1,0 +1,118 @@
+{
+  "name": "search",
+  "description": "Search for repositories in Docker Hub. It sorts results by best match if no sort criteria is provided. If user asks for secure, production-ready images the \"dockerHardenedImages\" tool should be called first to get the list of DHI images available in the user organisations (if any) and fallback to search tool if no DHI images are available or user is not authenticated.",
+  "inputSchema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "architectures": {
+        "description": "The architectures to filter search results",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "badges": {
+        "description": "The trusted content to search for",
+        "items": {
+          "enum": [
+            "official",
+            "verified_publisher",
+            "open_source"
+          ],
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "categories": {
+        "description": "The categories names to filter search results",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "extension_reviewed": {
+        "description": "Whether to filter search results to only include reviewed extensions",
+        "type": "boolean"
+      },
+      "from": {
+        "description": "The number of repositories to skip",
+        "type": "number"
+      },
+      "images": {
+        "description": "The images to filter search results",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "operating_systems": {
+        "description": "The operating systems to filter search results",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "order": {
+        "anyOf": [
+          {
+            "anyOf": [
+              {
+                "not": {}
+              },
+              {
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The order to sort the search results by"
+      },
+      "query": {
+        "description": "The query to search for",
+        "type": "string"
+      },
+      "size": {
+        "description": "The number of repositories to return",
+        "type": "number"
+      },
+      "sort": {
+        "anyOf": [
+          {
+            "anyOf": [
+              {
+                "not": {}
+              },
+              {
+                "enum": [
+                  "pull_count",
+                  "updated_at"
+                ],
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The criteria to sort the search results by. If the `sort` field is not set, the best match is used by default. When search extensions, documents are sort alphabetically if none is provided. Do not use it unless user explicitly asks for it."
+      },
+      "type": {
+        "description": "The type of the repository to search for",
+        "type": "string"
+      }
+    },
+    "required": [
+      "query"
+    ],
+    "type": "object"
+  }
+}

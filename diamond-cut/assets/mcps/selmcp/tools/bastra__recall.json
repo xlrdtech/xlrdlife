@@ -1,0 +1,28 @@
+{
+  "name": "bastra__recall",
+  "description": "[Bastra-recall (persistent memory)] Search the memory vault. Returns top-k matching memorys (id, title, type, scope, summary, score). \n\nWHEN TO CALL (recall is part of acting, not a separate step):\n- At session start (once): query for active-project + user-preferences to load durable context.\n- Before writing/editing a file: query with a description of what you are about to write (e.g. 'creating React input with focus styles'). This catches lessons before mistakes.\n- Before giving a multi-step plan or recommendation: query for preferences that shape format/scope.\n- When the user's prompt touches a topic that may have a stored lesson, decision, preference, or project-fact.\n- Before save_memory: query to avoid creating a duplicate.\n\nWHAT TO DO WITH HITS:\n- score >= ~100 with title/recall_when match: load_memory and apply the lesson before acting.\n- score 30-100: read the summary, load if directly relevant.\n- score < 30: usually noise; skip unless the summary is a perfect topic match.\nNever ignore a `lesson` hit with strong recall_when match.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "Natural-language query OR a description of what you are about to do (e.g. 'creating new input component', 'about to give a multi-option plan')."
+      },
+      "k": {
+        "type": "number",
+        "description": "Max results (default 5, range 1-20)."
+      },
+      "scope": {
+        "type": "string",
+        "description": "Optional exact-match filter, e.g. 'carnexus', 'user-preference', 'all-projects'."
+      },
+      "type": {
+        "type": "string",
+        "description": "Optional exact-match filter on memory type, e.g. 'lesson', 'preference', 'project-fact'."
+      }
+    },
+    "required": [
+      "query"
+    ]
+  }
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>XLRD — Ophanim, speaking</title>
+<meta name="description" content="The Ophanim avatar driven by live voice amplitude.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<style>
+:root{--ink:#000;--grn:#00ff44;--w:#fff;--w64:rgba(255,255,255,.64);--w16:rgba(255,255,255,.16)}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--ink);color:var(--w);overflow:hidden;
+  font:400 16px/1.5 Figtree,-apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased}
+#gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
+#veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% 42%,transparent 0%,rgba(0,0,0,.5) 60%,#000 100%)}
+.ui{position:fixed;inset:auto 0 0 0;z-index:3;display:flex;flex-direction:column;align-items:center;
+  gap:14px;padding:0 20px calc(env(safe-area-inset-bottom,0) + 30px)}
+.cap{font-size:10px;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:var(--w64);margin:0;text-align:center}
+.cap b{color:var(--grn)}
+#say{display:inline-flex;align-items:center;gap:.6rem;border:1px solid var(--grn);color:#001b06;
+  background:var(--grn);border-radius:999px;padding:1rem 2rem;font:inherit;font-weight:800;
+  letter-spacing:.14em;text-transform:uppercase;font-size:13px;cursor:pointer;transition:.25s;
+  box-shadow:0 0 30px rgba(0,255,68,.35)}
+#say:active{transform:scale(.97)}
+#say.busy{background:transparent;color:var(--grn);box-shadow:none}
+.lvl{width:min(78vw,340px);height:3px;border-radius:2px;background:var(--w16);overflow:hidden}
+.lvl i{display:block;height:100%;width:0;background:var(--grn);transition:width .06s linear}
+.top{position:fixed;top:0;left:0;z-index:3;padding:18px 20px}
+.mark{font-weight:800;letter-spacing:-.05em;font-size:1.2rem;margin:0}
+.mark i{color:var(--grn);font-style:normal}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="veil"></div>
+<div class="top"><p class="mark">xlrd<i>.</i>org</p></div>
+<div class="ui">
+  <p class="cap" id="state"><b>Ophanim</b> · tap to speak</p>
+  <div class="lvl"><i id="bar"></i></div>
+  <button id="say">▶ Speak</button>
+</div>
+<audio id="clip" src="voice.wav" preload="auto" crossorigin="anonymous"></audio>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const cv = document.getElementById('gl');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x000000,.05);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, .1, 100);
+camera.position.set(0,0,13);
+const low = innerWidth < 760;
+const renderer = new THREE.WebGLRenderer({canvas:cv,antialias:false,alpha:false,powerPreference:'high-performance'});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, low?1:1.5));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),1.5,.4,.85);
+bloom.threshold=.2; bloom.strength=low?.7:1.0; bloom.radius=.5; composer.addPass(bloom);
+
+const N=512,data=new Uint8Array(N*N*4);
+for(let i=0;i<N*N*4;i+=4){const v=Math.floor(Math.random()*255);data[i]=data[i+1]=data[i+2]=v;data[i+3]=255;}
+const noise=new THREE.DataTexture(data,N,N,THREE.RGBAFormat);noise.needsUpdate=true;
+const metal=new THREE.MeshStandardMaterial({color:0x222222,roughness:.6,metalness:.8,bumpMap:noise,bumpScale:.05});
+const eyeMat=new THREE.MeshBasicMaterial({color:0x00ff44});
+
+const oph=new THREE.Group();scene.add(oph);
+const eyes=[];
+function ring(r,tube,count){
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.TorusGeometry(r,tube,low?16:32,low?60:100),metal));
+  const inst=new THREE.InstancedMesh(new THREE.SphereGeometry(tube*.7,low?8:16,low?8:16),eyeMat,count);
+  const d=new THREE.Object3D();
+  for(let i=0;i<count;i++){const a=(i/count)*Math.PI*2,x=Math.cos(a)*r,y=Math.sin(a)*r;
+    d.position.set(x,y,0);d.lookAt(x*2,y*2,0);d.translateZ(tube*.75);d.updateMatrix();inst.setMatrixAt(i,d.matrix);
+    eyes.push({mesh:inst,index:i,base:d.scale.clone(),dummy:d.clone(),blink:0,speed:.1+Math.random()*.2});}
+  g.add(inst);return g;
+}
+const r1=ring(3,.35,low?18:30),r2=ring(4.5,.45,low?26:45),r3=ring(6,.35,low?34:60);
+oph.add(r1,r2,r3);
+
+const core=new THREE.ShaderMaterial({
+  uniforms:{uTime:{value:0},uMouse:{value:new THREE.Vector2()},uDil:{value:0}},
+  vertexShader:`varying vec2 vUv;varying vec3 vN;void main(){vUv=uv;vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform float uTime;uniform vec2 uMouse;uniform float uDil;varying vec2 vUv;varying vec3 vN;
+    float rand(vec2 n){return fract(sin(dot(n,vec2(12.9898,4.1414)))*43758.5453);}
+    float noise(vec2 p){vec2 ip=floor(p),u=fract(p);u=u*u*(3.-2.*u);
+      float r=mix(mix(rand(ip),rand(ip+vec2(1,0)),u.x),mix(rand(ip+vec2(0,1)),rand(ip+vec2(1,1)),u.x),u.y);return r*r;}
+    void main(){vec2 uv=vUv;vec2 c=vec2(.5)+uMouse*vec2(.3)+vec2(-.15,0.);float d=distance(uv,c);
+      float pupil=.18+uDil*.14+sin(uTime*1.5)*.02;vec3 col=vec3(0.);
+      if(d>pupil){float n=noise(uv*25.-uTime*.5);float a=atan(uv.y-c.y,uv.x-c.x);float f=sin(a*40.+n*10.);
+        col=vec3(0.,.8+f*.3,.1);if(d>.48)col*=.1;}
+      col+=pow(max(dot(vN,normalize(vec3(1.))),0.),40.)*.8;gl_FragColor=vec4(col,1.);}`
+});
+oph.add(new THREE.Mesh(new THREE.SphereGeometry(1.5,low?32:64,low?32:64),core));
+
+const sg=new THREE.BufferGeometry(),SC=low?900:2600,pos=new Float32Array(SC*3);
+for(let i=0;i<SC*3;i+=3){const r=30+Math.random()*30,t=Math.random()*Math.PI*2,p=Math.acos(2*Math.random()-1);
+  pos[i]=r*Math.sin(p)*Math.cos(t);pos[i+1]=r*Math.sin(p)*Math.sin(t);pos[i+2]=r*Math.cos(p);}
+sg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:.05,transparent:true,opacity:.6})));
+
+scene.add(new THREE.AmbientLight(0xffffff,.1));
+const key=new THREE.DirectionalLight(0xffffff,1.5);key.position.set(10,10,10);scene.add(key);
+const rim=new THREE.DirectionalLight(0x00ff88,1);rim.position.set(-5,5,-10);scene.add(rim);
+
+/* ── the voice drive: audio amplitude → pupil dilation + bloom + spin ── */
+let analyser=null, amp=0;              // amp = smoothed 0..1 loudness
+const clip=document.getElementById('clip');
+const bar=document.getElementById('bar');
+const btn=document.getElementById('say');
+const stateEl=document.getElementById('state');
+let actx=null;
+function ensureAudio(){
+  if (actx) return;
+  actx=new (window.AudioContext||window.webkitAudioContext)();
+  const src=actx.createMediaElementSource(clip);
+  analyser=actx.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=.75;
+  src.connect(analyser); analyser.connect(actx.destination);
+}
+const freq=new Uint8Array(128);
+function loudness(){
+  if(!analyser) return 0;
+  analyser.getByteFrequencyData(freq);
+  let s=0; for(let i=0;i<freq.length;i++) s+=freq[i]*freq[i];
+  return Math.min(1, Math.sqrt(s/freq.length)/128);   // RMS, normalized
+}
+btn.onclick=async ()=>{
+  ensureAudio();
+  if(actx.state==='suspended') await actx.resume();
+  if(clip.paused){ clip.currentTime=0; await clip.play(); }
+  else { clip.pause(); }
+};
+clip.addEventListener('play',  ()=>{btn.textContent='● Speaking';btn.classList.add('busy');stateEl.innerHTML='<b>Ophanim</b> · speaking';});
+clip.addEventListener('pause', ()=>{btn.textContent='▶ Speak';btn.classList.remove('busy');stateEl.innerHTML='<b>Ophanim</b> · tap to speak';});
+clip.addEventListener('ended', ()=>{btn.textContent='▶ Speak';btn.classList.remove('busy');stateEl.innerHTML='<b>Ophanim</b> · tap to speak';});
+
+let mx=0,my=0;
+addEventListener('mousemove',e=>{mx=(e.clientX/innerWidth)*2-1;my=-(e.clientY/innerHeight)*2+1;},{passive:true});
+
+const clock=new THREE.Clock();
+(function loop(){
+  requestAnimationFrame(loop);
+  const t=clock.getElapsedTime();
+  core.uniforms.uTime.value=t;
+
+  const target=loudness();
+  amp += (target-amp)*0.35;            // fast attack, natural decay
+  bar.style.width=(amp*100).toFixed(0)+'%';
+
+  // THE TALK: voice amplitude opens the pupil, brightens the bloom, spins the rings harder
+  core.uniforms.uDil.value = amp;
+  core.uniforms.uMouse.value.set(mx*(1-amp), my*(1-amp));   // steadies its gaze while speaking
+  bloom.strength = (low?.7:1.0) + amp*1.6;
+
+  const sp = 1 + amp*2.2;
+  r1.rotation.x=t*.2*sp; r1.rotation.y=t*.1;
+  r2.rotation.y=t*.15*sp+1; r2.rotation.z=t*.05;
+  r3.rotation.x=t*.1+2; r3.rotation.z=t*.1*sp;
+  const pulse=1+amp*0.05; oph.scale.setScalar(pulse);
+
+  const touched=new Set();
+  eyes.forEach(e=>{
+    if(e.blink===0&&Math.random()<.0015)e.blink=.01;
+    if(e.blink>0){e.blink+=e.speed;
+      if(e.blink>=Math.PI){e.blink=0;e.dummy.scale.copy(e.base);}
+      else{const s=1-Math.sin(e.blink)*.9;e.dummy.scale.set(e.base.x,e.base.y*s,e.base.z);}
+      e.dummy.updateMatrix();e.mesh.setMatrixAt(e.index,e.dummy.matrix);touched.add(e.mesh);}
+  });
+  touched.forEach(m=>m.instanceMatrix.needsUpdate=true);
+  composer.render();
+})();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>

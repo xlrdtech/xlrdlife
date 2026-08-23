@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>tmux vocabulary — server, session, window, pane</title>
+<meta name="theme-color" content="#07080b" />
+<style>
+  :root{--bg:#07080b;--panel:#0e1016;--line:#1c2030;--ink:#eef1f7;--dim:#8b93a7;--warn:#f0b73f;--ok:#5f9f74;--hot:#d4696b;
+  --sheen:linear-gradient(135deg,#cfd6e6 0%,#8d97ad 28%,#eef2fa 52%,#79839b 76%,#c3cbdd 100%)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 ui-sans-serif,-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;padding:28px 18px 64px}
+  .wrap{width:100%;max-width:700px;display:flex;flex-direction:column;align-items:center;text-align:center}
+  h1{margin:0 0 4px;font-size:clamp(25px,6vw,36px);letter-spacing:-.02em;font-weight:700;
+  background:var(--sheen);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:13.5px;margin:0 0 22px}
+  h2{width:100%;margin:28px 0 10px;font-size:12.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);text-align:center}
+  p{width:100%;text-align:left;margin:0 0 12px}
+  pre{width:100%;background:#0a0c12;border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  overflow-x:auto;text-align:left;font:13.5px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:#c9d3e6;margin:0 0 14px}
+  .tw{width:100%;overflow-x:auto;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:460px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+  code{background:#0a0c12;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:13px}
+  .note{width:100%;border:1px solid var(--line);border-left:3px solid var(--warn);background:#12141c;border-radius:10px;
+  padding:12px 14px;margin:16px 0;color:var(--dim);font-size:13.5px;text-align:left}
+  .note b{color:var(--warn)}
+  .good{border-left-color:var(--ok)}.good b{color:var(--ok)}
+  .bad{border-left-color:var(--hot)}.bad b{color:var(--hot)}
+  footer{margin-top:26px;color:#5b6377;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>tmux vocabulary</h1>
+  <p class="sub">server &rarr; session &rarr; window &rarr; pane &middot; with your live values, 27 Jul 2026</p>
+
+  <h2>The nest</h2>
+<pre>tmux SERVER                    one background process, holds everything
+└── SESSION  "xen"             what you attach to / detach from
+    ├── WINDOW 0  "bash"       a tab — full screen inside the session
+    │   └── PANE  %0           bash
+    └── WINDOW 1  "2.1.220"
+        └── PANE  %1           Claude  ← your canonical inject target</pre>
+
+  <div class="tw"><table>
+    <tr><th>Level</th><th>What it actually is</th><th>Yours</th></tr>
+    <tr><td><b>Server</b></td><td>One process per user. Holds every session. Dies only on <code>kill-server</code> or reboot.</td><td>one</td></tr>
+    <tr><td><b>Session</b></td><td>What you attach and detach from. Survives closing the terminal.</td><td><code>xen</code></td></tr>
+    <tr><td><b>Window</b></td><td>A tab. Full-screen within the session.</td><td><code>0</code>, <code>1</code></td></tr>
+    <tr><td><b>Pane</b></td><td>A split inside a window. Runs one program.</td><td><code>%0</code>, <code>%1</code></td></tr>
+  </table></div>
+
+  <h2>The trap that keeps biting</h2>
+  <div class="note bad">
+    <b>"Pane zero" is not a unique address.</b> Every window has a pane 0. Yours are
+    <code>xen:0.0</code> and <code>xen:1.0</code> &mdash; both are "pane zero," in different
+    windows. Only the <b>pane ID</b> is unique server-wide: <code>%0</code> and <code>%1</code>,
+    never reused while the server runs.
+  </div>
+  <p>This is why pinning the inject lane to a <i>position</i> keeps going stale, and why the fix
+  was to identify the target by <b>what's running inside it</b> instead: <i>the pane whose process
+  tree contains a live Claude, inside session <code>xen</code></i>.</p>
+
+  <div class="note good">
+    <b>What a stray line in bash actually means &mdash; and it's fine.</b> Pane <code>%0</code>
+    shows <code>-bash: 3:46:39: command not found</code> from a 3:46:39 PM voice line. That is
+    <b>expected</b>, not a leak: the injector fans out to primary / secondary / tertiary pane
+    sentinels, so a non-Claude pane will sometimes catch a copy. Bash can't interpret it, says so,
+    and nothing breaks. The Claude pane received the same line correctly.
+    <br><br>
+    Useful to know when reading a pane: <b>a "command not found" in <code>%0</code> is not
+    evidence of misrouting.</b> The real check is whether <code>%1</code> got it.
+  </div>
+
+  <h2>Address forms, and which to trust</h2>
+  <div class="tw"><table>
+    <tr><th>Form</th><th>Means</th><th>Stable?</th></tr>
+    <tr><td><code>%1</code></td><td>Pane ID — globally unique</td><td>✅ for the life of the server</td></tr>
+    <tr><td><code>xen:1.0</code></td><td>session : window . pane-index</td><td>⚠️ shifts if windows are renumbered</td></tr>
+    <tr><td><code>1</code> or <code>0.0</code></td><td>ambiguous — index only</td><td>❌ never trust for routing</td></tr>
+  </table></div>
+
+  <div class="note good">
+    <b>Detaching kills nothing.</b> The server keeps the session and every pane running when you
+    close the terminal. That's why Claude survives, and why the right way to reconnect is
+    <code>new-session -A -s xen</code> &mdash; attach if it exists, create only if it doesn't.
+    Making a fresh session per login is what caused the pane pins to go stale in the first place.
+  </div>
+
+  <h2>Useful commands</h2>
+<pre>tmux ls                          list sessions
+tmux new-session -A -s xen       attach to xen, create only if missing
+tmux list-panes -a -F "#{pane_id} #{pane_current_command}"
+tmux capture-pane -p -t %1       dump what a pane is showing
+Ctrl-b d                         detach (leaves everything running)
+Ctrl-b w                         window picker</pre>
+
+  <footer>captured from the live session, 27 Jul 2026</footer>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

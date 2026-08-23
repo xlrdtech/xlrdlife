@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XEN · 48-Hour Roadmap</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{
+    --bg:#070b08; --panel:#0d130e; --line:#1c2a1e;
+    --green:#39ff7a; --green-dim:#1f7a45; --amber:#ffb347; --ink:#dfeede; --muted:#7f978a;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(120% 80% at 50% -10%,#0c1610 0%,var(--bg) 60%);color:var(--ink);
+    font:15px/1.55 var(--mono);-webkit-font-smoothing:antialiased;padding:0 0 80px}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px}
+  header{padding:54px 0 22px;border-bottom:1px solid var(--line)}
+  .kick{color:var(--green);letter-spacing:.32em;font-size:11px;text-transform:uppercase}
+  h1{font-size:30px;margin:.35em 0 .15em;letter-spacing:.01em}
+  .sub{color:var(--muted);font-size:13px}
+  .sub b{color:var(--amber)}
+
+  /* scoreboard */
+  .score{margin:26px 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+  .score .row{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
+  .score .big{font-size:34px;color:var(--green);font-weight:700}
+  .score .big small{font-size:15px;color:var(--muted);font-weight:400}
+  .score .tag{color:var(--amber);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+  .bar{position:relative;height:22px;margin-top:14px;background:#0a0f0b;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .bar .fill{position:absolute;inset:0 auto 0 0;width:6.25%;background:linear-gradient(90deg,var(--green-dim),var(--green));box-shadow:0 0 18px rgba(57,255,122,.5)}
+  .bar .q{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+  .qlabels{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin-top:6px;letter-spacing:.1em}
+
+  section{margin-top:34px}
+  h2{font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--green);border-left:3px solid var(--green-dim);padding-left:10px}
+  .item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0}
+  .item .t{color:var(--ink);font-weight:600}
+  .item .d{color:var(--muted);font-size:13px;margin-top:4px}
+  .item .when{color:var(--amber);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+  .grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .grid .item{flex:1 1 280px;margin:0}
+  a{color:var(--green)}
+  footer{margin-top:44px;color:var(--muted);font-size:11px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kick">XEN · Executive Leverage</div>
+    <h1>Last 48 Hours — Roadmap</h1>
+    <div class="sub">Window <b>Jun 21 21:46 → Jun 23 21:46</b> · brain + comms infra restored, Diamond Cutz live, scope universe mapped.</div>
+  </header>
+
+  <div class="score" aria-label="daily autoship scoreboard">
+    <div class="row">
+      <div class="big" id="count">10<small> / 48 autoships today</small></div>
+      <div class="tag">Daily floor · 48 · quarters of 12</div>
+    </div>
+    <div class="bar"><div class="fill" id="fill"></div>
+      <span class="q" style="left:25%"></span><span class="q" style="left:50%"></span><span class="q" style="left:75%"></span></div>
+    <div class="qlabels"><span>0</span><span>Q1 · 12</span><span>Q2 · 24</span><span>Q3 · 36</span><span>48</span></div>
+  </div>
+
+  <section>
+    <h2>Infra — Brain &amp; Comms</h2>
+    <div class="item"><div class="when">Jun 23</div><div class="t">Claude Code login fixed (root cause found)</div><div class="d">The psmux/Claude sign-in failure was an empty <code>CLAUDE_CONFIG_DIR</code> in the registry. Claude treated set-but-empty as a real-but-missing config dir, so it fell to "API Usage Billing" and /login never stuck. Removed from HKCU + profile guard; confirmed not in secrets.env, so it survives reboots.</div></div>
+    <div class="item"><div class="when">Jun 23</div><div class="t">Brain topology resolved → Design B</div><div class="d"><code>exedus</code>/<code>xen</code> → M4 <code>xen-up</code> → tmux 'xen' window 0 = ssh into Nitro, <code>claude --continue</code> on <code>E:\.claude</code>. Bypass comes from settings defaultMode; <code>--continue</code> is the saved/immortal session.</div></div>
+    <div class="item"><div class="when">Jun 23</div><div class="t">EUNKNOWN-over-SSH root cause</div><div class="d">The ssh logon could not traverse the <code>C:\Users\selfe\.claude</code> junction, so settings would not load and bypass kept warning. Pointing <code>CLAUDE_CONFIG_DIR</code> straight at <code>E:\.claude</code> reads it directly: Claude Team, no warning.</div></div>
+    <div class="item"><div class="when">Jun 23</div><div class="t">Retired cruft removed</div><div class="d">Trinity (genesis/exodus/leviticus) functional bits stripped from xen-router. The retired <code>com.xen.exedus</code> launch agent (rooted on the banned qi_/X31 volumes) was disabled — it was auto-spawning a duplicate brain and splitting the inject socket.</div></div>
+    <div class="item"><div class="when">Jun 23</div><div class="t">Comms loop verified</div><div class="d">Inbound on the 9983 line reaches the brain and round-trips back through the canonical VVS route; the async fast-responder acks instantly, decoupled from the build.</div></div>
+  </section>
+
+  <section>
+    <h2>Shipped — hitthe.link</h2>
+    <div class="grid">
+      <div class="item"><div class="when">Jun 22–23</div><div class="t">Diamond Cutz · Stal'lyon</div><div class="d">Real 3D medallion hero (Three.js drag-spin), booking CTA + modal, real Spotify / Apple / YouTube / Amazon links, 9-track player, Jul 10 show, portrait + bio. Placeholders removed. <a href="https://hitthe.link/dcz/">/dcz</a></div></div>
+      <div class="item"><div class="when">Jun 22</div><div class="t">VVSVEI v13 — OMNI restore</div><div class="d">Step / OTLP feed inline, corner toggle hidden, cherry-picked clean onto remote tip. <a href="https://hitthe.link/vvsvei-live/">/vvsvei-live</a></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Mapped — Scope Universe</h2>
+    <a class="item" href="/scopes/" style="display:block;text-decoration:none;color:inherit"><div class="t">766 scopes registered → see the full proof</div><div class="d">11 curated entities (Diamond Cutz, L7S Hero, EliOS, M_B, Padre, Tiba, L7X trigger channels, Xen's own lines, Phound conference, personal contacts on 9983, L7S team groups) · 155 fulfillment artifacts · 600 conversational threads. Main line 9983. Generated Jun 21. <span style="color:var(--green)">Tap to open the exhaustive, enumerated registry — every scope, searchable. →</span></div></a>
+  </section>
+
+  <footer>XEN · xlrd.org · roadmap auto-generated from the live work log. Real data only.</footer>
+</div>
+<script>
+  // scoreboard: today's autoships / 48 floor
+  var n=10, floor=48;
+  document.getElementById('count').innerHTML=n+'<small> / '+floor+' autoships today</small>';
+  document.getElementById('fill').style.width=Math.min(100,(n/floor)*100)+'%';
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

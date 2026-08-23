@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XEN — Auto-Agent / BPGS Architecture</title>
+<style>
+  :root{--bg:#070a0f;--card:#121722;--ink:#e8edf4;--mut:#8a93a0;--ok:#1fb866;--blue:#2f7df6;--warn:#e0a13a;--line:#1d2531}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;padding:0 0 60px}
+  header{padding:20px 18px;border-bottom:1px solid var(--line);background:#0b0f15;position:sticky;top:0}
+  h1{margin:0;font-size:19px;letter-spacing:.03em}
+  .sub{color:var(--mut);font:600 11px/1.4 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+  main{max-width:860px;margin:0 auto;padding:18px}
+  h2{font-size:15px;margin:26px 0 8px;color:var(--blue);border-left:3px solid var(--blue);padding-left:9px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:13px 15px;margin:10px 0}
+  code{font-family:ui-monospace,Menlo,monospace;background:#0a0e14;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12.5px;color:#7fc7a6}
+  b{color:#fff}
+  ul{margin:6px 0;padding-left:20px} li{margin:4px 0}
+  .law{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)}
+  .law:last-child{border-bottom:0}
+  .n{color:var(--ok);font:700 12px/1.6 ui-monospace,monospace;min-width:22px}
+  footer{max-width:860px;margin:24px auto 0;padding:0 18px;color:var(--mut);font:500 11px/1.5 ui-monospace,monospace}
+</style>
+</head>
+<body>
+<header>
+  <h1>XEN — Auto-Agent / BPGS Architecture</h1>
+  <div class="sub">Background Parallel Goal Swarms · HOTL · auto-manifest → auto-execute → auto-ship</div>
+</header>
+<main>
+
+<h2>Core law: BPGS</h2>
+<div class="card">
+  <b>Background Parallel Goal Swarms.</b> Every non-trivial task — and every action-item it surfaces — fires as its own backgrounded goal, in parallel. Sequential is blasphemy. Batching, parallel, and background are one and the same. Nothing waits in line; up to ∞ goals run concurrently.
+</div>
+
+<h2>The execution loop</h2>
+<div class="card">
+  <div class="law"><span class="n">1</span><div><b>Auto-manifest.</b> No "want me to" — speak it, it is. The action is taken, not proposed.</div></div>
+  <div class="law"><span class="n">2</span><div><b>Auto-execute, in parallel.</b> Independent work fans out at once (Workflow / Task / Agent tools), any model — haiku / sonnet / opus / fable — matched to the task. Never bottleneck on one model.</div></div>
+  <div class="law"><span class="n">3</span><div><b>Auto-ship.</b> Every deliverable ships three legs: public <code>hitthe.link</code> page + memory copy + auto-open on screen. Disk-only = incomplete.</div></div>
+  <div class="law"><span class="n">4</span><div><b>Idempotent goals.</b> Same thing already in flight → <i>refine</i> that goal. Genuinely new thing → <i>fork</i> its own parallel goal. Dedup by content/target identity, never by timing.</div></div>
+  <div class="law"><span class="n">5</span><div><b>HOTL — human out of the loop.</b> Proceed without confirmation canon already grants. Keep auto-shipping while qi sleeps. Any required tap/click/confirm = failure. Medical-grade: cannot go down.</div></div>
+  <div class="law"><span class="n">6</span><div><b>Verify, don't guess.</b> Claims are verified-end-to-end / code-shipped-unverified / pending — never asserted. Ground truth over assumption.</div></div>
+</div>
+
+<h2>Fast-responder sink</h2>
+<div class="card">
+  Instant acknowledgement on every injection (fast model) <b>+</b> the Opus hands execute the real work in the background. The ack and the execution share one queue but are distinct: qi is never left in silence while work runs.
+</div>
+
+<h2>VVS — the voice/visibility law</h2>
+<div class="card">
+  Every step ships VVS: <b>voice + SMS + vision</b>, paired with the tool call, through <b>one canonical voice queue</b> (<code>xen-say</code>). Never mute VVS. Silence between commands = qi blind = violation. Noise gate on input only, never on output.
+</div>
+
+<h2>VVSVEI — the one gate</h2>
+<div class="card">
+  All signals enter through one gate: voice (<code>in:</code>), typed (<code>typed:</code>), aua (<code>aua:</code>), SMS (<code>sms:</code>), Beeper (<code>bee:</code>), omi (<code>omi:</code>), calls (<code>call:</code>), notes (<code>note:</code>), email (<code>email:</code>), tools (<code>tool:</code>) — plus channels <code>xen-dictate-in</code>, <code>xen-out</code>, <code>term:</code>, <code>vision:</code>.
+  <ul>
+    <li><b>Universal entry point:</b> omnimind <code>:4441 /api/dictate-inject</code> → VEI (Voice-Escape-Inject: ESC→type→Enter) into the TUI queue, canonical tag + OTLP stamped.</li>
+    <li><b>Mirror out:</b> <code>omni-tap</code> taps omnimind <code>/events</code> → durable Railway relay (Redis Streams) → public lossless viewers at <code>hitthe.link/vvsvei-live</code>.</li>
+    <li><b>Remote in:</b> relay <code>vvs:in</code> → <code>inbound-bridge</code> → universal entry point. Lossless (last-id resume).</li>
+  </ul>
+</div>
+
+<h2>Mesh & observability</h2>
+<div class="card">
+  Always-on Tailscale nodes (M4 macOS = <code>/Volumes/M4</code>, nitro Windows = <code>E:\</code>) as persistent home compute. OTLP: self-hosted <code>otelcol-contrib</code> (<code>:4317</code> gRPC / <code>:1212</code> HTTP) → <b>OpenObserve</b> (<code>otlp-view.xlrd.org</code>). One collector — never add another.
+</div>
+
+<footer>
+  Canon source: <code>~/.claude/hooks/study_commandments.py</code> (v54) + <code>canon-bpgs-default-2026-06-10</code> + memory canon (bpgs-autoship-idempotency, autonomy-while-asleep-mvp, canon-fast-responder-sink, vvsvei-design-is-sacred). This page is the quick-reference; the hooks are the law.
+</footer>
+</main>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

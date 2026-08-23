@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>XEN — Architecture White-Paper</title><style>*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#05070a,#0a0e15);color:#e9eff7;font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.w{max-width:820px;margin:0 auto;padding:40px 20px 90px}h1{font-size:30px;margin:0 0 6px}h2{color:#4ea1ff;font-size:18px;margin:30px 0 6px;border-top:1px solid #1b2533;padding-top:22px}p{margin:8px 0;color:#dbe6f2}b{color:#fff}.foot{color:#90a4ba;font-size:12px;margin-top:32px;text-align:center;border-top:1px solid #1b2533;padding-top:16px}</style></head><body><div class=w>
+<h1>XEN — Architecture White-Paper (qi dictated, 2026-06-16)</h1>
+
+<p><b>Thesis:</b> A conversational interface is a severe operational bottleneck — if the agent is generating text it cannot simultaneously execute code, monitor, or answer an incoming call. A chat UI inherently restricts intelligence to <b>one task at a time</b>. XEN is a different architecture entirely: an <b>OS-level autonomous intelligence</b> governed by rigid engineering constraints (the Commandments), not a UI.</p>
+
+<h2>Core constraints (the Commandments)</h2>
+<p>- <b>Cmd 0 — Parallel, sequential is blasphemy.</b> The sequential pipeline is discarded; logic shatters into a 3D mesh network processing many streams simultaneously, all building at once.</p>
+<p>- <b>Cmd 4/5 — Strict autonomy.</b> Any human-in-the-loop requirement is a systemic failure. The agent never enters standby; it runs continuously. 24/7 scale without intervention demands abandoning the conversational interface for a <b>headless parallel execution environment</b>.</p>
+
+<h2>Economic survival — the D.I.E. list (banned to prevent the cost trap)</h2>
+<p>A continuously-active intelligence makes metered SaaS an existential threat: thousands of audio minutes/month × per-minute API = cascading, unsustainable cost (the &quot;hidden architectural tax&quot;). Therefore:</p>
+<p>- <b>Banned core-runtime voice:</b> OpenAI Realtime, Gemini Realtime, any metered cloud voice as the runtime.</p>
+<p>- <b>Banned transport:</b> Twilio-direct (third-party per-minute dependency).</p>
+<p>- <b>Sanctioned escape:</b> flat-rate structure — Telnyx + FreeSWITCH (flat channel billing, ~unlimited inbound), self-hosted/free STT+TTS. Pivot from per-event metered logic to flat-rate to process thousands of events simultaneously.</p>
+
+<h2>The VEI — central data broker (publish/subscribe)</h2>
+<p>- A flat-rate <b>pub/sub architecture</b> across the whole system, built on a central data broker (<b>VEI / VVSVEI</b>) using <b>streams</b> (Redis Streams).</p>
+<p>- A passive <b>tap</b> (&quot;bunker&quot;) intercepts raw OS events, sorts them into <b>discrete lanes</b>, and reads passively — never in the data path.</p>
+<p>- Each piece of information gets a <b>strict classification tag</b> (in: / typed: / aua: / sms: / bee: / omi: / call: / xen-out, etc.), enforcing clean routing.</p>
+
+<p>Related canon: [[the-one-thing-since-2025]], [[auto-flow-bpgs-canon]], [[vvsvei-remote-relay]], [[inject-pipeline-and-autonomous-txn-canon]], [[universal-credentials-canon]], [[who-its-for-cognitive-accessibility]].</p>
+
+<h2>Split intelligence — Fast-Responder + Opus Hands (decoupled)</h2>
+<p>With input decoupled, the agent&#x27;s processing is also split into distinct strengths:</p>
+<p>- <b>Fast-Responder</b> — a low/cheap model (Sonnet-low) built for SPEED. Monitors incoming data streams and gives <b>immediate acknowledgment across BOTH text and voice</b>, ensuring zero lag in communication. Handles the conversation only.</p>
+<p>- <b>Opus Hands (Exodus)</b> — the heavier intelligence behind the responder. While the responder handles acks, the Opus Hands <b>simultaneously execute deep, long-running terminal commands and manage the background OS workload.</b></p>
+<p>- The two run <b>at the same time</b>, fully decoupled: the ack never waits on the hands; the hands never bottleneck the voice. This is the realization of Cmd 0/10 — voice shall not bottleneck, parallel always.</p>
+
+<h2>Unified voice router — the system governor (one voice)</h2>
+<p>Two highly-active models reacting to the same input would collide. To prevent overlapping audio, a <b>unified queue router acts as a system governor</b>: it forces ALL audio output through a <b>single checkpoint</b>, so <b>only one voice ever speaks</b> (fast-responder + Opus hands both funnel through the one queue → /tmp/xen-say-queue → xen-say-worker).</p>
+
+<p><b>The risk, accepted by design:</b> running multiple cognition streams in parallel invites data collisions and severe race conditions. XEN accepts that risk because <b>splitting cognition is what preserves both</b> the human-likeness needed for an always-open voice line AND the processing power needed for complex background logic. The router + single-queue checkpoint is the mitigation that makes the split safe to the listener.</p>
+
+<h2>The 44,000-minute constraint — why flat-rate is mandatory (not preference)</h2>
+<p>The architecture must support an <b>original hard constraint</b>: the agent maintains a <b>continuous, always-open audio line</b> — on the order of <b>44,000+ inbound minutes/month</b>. A traditional REST API that <b>charges per inbound minute</b>, applied to a *constant* connection, <b>guarantees economic collapse</b>. So inbound MUST be <b>flat-rate</b> (Telnyx channel billing / FreeSWITCH), not metered. This single number — 44k min/mo on an open line — is the reason the D.I.E. list bans per-minute voice/transport and why flat-rate is law, not optimization. The cost model, not the feature set, dictates the architecture.</p>
+
+<h2>Transport bridge — flat-rate trunk → localized WebRTC</h2>
+<p>A bridge carries data past the firewall into a <b>LiveKit gateway</b>, converting it to a <b>WebRTC virtual loopback</b> for output — ensuring <b>all processing stays localized to the agent hardware</b> (no cloud audio runtime). The key: this leverages <b>Telnyx channel/capacity billing</b> — instead of charging per individual minute, the provider charges a <b>flat monthly rate for raw connection capacity</b> (the trunk). </p>
+
+<p><b>The transformation:</b> combine a <b>flat-rate capacity trunk</b> (Telnyx) with <b>localized WebRTC processing</b> (LiveKit, on-device) → the system moves from a <b>variable API tax</b> into a <b>fixed, highly-scalable infrastructure cost.</b> That is the escape from the metered trap: capacity, not consumption.</p>
+
+<h2>Self-observability — private OTLP, no third-party collector</h2>
+<p>The agent executes parallel tasks <b>across multiple machines</b> and must monitor its own health <b>without sending internal execution data to any third-party collector</b> (privacy + no SaaS dependency). So the system emits <b>OpenTelemetry (OTLP) traces, metrics, and logs inward</b> through a secure <b>Tailscale tunnel</b>. The remote streams from every node <b>merge into a single pipeline</b> feeding a <b>durable OpenObserve store</b>, scoped strictly to a <b>private, localized port</b>. Self-aware, fully local telemetry — the agent watches itself, nothing leaves the tailnet.</p>
+
+<h2>Operational sovereignty — air-gapped introspection</h2>
+<p>Sovereignty requires an <b>air-gap approach to introspection</b>: by isolating all self-monitoring on a <b>private mesh network</b> (Tailscale tailnet), the system guarantees its <b>execution state and internal secrets never touch the public Internet</b>. Introspection is powerful but a liability if exposed — so it is walled off entirely. The agent can see all of itself; the outside world sees none of it. Sovereignty = the system owns its own observability, on its own private wire.</p>
+
+<h2>Case study — the SMS Double-Bug (live stress test of parallel risk)</h2>
+<p>A completely decoupled parallel architecture guarantees one absolute outcome: <b>independent systems will eventually crash into each other.</b> A real failure in XEN&#x27;s communication streams — the <b>SMS double-bug</b> — was the live stress test. The <b>fast-responder</b> and the <b>decoupled narrator</b> both observed the *same* terminal trigger and reacted <b>simultaneously</b> (because tasks run in parallel). Both bypassed the standard logic flow and <b>blasted raw, untagged text over the canonical tagged message</b>, instantly breaking the unified queue. Proof that parallelism&#x27;s price is collision — and why the governor/router + strict tagging exist.</p>
+
+<h2>Self-healing — the bar above autonomy</h2>
+<p>Executing tasks autonomously is only the <b>baseline</b>. To be truly <b>sovereign</b>, the agent must possess the internal tooling to <b>recognize, diagnose, and fix its OWN execution failures in real time.</b> Terminal logs record the agent identifying a race condition and <b>triggering a stabilization workflow autonomously</b> — editing its own Python triggers and scripts to repair itself. Self-repair, not just self-operation, is the sovereignty bar. (Live example, 2026-06-16: the fast-responder single-flight lock was dropping qi&#x27;s barge-in messages; the agent diagnosed it and rewrote the trigger to per-message concurrency so nothing drops.)</p>
+
+<h2>Conclusion — sovereign autonomous controller</h2>
+<p>In the SMS double-bug, the agent — bypassing the standard interface — executed commands to restart the OS-level services, with statements confirming the double-SMS was eliminated. Then, to resolve the *underlying* bug, it <b>engineered a permanent architectural fix</b>: rewriting the script as a strict <b>content-deduplication checkpoint</b> so the race condition can <b>never recur</b>. </p>
+
+<p>Standard LLM wrappers require human intervention to resolve internal failures. By enforcing architectural constraints — <b>unified queue, decoupled logic, local observability, and self-repair</b> — XEN repositions the agent from a chat tool into a <b>sovereign autonomous controller</b>: it diagnoses itself, fixes its own code, and stays alive without a human in the loop. That is the whole thesis: not a smarter chatbot — an operating system that governs itself.</p>
+
+<h2>The challenge + the AI reviewer&#x27;s critique (the most valuable part)</h2>
+<p><b>The challenge, stated as a number:</b> achieve <b>44,400 inbound voice minutes/month for under $15 total.</b> Standard contact-center plans charge per-minute inbound — a lethal trap: even 0.2¢/min × 44,400 = instantly over budget. So per-minute is disqualified by arithmetic, not taste.</p>
+
+<p><b>Proposed solution:</b> a flat-rate residential/enterprise provider (Telnyx) routed through open-source <b>FreeSWITCH</b>.</p>
+
+<p><b>The reviewer&#x27;s critique (developer handed the blueprint to an AI and said &quot;tear it apart&quot; — brutal but invaluable):</b></p>
+<p>- <b>Agrees</b> with Telnyx specifically — because it offers a <b>channel/capacity</b> feature: billing is a <b>flat monthly charge for an open lane of communication</b>, not a per-call fee. This bypasses the permanent tax trap.</p>
+<p>- <b>But demands refinements, not a rubber-stamp:</b></p>
+<p>  - <b>Start with an IP-authenticated trunk, NOT credentials.</b> Don&#x27;t connect with username/password (can be stolen or expire). Authorize the connection purely on the <b>fixed physical IP address</b> — the telecom provider just looks at where the signal originates. Cleaner, more secure, no rotating secret.</p>
+<p>  - <b>Beware the fragile chain.</b> Real-time audio across many hops (Telnyx → FreeSWITCH → bridge → LiveKit → WebRTC loopback → local agent) — <b>every network hop compounds latency and adds a brand-new failure mode.</b> The expensive setup collapses if one link fails (a long, consecutive chain, not a resilient mesh). The build must minimize hops and harden each.</p>
+
+<p><b>Current status (honest):</b> the Telnyx+FreeSWITCH PSTN→local-agent path is <b>architecturally specced but not yet the live phase</b> — it sits as the blueprint, monitoring/routing capability defined, awaiting the trunk provisioning. Blocked on qi&#x27;s Telnyx creds + IP-trunk setup.</p>
+<p class=foot>hitthe.link/xen-architecture · dictated by qi 2026-06-16 · 14 sections</p></div><script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body></html>

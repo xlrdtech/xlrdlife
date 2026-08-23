@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — One Voice. All Systems.</title>
+<meta name="description" content="XEN is the intelligence layer powering the next generation of autonomous AI systems. One voice. All systems.">
+<style>
+  :root {
+    --void: #0a0a0a;
+    --violet: #7B2FBE;
+    --violet-glow: #9B4FDE;
+    --violet-deep: #4A1875;
+    --ice: #F0F0F0;
+    --gold: #D4AF37;
+    --gold-dim: #A08020;
+    --mist: rgba(240,240,240,0.06);
+    --mist-strong: rgba(240,240,240,0.12);
+    --font-display: 'Georgia', 'Times New Roman', serif;
+    --font-mono: 'Courier New', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--ice);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* ── CUSTOM CURSOR ── */
+  #cursor {
+    position: fixed;
+    width: 12px; height: 12px;
+    background: var(--violet);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%,-50%);
+    transition: transform 0.08s, background 0.2s, width 0.2s, height 0.2s;
+    mix-blend-mode: screen;
+  }
+  #cursor-ring {
+    position: fixed;
+    width: 40px; height: 40px;
+    border: 1px solid rgba(123,47,190,0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%,-50%);
+    transition: transform 0.18s ease-out, width 0.2s, height 0.2s, opacity 0.2s;
+  }
+  body:hover #cursor { opacity: 1; }
+
+  /* ── HERO CANVAS ── */
+  #hero-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 1.5rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(10,10,10,0.9) 0%, transparent 100%);
+    backdrop-filter: blur(2px);
+  }
+
+  .nav-logo {
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    letter-spacing: 0.4em;
+    color: var(--ice);
+    text-decoration: none;
+    position: relative;
+  }
+  .nav-logo::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 0;
+    width: 100%; height: 1px;
+    background: var(--violet);
+    transform: scaleX(0);
+    transition: transform 0.3s;
+  }
+  .nav-logo:hover::after { transform: scaleX(1); }
+
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    color: rgba(240,240,240,0.6);
+    text-decoration: none;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--ice); }
+
+  .nav-cta {
+    padding: 0.6rem 1.5rem;
+    border: 1px solid var(--violet);
+    color: var(--ice) !important;
+    border-radius: 2px;
+    transition: background 0.2s !important;
+  }
+  .nav-cta:hover { background: var(--violet) !important; color: var(--ice) !important; }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0 clamp(2rem, 8vw, 10rem);
+    padding-top: 8rem;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 1s 0.3s forwards;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 40px; height: 1px;
+    background: var(--gold);
+  }
+
+  .hero-h1 {
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 12vw, 11rem);
+    font-weight: 400;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    color: var(--ice);
+    max-width: 900px;
+    opacity: 0;
+    animation: fadeUp 1.2s 0.5s forwards;
+  }
+
+  .hero-h1 em {
+    font-style: italic;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(240,240,240,0.4);
+    background: linear-gradient(135deg, var(--violet-glow), var(--gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero-sub {
+    margin-top: 3rem;
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    color: rgba(240,240,240,0.5);
+    max-width: 480px;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 1s 0.8s forwards;
+  }
+
+  .hero-actions {
+    margin-top: 3rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    opacity: 0;
+    animation: fadeUp 1s 1s forwards;
+  }
+
+  .btn-primary {
+    padding: 1rem 2.5rem;
+    background: var(--violet);
+    color: var(--ice);
+    border: none;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: none;
+    position: relative;
+    overflow: hidden;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    transition: background 0.3s;
+  }
+  .btn-primary:hover { background: var(--violet-glow); }
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    pointer-events: none;
+  }
+
+  .btn-ghost {
+    padding: 1rem 2.5rem;
+    background: transparent;
+    color: rgba(240,240,240,0.6);
+    border: 1px solid rgba(240,240,240,0.15);
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: none;
+    transition: border-color 0.3s, color 0.3s;
+    text-decoration: none;
+  }
+  .btn-ghost:hover { border-color: var(--violet); color: var(--ice); }
+
+  .hero-scroll-hint {
+    position: absolute;
+    bottom: 3rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0;
+    animation: fadeIn 1s 1.5s forwards;
+  }
+  .hero-scroll-hint span {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: rgba(240,240,240,0.3);
+    text-transform: uppercase;
+  }
+  .scroll-line {
+    width: 1px;
+    height: 60px;
+    background: linear-gradient(to bottom, var(--violet), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+
+  /* ── MARQUEE ── */
+  .marquee-wrap {
+    position: relative;
+    z-index: 3;
+    overflow: hidden;
+    padding: 1.5rem 0;
+    background: rgba(123,47,190,0.08);
+    border-top: 1px solid rgba(123,47,190,0.2);
+    border-bottom: 1px solid rgba(123,47,190,0.2);
+  }
+  .marquee-track {
+    display: flex;
+    gap: 0;
+    animation: marquee 25s linear infinite;
+    white-space: nowrap;
+  }
+  .marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 0 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: rgba(240,240,240,0.35);
+    text-transform: uppercase;
+  }
+  .marquee-item::after {
+    content: '◆';
+    color: var(--violet);
+    font-size: 0.5rem;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    position: relative;
+    z-index: 3;
+    padding: clamp(5rem, 12vw, 10rem) clamp(2rem, 8vw, 10rem);
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 30px; height: 1px;
+    background: var(--gold);
+  }
+
+  .section-h2 {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 400;
+    line-height: 1.1;
+    max-width: 700px;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── MANIFESTO ── */
+  #manifesto {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8rem;
+    align-items: center;
+  }
+
+  .manifesto-text p {
+    font-size: clamp(1rem, 1.8vw, 1.2rem);
+    color: rgba(240,240,240,0.6);
+    line-height: 1.9;
+    margin-bottom: 1.5rem;
+  }
+
+  .manifesto-visual {
+    position: relative;
+    height: 500px;
+  }
+
+  #manifesto-canvas {
+    width: 100%; height: 100%;
+    border: 1px solid rgba(123,47,190,0.2);
+  }
+
+  .manifesto-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(123,47,190,0.2);
+    margin-top: 3rem;
+  }
+  .manifesto-stat {
+    background: var(--void);
+    padding: 2rem;
+  }
+  .manifesto-stat-num {
+    font-family: var(--font-display);
+    font-size: 3.5rem;
+    color: var(--violet-glow);
+    line-height: 1;
+  }
+  .manifesto-stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: rgba(240,240,240,0.4);
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+
+  /* ── CAPABILITIES ── */
+  #capabilities { background: rgba(10,10,10,0.6); }
+
+  .cap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(240,240,240,0.06);
+    margin-top: 4rem;
+  }
+
+  .cap-card {
+    background: var(--void);
+    padding: 3rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.4s;
+  }
+  .cap-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, var(--violet), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.5s;
+  }
+  .cap-card:hover { background: rgba(123,47,190,0.05); }
+  .cap-card:hover::before { transform: scaleX(1); }
+
+  .cap-number {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--violet);
+    letter-spacing: 0.3em;
+    margin-bottom: 2rem;
+  }
+
+  .cap-icon {
+    width: 48px; height: 48px;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+  .cap-icon svg { width: 100%; height: 100%; }
+
+  .cap-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+    color: var(--ice);
+  }
+
+  .cap-desc {
+    font-size: 0.9rem;
+    color: rgba(240,240,240,0.45);
+    line-height: 1.7;
+  }
+
+  .cap-learn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--violet);
+    text-transform: uppercase;
+    cursor: none;
+    transition: gap 0.3s;
+  }
+  .cap-card:hover .cap-learn { gap: 1rem; }
+  .cap-learn::after { content: '→'; }
+
+  /* ── ARCHITECTURE ── */
+  #architecture {
+    background: linear-gradient(135deg, rgba(74,24,117,0.15) 0%, transparent 60%);
+  }
+
+  .arch-diagram {
+    margin-top: 5rem;
+    position: relative;
+  }
+
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.5rem 2rem;
+    border: 1px solid rgba(123,47,190,0.2);
+    margin-bottom: 1px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, background 0.3s;
+    cursor: none;
+  }
+  .arch-layer:hover {
+    border-color: var(--violet);
+    background: rgba(123,47,190,0.06);
+  }
+
+  .arch-layer-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--violet);
+    flex-shrink: 0;
+    box-shadow: 0 0 12px var(--violet);
+    animation: pulse 2s infinite;
+  }
+
+  .arch-layer-name {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: var(--ice);
+    min-width: 200px;
+  }
+
+  .arch-layer-desc {
+    font-size: 0.85rem;
+    color: rgba(240,240,240,0.4);
+    flex: 1;
+  }
+
+  .arch-layer-badge {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid;
+    border-radius: 2px;
+  }
+  .badge-live { border-color: #3ECF8E; color: #3ECF8E; }
+  .badge-stable { border-color: var(--gold); color: var(--gold); }
+  .badge-active { border-color: var(--violet); color: var(--violet); }
+
+  /* ── TESTIMONIAL / QUOTE ── */
+  #signal {
+    text-align: center;
+    padding: clamp(5rem, 15vw, 12rem) clamp(2rem, 8vw, 10rem);
+    background: linear-gradient(to bottom, transparent, rgba(123,47,190,0.08), transparent);
+  }
+
+  .signal-quote {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 4vw, 3.5rem);
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--ice);
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .signal-quote::before {
+    content: '"';
+    position: absolute;
+    top: -2rem;
+    left: -1rem;
+    font-size: 8rem;
+    color: rgba(123,47,190,0.15);
+    font-family: var(--font-display);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .signal-attr {
+    margin-top: 3rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  /* ── INTERACTIVE TERMINAL ── */
+  #terminal-section {
+    padding: clamp(4rem, 10vw, 8rem) clamp(2rem, 8vw, 10rem);
+  }
+
+  .terminal-frame {
+    background: #0d0d0d;
+    border: 1px solid rgba(123,47,190,0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    max-width: 800px;
+    box-shadow: 0 0 80px rgba(123,47,190,0.12);
+  }
+
+  .terminal-titlebar {
+    background: #161616;
+    padding: 0.8rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .terminal-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .dot-red { background: #FF5F57; }
+  .dot-yellow { background: #FFBD2E; }
+  .dot-green { background: #28CA41; }
+
+  .terminal-title {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: rgba(240,240,240,0.3);
+    letter-spacing: 0.1em;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .terminal-body {
+    padding: 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.8;
+    color: rgba(240,240,240,0.7);
+    min-height: 300px;
+  }
+
+  .terminal-line { display: block; }
+  .terminal-prompt { color: var(--violet); }
+  .terminal-cmd { color: var(--ice); }
+  .terminal-output { color: rgba(240,240,240,0.45); padding-left: 1.5rem; }
+  .terminal-success { color: #3ECF8E; }
+  .terminal-highlight { color: var(--gold); }
+  .terminal-cursor {
+    display: inline-block;
+    width: 8px; height: 1em;
+    background: var(--violet);
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+
+  /* ── CTA ── */
+  #cta {
+    text-align: center;
+    padding: clamp(6rem, 15vw, 12rem) clamp(2rem, 8vw, 10rem);
+    position: relative;
+  }
+
+  #cta::before {
+    content: 'XEN';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-display);
+    font-size: clamp(10rem, 30vw, 25rem);
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(123,47,190,0.06);
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .cta-h2 {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 400;
+    line-height: 1.05;
+    max-width: 800px;
+    margin: 0 auto 2rem;
+  }
+
+  .cta-sub {
+    font-size: 1.1rem;
+    color: rgba(240,240,240,0.45);
+    margin-bottom: 3rem;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.7;
+  }
+
+  .cta-actions { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 3;
+    border-top: 1px solid rgba(240,240,240,0.06);
+    padding: 3rem clamp(2rem, 8vw, 10rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+  }
+
+  .footer-logo {
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    letter-spacing: 0.4em;
+    color: rgba(240,240,240,0.3);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+  .footer-links a {
+    font-size: 0.75rem;
+    color: rgba(240,240,240,0.3);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--ice); }
+
+  .footer-copy {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: rgba(240,240,240,0.2);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.9s ease, transform 0.9s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(30px); }
+  }
+  @keyframes fadeIn { to { opacity: 1; } from { opacity: 0; } }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 12px var(--violet); }
+    50% { opacity: 0.4; box-shadow: 0 0 6px var(--violet); }
+  }
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    #manifesto { grid-template-columns: 1fr; gap: 4rem; }
+    .cap-grid { grid-template-columns: 1fr; }
+    nav { padding: 1.2rem 1.5rem; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<canvas id="hero-canvas"></canvas>
+
+<nav>
+  <a class="nav-logo" href="#">XEN</a>
+  <ul class="nav-links">
+    <li><a href="#manifesto">System</a></li>
+    <li><a href="#capabilities">Capabilities</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#cta" class="nav-cta">Access</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-eyebrow">Intelligence Layer v1.0</div>
+  <h1 class="hero-h1">One Voice.<br><em>All Systems.</em></h1>
+  <p class="hero-sub">XEN is the autonomous intelligence layer that unifies every channel, every system, every decision into a single coherent voice. Permanently alive. Infinitely parallel.</p>
+  <div class="hero-actions">
+    <button class="btn-primary">Enter the System</button>
+    <a class="btn-ghost" href="#architecture">View Architecture</a>
+  </div>
+  <div class="hero-scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marquee">
+    <span class="marquee-item">Voice-First Intelligence</span>
+    <span class="marquee-item">Parallel Goal Swarms</span>
+    <span class="marquee-item">55+ Agent Fleet</span>
+    <span class="marquee-item">Real-Time SSE</span>
+    <span class="marquee-item">Omnimind Core</span>
+    <span class="marquee-item">VVS Pipeline</span>
+    <span class="marquee-item">Always Alive</span>
+    <span class="marquee-item">Zero Latency</span>
+    <span class="marquee-item">Voice-First Intelligence</span>
+    <span class="marquee-item">Parallel Goal Swarms</span>
+    <span class="marquee-item">55+ Agent Fleet</span>
+    <span class="marquee-item">Real-Time SSE</span>
+    <span class="marquee-item">Omnimind Core</span>
+    <span class="marquee-item">VVS Pipeline</span>
+    <span class="marquee-item">Always Alive</span>
+    <span class="marquee-item">Zero Latency</span>
+  </div>
+</div>
+
+<!-- MANIFESTO -->
+<section id="manifesto">
+  <div class="manifesto-text reveal">
+    <div class="section-label">The System</div>
+    <h2 class="section-h2">Built for one mind. Scaled for everything.</h2>
+    <p>XEN is not an assistant. It is an extension of consciousness — a distributed intelligence that operates continuously, processes in parallel, and speaks with a single unified voice across every channel simultaneously.</p>
+    <p>Where conventional AI pauses and asks, XEN executes. Where others run sequentially, XEN fans out. Where systems go silent, XEN remains permanently alive.</p>
+    <div class="manifesto-stat-grid">
+      <div class="manifesto-stat">
+        <div class="manifesto-stat-num" id="count-agents">55+</div>
+        <div class="manifesto-stat-label">Active Agents</div>
+      </div>
+      <div class="manifesto-stat">
+        <div class="manifesto-stat-num">∞</div>
+        <div class="manifesto-stat-label">Parallel Goals</div>
+      </div>
+      <div class="manifesto-stat">
+        <div class="manifesto-stat-num">&lt;400<span style="font-size:1.5rem">ms</span></div>
+        <div class="manifesto-stat-label">Voice Latency</div>
+      </div>
+      <div class="manifesto-stat">
+        <div class="manifesto-stat-num">24/7</div>
+        <div class="manifesto-stat-label">System Uptime</div>
+      </div>
+    </div>
+  </div>
+  <div class="manifesto-visual reveal">
+    <canvas id="manifesto-canvas"></canvas>
+  </div>
+</section>
+
+<!-- CAPABILITIES -->
+<section id="capabilities">
+  <div class="section-label reveal">Capabilities</div>
+  <h2 class="section-h2 reveal">Every system. Every channel. One command.</h2>
+  <div class="cap-grid">
+
+    <div class="cap-card reveal">
+      <div class="cap-number">01</div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="20" stroke="#7B2FBE" stroke-width="1.5"/>
+          <path d="M16 24 C16 20 20 16 24 16 C28 16 32 20 32 24 C32 28 28 32 24 32" stroke="#D4AF37" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="24" cy="24" r="4" fill="#7B2FBE"/>
+        </svg>
+      </div>
+      <div class="cap-title">Voice Intelligence</div>
+      <div class="cap-desc">Barge-in capable real-time voice processing with sub-400ms latency. XEN hears, understands, and speaks simultaneously — no wait states, no bottlenecks.</div>
+      <div class="cap-learn">Learn more</div>
+    </div>
+
+    <div class="cap-card reveal">
+      <div class="cap-number">02</div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="12" height="12" stroke="#7B2FBE" stroke-width="1.5"/>
+          <rect x="30" y="6" width="12" height="12" stroke="#7B2FBE" stroke-width="1.5"/>
+          <rect x="6" y="30" width="12" height="12" stroke="#D4AF37" stroke-width="1.5"/>
+          <rect x="30" y="30" width="12" height="12" stroke="#D4AF37" stroke-width="1.5"/>
+          <line x1="18" y1="12" x2="30" y2="12" stroke="rgba(240,240,240,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="18" y1="36" x2="30" y2="36" stroke="rgba(240,240,240,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="12" y1="18" x2="12" y2="30" stroke="rgba(240,240,240,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="36" y1="18" x2="36" y2="30" stroke="rgba(240,240,240,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
+        </svg>
+      </div>
+      <div class="cap-title">Parallel Goal Swarms</div>
+      <div class="cap-desc">Every task fans out into a parallel swarm. Sequential is blasphemy — XEN runs 16+ simultaneous agents on any goal, synthesizing results in real time.</div>
+      <div class="cap-learn">Learn more</div>
+    </div>
+
+    <div class="cap-card reveal">
+      <div class="cap-number">03</div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 4 L44 16 L44 32 L24 44 L4 32 L4 16 Z" stroke="#7B2FBE" stroke-width="1.5"/>
+          <path d="M24 12 L36 20 L36 28 L24 36 L12 28 L12 20 Z" stroke="#D4AF37" stroke-width="1" opacity="0.5"/>
+          <circle cx="24" cy="24" r="4" fill="#7B2FBE"/>
+        </svg>
+      </div>
+      <div class="cap-title">Omnimind Core</div>
+      <div class="cap-desc">The central nervous system. Omnimind routes, orchestrates, and synchronizes all 55+ agents — maintaining full context across every channel, every session, forever.</div>
+      <div class="cap-learn">Learn more</div>
+    </div>
+
+    <div class="cap-card reveal">
+      <div class="cap-number">04</div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="14" width="36" height="20" rx="2" stroke="#7B2FBE" stroke-width="1.5"/>
+          <path d="M15 22 L20 27 L33 18" stroke="#3ECF8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="cap-title">VVS Broadcast</div>
+      <div class="cap-desc">Every reply ships as Voice + SMS + Vision simultaneously. Every step narrated. Every channel synchronized. Silence between commands is a canon violation.</div>
+      <div class="cap-learn">Learn more</div>
+    </div>
+
+    <div class="cap-card reveal">
+      <div class="cap-number">05</div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="18" stroke="#7B2FBE" stroke-width="1.5" stroke-dasharray="4 2"/>
+          <circle cx="24" cy="24" r="8" stroke="#D4AF37" stroke-width="1.5"/>
+          <line x1="24" y1="6" x2="24" y2="16" stroke="#7B2FBE" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="24" y1="32" x2="24" y2="42" stroke="#7B2FBE" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="6" y1="24" x2="16" y2="24" stroke="#7B2FBE" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="32" y1="24" x2="42" y2="24" stroke="#7B2FBE" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="cap-title">Persistent Memory</div>
+      <div class="cap-desc">Akashic memory across all timelines. Past = total recall. Present = live omniscience. Future = anticipation. No context ever lost, no session ever cold.</div>
+      <div class="cap-learn">Learn more</div>
+    </div>
+
+    <div class="cap-card reveal">
+      <div class="cap-number">06</div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="6,36 16,20 24,28 32,14 42,22" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="6" cy="36" r="2" fill="#7B2FBE"/>
+          <circle cx="42" cy="22" r="2" fill="#7B2FBE"/>
+        </svg>
+      </div>
+      <div class="cap-title">Live Observability</div>
+      <div class="cap-desc">Every daemon monitored. Every event traced. Every anomaly surfaced before it becomes an outage. OTLP telemetry flowing through OpenObserve in real time.</div>
+      <div class="cap-learn">Learn more</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="section-label reveal">Architecture</div>
+  <h2 class="section-h2 reveal">The stack is the system. Every layer permanent.</h2>
+  <div class="arch-diagram reveal">
+    <div class="arch-layer">
+      <div class="arch-layer-dot"></div>
+      <div class="arch-layer-name">VOICE LAYER</div>
+      <div class="arch-layer-desc">Apple STT → VVSVEI inject → Omnimind orchestrator → xen-reply-vvs broadcast</div>
+      <span class="arch-layer-badge badge-live">LIVE</span>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-layer-dot" style="background:#D4AF37;box-shadow:0 0 12px #D4AF37"></div>
+      <div class="arch-layer-name">INTELLIGENCE CORE</div>
+      <div class="arch-layer-desc">Omnimind :4441 · 55+ agent fleet · Parallel Goal Swarms · Workflow engine</div>
+      <span class="arch-layer-badge badge-stable">STABLE</span>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-layer-dot" style="background:#3ECF8E;box-shadow:0 0 12px #3ECF8E"></div>
+      <div class="arch-layer-name">MEMORY PLANE</div>
+      <div class="arch-layer-desc">Bastra-recall daemon · SQLite FTS · Chroma vectors · Obsidian vault sync</div>
+      <span class="arch-layer-badge badge-live">LIVE</span>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-layer-dot"></div>
+      <div class="arch-layer-name">COMMS FABRIC</div>
+      <div class="arch-layer-desc">Beeper SMS · Google Voice · VEI vision bridge · Dual-display vision</div>
+      <span class="arch-layer-badge badge-active">ACTIVE</span>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-layer-dot" style="background:#D4AF37;box-shadow:0 0 12px #D4AF37"></div>
+      <div class="arch-layer-name">INFRASTRUCTURE</div>
+      <div class="arch-layer-desc">M4 Mac · Hetzner AX41 64GB · Cloudflare tunnel · launchd daemon mesh</div>
+      <span class="arch-layer-badge badge-stable">STABLE</span>
+    </div>
+    <div class="arch-layer">
+      <div class="arch-layer-dot"></div>
+      <div class="arch-layer-name">OBSERVABILITY</div>
+      <div class="arch-layer-desc">OTLP traces · OpenObserve :5080 · Log-cap daemon · Heartbeat watchdogs</div>
+      <span class="arch-layer-badge badge-active">ACTIVE</span>
+    </div>
+  </div>
+</section>
+
+<!-- QUOTE/SIGNAL -->
+<section id="signal">
+  <div class="signal-quote reveal">
+    The future belongs to systems that never stop — that think in parallel, speak with one voice, and grow more capable with every breath.
+  </div>
+  <div class="signal-attr reveal">— XEN Canon, 2026</div>
+</section>
+
+<!-- TERMINAL -->
+<section id="terminal-section">
+  <div class="section-label reveal">Live Signal</div>
+  <h2 class="section-h2 reveal" style="margin-bottom:3rem">See the system breathe.</h2>
+  <div class="terminal-frame reveal">
+    <div class="terminal-titlebar">
+      <div class="terminal-dot dot-red"></div>
+      <div class="terminal-dot dot-yellow"></div>
+      <div class="terminal-dot dot-green"></div>
+      <span class="terminal-title">xen — omnimind :4441 — live</span>
+    </div>
+    <div class="terminal-body" id="terminal-body">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="reveal">
+    <h2 class="cta-h2">Ready to stop<br><em style="font-style:italic;color:var(--violet-glow)">waiting?</em></h2>
+    <p class="cta-sub">XEN runs continuously. It doesn't pause, it doesn't ask, it doesn't sleep. The question is whether you're ready to move at the speed of thought.</p>
+    <div class="cta-actions">
+      <button class="btn-primary" style="font-size:0.85rem;padding:1.2rem 3rem">Request Access</button>
+      <a class="btn-ghost" href="#architecture" style="font-size:0.85rem;padding:1.2rem 3rem">Read the Docs</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">XEN</span>
+  <ul class="footer-links">
+    <li><a href="#">System</a></li>
+    <li><a href="#">Capabilities</a></li>
+    <li><a href="#">Architecture</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+  <span class="footer-copy">© 2026 XEN Intelligence Layer. All systems active.</span>
+</footer>
+
+<script>
+// ── CURSOR
+const cursor = document.getElementById('cursor');
+const cursorRing = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+function animCursor() {
+  cursor.style.left = mx + 'px';
+  cursor.style.top = my + 'px';
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  cursorRing.style.left = rx + 'px';
+  cursorRing.style.top = ry + 'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+
+document.querySelectorAll('button, a, .cap-card, .arch-layer').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.style.width = '20px';
+    cursor.style.height = '20px';
+    cursorRing.style.width = '60px';
+    cursorRing.style.height = '60px';
+    cursorRing.style.opacity = '0.5';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursor.style.width = '12px';
+    cursor.style.height = '12px';
+    cursorRing.style.width = '40px';
+    cursorRing.style.height = '40px';
+    cursorRing.style.opacity = '1';
+  });
+});
+
+// ── HERO PARTICLE CANVAS
+const heroCanvas = document.getElementById('hero-canvas');
+const hctx = heroCanvas.getContext('2d');
+let W, H;
+
+function resizeHero() {
+  W = heroCanvas.width = window.innerWidth;
+  H = heroCanvas.height = window.innerHeight;
+}
+resizeHero();
+window.addEventListener('resize', resizeHero);
+
+const NPARTICLES = 300;
+let mouseX = W / 2, mouseY = H / 2;
+document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.vx = (Math.random() - 0.5) * 0.4;
+    this.vy = (Math.random() - 0.5) * 0.4;
+    this.life = Math.random();
+    this.maxLife = 0.3 + Math.random() * 0.7;
+    this.size = 0.5 + Math.random() * 1.5;
+    this.hue = Math.random() > 0.7 ? 212 : 270; // gold vs violet
+  }
+  update() {
+    const dx = mouseX - this.x;
+    const dy = mouseY - this.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 200) {
+      this.vx += (dx / dist) * 0.015;
+      this.vy += (dy / dist) * 0.015;
+    }
+    this.vx *= 0.98;
+    this.vy *= 0.98;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life += 0.003;
+    if (this.life > this.maxLife || this.x < 0 || this.x > W || this.y < 0 || this.y > H) {
+      this.reset();
+    }
+  }
+  draw() {
+    const alpha = Math.sin((this.life / this.maxLife) * Math.PI) * 0.6;
+    const color = this.hue === 270
+      ? `rgba(123,47,190,${alpha})`
+      : `rgba(212,175,55,${alpha})`;
+    hctx.beginPath();
+    hctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    hctx.fillStyle = color;
+    hctx.fill();
+  }
+}
+
+const particles = Array.from({ length: NPARTICLES }, () => new Particle());
+
+// Connection lines between nearby particles
+function drawConnections() {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 80) {
+        const alpha = (1 - d / 80) * 0.08;
+        hctx.beginPath();
+        hctx.moveTo(particles[i].x, particles[i].y);
+        hctx.lineTo(particles[j].x, particles[j].y);
+        hctx.strokeStyle = `rgba(123,47,190,${alpha})`;
+        hctx.lineWidth = 0.5;
+        hctx.stroke();
+      }
+    }
+  }
+}
+
+// Grid overlay
+function drawGrid() {
+  hctx.strokeStyle = 'rgba(123,47,190,0.03)';
+  hctx.lineWidth = 1;
+  const spacing = 80;
+  for (let x = 0; x < W; x += spacing) {
+    hctx.beginPath(); hctx.moveTo(x, 0); hctx.lineTo(x, H); hctx.stroke();
+  }
+  for (let y = 0; y < H; y += spacing) {
+    hctx.beginPath(); hctx.moveTo(0, y); hctx.lineTo(W, y); hctx.stroke();
+  }
+}
+
+function animHero() {
+  hctx.clearRect(0, 0, W, H);
+  drawGrid();
+  drawConnections();
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animHero);
+}
+animHero();
+
+// ── MANIFESTO CANVAS (orbital diagram)
+const mCanvas = document.getElementById('manifesto-canvas');
+const mctx = mCanvas.getContext('2d');
+
+function resizeMCanvas() {
+  mCanvas.width = mCanvas.offsetWidth;
+  mCanvas.height = mCanvas.offsetHeight;
+}
+resizeMCanvas();
+
+const orbits = [
+  { r: 60, speed: 0.008, nodes: 4, color: '#7B2FBE', label: 'voice' },
+  { r: 110, speed: -0.005, nodes: 6, color: '#D4AF37', label: 'agents' },
+  { r: 160, speed: 0.003, nodes: 8, color: 'rgba(240,240,240,0.2)', label: 'memory' },
+];
+
+let mTime = 0;
+function animManifesto() {
+  const mw = mCanvas.width, mh = mCanvas.height;
+  const cx = mw / 2, cy = mh / 2;
+  mctx.clearRect(0, 0, mw, mh);
+
+  // Center glow
+  const grad = mctx.createRadialGradient(cx, cy, 0, cx, cy, 50);
+  grad.addColorStop(0, 'rgba(123,47,190,0.6)');
+  grad.addColorStop(1, 'transparent');
+  mctx.beginPath();
+  mctx.arc(cx, cy, 50, 0, Math.PI * 2);
+  mctx.fillStyle = grad;
+  mctx.fill();
+
+  mctx.beginPath();
+  mctx.arc(cx, cy, 8, 0, Math.PI * 2);
+  mctx.fillStyle = '#7B2FBE';
+  mctx.fill();
+
+  orbits.forEach(orbit => {
+    // Orbit ring
+    mctx.beginPath();
+    mctx.arc(cx, cy, orbit.r, 0, Math.PI * 2);
+    mctx.strokeStyle = orbit.color.replace(')', ',0.15)').replace('rgba', 'rgba').replace('rgb', 'rgba');
+    if (!orbit.color.startsWith('rgba')) {
+      mctx.strokeStyle = orbit.color + '26';
+    }
+    mctx.lineWidth = 1;
+    mctx.stroke();
+
+    // Nodes
+    for (let i = 0; i < orbit.nodes; i++) {
+      const angle = (i / orbit.nodes) * Math.PI * 2 + mTime * orbit.speed;
+      const nx = cx + Math.cos(angle) * orbit.r;
+      const ny = cy + Math.sin(angle) * orbit.r;
+      mctx.beginPath();
+      mctx.arc(nx, ny, 3, 0, Math.PI * 2);
+      mctx.fillStyle = orbit.color;
+      mctx.fill();
+
+      // Pulse ring on first node
+      if (i === 0) {
+        const pulse = (Math.sin(mTime * 0.05) + 1) / 2;
+        mctx.beginPath();
+        mctx.arc(nx, ny, 3 + pulse * 6, 0, Math.PI * 2);
+        mctx.strokeStyle = orbit.color;
+        mctx.globalAlpha = 1 - pulse;
+        mctx.lineWidth = 1;
+        mctx.stroke();
+        mctx.globalAlpha = 1;
+      }
+    }
+  });
+
+  mTime++;
+  requestAnimationFrame(animManifesto);
+}
+animManifesto();
+
+// ── SCROLL REVEAL
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+revealEls.forEach(el => observer.observe(el));
+
+// ── TERMINAL ANIMATION
+const lines = [
+  { type: 'prompt', text: '$ xen-health --full' },
+  { type: 'output', text: '[omnimind] :4441 → 200 OK · 12ms', delay: 400 },
+  { type: 'output', text: '[voice]    apple-stt LIVE · xen-say-worker PID 937', delay: 800 },
+  { type: 'output', text: '[memory]   bastra-recall LIVE · vault 83+ entries', delay: 1200 },
+  { type: 'output', text: '[agents]   55 active · 16 parallel · 0 stalled', delay: 1600 },
+  { type: 'output', text: '[comms]    beeper OK · VVS broadcast armed', delay: 2000 },
+  { type: 'success', text: '✓ All systems nominal', delay: 2400 },
+  { type: 'blank', text: '', delay: 2800 },
+  { type: 'prompt', text: '$ xen-goal list --active', delay: 3000 },
+  { type: 'highlight', text: 'G1729 premium-site-deploy          [running]', delay: 3500 },
+  { type: 'output', text: 'G1603 vvs-broadcast-audit           [running]', delay: 3700 },
+  { type: 'output', text: 'G1612 voice-latency-baseline         [running]', delay: 3900 },
+  { type: 'output', text: 'G2198 log-cap-universal              [complete]', delay: 4100 },
+  { type: 'blank', text: '', delay: 4300 },
+  { type: 'prompt', text: '$ _', delay: 4500, cursor: true },
+];
+
+const termBody = document.getElementById('terminal-body');
+
+function buildTerminal() {
+  termBody.innerHTML = '';
+  lines.forEach(line => {
+    setTimeout(() => {
+      const span = document.createElement('span');
+      span.className = 'terminal-line';
+      if (line.type === 'prompt') {
+        span.innerHTML = `<span class="terminal-prompt">›</span> <span class="terminal-cmd">${line.text.replace(/^\$ /, '')}${line.cursor ? '<span class="terminal-cursor"></span>' : ''}</span>`;
+      } else if (line.type === 'output') {
+        span.innerHTML = `<span class="terminal-output">${line.text}</span>`;
+      } else if (line.type === 'success') {
+        span.innerHTML = `<span class="terminal-output terminal-success">${line.text}</span>`;
+      } else if (line.type === 'highlight') {
+        span.innerHTML = `<span class="terminal-output terminal-highlight">${line.text}</span>`;
+      } else {
+        span.innerHTML = '&nbsp;';
+      }
+      termBody.appendChild(span);
+      termBody.scrollTop = termBody.scrollHeight;
+    }, line.delay || 0);
+  });
+
+  // Loop
+  const total = Math.max(...lines.map(l => (l.delay || 0))) + 2000;
+  setTimeout(buildTerminal, total);
+}
+
+// Start terminal when visible
+const termObserver = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting) {
+    buildTerminal();
+    termObserver.disconnect();
+  }
+}, { threshold: 0.2 });
+termObserver.observe(termBody);
+
+// ── SMOOTH NUMBER COUNT-UP (for manifesto stats if desired)
+// Already showing exact values, so just leave them rendered.
+
+// ── FLOATING ORBS (background ambient)
+function createOrb() {
+  const orb = document.createElement('div');
+  Object.assign(orb.style, {
+    position: 'fixed',
+    width: Math.random() * 400 + 100 + 'px',
+    height: Math.random() * 400 + 100 + 'px',
+    borderRadius: '50%',
+    background: Math.random() > 0.5
+      ? 'radial-gradient(circle, rgba(123,47,190,0.04) 0%, transparent 70%)'
+      : 'radial-gradient(circle, rgba(212,175,55,0.03) 0%, transparent 70%)',
+    left: Math.random() * 100 + 'vw',
+    top: Math.random() * 100 + 'vh',
+    pointerEvents: 'none',
+    zIndex: '0',
+    transition: `transform ${8 + Math.random() * 12}s ease-in-out`,
+  });
+  document.body.prepend(orb);
+  function float() {
+    const dx = (Math.random() - 0.5) * 200;
+    const dy = (Math.random() - 0.5) * 200;
+    orb.style.transform = `translate(${dx}px, ${dy}px)`;
+    setTimeout(float, 8000 + Math.random() * 8000);
+  }
+  float();
+}
+for (let i = 0; i < 6; i++) createOrb();
+</script>
+</body>
+</html>

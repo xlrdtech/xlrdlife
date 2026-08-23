@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xen Two-Way Voice — iOS Shortcut</title>
+<style>
+  :root { --bg:#0a0a0c; --card:#141418; --ink:#ECECEC; --dim:#9aa0aa; --acc:#5BE3B3; --acc2:#7aa2ff; --line:#23232b; --warn:#ffcf6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,sans-serif; -webkit-font-smoothing:antialiased; padding:0 0 80px; }
+  .wrap { max-width:760px; margin:0 auto; padding:0 20px; }
+  header { padding:48px 20px 28px; text-align:center; border-bottom:1px solid var(--line); }
+  h1 { font-size:30px; margin:0 0 8px; letter-spacing:-.02em; }
+  .badge { display:inline-block; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#04130d; background:var(--acc); padding:4px 11px; border-radius:999px; margin-top:6px; }
+  .sub { color:var(--dim); margin-top:14px; font-size:15px; }
+  h2 { font-size:20px; margin:38px 0 14px; letter-spacing:-.01em; }
+  h2 .n { color:var(--acc2); font-variant-numeric:tabular-nums; margin-right:8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:14px 0; }
+  ol.steps { list-style:none; counter-reset:s; padding:0; margin:0; }
+  ol.steps > li { counter-increment:s; position:relative; padding:16px 0 16px 50px; border-bottom:1px solid var(--line); }
+  ol.steps > li:last-child { border-bottom:0; }
+  ol.steps > li::before { content:counter(s); position:absolute; left:0; top:14px; width:32px; height:32px; border-radius:9px; background:var(--acc2); color:#02112e; font-weight:700; display:grid; place-items:center; font-size:15px; }
+  .li-title { font-weight:650; font-size:16px; }
+  .kv { margin:8px 0 0; color:var(--dim); font-size:14.5px; }
+  .kv b { color:var(--ink); font-weight:600; }
+  .crit { color:var(--warn); }
+  code, pre { font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; }
+  code { background:#1d1d24; color:var(--acc); padding:2px 6px; border-radius:5px; font-size:13.5px; }
+  pre { background:#0f0f14; border:1px solid var(--line); border-radius:10px; padding:16px; overflow-x:auto; font-size:13px; line-height:1.55; color:#d8dde6; }
+  pre .k { color:var(--acc2); } pre .s { color:var(--acc); } pre .c { color:#6b7280; }
+  .note { font-size:14px; color:var(--dim); }
+  .note b { color:var(--ink); }
+  .pill { display:inline-block; background:#1d1d24; border:1px solid var(--line); border-radius:7px; padding:3px 9px; margin:3px 4px 3px 0; font-size:13px; color:var(--ink); }
+  footer { text-align:center; color:#555b66; font-size:12.5px; margin-top:40px; }
+  a { color:var(--acc2); }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Xen Two-Way Voice</h1>
+    <div class="badge">● Live · verified end-to-end</div>
+    <div class="sub">Dictate into the iOS Shortcut → Xen processes → Xen's reply comes back in the response and your phone speaks it. Fully hands-free.</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="n">∞</span>How it works</h2>
+  <div class="card">
+    <p style="margin:0 0 10px;">The <code>/api/dictate-inject</code> endpoint used to be one-way — it took your words in and returned <code>{ok:true,injected:true}</code> with no reply. Now it <b>holds the HTTP response open</b> until Xen's next reply fires, then returns it:</p>
+    <pre><span class="k">{</span> <span class="s">"ok"</span>: true, <span class="s">"injected"</span>: true, <span class="s">"reply"</span>: <span class="s">"&lt;Xen's answer&gt;"</span>, <span class="s">"ts"</span>: 1781952233207 <span class="k">}</span></pre>
+    <p class="note" style="margin:12px 0 0;">Triggered when the body has <code>"wait": true</code> (or <code>source</code> contains "shortcut"). <code>wait_ms</code> sets the hold timeout — default <b>90s</b>, max 110s. On timeout it returns <code>reply:""</code> so the shortcut never hangs. The <code>Xen:</code> identity prefix is stripped so it speaks naturally. VVSVEI &amp; SMS paths are unchanged — zero regression.</p>
+  </div>
+
+  <h2><span class="n">▸</span>Build the Shortcut — "Send to Xen 2"</h2>
+  <div class="card">
+    <ol class="steps">
+      <li>
+        <div class="li-title">Dictate Text</div>
+        <div class="kv">Language: <b>English (US)</b></div>
+        <div class="kv crit">Stop Listening: <b>After Pause</b> — this is the fix. "On Tap" was capturing empty audio.</div>
+        <div class="kv">Also confirm Settings → Privacy &amp; Security → Microphone → <b>Shortcuts</b> is ON.</div>
+      </li>
+      <li>
+        <div class="li-title">Get Contents of URL</div>
+        <div class="kv">URL: <code>https://tui.xlrd.org/api/dictate-inject</code></div>
+        <div class="kv">Method: <b>POST</b> · Header <code>Content-Type</code> = <code>application/json</code></div>
+        <div class="kv">Request Body: <b>JSON</b> —
+          <span class="pill">source (Text) = shortcut</span>
+          <span class="pill">text (Text) = <b>Dictated Text</b> ↗</span>
+          <span class="pill">wait (Boolean) = true</span>
+          <span class="pill">wait_ms (Number) = 90000</span>
+        </div>
+      </li>
+      <li>
+        <div class="li-title">Get Dictionary Value</div>
+        <div class="kv">Get Value for <code>reply</code> in <b>Contents of URL</b></div>
+      </li>
+      <li>
+        <div class="li-title">Speak Text</div>
+        <div class="kv">Text: <b>Dictionary Value</b> (the reply) · Wait Until Finished: on</div>
+      </li>
+    </ol>
+  </div>
+  <p class="note">Tap the shortcut → speak → it POSTs your words → Xen replies → your phone speaks the answer.</p>
+
+  <h2><span class="n">⌗</span>Test from any terminal</h2>
+  <pre>curl -sS -X POST https://tui.xlrd.org/api/dictate-inject \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"source":"shortcut","text":"what time is it","wait":true,"wait_ms":90000}'</span>
+<span class="c"># → {"ok":true,"injected":true,"reply":"...Xen's spoken answer...","ts":...}</span></pre>
+
+  <h2><span class="n">✓</span>Edge cases</h2>
+  <div class="card">
+    <p class="note" style="margin:0 0 10px;"><b>First reply wins.</b> The held request returns Xen's next reply after your inject — in practice the answer to what you said. If Xen is mid-narration on other work, that line could return instead (acceptable v1; tightenable with a correlation id later).</p>
+    <p class="note" style="margin:0 0 10px;"><b>Timeout.</b> If Xen takes &gt;90s, the shortcut gets <code>reply:""</code> and stays silent rather than hanging. Raise <code>wait_ms</code> to 110000 max for longer tasks.</p>
+    <p class="note" style="margin:0;"><b>Both legs fire.</b> Xen's reply still plays on the Mac speakers AND returns to your phone. Mute the Mac for phone-only — the webhook leg is independent.</p>
+  </div>
+
+  <footer>Xen · two-way voice loop · shipped 2026-06-20 · omnimind.js /api/dictate-inject</footer>
+</div>
+</body>
+</html>

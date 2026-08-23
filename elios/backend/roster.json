@@ -1,0 +1,24 @@
+{
+  "$comment": "EliOS roster. qi 2026-06-12 'make user names for now' — usernames generated on the trackingtogether.com brand domain so PROVISIONING RUNS NOW without waiting on 8 real Gmails. For NOW these are PASSWORD-AUTH logins (email = login identifier; does NOT need to receive mail). `cd elios/backend && SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/provision-logins.mjs` admin-creates all 8 auth users, stamps role in user_metadata, generates a random temp password per user, prints them once (passwords NEVER stored in repo). Swap any email to a real Google address later to enable that user's Google OAuth / magic-link. DB role model + RLS come from supabase-schema.sql (assign_leads + all_leads). MASTERS see ALL leads + assign + manage roster + set block_value; SUBSCRIBERS see ONLY their assigned leads (RLS-scoped).",
+  "auth_mode_for_now": "password",
+  "login_domain": "trackingtogether.com",
+  "password_policy": "provision-logins.mjs generates a 16-char random temp password per user at run time, prints once, flags must-change-on-first-login. Not committed.",
+  "model": {
+    "master": "Admin tier. Sees ALL leads + ALL grants. Assigns/unassigns leads to any subscriber. Manages the roster (sets roles), sets block_value.",
+    "subscriber": "Sees ONLY the leads assigned to them (RLS-scoped via lead_grants/my_leads). No roster or cross-buyer visibility."
+  },
+  "users": [
+    { "full_name": "Anthony Vasquez", "username": "anthony",  "role": "master",     "email": "anthony@trackingtogether.com" },
+    { "full_name": "Gerald",          "username": "gerald",   "role": "master",     "email": "gerald@trackingtogether.com" },
+    { "full_name": "Nancy",           "username": "nancy",    "role": "subscriber", "email": "nancy@trackingtogether.com" },
+    { "full_name": "Michael Sell",    "username": "msell",    "role": "subscriber", "email": "msell@trackingtogether.com" },
+    { "full_name": "Sergio",          "username": "sergio",   "role": "subscriber", "email": "sergio@trackingtogether.com" },
+    { "full_name": "Richard",         "username": "richard",  "role": "subscriber", "email": "richard@trackingtogether.com" },
+    { "full_name": "Rossalyn",        "username": "rossalyn", "role": "subscriber", "email": "rossalyn@trackingtogether.com" },
+    { "full_name": "Michael Krebbs",  "username": "mkrebbs",  "role": "subscriber", "email": "mkrebbs@trackingtogether.com" },
+    { "full_name": "Armando",         "username": "armando",  "role": "subscriber", "email": "armando@trackingtogether.com" },
+    { "full_name": "Michael",         "username": "michael",  "role": "subscriber", "email": "michael@trackingtogether.com" },
+    { "full_name": "Shandrea",        "username": "shandrea", "role": "subscriber", "email": "shandrea@trackingtogether.com" }
+  ],
+  "counts": { "total": 11, "masters": 2, "subscribers": 9 }
+}

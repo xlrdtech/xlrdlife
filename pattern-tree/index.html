@@ -1,0 +1,155 @@
+<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Design Pattern Decision Tree — pick by friction, not by name</title>
+<style>
+:root{
+  --bg:#0b0d12;--panel:#141821;--panel2:#1b2130;--line:#28303f;
+  --txt:#e6e9f0;--dim:#8b93a7;--acc:#7c5cff;--acc2:#22d3a6;--warn:#ffb454;
+  --code-bg:#0e1117;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;-webkit-font-smoothing:antialiased;padding:0 0 90px}
+.wrap{max-width:860px;margin:0 auto;padding:0 18px}
+header{padding:56px 0 30px;text-align:center;border-bottom:1px solid var(--line);margin-bottom:36px}
+h1{font-size:clamp(26px,5vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.1;background:linear-gradient(100deg,var(--acc) 10%,var(--acc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tag{display:inline-block;margin-top:14px;color:var(--dim);font-size:14px}
+.thesis{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:12px;padding:20px 22px;margin:0 0 40px;font-size:17px}
+.thesis b{color:var(--acc2)}
+h2{font-size:22px;font-weight:750;margin:44px 0 8px;letter-spacing:-.01em}
+h2 .n{color:var(--acc);font-variant-numeric:tabular-nums;margin-right:10px}
+.sub{color:var(--dim);font-size:15px;margin-bottom:20px}
+/* decision tree */
+.tree{display:flex;flex-direction:column;gap:14px;margin:30px 0 44px}
+.branch{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+.branch::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acc)}
+.branch .q{font-weight:700;font-size:15px;color:var(--warn);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.branch .ask{font-size:17px;font-weight:650;margin-bottom:12px}
+.picks{display:flex;flex-wrap:wrap;gap:8px}
+.pick{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 13px;font-size:14px;display:flex;gap:8px;align-items:center}
+.pick b{color:var(--acc2)}
+.pick .arm{color:var(--dim);font-size:12.5px}
+/* pattern cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin:18px 0}
+.card h3{font-size:19px;font-weight:750;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.card h3 .dot{width:9px;height:9px;border-radius:50%;background:var(--acc2);flex:none}
+.when{color:var(--warn);font-size:14px;font-weight:600;margin:10px 0 4px}
+.smell{color:var(--dim);font-size:14.5px;font-style:italic;margin-bottom:14px}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:15px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,"SF Mono",Menlo,monospace;color:#d6deeb}
+pre .c{color:#5b6辞} pre .k{color:#c792ea} pre .s{color:#c3e88d} pre .f{color:#82aaff}
+code{font:13px/1.4 ui-monospace,Menlo,monospace;background:var(--panel2);padding:2px 6px;border-radius:5px;color:var(--acc2)}
+.foot{margin-top:50px;padding-top:22px;border-top:1px solid var(--line);color:var(--dim);font-size:13.5px;text-align:center}
+.foot a{color:var(--acc)}
+@media(prefers-color-scheme:light){
+  :root{--bg:#f6f7fb;--panel:#fff;--panel2:#eef1f7;--line:#e0e4ee;--txt:#1a1e28;--dim:#5a6478;--code-bg:#0e1117}
+  pre{color:#d6deeb}
+}
+</style></head><body>
+<header><div class=wrap>
+<h1>Design Pattern Decision Tree</h1>
+<div class=tag>Pick a pattern by the friction you're feeling — not by memorizing names.</div>
+</div></header>
+
+<div class=wrap>
+<div class=thesis>
+Design patterns rarely fail because they're <i>wrong</i>. They fail because we reach for them at the <b>wrong moment</b>. So don't start from the catalog — start from the pain. Name the friction you're actually hitting, and the pattern falls out of it.
+</div>
+
+<h2><span class=n>①</span>Where's the friction?</h2>
+<div class=sub>Three questions. Answer the one that's true right now — it routes you to the pattern.</div>
+
+<div class=tree>
+  <div class=branch>
+    <div class=q>Friction A · Creation</div>
+    <div class=ask>Is <b>building the object</b> the hard part — too many params, multi-step setup, or "which subclass?"</div>
+    <div class=picks>
+      <span class=pick><b>Builder</b><span class=arm>→ many optional params / step-by-step assembly</span></span>
+      <span class=pick><b>Factory</b><span class=arm>→ caller shouldn't know which concrete class</span></span>
+    </div>
+  </div>
+  <div class=branch>
+    <div class=q>Friction B · Boundaries</div>
+    <div class=ask>Is the pain at a <b>seam</b> — a third-party API, a legacy class, or an interface that doesn't fit yours?</div>
+    <div class=picks>
+      <span class=pick><b>Adapter</b><span class=arm>→ wrap a mismatched interface to fit</span></span>
+      <span class=pick><b>Facade</b><span class=arm>→ hide a messy subsystem behind one door</span></span>
+    </div>
+  </div>
+  <div class=branch>
+    <div class=q>Friction C · Behavior</div>
+    <div class=ask>Is behavior <b>changing / branching</b> — a growing <code>if/switch</code>, or "same call, different algorithm"?</div>
+    <div class=picks>
+      <span class=pick><b>Strategy</b><span class=arm>→ swap one interchangeable algorithm at runtime</span></span>
+      <span class=pick><b>State</b><span class=arm>→ behavior depends on which mode the object is in</span></span>
+    </div>
+  </div>
+</div>
+
+<h2><span class=n>②</span>The patterns, when to reach</h2>
+<div class=sub>Each has one job, a smell that signals it, and the smallest real example.</div>
+
+<div class=card>
+<h3><span class=dot></span>Builder</h3>
+<div class=when>Reach when → an object needs many optional fields or multi-step assembly, and constructors are becoming telescoping messes.</div>
+<div class=smell>Smell: <code>new Thing(null, null, true, null, 3, false)</code> — nobody remembers the arg order.</div>
+<pre><span class=k>const</span> query = <span class=k>new</span> QueryBuilder()
+  .from(<span class=s>'users'</span>)
+  .where(<span class=s>'age'</span>, <span class=s>'&gt;'</span>, <span class=s>18</span>)
+  .orderBy(<span class=s>'name'</span>)
+  .limit(<span class=s>10</span>)
+  .build();  <span class=c>// readable, each step optional</span></pre>
+</div>
+
+<div class=card>
+<h3><span class=dot></span>Factory</h3>
+<div class=when>Reach when → the caller shouldn't hard-code which concrete class to instantiate; the choice depends on input/config.</div>
+<div class=smell>Smell: an <code>if (type === 'x') return new X()</code> chain copy-pasted in five places.</div>
+<pre><span class=k>function</span> <span class=f>makeParser</span>(kind) {
+  <span class=k>switch</span> (kind) {
+    <span class=k>case</span> <span class=s>'json'</span>: <span class=k>return</span> <span class=k>new</span> JsonParser();
+    <span class=k>case</span> <span class=s>'csv'</span> : <span class=k>return</span> <span class=k>new</span> CsvParser();
+  }
+}  <span class=c>// callers just ask for what they want</span></pre>
+</div>
+
+<div class=card>
+<h3><span class=dot></span>Adapter</h3>
+<div class=when>Reach when → you have a class that does the right thing but the <i>wrong interface</i> (legacy code, a vendor SDK).</div>
+<div class=smell>Smell: you're about to rewrite working third-party code just to change method names.</div>
+<pre><span class=c>// your app expects .send(msg); the SDK gives .publish()</span>
+<span class=k>class</span> <span class=f>NotifierAdapter</span> {
+  <span class=f>constructor</span>(sdk){ <span class=k>this</span>.sdk = sdk; }
+  <span class=f>send</span>(msg){ <span class=k>return</span> <span class=k>this</span>.sdk.publish({ body: msg }); }
+}</pre>
+</div>
+
+<div class=card>
+<h3><span class=dot></span>Strategy</h3>
+<div class=when>Reach when → one operation has several interchangeable algorithms and the <code>if</code>-ladder keeps growing.</div>
+<div class=smell>Smell: <code>if (mode==='fast'){...} else if (mode==='cheap'){...} else if...</code> and it never stops.</div>
+<pre><span class=k>const</span> shipping = {
+  fast:  o =&gt; o.weight * <span class=s>2.0</span>,
+  cheap: o =&gt; o.weight * <span class=s>0.8</span>,
+};
+<span class=k>function</span> <span class=f>cost</span>(order, strategy){ <span class=k>return</span> shipping[strategy](order); }
+<span class=c>// add a strategy = add a key, touch nothing else</span></pre>
+</div>
+
+<div class=card>
+<h3><span class=dot></span>State</h3>
+<div class=when>Reach when → an object behaves differently by mode, and transitions between modes are the real logic (draft → review → published).</div>
+<div class=smell>Smell: every method starts with <code>if (this.status === ...)</code>.</div>
+<pre><span class=c>// each state owns its own transitions + allowed actions</span>
+<span class=k>const</span> states = {
+  draft:     { publish: () =&gt; <span class=s>'review'</span> },
+  review:    { approve: () =&gt; <span class=s>'published'</span>, reject: () =&gt; <span class=s>'draft'</span> },
+  published: {} <span class=c>// terminal</span>
+};</pre>
+</div>
+
+<div class=foot>
+Built free for qi — the decision-tree framework reconstructed from Alina Kovtun's <i>"Stop Memorizing Design Patterns"</i> (Women in Technology, 2026) since the original sits behind Medium's paywall. The value is the tree; here it's yours, no wall.
+<br>Rule of thumb: <b>if you can't name the friction, you don't need a pattern yet.</b>
+</div>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body></html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shang Tsung PGS · soul-steal the source</title>
+<meta name="description" content="Shang Tsung PGS absorbs the source code of any site or app and hosts it live for repurposing. Powered by monolith. Lives in the MK Swarms sibling lane.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&family=Cinzel:wght@500;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#06060A; --bg-2:#0E0A14; --fg:#E5E5E5; --mute:#8A8A8A;
+  --cyan:#A5F3FC; --amber:#FFB347; --red:#F87171; --green:#4ADE80; --gold:#D2AC47;
+  --magenta:#F472B6; --violet:#A78BFA;
+  --soul:#7C3AED; --soul-glow:rgba(124,58,237,.5);
+  --line:#1F1F1F;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:var(--bg); color:var(--fg); font-family:'Figtree','Inter',-apple-system,sans-serif; line-height:1.55; }
+body::before {
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(ellipse 800px 400px at 50% 0%, rgba(124,58,237,.18), transparent 60%),
+    radial-gradient(ellipse 600px 300px at 15% 85%, rgba(248,113,113,.08), transparent 70%);
+}
+.wrap { max-width:1100px; margin:0 auto; padding:64px 24px 100px; position:relative; z-index:1; }
+.glow { color:var(--cyan); text-shadow:0 0 8px rgba(165,243,252,.55), 0 0 24px rgba(165,243,252,.25); }
+.soul-glow { color:var(--soul); text-shadow:0 0 12px var(--soul-glow), 0 0 32px var(--soul-glow); }
+.red-glow { color:var(--red); text-shadow:0 0 10px rgba(248,113,113,.5); }
+header { text-align:center; margin-bottom:48px; }
+.eyebrow { font-family:'Cinzel',serif; font-size:12px; letter-spacing:.4em; text-transform:uppercase; color:var(--soul); margin-bottom:18px; font-weight:700; }
+h1 { font-family:'Cinzel',serif; font-size:56px; margin:0 0 8px; font-weight:900; letter-spacing:-.01em; line-height:1; }
+.subtitle { font-family:'Figtree',sans-serif; font-style:italic; font-size:18px; color:var(--mute); max-width:600px; margin:14px auto 0; line-height:1.5; }
+h2 { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--mute); font-weight:700; margin:44px 0 16px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+.cmd-block { background:#0E0E0E; border:1px solid var(--line); border-radius:10px; padding:20px 26px; font-family:'JetBrains Mono',monospace; font-size:14px; color:var(--cyan); margin:14px 0; overflow-x:auto; }
+.cmd-block .prompt { color:var(--soul); }
+.cmd-block .comment { color:var(--mute); }
+
+.flow { display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:14px; align-items:center; margin:18px 0 28px; }
+.step {
+  background:linear-gradient(155deg,#141420,#0E0E14);
+  border:2px solid var(--accent); border-radius:14px;
+  padding:24px 22px; text-align:center;
+  box-shadow:0 0 24px var(--accent-glow);
+}
+.step.absorb { --accent:var(--red); --accent-glow:rgba(248,113,113,.18); }
+.step.host { --accent:var(--soul); --accent-glow:var(--soul-glow); }
+.step.repurpose { --accent:var(--green); --accent-glow:rgba(74,222,128,.18); }
+.step .num { font-family:'Cinzel',serif; color:var(--accent); font-size:14px; letter-spacing:.4em; margin-bottom:8px; font-weight:700; }
+.step .title { font-family:'Figtree',sans-serif; font-weight:900; font-size:22px; color:var(--fg); letter-spacing:-.01em; margin-bottom:8px; }
+.step .desc { font-size:12.5px; color:var(--mute); line-height:1.55; }
+.flow-arrow { color:var(--soul); font-family:'JetBrains Mono',monospace; font-size:24px; text-align:center; }
+
+.extracts { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+.extract {
+  background:#0E0E0E; border:1px solid var(--line); border-radius:10px;
+  padding:14px 18px; transition:border-color .15s, transform .15s;
+}
+.extract:hover { border-color:var(--soul); transform:translateY(-1px); }
+.extract .name { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--cyan); margin-bottom:4px; word-break:break-all; }
+.extract .meta { font-family:'Inter',sans-serif; font-size:11px; color:var(--mute); }
+.extract.dir .name::before { content:"📁 "; opacity:.5; }
+.extract.file .name::before { content:"📄 "; opacity:.5; }
+
+.why { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.why-card { background:#0E0E0E; border:1px solid var(--line); border-radius:10px; padding:18px 22px; border-left:3px solid var(--accent); }
+.why-card:nth-child(1) { --accent:var(--cyan); }
+.why-card:nth-child(2) { --accent:var(--soul); }
+.why-card:nth-child(3) { --accent:var(--gold); }
+.why-card:nth-child(4) { --accent:var(--green); }
+.why-card .head { font-family:'Inter',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:6px; }
+.why-card .body { font-size:13px; color:var(--mute); line-height:1.55; }
+.why-card .body strong { color:var(--fg); }
+
+.banned { background:rgba(248,113,113,.06); border:1.5px dashed var(--red); border-radius:12px; padding:18px 24px; margin:20px 0; }
+.banned .head { color:var(--red); font-family:'Cinzel',serif; font-size:12px; letter-spacing:.3em; text-transform:uppercase; font-weight:700; margin-bottom:10px; }
+.banned ul { padding-left:20px; margin:0; }
+.banned li { font-size:13.5px; color:var(--fg); margin-bottom:6px; }
+.banned li strong { color:var(--red); }
+
+code { font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:2px 6px; border-radius:3px; font-size:12px; }
+.footer { color:var(--mute); font-size:11px; margin-top:60px; text-align:center; letter-spacing:.1em; text-transform:uppercase; }
+a { color:var(--cyan); border-bottom:1px dotted rgba(165,243,252,.4); text-decoration:none; }
+@media (max-width:780px) { .flow { grid-template-columns:1fr; } .flow-arrow { transform:rotate(90deg); padding:8px 0; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">★ Page-Grab System ★</div>
+  <h1>Shang Tsung <span class="soul-glow">PGS</span></h1>
+  <div class="subtitle">"Absorbs the source code of any site or app and hosts it live for repurposing."<br><span style="font-size:13px; color:var(--soul); opacity:.7;">— qi, 2026-05-22</span></div>
+</header>
+
+<h2>The soul-steal command</h2>
+<div class="cmd-block">
+<span class="prompt">PS&gt;</span> shangtsung https://hitthe.link/xlrd-org/
+<span class="comment"># soul-steal the page → ~/.xen/extracts/hitthe-link_xlrd-org_2026-05-22_*.html</span>
+</div>
+<div class="cmd-block">
+<span class="prompt">PS&gt;</span> shangtsung https://example.com mysite
+<span class="comment"># custom output name</span>
+</div>
+
+<h2>The 3-step protocol</h2>
+<div class="flow">
+  <div class="step absorb">
+    <div class="num">I · absorb</div>
+    <div class="title">Soul-steal</div>
+    <div class="desc">monolith CLI pulls every asset — HTML + CSS + JS + images + fonts — and inlines them into one self-contained file. Source canon, sealed.</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="step host">
+    <div class="num">II · host</div>
+    <div class="title">Reanimate</div>
+    <div class="desc">Drop the self-contained HTML onto any static host — <code>tui.xlrd.org/share/</code>, <code>hitthe.link/</code>, GH Pages. It runs live because everything's inlined.</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="step repurpose">
+    <div class="num">III · repurpose</div>
+    <div class="title">Re-brand</div>
+    <div class="desc">Edit the extract in place — swap copy, change brand tokens, apply XLRD or L7S Hero palette. Re-deploy. The source's soul, your purpose.</div>
+  </div>
+</div>
+
+<h2>Why this exists</h2>
+<div class="why">
+  <div class="why-card">
+    <div class="head">1 · No more rebuild-from-scratch</div>
+    <div class="body">qi rejected 10 vibe-coded templates on 2026-05-21. Canon <code>feedback_extract_and_edit_not_rebuild</code> locked: <strong>extract source from qi-named references, edit directly</strong>. Shang Tsung is that extractor.</div>
+  </div>
+  <div class="why-card">
+    <div class="head">2 · No Chromium</div>
+    <div class="body">monolith is libcurl + html5gum + cssparser. <strong>No headless Chromium</strong>. Respects the <a href="/die-list/">D.I.E. list</a> and the Exedus Xen architecture canon.</div>
+  </div>
+  <div class="why-card">
+    <div class="head">3 · Reference-driven design</div>
+    <div class="body">qi is SCAD-trained. Brand-serious work demands real references, not screenshots or vibes. <strong>Shang Tsung pulls real source</strong>, designs anchor in real material.</div>
+  </div>
+  <div class="why-card">
+    <div class="head">4 · Sibling MK lane</div>
+    <div class="body">PGS lives in the <strong>MK Agent Swarms sibling workstream</strong> per <code>canon_exedus_xen_architecture_2026-05-22</code>. The extraction work is outside Exedus; the repurposed deploy lives inside.</div>
+  </div>
+</div>
+
+<h2>Already absorbed (in <code>~/.xen/extracts/</code>)</h2>
+<div class="extracts">
+  <div class="extract file"><div class="name">xlrd-org-source.html</div><div class="meta">XLRD design system origin — Figtree, cyan glow, glow-text class</div></div>
+  <div class="extract file"><div class="name">l7sinc-source.html</div><div class="meta">L7S Inc brand</div></div>
+  <div class="extract file"><div class="name">l7shero-source.html</div><div class="meta">L7S Hero brand · cream + gold + emerald</div></div>
+  <div class="extract file"><div class="name">l7shero-followed.html</div><div class="meta">L7S Hero crawl with redirect follow</div></div>
+  <div class="extract file"><div class="name">l7shero-real-source.html</div><div class="meta">L7S Hero raw HTTP source</div></div>
+  <div class="extract file"><div class="name">bluemarine-source.html</div><div class="meta">Blue Marine Foundation · qi's clean reference</div></div>
+  <div class="extract file"><div class="name">execpage-source.html</div><div class="meta">qi's existing execpage template canon</div></div>
+  <div class="extract dir"><div class="name">pinterest/</div><div class="meta">@stylism_ + algorithm + art + fashion + l7s-hero-styles boards</div></div>
+</div>
+
+<div class="banned">
+  <div class="head">⚔ banned alternatives</div>
+  <ul>
+    <li><strong>Headless Chromium screenshots</strong> — never. Pull real source via monolith.</li>
+    <li><strong>Eyeballing a screenshot to recreate</strong> — vibe-coding. qi will reject.</li>
+    <li><strong>wget without inlining</strong> — output isn't self-contained, breaks on redeploy.</li>
+    <li><strong>"From-scratch" templates</strong> — already on the D.I.E. list. Use Shang Tsung first.</li>
+  </ul>
+</div>
+
+<h2>How to invoke</h2>
+<div class="cmd-block" style="font-size:13px;">
+<span class="comment"># From any PowerShell:</span>
+<span class="prompt">PS&gt;</span> shangtsung &lt;url&gt; [output-name]
+
+<span class="comment"># From bash (uses .cmd shim):</span>
+<span class="prompt">$</span> shangtsung &lt;url&gt; [output-name]
+
+<span class="comment"># Output:</span>
+<span class="comment">#   ~/.xen/extracts/&lt;host&gt;_&lt;path&gt;_&lt;yyyy-mm-dd_HHmmss&gt;.html</span>
+
+<span class="comment"># Inspect:</span>
+<span class="prompt">PS&gt;</span> ii ~/.xen/extracts/&lt;file&gt;
+
+<span class="comment"># Grep typography (example):</span>
+<span class="prompt">PS&gt;</span> Select-String -Path ~/.xen/extracts/&lt;file&gt; -Pattern font-family
+</div>
+
+<div style="margin-top:40px; font-size:13px; color:var(--mute);">
+Source: <code>C:\Users\selfe\bin\shangtsung.ps1</code> · wraps <code>monolith</code> CLI (libcurl-based, no Chromium)<br>
+Canon: <a href="/die-list/">D.I.E. list</a> · <a href="/xos/">XOS</a> · <a href="/beside-proxy/">Beside AI proxy</a> · related <code>canon_shangtsung_pgs_2026-05-22.md</code>
+</div>
+
+<div class="footer">hitthe.link/pgs/ · ★ canon ★ · 2026-05-22</div>
+</div>
+<script src="/_shared/ava-play.js" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude Web Voice Transport — measured wire spec</title>
+<meta name="description" content="Measured wire specification for the claude.ai voice-mode WebSocket and the Google Voice carrier leg, from HAR and rtcstats captures.">
+<style>
+  :root{
+    --bg:#07080b; --panel:#0e1016; --line:#1d2130; --ink:#e8eaf0;
+    --dim:#8f97ab; --hot:#7cf0c4; --warn:#ffb86b; --bad:#ff7a8a;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+    background-image:radial-gradient(1100px 600px at 15% -10%,#101a2b 0%,transparent 60%);}
+  .wrap{max-width:960px;margin:0 auto;padding:56px 22px 96px}
+  .eyebrow{font:600 12px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--hot)}
+  h1{font-size:clamp(30px,5vw,50px);line-height:1.06;margin:16px 0 10px;letter-spacing:-.02em}
+  .sub{color:var(--dim);font-size:18px;max-width:62ch}
+  .meta{margin-top:18px;font:12px/1.7 var(--mono);color:var(--dim)}
+  h2{font-size:13px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;
+    color:var(--hot);margin:52px 0 14px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0}
+  pre{margin:0;overflow-x:auto;font:13px/1.6 var(--mono);color:#cfe9ff;
+    background:#080a0f;border:1px solid var(--line);border-radius:11px;padding:15px}
+  code{font-family:var(--mono);font-size:.93em;color:var(--hot)}
+  .tiles{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:14px 0}
+  .tile{flex:1 1 260px;max-width:420px;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:18px 20px}
+  .tile .k{font:11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  .tile .v{font:700 26px/1.15 var(--mono);margin:9px 0 6px;color:var(--ink)}
+  .tile .n{font-size:13px;color:var(--dim)}
+  .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;width:100%;min-width:520px;font-size:14px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font:11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  td.n{font-family:var(--mono);white-space:nowrap}
+  .flag{border-left:3px solid var(--warn);padding-left:16px;margin:16px 0;color:#e9dcc6}
+  .flag b{color:var(--warn)}
+  .bad{border-left-color:var(--bad);color:#f0d3d8}.bad b{color:var(--bad)}
+  ul{padding-left:20px}li{margin:7px 0}
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);
+    color:var(--dim);font:12px/1.8 var(--mono)}
+  @media(prefers-color-scheme:light){
+    :root{--bg:#0a0c11}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Measured, not inferred</div>
+  <h1>Claude web voice transport</h1>
+  <p class="sub">The claude.ai voice-mode socket and the Google Voice carrier leg, reversed from
+  HAR and rtcstats captures. Every number below came off the wire.</p>
+  <div class="meta">Captured 2026-08-06 · 1,676 WebSocket messages · 3 rtcstats dumps · one live call</div>
+
+  <h2>The socket</h2>
+  <div class="card">
+    <pre>wss://claude.ai/api/ws/voice/organizations/&lt;ORG&gt;/chat_conversations/&lt;CONV&gt;
+    ?input_encoding=opus
+    &amp;input_sample_rate=16000
+    &amp;input_channels=1
+    &amp;output_format=pcm_16000</pre>
+  </div>
+
+  <div class="tiles">
+    <div class="tile">
+      <div class="k">Downlink frame</div>
+      <div class="v">321 B</div>
+      <div class="n">Constant. 1-byte header + 320 B PCM16 mono @16 kHz = exactly 10 ms. 551 binary frames.</div>
+    </div>
+    <div class="tile">
+      <div class="k">Uplink frame</div>
+      <div class="v">9–87 B</div>
+      <div class="n">Variable. Raw Opus packets, one per binary frame, no container. 979 binary frames.</div>
+    </div>
+    <div class="tile">
+      <div class="k">Carrier codec</div>
+      <div class="v">48 kHz</div>
+      <div class="n">opus/48000/2 with minptime=10, useinbandfec=1. Confirmed by getStats clockRate, not just SDP.</div>
+    </div>
+  </div>
+
+  <h2>Uplink size distribution</h2>
+  <div class="card scroller">
+    <table>
+      <tr><th>Frame size</th><th>Count</th><th>Reading</th></tr>
+      <tr><td class="n">9 B</td><td class="n">168</td><td>Most frequent — DTX, silence</td></tr>
+      <tr><td class="n">18 B</td><td class="n">88</td><td></td></tr>
+      <tr><td class="n">21 B</td><td class="n">67</td><td></td></tr>
+      <tr><td class="n">15 B</td><td class="n">61</td><td></td></tr>
+      <tr><td class="n">24 B</td><td class="n">46</td><td></td></tr>
+      <tr><td class="n">63 B</td><td class="n">46</td><td>Speech</td></tr>
+      <tr><td class="n">60 B</td><td class="n">45</td><td>Speech</td></tr>
+      <tr><td class="n">27 B</td><td class="n">44</td><td></td></tr>
+    </table>
+  </div>
+
+  <h2>Message set</h2>
+  <div class="card">
+    <p style="margin:0"><code>tts_word</code> · <code>server_duck</code> ·
+    <code>transcript_interim</code> · <code>user_input_end</code></p>
+  </div>
+
+  <h2>Two corrections worth keeping</h2>
+
+  <div class="flag">
+    <b>Constant frame size means uncompressed, not Opus.</b>
+    The 321 B downlink was first read as Opus. That inference is backwards — Opus is
+    variable-bitrate, so a constant frame size is evidence <em>against</em> it. 321 B is PCM,
+    which the URL states outright with <code>output_format=pcm_16000</code>. The Opus side is the
+    uplink. Rule of thumb: constant ⇒ uncompressed, variable ⇒ compressed.
+  </div>
+
+  <div class="flag">
+    <b>An SDP rtpmap of 48000/2 is not proof of sample rate.</b>
+    RFC 7587 forces the Opus RTP clock to read 48000/2 always, whatever the real audio bandwidth.
+    Checked here anyway: no <code>maxplaybackrate</code>, no <code>sprop-maxcapturerate</code>,
+    no <code>maxaveragebitrate</code> anywhere in 3 MB of dump, and getStats reports
+    <code>"clockRate":48000</code> as genuinely negotiated. So the carrier leg really is
+    48 kHz fullband and the rate conversion is required after all.
+  </div>
+
+  <div class="flag bad">
+    <b>It is a transcode, not a resample.</b>
+    You cannot resample Opus packets — same codec family on both sides is not a pass-through.
+    Each leg must decode, resample, then re-encode: carrier Opus 48k → PCM 48k → PCM 16k →
+    Opus 16k upward, and PCM 16k → PCM 48k → Opus 48k downward. Budget latency for it.
+  </div>
+
+  <h2>Consequences for a bridge</h2>
+  <ul>
+    <li>Google Voice is WebRTC over UDP/ICE, so <b>call audio never appears in a HAR</b> — a 34 MB
+        capture held only JS bundles and signaling. Tap the audio device, not HTTP.</li>
+    <li>Carrier <code>minptime=10</code> lines up exactly with the socket's 10 ms / 321 B frame.</li>
+    <li><code>useinbandfec=1</code> means Opus already covers packet loss — the bridge must
+        <b>not</b> add its own retry layer.</li>
+    <li>The three rtcstats dumps are <b>one call snapshotted three times</b>, not three calls.
+        Byte counts are identical across all three; only ICE counts grow. Do not treat them as
+        independent samples.</li>
+    <li>1,961–2,227 ICE host candidates in a single call — an enormous candidate set, and a
+        plausible source of call-setup delay.</li>
+  </ul>
+
+  <footer>
+    Source captures: two HAR files and three rtcstats dumps, read 2026-08-06 04:54–06:04.<br>
+    Carrier negotiated set: opus/48000/2, G722/8000, PCMU/8000, PCMA/8000, CN/8000,
+    telephone-event/48000, telephone-event/8000.
+  </footer>
+
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

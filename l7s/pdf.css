@@ -1,0 +1,175 @@
+/* ============================================================================
+   L7S PDF STANDARD  —  hitthe.link/l7s/pdf.css
+   Corporate default: HYPER-REAL METALLIC + IRIDESCENT on LIGHT, immersive 3D.
+   Dark mode = opt-in toggle (qi pref).  PRINT ALWAYS FORCES LIGHT (corporate).
+   HARD RULE: no section splits across pages (cards+items break-inside:avoid,
+   headings break-after:avoid, orphans/widows guarded).  Applies to any L7S
+   document page that links this file + l7s/pdf.js.
+   ============================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+
+/* ---------- LIGHT theme (DEFAULT, corporate) ---------- */
+:root{
+  --bg:#eceae3; --bg2:#fbfaf6; --ink:#191510; --ink-soft:#473f31; --mute:#7a7263; --faint:#a39b88;
+  --card:#ffffff; --card-2:#fbf9f3; --edge:rgba(154,123,46,.20); --line:rgba(154,123,46,.16);
+  --gold:#9a7b2e; --gold-mid:#c8a23f; --gold-hi:#f3e2a6; --gold-deep:#6f531a;
+  /* brushed-metal gold (multi-stop = hyper-real sheen) */
+  --metal:linear-gradient(135deg,#f7e9b6 0%,#cda843 16%,#9a7b2e 34%,#f4e4a8 50%,#b8902f 66%,#7c5e1e 84%,#ecd58e 100%);
+  --metal-edge:linear-gradient(180deg,rgba(255,255,255,.9),rgba(154,123,46,.15) 40%,rgba(124,94,30,.25));
+  /* iridescent / holographic sheen for accents */
+  --irid:linear-gradient(115deg,#e9c3ff,#bfe0ff 24%,#c8ffe0 46%,#fff1c0 66%,#ffd6e8 86%,#d9c4ff);
+  --shadow:0 1px 2px rgba(70,55,20,.05),0 10px 30px rgba(70,55,20,.07),0 30px 70px rgba(70,55,20,.05);
+  --shadow-lift:0 2px 6px rgba(70,55,20,.08),0 20px 50px rgba(70,55,20,.12),0 44px 100px rgba(70,55,20,.08);
+  /* immersive 3D environment (lit space) */
+  --env:radial-gradient(1300px 640px at 50% -10%,rgba(212,175,55,.12),transparent 62%),
+        radial-gradient(1000px 560px at 102% 108%,rgba(120,160,255,.06),transparent 60%),
+        radial-gradient(900px 520px at -4% 102%,rgba(190,120,255,.06),transparent 60%);
+}
+/* ---------- DARK theme (opt-in toggle) ---------- */
+[data-theme="dark"]{
+  --bg:#060605; --bg2:#0e0d0a; --ink:#f5f3ec; --ink-soft:#cfc9b8; --mute:#8f897a; --faint:#5b5648;
+  --card:#15140f; --card-2:#11100b; --edge:rgba(212,175,55,.20); --line:rgba(212,175,55,.14);
+  --gold:#d4af37; --gold-mid:#caa24a; --gold-hi:#f4e3a1; --gold-deep:#9a7b2e;
+  --metal:linear-gradient(135deg,#f4e3a1,#d4af37 22%,#9a7b2e 44%,#f4e3a1 60%,#caa24a 78%,#7c5e1e 100%);
+  --metal-edge:linear-gradient(180deg,rgba(244,227,161,.5),rgba(154,123,46,.2) 50%,rgba(0,0,0,.4));
+  --shadow:0 1px 0 rgba(212,175,55,.07),0 22px 60px rgba(0,0,0,.55);
+  --shadow-lift:0 2px 0 rgba(212,175,55,.10),0 30px 80px rgba(0,0,0,.65);
+  --env:radial-gradient(1200px 600px at 50% -6%,rgba(212,175,55,.16),transparent 60%),
+        radial-gradient(1000px 560px at 102% 108%,rgba(120,160,255,.07),transparent 60%),
+        radial-gradient(900px 520px at -4% 102%,rgba(190,120,255,.07),transparent 60%);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;font-weight:400;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;line-height:1.62;padding-bottom:80px;
+  background:var(--env),var(--bg);background-attachment:fixed}
+
+/* ---------- sticky bar ---------- */
+.bar-wrap{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg2) 86%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.bar-inner{max-width:840px;margin:0 auto;padding:11px 22px;display:flex;align-items:center;gap:12px;justify-content:space-between}
+.bar-mark{font-family:'Cinzel',serif;font-weight:600;font-size:12px;letter-spacing:.26em;
+  background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+.bar-actions{display:flex;align-items:center;gap:9px}
+.bar-print,.theme-toggle{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--edge);color:var(--ink-soft);font-family:'Inter';font-weight:600;font-size:12.5px;padding:8px 14px;border-radius:9px;cursor:pointer;transition:border-color .2s,color .2s,box-shadow .2s}
+.bar-print:hover,.theme-toggle:hover{border-color:var(--gold-mid);color:var(--ink);box-shadow:var(--shadow)}
+.theme-toggle{padding:8px 12px}
+.theme-toggle .ic-dark{display:none}
+[data-theme="dark"] .theme-toggle .ic-light{display:none}
+[data-theme="dark"] .theme-toggle .ic-dark{display:inline}
+
+.wrap{max-width:840px;margin:0 auto;padding:0 22px;perspective:1600px}
+
+/* ---------- hero ---------- */
+header.hero{padding:52px 0 8px;text-align:center}
+.kick{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;
+  background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:16px}
+.hero h1{font-family:'Cinzel',serif;font-weight:800;font-size:clamp(27px,5.4vw,44px);line-height:1.08;letter-spacing:.012em;
+  background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.5)) drop-shadow(0 2px 10px rgba(154,123,46,.18));margin-bottom:12px}
+.hero .sub{font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(16px,2.4vw,21px);color:var(--ink-soft);max-width:620px;margin:0 auto}
+/* iridescent underline rule under hero */
+.hero::after{content:"";display:block;width:120px;height:2px;margin:20px auto 0;border-radius:2px;background:var(--irid);opacity:.85}
+
+/* ---------- attach / purpose blocks ---------- */
+.attach{max-width:700px;margin:28px auto 0;border:1px solid var(--edge);border-radius:13px;background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+.attach .ah{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);padding:12px 18px;border-bottom:1px solid var(--line);background:var(--card-2)}
+.attach dl{display:grid;grid-template-columns:max-content 1fr;gap:0;padding:6px 18px 12px}
+.attach dt{font-size:12px;color:var(--mute);padding:8px 16px 8px 0;font-weight:500;border-bottom:1px solid var(--line);white-space:nowrap}
+.attach dd{font-size:13.5px;color:var(--ink);padding:8px 0;font-weight:400;border-bottom:1px solid var(--line)}
+.attach dl > dt:last-of-type,.attach dl > dd:last-of-type{border-bottom:0}
+.purpose{max-width:780px;margin:24px auto 4px;padding:16px 20px;background:var(--card);border:1px solid var(--edge);border-radius:11px;box-shadow:var(--shadow);font-size:14px;color:var(--ink-soft)}
+.purpose b{color:var(--ink);font-weight:600}
+.purpose .plab{display:block;font-family:'Cinzel',serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+
+/* ---------- cards (immersive 3D depth) ---------- */
+section.card,.card{position:relative;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--edge);border-radius:15px;padding:24px 22px;margin:18px 0;box-shadow:var(--shadow);
+  transform:translateZ(0);transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
+/* metallic bevel highlight on the top edge */
+section.card::before,.card::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;border-radius:15px 15px 0 0;background:var(--metal-edge);opacity:.7;pointer-events:none}
+.wrap:hover section.card:hover,.wrap:hover .card:hover{transform:translateZ(26px) rotateX(.4deg);box-shadow:var(--shadow-lift)}
+.sec-h{display:flex;align-items:baseline;gap:11px;margin-bottom:6px}
+.sec-n{font-family:'Cinzel',serif;font-weight:600;font-size:13px;color:var(--gold);letter-spacing:.1em;white-space:nowrap}
+.sec-h h2{font-family:'Cinzel',serif;font-weight:600;font-size:clamp(16px,2.5vw,20px);color:var(--ink);line-height:1.25}
+.sec-sub{color:var(--mute);font-size:13px;margin:0 0 14px;line-height:1.5}
+
+/* itemized */
+.list{list-style:none;margin:0;padding:0}
+.list > li{position:relative;padding:11px 0 11px 22px;border-top:1px solid var(--line);font-size:14.5px;color:var(--ink-soft);line-height:1.6}
+.list > li:first-child{border-top:0}
+.list > li::before{content:"\25C6";position:absolute;left:0;top:11px;color:var(--gold);font-size:10px}
+.list > li b,.list .term{color:var(--ink);font-weight:600}
+.list .desc{display:block;color:var(--mute);font-size:13px;margin-top:2px;line-height:1.55}
+.sublist{list-style:none;margin:8px 0 2px;padding:0}
+.sublist > li{position:relative;padding:5px 0 5px 18px;font-size:13.5px;color:var(--ink-soft)}
+.sublist > li::before{content:"\2013";position:absolute;left:2px;top:5px;color:var(--gold)}
+.sublist > li b{color:var(--ink);font-weight:600}
+
+/* clauses */
+.clause-card{border-color:var(--gold-mid)}
+.clause{padding:15px 0;border-top:1px solid var(--line)}
+.clause:first-of-type{border-top:0;padding-top:4px}
+.clause .cn{font-family:'Cinzel',serif;font-weight:600;font-size:13px;color:var(--gold);letter-spacing:.06em}
+.clause .ct{font-weight:600;color:var(--ink);font-size:14.5px;margin-left:4px}
+.clause p{font-size:14px;color:var(--ink-soft);margin-top:7px;line-height:1.65}
+.clause p .em{color:var(--ink);font-weight:600}
+
+/* callout */
+.callout{margin:22px 0;border:1px solid var(--gold-mid);border-radius:13px;background:var(--card);box-shadow:var(--shadow);padding:20px 22px;position:relative;overflow:hidden}
+.callout::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--irid);opacity:.8}
+.callout .clab{font-family:'Cinzel',serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:9px}
+.callout p{font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(16px,2.5vw,20px);line-height:1.5;color:var(--ink)}
+
+/* signatures */
+.sig-card{margin-top:22px}
+.sig-intro{font-size:13.5px;color:var(--ink-soft);margin-bottom:22px;line-height:1.6}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px 36px}
+.sig{padding-top:6px}
+.sig .who{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:30px}
+.sig .ent{font-size:13px;color:var(--mute);margin-bottom:30px}
+.sig .line{border-bottom:1px solid var(--ink-soft);height:1px;margin-bottom:6px}
+.sig .cap{font-size:11.5px;color:var(--mute);letter-spacing:.04em}
+.sig .row{margin-bottom:22px}.sig .row:last-child{margin-bottom:0}
+
+footer{text-align:center;padding:34px 0 14px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:.42em;text-transform:uppercase;color:var(--faint)}
+
+/* generic helpers for sibling pages */
+table{border-collapse:collapse;width:100%}
+figure{margin:0}
+
+/* ============================================================================
+   PRINT  —  CORPORATE: force LIGHT regardless of toggle + HARD no-split rule
+   ============================================================================ */
+@media print{
+  @page{size:letter;margin:15mm 14mm}
+  /* force light vars even if [data-theme=dark] is set on <html> */
+  :root,[data-theme="dark"]{
+    --bg:#fff;--bg2:#fff;--ink:#141414;--ink-soft:#333;--mute:#555;--faint:#888;
+    --card:#fff;--card-2:#fff;--edge:#c8c2b2;--line:#e2ddcf;
+    --gold:#7c5e1e;--gold-mid:#9a7b2e;--gold-hi:#caa23f;--gold-deep:#6f531a;
+    --metal:linear-gradient(135deg,#a9852f,#7c5e1e,#a9852f);
+    --metal-edge:linear-gradient(180deg,#e8dcb4,#c8c2b2);
+    --irid:linear-gradient(115deg,#caa23f,#9a7b2e,#caa23f);
+    --shadow:none;--shadow-lift:none;--env:none;
+  }
+  *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important }
+  html,body{background:#fff !important;color:#141414 !important;line-height:1.5;padding:0}
+  body{background:#fff !important}
+  .bar-wrap{display:none !important}
+  .wrap{max-width:none;margin:0;padding:0;perspective:none}
+  header.hero{padding:0 0 8px;text-align:left}
+  .hero::after{margin:14px 0 0}
+  .hero h1{font-size:24px;filter:none}
+  .hero .sub{text-align:left;margin:0;font-size:15px;color:#444}
+
+  /* HARD RULE — sections never split; headings stay with their content */
+  section,.card,.attach,.purpose,.callout,.sig-card,figure,table,thead,tr{ break-inside:avoid !important; page-break-inside:avoid !important }
+  .clause,li,dt,dd,.sig .row{ break-inside:avoid !important; page-break-inside:avoid !important }
+  .sec-h,h1,h2,h3,.ah,.plab,.clab,.cn{ break-after:avoid !important; page-break-after:avoid !important }
+  p{ orphans:3; widows:3 }
+
+  /* flatten the 3D for crisp print */
+  section.card,.card{transform:none !important;box-shadow:none !important;border:1px solid #c8c2b2;border-radius:8px;padding:14px 16px;margin:11px 0;background:#fff !important}
+  section.card::before,.card::before,.callout::before{display:none}
+  .attach,.purpose,.callout{box-shadow:none}
+  a[href]:after{content:""}
+}

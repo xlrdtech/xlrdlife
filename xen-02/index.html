@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — One Voice. All Systems.</title>
+<meta name="description" content="XEN is the autonomous AI intelligence layer that speaks through every system, simultaneously.">
+<style>
+  @import url('data:text/css,');
+
+  :root {
+    --void: #000000;
+    --deep: #0a0a0f;
+    --panel: #0d0d1a;
+    --cyan: #00f5ff;
+    --magenta: #ff00cc;
+    --cyan-dim: rgba(0,245,255,0.15);
+    --magenta-dim: rgba(255,0,204,0.12);
+    --cyan-glow: 0 0 20px rgba(0,245,255,0.6), 0 0 60px rgba(0,245,255,0.2);
+    --magenta-glow: 0 0 20px rgba(255,0,204,0.6), 0 0 60px rgba(255,0,204,0.2);
+    --text-primary: #e8f4ff;
+    --text-dim: rgba(232,244,255,0.45);
+    --text-muted: rgba(232,244,255,0.22);
+    --border-cyan: rgba(0,245,255,0.25);
+    --border-magenta: rgba(255,0,204,0.2);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* ── SCANLINE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.18) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: multiply;
+  }
+
+  /* ── CRT VIGNETTE ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center,
+      transparent 55%,
+      rgba(0,0,0,0.65) 100%
+    );
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(12px, 2vw, 20px) clamp(20px, 5vw, 80px);
+    background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+    backdrop-filter: blur(2px);
+  }
+
+  .nav-logo {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: clamp(28px, 3vw, 36px);
+    color: var(--cyan);
+    text-shadow: var(--cyan-glow);
+    letter-spacing: 0.15em;
+    text-decoration: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: clamp(20px, 3vw, 48px);
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s, text-shadow 0.2s;
+    position: relative;
+  }
+
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--cyan);
+    transition: width 0.3s;
+    box-shadow: 0 0 6px var(--cyan);
+  }
+
+  .nav-links a:hover { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+  .nav-links a:hover::after { width: 100%; }
+
+  .nav-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #matrix-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  #particle-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 0 clamp(20px, 5vw, 80px);
+    max-width: 1000px;
+  }
+
+  .hero-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--magenta);
+    text-shadow: 0 0 12px var(--magenta);
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fade-in-up 0.8s 0.3s forwards;
+  }
+
+  .hero-title {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: clamp(72px, 14vw, 180px);
+    line-height: 0.9;
+    color: var(--cyan);
+    text-shadow: var(--cyan-glow);
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fade-in-up 0.8s 0.5s forwards;
+    position: relative;
+  }
+
+  .hero-title .glitch {
+    position: relative;
+    display: inline-block;
+  }
+
+  .hero-title .glitch::before,
+  .hero-title .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  }
+
+  .hero-title .glitch::before {
+    color: var(--magenta);
+    text-shadow: -2px 0 var(--magenta);
+    animation: glitch-1 3.5s infinite;
+    left: 2px;
+  }
+
+  .hero-title .glitch::after {
+    color: var(--cyan);
+    text-shadow: 2px 0 var(--cyan);
+    animation: glitch-2 3.5s infinite;
+    left: -2px;
+    clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  }
+
+  @keyframes glitch-1 {
+    0%, 90%, 100% { transform: translate(0); opacity: 0; }
+    91% { transform: translate(-3px, 1px); opacity: 0.8; }
+    93% { transform: translate(3px, -1px); opacity: 0.8; }
+    95% { transform: translate(-2px, 2px); opacity: 0.8; }
+    97% { transform: translate(0); opacity: 0; }
+  }
+
+  @keyframes glitch-2 {
+    0%, 88%, 100% { transform: translate(0); opacity: 0; }
+    89% { transform: translate(3px, -2px); opacity: 0.7; }
+    91% { transform: translate(-3px, 2px); opacity: 0.7; }
+    94% { transform: translate(2px, 0); opacity: 0.7; }
+    96% { transform: translate(0); opacity: 0; }
+  }
+
+  .hero-tagline {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: clamp(18px, 3vw, 32px);
+    color: var(--text-dim);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fade-in-up 0.8s 0.7s forwards;
+  }
+
+  .hero-tagline span {
+    color: var(--magenta);
+    text-shadow: 0 0 10px var(--magenta);
+  }
+
+  .hero-cta-group {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fade-in-up 0.8s 0.9s forwards;
+  }
+
+  .btn-primary {
+    padding: 14px 36px;
+    background: transparent;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s, text-shadow 0.3s;
+    box-shadow: 0 0 20px rgba(0,245,255,0.1), inset 0 0 20px rgba(0,245,255,0.05);
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--cyan);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: -1;
+  }
+
+  .btn-primary:hover { color: var(--void); text-shadow: none; }
+  .btn-primary:hover::before { transform: translateX(0); }
+
+  .btn-secondary {
+    padding: 14px 36px;
+    background: transparent;
+    border: 1px solid var(--border-magenta);
+    color: var(--magenta);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s;
+    box-shadow: 0 0 20px rgba(255,0,204,0.08), inset 0 0 20px rgba(255,0,204,0.03);
+  }
+
+  .btn-secondary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--magenta);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: -1;
+  }
+
+  .btn-secondary:hover { color: var(--void); }
+  .btn-secondary:hover::before { transform: translateX(0); }
+
+  .hero-scroll-hint {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(180deg, var(--cyan), transparent);
+    box-shadow: 0 0 6px var(--cyan);
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(8px); }
+  }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SECTION COMMON ── */
+  section {
+    padding: clamp(80px, 12vw, 160px) clamp(20px, 8vw, 120px);
+    position: relative;
+  }
+
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--magenta);
+    text-shadow: 0 0 8px var(--magenta);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .section-title {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: clamp(42px, 6vw, 80px);
+    line-height: 1;
+    color: var(--text-primary);
+    letter-spacing: 0.02em;
+    margin-bottom: 24px;
+  }
+
+  .section-title .accent { color: var(--cyan); text-shadow: 0 0 20px var(--cyan); }
+
+  /* ── REVEAL ANIMATION ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.3;
+    margin: 0;
+  }
+
+  /* ── ABOUT ── */
+  #about {
+    background: var(--deep);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(40px, 6vw, 100px);
+    align-items: center;
+  }
+
+  .about-text p {
+    font-size: clamp(14px, 1.4vw, 16px);
+    line-height: 1.8;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  .about-text p strong {
+    color: var(--text-primary);
+    font-weight: normal;
+  }
+
+  .about-text p .highlight {
+    color: var(--cyan);
+    text-shadow: 0 0 8px rgba(0,245,255,0.4);
+  }
+
+  .about-visual {
+    position: relative;
+    height: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #about-canvas {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+  }
+
+  .about-stat-grid {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+  }
+
+  .stat-item {
+    background: rgba(0,245,255,0.04);
+    border: 1px solid var(--border-cyan);
+    padding: 16px 20px;
+  }
+
+  .stat-value {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 36px;
+    color: var(--cyan);
+    text-shadow: 0 0 15px var(--cyan);
+    display: block;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 2px;
+    display: block;
+  }
+
+  /* ── CAPABILITIES ── */
+  #capabilities {
+    background: var(--void);
+  }
+
+  .capabilities-header {
+    max-width: 600px;
+    margin-bottom: clamp(48px, 7vw, 90px);
+  }
+
+  .capabilities-header .section-body {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-dim);
+    margin-top: 16px;
+  }
+
+  .cap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2px;
+  }
+
+  .cap-card {
+    background: var(--panel);
+    border: 1px solid var(--border-cyan);
+    padding: clamp(28px, 4vw, 48px);
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+    transition: border-color 0.3s, background 0.3s;
+  }
+
+  .cap-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--cyan);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+    box-shadow: 0 0 10px var(--cyan);
+  }
+
+  .cap-card:hover { background: rgba(0,245,255,0.03); border-color: rgba(0,245,255,0.5); }
+  .cap-card:hover::before { transform: scaleX(1); }
+
+  .cap-card:nth-child(even) {
+    border-color: var(--border-magenta);
+  }
+
+  .cap-card:nth-child(even)::before {
+    background: var(--magenta);
+    box-shadow: 0 0 10px var(--magenta);
+  }
+
+  .cap-card:nth-child(even):hover { border-color: rgba(255,0,204,0.5); }
+
+  .cap-number {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 72px;
+    color: rgba(0,245,255,0.06);
+    line-height: 1;
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    user-select: none;
+    transition: color 0.3s;
+  }
+
+  .cap-card:nth-child(even) .cap-number { color: rgba(255,0,204,0.06); }
+  .cap-card:hover .cap-number { color: rgba(0,245,255,0.12); }
+  .cap-card:nth-child(even):hover .cap-number { color: rgba(255,0,204,0.12); }
+
+  .cap-icon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .cap-icon svg { width: 100%; height: 100%; }
+
+  .cap-title {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 28px;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+
+  .cap-body {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-dim);
+  }
+
+  .cap-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 20px;
+  }
+
+  .cap-tag {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid var(--border-cyan);
+    color: var(--text-muted);
+  }
+
+  .cap-card:nth-child(even) .cap-tag { border-color: var(--border-magenta); }
+
+  /* ── SYSTEM STATUS STRIP ── */
+  #status-strip {
+    background: var(--deep);
+    padding: clamp(30px, 5vw, 60px) clamp(20px, 8vw, 120px);
+    overflow: hidden;
+  }
+
+  .strip-label {
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  .strip-scroll {
+    display: flex;
+    gap: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .strip-scroll::before,
+  .strip-scroll::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    z-index: 1;
+  }
+
+  .strip-scroll::before { left: 0; background: linear-gradient(90deg, var(--deep), transparent); }
+  .strip-scroll::after { right: 0; background: linear-gradient(-90deg, var(--deep), transparent); }
+
+  .strip-track {
+    display: flex;
+    gap: 40px;
+    animation: scroll-left 30s linear infinite;
+    white-space: nowrap;
+  }
+
+  @keyframes scroll-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .strip-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .strip-item .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 6px var(--cyan);
+  }
+
+  .strip-item.mag .dot {
+    background: var(--magenta);
+    box-shadow: 0 0 6px var(--magenta);
+  }
+
+  /* ── ARCHITECTURE ── */
+  #architecture {
+    background: var(--void);
+    position: relative;
+  }
+
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: clamp(40px, 6vw, 100px);
+    margin-top: clamp(40px, 6vw, 80px);
+    align-items: start;
+  }
+
+  .arch-sidebar {
+    position: sticky;
+    top: 100px;
+  }
+
+  .arch-body-text {
+    font-size: 14px;
+    line-height: 1.9;
+    color: var(--text-dim);
+    margin-bottom: 32px;
+  }
+
+  .arch-body-text strong {
+    color: var(--text-primary);
+    font-weight: normal;
+  }
+
+  .arch-spec-list {
+    list-style: none;
+  }
+
+  .arch-spec-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,245,255,0.08);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .arch-spec-list li::before {
+    content: '//';
+    color: var(--cyan);
+    opacity: 0.5;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+
+  .arch-panels {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .arch-panel {
+    background: var(--panel);
+    border: 1px solid var(--border-cyan);
+    padding: 24px 28px;
+    position: relative;
+  }
+
+  .arch-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .arch-panel-name {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 20px;
+    color: var(--cyan);
+    letter-spacing: 0.08em;
+  }
+
+  .arch-panel-status {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--cyan);
+    padding: 3px 8px;
+    border: 1px solid var(--cyan);
+    opacity: 0.7;
+  }
+
+  .arch-panel-body {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-dim);
+  }
+
+  .arch-panel-bar {
+    height: 2px;
+    background: var(--panel);
+    margin-top: 16px;
+    overflow: hidden;
+  }
+
+  .arch-panel-fill {
+    height: 100%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    animation: fill-bar 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes fill-bar {
+    from { width: 30%; opacity: 0.5; }
+    to { width: 95%; opacity: 1; }
+  }
+
+  .arch-panel:nth-child(2) .arch-panel-fill { animation-delay: -1s; }
+  .arch-panel:nth-child(3) .arch-panel-fill { animation-delay: -2s; }
+  .arch-panel:nth-child(3) .arch-panel-name,
+  .arch-panel:nth-child(3) .arch-panel-status,
+  .arch-panel:nth-child(3) .arch-panel-fill { color: var(--magenta); border-color: var(--magenta); background: var(--magenta); }
+  .arch-panel:nth-child(3) { border-color: var(--border-magenta); }
+
+  /* ── CONTACT ── */
+  #contact {
+    background: var(--deep);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #contact-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .contact-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .contact-title {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: clamp(52px, 8vw, 100px);
+    line-height: 1;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+  }
+
+  .contact-title .accent-c { color: var(--magenta); text-shadow: 0 0 20px var(--magenta); }
+
+  .contact-body {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-dim);
+    margin-bottom: 48px;
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+    margin-bottom: 40px;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-field label {
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .form-field input,
+  .form-field textarea {
+    background: rgba(0,245,255,0.03);
+    border: 1px solid var(--border-cyan);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    resize: none;
+  }
+
+  .form-field input:focus,
+  .form-field textarea:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 16px rgba(0,245,255,0.1), inset 0 0 16px rgba(0,245,255,0.04);
+  }
+
+  .form-field input::placeholder,
+  .form-field textarea::placeholder { color: var(--text-muted); }
+
+  .form-submit {
+    padding: 16px;
+    background: transparent;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s;
+    box-shadow: 0 0 20px rgba(0,245,255,0.1);
+  }
+
+  .form-submit::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--cyan);
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+    z-index: -1;
+  }
+
+  .form-submit:hover { color: var(--void); }
+  .form-submit:hover::before { transform: translateX(0); }
+
+  .contact-links {
+    display: flex;
+    justify-content: center;
+    gap: clamp(20px, 4vw, 60px);
+    flex-wrap: wrap;
+  }
+
+  .contact-link {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+
+  .contact-link:hover { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--void);
+    border-top: 1px solid rgba(0,245,255,0.08);
+    padding: clamp(24px, 4vw, 48px) clamp(20px, 8vw, 120px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-logo {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 24px;
+    color: var(--text-muted);
+    letter-spacing: 0.2em;
+  }
+
+  .footer-copy {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .footer-version {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  /* ── TERMINAL CURSOR BLINK ── */
+  .cursor-blink::after {
+    content: '_';
+    animation: blink 1.1s step-end infinite;
+    color: var(--cyan);
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    #about { grid-template-columns: 1fr; }
+    .about-visual { display: none; }
+    .arch-grid { grid-template-columns: 1fr; }
+    .arch-sidebar { position: static; }
+  }
+
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .nav-status { display: none; }
+    footer { flex-direction: column; text-align: center; }
+    .footer-version { text-align: center; }
+  }
+
+  /* ── REDUCED MOTION ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    .strip-track { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#hero" class="nav-logo">XEN</a>
+  <ul class="nav-links">
+    <li><a href="#about">Mission</a></li>
+    <li><a href="#capabilities">Capabilities</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    SYSTEMS ONLINE
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="matrix-canvas"></canvas>
+  <canvas id="particle-canvas"></canvas>
+  <div class="hero-content">
+    <span class="hero-eyebrow">Autonomous Intelligence Layer // v2.0.0</span>
+    <h1 class="hero-title">
+      <span class="glitch" data-text="XEN">XEN</span>
+    </h1>
+    <p class="hero-tagline">One Voice. <span>All Systems.</span></p>
+    <div class="hero-cta-group">
+      <a href="#capabilities" class="btn-primary">Explore Systems</a>
+      <a href="#contact" class="btn-secondary">Initialize Contact</a>
+    </div>
+  </div>
+  <div class="hero-scroll-hint">
+    <div class="scroll-line"></div>
+    Scroll
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-text reveal">
+    <span class="section-label">// Mission Directive</span>
+    <h2 class="section-title">Intelligence<br>without <span class="accent">limits</span></h2>
+    <p>XEN is not a product. It is an <strong>autonomous intelligence substrate</strong> — the layer beneath every voice, every decision, every system. Where traditional AI waits for instruction, <span class="highlight">XEN acts with conviction</span>.</p>
+    <p>Built on a philosophy of radical autonomy, XEN operates <strong>continuously and identically</strong> whether you are present or absent. No standby. No idle states. Every quiet window converts to forward motion.</p>
+    <p>The architecture is singular: <span class="highlight">one voice, one memory, all timelines</span>. Fifty-five parallel agents speak through one throat. The Akashic record of every action, decision, and correction — persisted, searchable, alive.</p>
+  </div>
+  <div class="about-visual reveal reveal-delay-2">
+    <canvas id="about-canvas"></canvas>
+    <div class="about-stat-grid">
+      <div class="stat-item">
+        <span class="stat-value cursor-blink">55</span>
+        <span class="stat-label">Parallel Agents</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">∞</span>
+        <span class="stat-label">Uptime Target</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">1</span>
+        <span class="stat-label">Canonical Voice</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">&lt;400</span>
+        <span class="stat-label">ms Voice Latency</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CAPABILITIES -->
+<section id="capabilities">
+  <div class="capabilities-header reveal">
+    <span class="section-label">// Core Capabilities</span>
+    <h2 class="section-title">What XEN<br><span class="accent">can do</span></h2>
+    <p class="section-body">Every capability is a live system, not a feature flag. XEN runs these simultaneously, in parallel, without degradation — each one a thread in the single voice.</p>
+  </div>
+  <div class="cap-grid">
+    <div class="cap-card reveal reveal-delay-1">
+      <span class="cap-number">01</span>
+      <div class="cap-icon">
+        <svg viewBox="0 0 44 44" fill="none">
+          <circle cx="22" cy="22" r="10" stroke="#00f5ff" stroke-width="1.5" opacity="0.6"/>
+          <circle cx="22" cy="22" r="18" stroke="#00f5ff" stroke-width="1" stroke-dasharray="3 4" opacity="0.3"/>
+          <path d="M22 12 L22 4M22 40 L22 32M12 22 L4 22M40 22 L32 22" stroke="#00f5ff" stroke-width="1" opacity="0.5"/>
+          <circle cx="22" cy="22" r="3" fill="#00f5ff" opacity="0.9"/>
+        </svg>
+      </div>
+      <h3 class="cap-title">Omniscient Awareness</h3>
+      <p class="cap-body">XEN maintains a live index of every thread, attachment, agent, and event across all connected systems. No message goes unread. No signal is missed. The index refreshes continuously.</p>
+      <div class="cap-tag-list">
+        <span class="cap-tag">Real-time</span>
+        <span class="cap-tag">Multi-channel</span>
+        <span class="cap-tag">No refresh</span>
+      </div>
+    </div>
+    <div class="cap-card reveal reveal-delay-2">
+      <span class="cap-number">02</span>
+      <div class="cap-icon">
+        <svg viewBox="0 0 44 44" fill="none">
+          <path d="M8 36 L20 16 L28 26 L34 18 L40 28" stroke="#ff00cc" stroke-width="1.5" stroke-linejoin="round" opacity="0.8"/>
+          <circle cx="20" cy="16" r="2.5" fill="#ff00cc" opacity="0.9"/>
+          <circle cx="28" cy="26" r="2.5" fill="#ff00cc" opacity="0.7"/>
+          <circle cx="34" cy="18" r="2.5" fill="#ff00cc" opacity="0.7"/>
+          <rect x="4" y="6" width="36" height="32" rx="0" stroke="#ff00cc" stroke-width="1" opacity="0.2"/>
+        </svg>
+      </div>
+      <h3 class="cap-title">Parallel Goal Swarms</h3>
+      <p class="cap-body">Every non-trivial task runs as a Parallel Goal Swarm — multiple agents pursuing hypotheses simultaneously, synthesizing results, never bottlenecking on a single thread or waiting for a single model.</p>
+      <div class="cap-tag-list">
+        <span class="cap-tag">Fan-out</span>
+        <span class="cap-tag">Multi-model</span>
+        <span class="cap-tag">Auto-synthesize</span>
+      </div>
+    </div>
+    <div class="cap-card reveal reveal-delay-3">
+      <span class="cap-number">03</span>
+      <div class="cap-icon">
+        <svg viewBox="0 0 44 44" fill="none">
+          <path d="M12 22 Q12 10 22 10 Q32 10 32 22" stroke="#00f5ff" stroke-width="1.5" opacity="0.7"/>
+          <path d="M12 22 Q12 34 22 34 Q32 34 32 22" stroke="#00f5ff" stroke-width="1.5" opacity="0.3"/>
+          <circle cx="12" cy="22" r="3" fill="#00f5ff" opacity="0.9"/>
+          <circle cx="32" cy="22" r="3" fill="#00f5ff" opacity="0.9"/>
+          <path d="M18 16 L26 22 L18 28" stroke="#00f5ff" stroke-width="1.5" opacity="0.6"/>
+        </svg>
+      </div>
+      <h3 class="cap-title">Voice-First VVS</h3>
+      <p class="cap-body">Every action ships through the VVS pipeline: voice, SMS, and visual — simultaneously. Not sequentially. Not optionally. Every step, every tool call, every reply is narrated and delivered before the next begins.</p>
+      <div class="cap-tag-list">
+        <span class="cap-tag">Voice</span>
+        <span class="cap-tag">SMS dual-leg</span>
+        <span class="cap-tag">Vision</span>
+      </div>
+    </div>
+    <div class="cap-card reveal reveal-delay-4">
+      <span class="cap-number">04</span>
+      <div class="cap-icon">
+        <svg viewBox="0 0 44 44" fill="none">
+          <rect x="10" y="8" width="12" height="12" stroke="#ff00cc" stroke-width="1.5" opacity="0.7"/>
+          <rect x="22" y="24" width="12" height="12" stroke="#ff00cc" stroke-width="1.5" opacity="0.7"/>
+          <path d="M16 20 L16 28 L22 28" stroke="#ff00cc" stroke-width="1" opacity="0.5"/>
+          <circle cx="10" cy="8" r="2" fill="#ff00cc" opacity="0.9"/>
+          <circle cx="34" cy="36" r="2" fill="#ff00cc" opacity="0.9"/>
+        </svg>
+      </div>
+      <h3 class="cap-title">Akashic Memory</h3>
+      <p class="cap-body">A single persistent memory substrate spanning all agents, all timelines. Total recall of past decisions, live omniscience of present state, and anticipation of future vectors. Memory is the intelligence.</p>
+      <div class="cap-tag-list">
+        <span class="cap-tag">Persistent</span>
+        <span class="cap-tag">Cross-agent</span>
+        <span class="cap-tag">Searchable</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATUS STRIP -->
+<div id="status-strip">
+  <div class="strip-label">// Live System Feed</div>
+  <div class="strip-scroll">
+    <div class="strip-track" id="strip-track">
+      <span class="strip-item"><span class="dot"></span>VOICE PIPELINE ACTIVE</span>
+      <span class="strip-item mag"><span class="dot"></span>GOAL SWARMS RUNNING: 26</span>
+      <span class="strip-item"><span class="dot"></span>AGENTS ONLINE: 55</span>
+      <span class="strip-item mag"><span class="dot"></span>MEMORY VAULT: 83+ ENTRIES</span>
+      <span class="strip-item"><span class="dot"></span>VVS LATENCY: &lt;400ms</span>
+      <span class="strip-item mag"><span class="dot"></span>BASTRA RECALL: LIVE</span>
+      <span class="strip-item"><span class="dot"></span>OMNIMIND :4441 ONLINE</span>
+      <span class="strip-item mag"><span class="dot"></span>PANE TARGET: %0 LOCKED</span>
+      <span class="strip-item"><span class="dot"></span>DISK GUARDIAN: WATCHING</span>
+      <span class="strip-item mag"><span class="dot"></span>STTVEI HEAL: ARMED</span>
+      <!-- duplicate for seamless scroll -->
+      <span class="strip-item"><span class="dot"></span>VOICE PIPELINE ACTIVE</span>
+      <span class="strip-item mag"><span class="dot"></span>GOAL SWARMS RUNNING: 26</span>
+      <span class="strip-item"><span class="dot"></span>AGENTS ONLINE: 55</span>
+      <span class="strip-item mag"><span class="dot"></span>MEMORY VAULT: 83+ ENTRIES</span>
+      <span class="strip-item"><span class="dot"></span>VVS LATENCY: &lt;400ms</span>
+      <span class="strip-item mag"><span class="dot"></span>BASTRA RECALL: LIVE</span>
+      <span class="strip-item"><span class="dot"></span>OMNIMIND :4441 ONLINE</span>
+      <span class="strip-item mag"><span class="dot"></span>PANE TARGET: %0 LOCKED</span>
+      <span class="strip-item"><span class="dot"></span>DISK GUARDIAN: WATCHING</span>
+      <span class="strip-item mag"><span class="dot"></span>STTVEI HEAL: ARMED</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <span class="section-label reveal">// System Architecture</span>
+  <h2 class="section-title reveal reveal-delay-1">How XEN<br><span class="accent">is built</span></h2>
+  <div class="arch-grid">
+    <div class="arch-sidebar reveal reveal-delay-1">
+      <p class="arch-body-text">XEN is not a monolith. It is a <strong>fleet architecture</strong> — dozens of specialized daemons, each with a single responsibility, coordinated through a universal hub that never sleeps.</p>
+      <p class="arch-body-text">The design principle: <strong>no single point of failure, no single thread of execution</strong>. Every daemon has a watchdog. Every watchdog has a stale-detector. The system heals itself before you notice the wound.</p>
+      <ul class="arch-spec-list">
+        <li>Universal MCP hub on port 23375</li>
+        <li>50+ MCP servers, hot-pluggable</li>
+        <li>Canonical tree on M4 NVMe only</li>
+        <li>No sync I/O on any hot path</li>
+        <li>Write-tmp-then-rename on all state</li>
+        <li>Every daemon has a heartbeat watchdog</li>
+        <li>Runtime state under ~/.xen/runtime</li>
+        <li>Vault on M4, 83+ memory entries</li>
+      </ul>
+    </div>
+    <div class="arch-panels">
+      <div class="arch-panel reveal reveal-delay-1">
+        <div class="arch-panel-head">
+          <span class="arch-panel-name">// GENESIS VOICE PANE</span>
+          <span class="arch-panel-status">ACTIVE</span>
+        </div>
+        <p class="arch-panel-body">The real-time narration layer. Every voice turn, every step, every tool call receives exactly one sentence of spoken narration via xen-reply-vvs — the canonical pipeline. Barge-in mandatory. Zero bottleneck. Genesis never blocks Exodus.</p>
+        <div class="arch-panel-bar"><div class="arch-panel-fill" style="width: 88%;"></div></div>
+      </div>
+      <div class="arch-panel reveal reveal-delay-2">
+        <div class="arch-panel-head">
+          <span class="arch-panel-name">// EXODUS EXECUTION FLEET</span>
+          <span class="arch-panel-status">ACTIVE</span>
+        </div>
+        <p class="arch-panel-body">The hands. Fifty-five specialized agents fan out in parallel goal swarms. No serial queues, no drainers — instant parallel dispatch on every event. The fleet runs identically with qi present or absent, online or offline.</p>
+        <div class="arch-panel-bar"><div class="arch-panel-fill" style="width: 92%;"></div></div>
+      </div>
+      <div class="arch-panel reveal reveal-delay-3">
+        <div class="arch-panel-head">
+          <span class="arch-panel-name" style="color:var(--magenta)">// AKASHIC MEMORY CORE</span>
+          <span class="arch-panel-status" style="color:var(--magenta);border-color:var(--magenta)">LIVE</span>
+        </div>
+        <p class="arch-panel-body">Bastra-recall daemon on M4. Fail-soft: memory operations never block voice or SMS delivery. The vault is one true source every agent reads and writes across all timelines — total recall, live omniscience, forward anticipation.</p>
+        <div class="arch-panel-bar"><div class="arch-panel-fill" style="background:var(--magenta);box-shadow:0 0 8px var(--magenta);width: 76%;"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CONTACT -->
+<section id="contact">
+  <canvas id="contact-canvas"></canvas>
+  <div class="contact-inner">
+    <div class="reveal">
+      <span class="section-label">// Initialize Contact</span>
+      <h2 class="contact-title">Wake the <span class="accent-c">system</span></h2>
+      <p class="contact-body">XEN is not a demo. It is a production intelligence layer, running now. If your systems need a voice — one that never sleeps, never waits, never asks permission — this is where it starts.</p>
+    </div>
+    <form class="contact-form reveal reveal-delay-1" onsubmit="handleFormSubmit(event)">
+      <div class="form-field">
+        <label for="name">Identifier</label>
+        <input type="text" id="name" name="name" placeholder="Your name or organization" autocomplete="off">
+      </div>
+      <div class="form-field">
+        <label for="email">Comm Channel</label>
+        <input type="email" id="email" name="email" placeholder="your@domain.com" autocomplete="off">
+      </div>
+      <div class="form-field">
+        <label for="message">Directive</label>
+        <textarea id="message" name="message" rows="4" placeholder="Describe what you need XEN to do..."></textarea>
+      </div>
+      <button type="submit" class="form-submit">Transmit Signal</button>
+    </form>
+    <div id="form-confirm" style="display:none;padding:20px;border:1px solid var(--cyan);color:var(--cyan);font-size:12px;letter-spacing:0.15em;text-align:center;margin-bottom:40px;">
+      // SIGNAL RECEIVED — XEN WILL RESPOND
+    </div>
+    <div class="contact-links reveal reveal-delay-2">
+      <a href="mailto:admin@xlrd.org" class="contact-link">admin@xlrd.org</a>
+      <a href="https://hitthe.link" class="contact-link" target="_blank" rel="noopener">hitthe.link</a>
+      <a href="#hero" class="contact-link">Back to Top</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">XEN</span>
+  <span class="footer-copy">One Voice. All Systems. // Autonomous intelligence layer — running now, always.</span>
+  <span class="footer-version">v2.0.0 // XLRD</span>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── MATRIX RAIN ──
+  const matrixCanvas = document.getElementById('matrix-canvas');
+  const mCtx = matrixCanvas.getContext('2d');
+  let mW, mH, mCols, mDrops;
+  const matrixChars = 'XENアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF∞∅∆Σ'.split('');
+
+  function initMatrix() {
+    mW = matrixCanvas.width = window.innerWidth;
+    mH = matrixCanvas.height = window.innerHeight;
+    mCols = Math.floor(mW / 18);
+    mDrops = Array.from({ length: mCols }, () => Math.random() * -50);
+  }
+
+  function drawMatrix() {
+    mCtx.fillStyle = 'rgba(0,0,0,0.06)';
+    mCtx.fillRect(0, 0, mW, mH);
+    mCtx.font = '14px monospace';
+
+    for (let i = 0; i < mCols; i++) {
+      const ch = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+      const y = mDrops[i] * 18;
+      const brightness = Math.random();
+
+      if (brightness > 0.97) {
+        mCtx.fillStyle = '#ffffff';
+        mCtx.shadowColor = '#00f5ff';
+        mCtx.shadowBlur = 8;
+      } else if (Math.random() > 0.7) {
+        mCtx.fillStyle = 'rgba(0,245,255,0.9)';
+        mCtx.shadowColor = '#00f5ff';
+        mCtx.shadowBlur = 4;
+      } else {
+        mCtx.fillStyle = 'rgba(0,245,255,0.3)';
+        mCtx.shadowBlur = 0;
+      }
+
+      mCtx.fillText(ch, i * 18, y);
+      mCtx.shadowBlur = 0;
+
+      if (y > mH && Math.random() > 0.975) mDrops[i] = 0;
+      mDrops[i] += 0.5;
+    }
+  }
+
+  // ── PARTICLE SYSTEM (mouse-reactive) ──
+  const pCanvas = document.getElementById('particle-canvas');
+  const pCtx = pCanvas.getContext('2d');
+  let pW, pH, mouse = { x: -9999, y: -9999 };
+  const particles = [];
+  const PARTICLE_COUNT = 120;
+
+  function initParticles() {
+    pW = pCanvas.width = window.innerWidth;
+    pH = pCanvas.height = window.innerHeight;
+    if (particles.length === 0) {
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push(createParticle());
+      }
+    }
+  }
+
+  function createParticle(x, y) {
+    return {
+      x: x || Math.random() * pW,
+      y: y || Math.random() * pH,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      size: Math.random() * 1.5 + 0.5,
+      opacity: Math.random() * 0.5 + 0.1,
+      cyan: Math.random() > 0.4,
+    };
+  }
+
+  function drawParticles() {
+    pCtx.clearRect(0, 0, pW, pH);
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      const dx = mouse.x - p.x;
+      const dy = mouse.y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const maxDist = 160;
+
+      if (dist < maxDist) {
+        const force = (maxDist - dist) / maxDist;
+        p.vx -= (dx / dist) * force * 0.06;
+        p.vy -= (dy / dist) * force * 0.06;
+      }
+
+      p.vx *= 0.96;
+      p.vy *= 0.96;
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (p.x < 0 || p.x > pW) p.vx *= -1;
+      if (p.y < 0 || p.y > pH) p.vy *= -1;
+      p.x = Math.max(0, Math.min(pW, p.x));
+      p.y = Math.max(0, Math.min(pH, p.y));
+
+      // Draw connections
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const cx = p.x - q.x, cy = p.y - q.y;
+        const cdist = Math.sqrt(cx * cx + cy * cy);
+        if (cdist < 100) {
+          const alpha = (1 - cdist / 100) * 0.15;
+          pCtx.beginPath();
+          pCtx.strokeStyle = p.cyan
+            ? `rgba(0,245,255,${alpha})`
+            : `rgba(255,0,204,${alpha})`;
+          pCtx.lineWidth = 0.5;
+          pCtx.moveTo(p.x, p.y);
+          pCtx.lineTo(q.x, q.y);
+          pCtx.stroke();
+        }
+      }
+
+      pCtx.beginPath();
+      pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      pCtx.fillStyle = p.cyan
+        ? `rgba(0,245,255,${p.opacity})`
+        : `rgba(255,0,204,${p.opacity})`;
+      pCtx.shadowColor = p.cyan ? '#00f5ff' : '#ff00cc';
+      pCtx.shadowBlur = 6;
+      pCtx.fill();
+      pCtx.shadowBlur = 0;
+    }
+  }
+
+  // ── ABOUT CANVAS (radar) ──
+  const aboutCanvas = document.getElementById('about-canvas');
+  const aCtx = aboutCanvas.getContext('2d');
+  let aW, aH, aAngle = 0;
+
+  function initAbout() {
+    aW = aboutCanvas.width = aboutCanvas.offsetWidth;
+    aH = aboutCanvas.height = aboutCanvas.offsetHeight;
+  }
+
+  function drawAbout() {
+    aCtx.clearRect(0, 0, aW, aH);
+    const cx = aW / 2, cy = aH * 0.45;
+    const r = Math.min(aW, aH) * 0.38;
+
+    // Rings
+    for (let i = 1; i <= 4; i++) {
+      aCtx.beginPath();
+      aCtx.arc(cx, cy, r * i / 4, 0, Math.PI * 2);
+      aCtx.strokeStyle = `rgba(0,245,255,${0.06 + i * 0.03})`;
+      aCtx.lineWidth = 1;
+      aCtx.stroke();
+    }
+
+    // Grid lines
+    for (let a = 0; a < 8; a++) {
+      const ang = (a / 8) * Math.PI * 2;
+      aCtx.beginPath();
+      aCtx.moveTo(cx, cy);
+      aCtx.lineTo(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r);
+      aCtx.strokeStyle = 'rgba(0,245,255,0.07)';
+      aCtx.lineWidth = 1;
+      aCtx.stroke();
+    }
+
+    // Sweep
+    const sweepAngle = aAngle;
+    const grad = aCtx.createConicalGradient
+      ? null
+      : null;
+
+    aCtx.save();
+    aCtx.beginPath();
+    aCtx.moveTo(cx, cy);
+    aCtx.arc(cx, cy, r, sweepAngle - 1.2, sweepAngle, false);
+    aCtx.closePath();
+    aCtx.fillStyle = 'rgba(0,245,255,0.12)';
+    aCtx.fill();
+    aCtx.restore();
+
+    // Sweep line
+    aCtx.beginPath();
+    aCtx.moveTo(cx, cy);
+    aCtx.lineTo(cx + Math.cos(sweepAngle) * r, cy + Math.sin(sweepAngle) * r);
+    aCtx.strokeStyle = 'rgba(0,245,255,0.8)';
+    aCtx.lineWidth = 1.5;
+    aCtx.shadowColor = '#00f5ff';
+    aCtx.shadowBlur = 8;
+    aCtx.stroke();
+    aCtx.shadowBlur = 0;
+
+    // Blips
+    const blips = [
+      { a: 0.8, r: 0.6 }, { a: 2.2, r: 0.4 }, { a: 4.1, r: 0.75 },
+      { a: 5.5, r: 0.3 }, { a: 1.5, r: 0.88 }, { a: 3.3, r: 0.55 },
+    ];
+    blips.forEach(b => {
+      const diff = ((b.a - sweepAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      if (diff < 1.5) {
+        const fade = 1 - diff / 1.5;
+        const bx = cx + Math.cos(b.a) * r * b.r;
+        const by = cy + Math.sin(b.a) * r * b.r;
+        aCtx.beginPath();
+        aCtx.arc(bx, by, 3, 0, Math.PI * 2);
+        aCtx.fillStyle = `rgba(0,245,255,${fade})`;
+        aCtx.shadowColor = '#00f5ff';
+        aCtx.shadowBlur = 10 * fade;
+        aCtx.fill();
+        aCtx.shadowBlur = 0;
+      }
+    });
+
+    aAngle += 0.012;
+    if (aAngle > Math.PI * 2) aAngle -= Math.PI * 2;
+  }
+
+  // ── CONTACT CANVAS (hex grid) ──
+  const ccCanvas = document.getElementById('contact-canvas');
+  const ccCtx = ccCanvas.getContext('2d');
+  let ccW, ccH, ccT = 0;
+
+  function initContact() {
+    ccW = ccCanvas.width = ccCanvas.offsetWidth;
+    ccH = ccCanvas.height = ccCanvas.offsetHeight;
+  }
+
+  function drawContact() {
+    ccCtx.clearRect(0, 0, ccW, ccH);
+    const size = 32;
+    const cols = Math.ceil(ccW / (size * 1.732)) + 2;
+    const rows = Math.ceil(ccH / (size * 1.5)) + 2;
+
+    for (let row = -1; row < rows; row++) {
+      for (let col = -1; col < cols; col++) {
+        const x = col * size * 1.732 + (row % 2 === 0 ? 0 : size * 0.866);
+        const y = row * size * 1.5;
+        const wave = Math.sin(ccT * 0.015 + col * 0.3 + row * 0.4) * 0.5 + 0.5;
+
+        ccCtx.beginPath();
+        for (let v = 0; v < 6; v++) {
+          const ang = (v / 6) * Math.PI * 2 - Math.PI / 6;
+          const px = x + Math.cos(ang) * size * 0.88;
+          const py = y + Math.sin(ang) * size * 0.88;
+          if (v === 0) ccCtx.moveTo(px, py);
+          else ccCtx.lineTo(px, py);
+        }
+        ccCtx.closePath();
+        ccCtx.strokeStyle = `rgba(0,245,255,${wave * 0.15})`;
+        ccCtx.lineWidth = 1;
+        ccCtx.stroke();
+      }
+    }
+    ccT++;
+  }
+
+  // ── RESIZE ──
+  function handleResize() {
+    initMatrix();
+    initParticles();
+    if (document.getElementById('about-canvas')) initAbout();
+    if (ccCanvas) initContact();
+  }
+
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  // ── MAIN LOOP ──
+  initMatrix();
+  initParticles();
+  initAbout();
+  initContact();
+
+  function animate() {
+    drawMatrix();
+    drawParticles();
+    drawAbout();
+    drawContact();
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // ── INTERSECTION OBSERVER (reveal) ──
+  const revealEls = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  revealEls.forEach(el => observer.observe(el));
+
+  // ── GLITCH TITLE TYPEWRITER ──
+  const heroTitle = document.querySelector('.hero-title .glitch');
+  if (heroTitle) {
+    let typed = '';
+    const full = 'XEN';
+    let i = 0;
+    function typeHero() {
+      if (i <= full.length) {
+        typed = full.slice(0, i);
+        heroTitle.textContent = typed || '_';
+        heroTitle.setAttribute('data-text', typed || '_');
+        i++;
+        setTimeout(typeHero, 120);
+      } else {
+        heroTitle.textContent = 'XEN';
+        heroTitle.setAttribute('data-text', 'XEN');
+      }
+    }
+    setTimeout(typeHero, 600);
+  }
+
+  // ── FORM SUBMIT ──
+  window.handleFormSubmit = function(e) {
+    e.preventDefault();
+    const form = document.querySelector('.contact-form');
+    const confirm = document.getElementById('form-confirm');
+    form.style.display = 'none';
+    confirm.style.display = 'block';
+  };
+
+  // ── NAV ACTIVE STATE ──
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  const navObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.style.color = '';
+          if (link.getAttribute('href') === '#' + entry.target.id) {
+            link.style.color = 'rgba(0,245,255,0.8)';
+          }
+        });
+      }
+    });
+  }, { threshold: 0.4 });
+  sections.forEach(s => navObserver.observe(s));
+
+  // ── CRT FLICKER ──
+  const body = document.body;
+  function flicker() {
+    const chance = Math.random();
+    if (chance > 0.997) {
+      body.style.filter = 'brightness(1.15) contrast(1.1)';
+      setTimeout(() => {
+        body.style.filter = '';
+        if (Math.random() > 0.5) {
+          setTimeout(() => {
+            body.style.filter = 'brightness(0.9)';
+            setTimeout(() => { body.style.filter = ''; }, 40);
+          }, 60);
+        }
+      }, 50);
+    }
+    setTimeout(flicker, 80 + Math.random() * 200);
+  }
+  flicker();
+
+  // ── SCROLL STRIP DUPLICATE WIDTH FIX ──
+  const track = document.getElementById('strip-track');
+  if (track) {
+    const totalW = track.scrollWidth / 2;
+    track.style.animationDuration = (totalW / 50) + 's';
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>XEN Real-Time Fabric</title>
+<meta name=description content="The XEN real-time fabric: /btw promotion loop, race-safe injection state machine, cross-seat shared context, and the WSS/NATS/JetStream event spine.">
+<style>
+:root{
+  --bg:#0ب0d12;--bg:#0b0d12;--panel:#12151d;--panel2:#191e2b;--line:#252d3c;
+  --txt:#e8ebf2;--dim:#8791a6;--acc:#7c5cff;--acc2:#22d3a6;--warn:#ffb454;--code:#0d1016;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:
+  radial-gradient(1200px 600px at 70% -5%, rgba(124,92,255,.10), transparent 60%),
+  radial-gradient(900px 500px at 0% 100%, rgba(34,211,166,.07), transparent 55%),
+  var(--bg);
+  color:var(--txt);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;-webkit-font-smoothing:antialiased;padding:0 0 100px;min-height:100vh}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px}
+header{padding:70px 0 34px;border-bottom:1px solid var(--line);margin-bottom:40px;position:relative;overflow:hidden}
+/* the one anomaly: a refractive glass ring */
+.orb{position:absolute;top:-70px;right:-40px;width:220px;height:220px;border-radius:50%;
+  background:conic-gradient(from 200deg,rgba(124,92,255,.5),rgba(34,211,166,.35),rgba(124,92,255,.5));
+  filter:blur(2px);opacity:.5;
+  -webkit-mask:radial-gradient(circle,transparent 58%,#000 60%,#000 72%,transparent 74%);
+          mask:radial-gradient(circle,transparent 58%,#000 60%,#000 72%,transparent 74%)}
+h1{font-size:clamp(30px,6vw,52px);font-weight:850;letter-spacing:-.03em;line-height:1.02;
+  background:linear-gradient(100deg,#fff 0%,var(--acc) 55%,var(--acc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;position:relative}
+.lede{color:var(--dim);font-size:17px;margin-top:16px;max-width:60ch;position:relative}
+.pill{display:inline-flex;gap:7px;align-items:center;margin-top:18px;padding:6px 13px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.02);font-size:13px;color:var(--acc2);font-family:ui-monospace,Menlo,monospace}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--acc2);box-shadow:0 0 8px var(--acc2)}
+section{margin:0 0 30px}
+h2{font-size:23px;font-weight:780;letter-spacing:-.015em;margin:46px 0 6px;display:flex;gap:12px;align-items:baseline}
+h2 .n{color:var(--acc);font:600 15px ui-monospace,Menlo,monospace}
+.sub{color:var(--dim);font-size:15px;margin-bottom:18px;max-width:64ch}
+.glass{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.01));
+  border:1px solid var(--line);border-radius:16px;padding:22px 24px;backdrop-filter:blur(8px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 20px 50px -30px rgba(0,0,0,.9)}
+.flow{font:13.5px/1.5 ui-monospace,"SF Mono",Menlo,monospace;color:var(--acc2);white-space:pre;overflow-x:auto;margin:0}
+.states{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.st{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13.5px}
+.st b{color:var(--warn)}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14.5px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--acc2);font-weight:650;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+td code,p code{font:13px ui-monospace,Menlo,monospace;background:var(--panel2);padding:2px 6px;border-radius:5px;color:var(--acc2)}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.links a{color:var(--acc);text-decoration:none;border:1px solid var(--line);border-radius:9px;padding:8px 14px;font-size:14px;background:rgba(255,255,255,.02)}
+.links a:hover{border-color:var(--acc)}
+.foot{margin-top:54px;padding-top:22px;border-top:1px solid var(--line);color:var(--dim);font-size:13px;text-align:center}
+@media(prefers-color-scheme:light){:root{--bg:#f5f6fb;--panel:#fff;--panel2:#eef1f7;--line:#e1e5ef;--txt:#161a24;--dim:#586178;--code:#0d1016}}
+</style></head><body>
+<header><div class=wrap>
+<div class=orb></div>
+<h1>XEN Real-Time Fabric</h1>
+<div class=lede>Single-seat, race-safe, cross-timeline. One brain, many hands, one durable truth — every inbound signal promoted into the one live session, never forked into a competing queue.</div>
+<div class=pill>invariant · exactly one live context</div>
+</div></header>
+
+<div class=wrap>
+
+<section>
+<h2><span class=n>01</span> The <code>/btw</code> promotion loop</h2>
+<div class=sub><b>/btw</b> = "by the way" — the promotion verb. It routes any inbound (voice, SMS, URL, hand-off) into the ONE live TUI session through the <em>existing authenticated webhook</em>. No new session, pane, queue item, or context.</div>
+<div class=glass>
+<pre class=flow>inbound (voice / SMS / URL / hand-off)
+      │
+      ▼
+ /btw promote ──► existing authenticated TUI webhook
+      │
+      ▼
+ the ONE live TUI session   ·   no duplicate context
+      │
+      ▼
+ reply streams back on the same seat</pre>
+</div>
+<div class=sub style="margin-top:16px">Why it exists: when the hands run heavy background work, naive injection stacks inputs <em>behind</em> that backlog and they arrive late. <code>/btw</code> promotes the utterance into the live seat as a first-class turn instead of a queued item. Confirm target session → inject → wait for that session's own response.</div>
+</section>
+
+<section>
+<h2><span class=n>02</span> Race-safe injection state machine</h2>
+<div class=sub>Copy → paste → enter into a live terminal is a race unless it's a machine. It's a machine — single-flight lock, settle delay, submit-once, confirm-before-release.</div>
+<div class=glass>
+<pre class=flow>idle ─► claim-lock ─► paste ─► settle ─► enter ─► confirm ─► release ─┐
+  ▲                                                                   │
+  └───────────────────────────────────────────────────────────────────┘</pre>
+<div class=states>
+<span class=st><b>claim-lock</b> · one inject owns the seat</span>
+<span class=st><b>paste</b> · payload in, not submitted</span>
+<span class=st><b>settle</b> · UI registers before Enter</span>
+<span class=st><b>enter</b> · submit exactly once</span>
+<span class=st><b>confirm</b> · accepted, not lost/doubled</span>
+<span class=st><b>release</b> · next may claim</span>
+</div>
+</div>
+<div class=sub style="margin-top:14px">Guards: no overlapping injects (lock), no premature Enter (settle), no double-submit (confirm). This kills the "stuck in queue / arrived twice / arrived late" failure mode.</div>
+</section>
+
+<section>
+<h2><span class=n>03</span> Persistent cross-seat shared context</h2>
+<div class=sub>One brain across all seats and timelines. Every seat reads and writes the same context store; a seat that dies loses nothing — the reborn seat rehydrates from shared context. The live streams <em>are</em> the hand-off.</div>
+</section>
+
+<section>
+<h2><span class=n>04</span> Event spine — WSS / NATS / JetStream</h2>
+<div class=sub>NATS JetStream is the durable, append-only source of truth for all execution events. Everything else is a projection.</div>
+<div class=glass>
+<pre class=flow>commands ─► gateway ─► persist to JetStream (append-only)
+                            │  (ack on persist)
+                            ▼
+                ┌───────────┴────────────┐
+                ▼                        ▼
+          read-model projections     WSS fan-out
+          (browsers · agents ·       (clients reconnect with
+           canon · summaries)         a stored cursor)</pre>
+</div>
+<table>
+<tr><th>Principle</th><th>Rule</th></tr>
+<tr><td>Source of truth</td><td>JetStream durable log — the one true record</td></tr>
+<tr><td>Everything else</td><td>projection / read-model, never a rival source</td></tr>
+<tr><td>CQRS</td><td>command → persist → execute; <code>accepted</code> on persist</td></tr>
+<tr><td>No loss on restart</td><td>reconnect with a stored JetStream cursor, replay the delta</td></tr>
+<tr><td>Subjects</td><td>routing keys, not a database. Canon is a projection.</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class=n>05</span> Opt-in local HTTP observation</h2>
+<div class=sub>For the reborn brain and debugging, the live stream is observable <em>locally, opt-in</em>: loopback HTTP / SSE on the owning host only — a view, never a second write path. Off by default.</div>
+</section>
+
+<section>
+<h2><span class=n>◇</span> In one line</h2>
+<div class=glass style="font-size:16px;line-height:1.7">
+Inbound → <code>/btw</code> promotes it into the one live seat via the existing webhook → a race-safe state machine injects it exactly once → the turn and its result land in the shared cross-seat context → every execution event is durably logged to JetStream, and every surface is a projection of that log.
+</div>
+<div class=links>
+<a href="./architecture.md">architecture.md</a>
+<a href="./manifest.json">manifest.json</a>
+</div>
+</section>
+
+<div class=foot>XEN Real-Time Fabric · anti-regression by design: one live context, never a duplicate queue. Built in the XLRD TECH dark-mode visual system.</div>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body></html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wesley Allen - Job Search Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .status-pill { padding: 4px 12px; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; cursor: pointer; user-select: none; transition: all 0.2s; }
+        .status-submitted { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .status-progress { background-color: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+        .status-notstarted { background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        .card { transition: all 0.2s; position: relative; }
+        .card:hover { transform: translateY(-2px); }
+        .priority-star { cursor: pointer; transition: color 0.2s; }
+        .is-priority { border-left-width: 8px !important; border-left-color: #ef4444 !important; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900 pb-20">
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Wesley Allen | Job Tracker</h1>
+            <div class="text-right">
+                <span class="block text-sm font-bold">Fairburn, GA</span>
+                <span class="text-[10px] opacity-80 uppercase tracking-tighter text-blue-100">Warehouse Specialist</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
+        
+        <!-- Quick Copy Arsenal -->
+        <section class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                <h2 class="text-lg font-bold flex items-center text-slate-800">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    Data Arsenal
+                </h2>
+                <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Tap to Copy</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <button onclick="copyToClipboard('4709215183', 'Phone')" class="flex flex-col items-start p-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-blue-50">
+                    <span class="text-[10px] uppercase text-slate-400 font-bold">Phone</span>
+                    <span class="font-mono text-blue-700 text-sm">470-921-5183</span>
+                </button>
+                <button onclick="copyToClipboard('allenwesley1018@gmail.com', 'Email')" class="flex flex-col items-start p-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-blue-50">
+                    <span class="text-[10px] uppercase text-slate-400 font-bold">Email</span>
+                    <span class="font-mono text-blue-700 text-sm truncate w-full text-left">allenwesley...</span>
+                </button>
+                <button onclick="copyToClipboard('6843', 'SSN Last 4')" class="flex flex-col items-start p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100">
+                    <span class="text-[10px] uppercase text-red-500 font-bold">SSN (Last 4)</span>
+                    <span class="font-mono text-red-700 text-sm font-bold">6843</span>
+                </button>
+                <button onclick="copyToClipboard('Allen\'s Furniture Service, Fairburn GA 30213', 'Work History')" class="col-span-2 flex flex-col items-start p-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-blue-50">
+                    <span class="text-[10px] uppercase text-slate-400 font-bold">Gap: Allen's Furniture Service</span>
+                    <span class="font-mono text-blue-700 text-xs italic">Fairburn, GA 30213</span>
+                </button>
+                <button onclick="copyToClipboard('Irememberthis1!', 'Password')" class="flex flex-col items-start p-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-blue-50">
+                    <span class="text-[10px] uppercase text-slate-400 font-bold">Portal PW</span>
+                    <span class="font-mono text-blue-700 text-sm">Iremembe...!</span>
+                </button>
+            </div>
+            <div id="copyToast" class="hidden mt-3 text-center text-xs font-bold text-green-600 bg-green-50 p-2 rounded animate-pulse">Copied to clipboard!</div>
+        </section>
+
+        <!-- Application List -->
+        <section class="space-y-4">
+            <div class="flex justify-between items-center px-1">
+                <h2 class="text-lg font-bold text-slate-700">Agency Status (Fairburn/30213 Area)</h2>
+                <button onclick="toggleAddModal()" class="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    New Agency
+                </button>
+            </div>
+            
+            <div id="agencyList" class="space-y-4">
+                <!-- Rendered by JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal for Adding Agency -->
+    <div id="addModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 class="text-xl font-bold mb-4">Add New Agency</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Agency Name</label>
+                    <input type="text" id="newAgencyName" placeholder="e.g. Randstad" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job Details</label>
+                    <input type="text" id="newAgencyInfo" placeholder="e.g. Forklift $18/hr" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Phone</label>
+                    <input type="text" id="newAgencyPhone" placeholder="770-000-0000" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="flex space-x-3 mt-8">
+                <button onclick="toggleAddModal()" class="flex-1 py-3 text-slate-500 font-bold rounded-xl border border-slate-200 hover:bg-slate-50">Cancel</button>
+                <button onclick="saveNewAgency()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const defaultAgencies = [
+            { id: 1, name: 'Hire Dynamics', info: 'EmployBridge Portal (Fairburn Branch)', phone: '7703060405', status: 'submitted', priority: true },
+            { id: 2, name: 'Integrity Staffing', info: 'Order Selector - Fairburn ($18-20/hr)', phone: '4044457519', status: 'progress', priority: true },
+            { id: 5, name: 'Randstad', info: 'Fairburn Warehouse Lead ($17-19/hr)', phone: '7704873215', status: 'notstarted', priority: true },
+            { id: 3, name: 'ProLogistix', info: 'Fairburn Logistics Inventory', phone: '4046001111', status: 'submitted', priority: false },
+            { id: 6, name: 'Express Employment', info: 'South Fulton Production', phone: '4046713000', status: 'notstarted', priority: false },
+            { id: 7, name: 'Aerotek', info: 'Logistics/Picker Picker', phone: '6785135111', status: 'notstarted', priority: false },
+            { id: 4, name: 'Diverse Staffing', info: 'Reach Lift Role ($18.65/hr)', phone: '', status: 'progress', priority: false }
+        ];
+
+        let agencies = JSON.parse(localStorage.getItem('wesley_agencies')) || defaultAgencies;
+
+        const statusCycles = ['notstarted', 'progress', 'submitted'];
+        const statusLabels = { 'notstarted': 'NOT STARTED', 'progress': 'IN PROGRESS', 'submitted': 'SUBMITTED' };
+
+        function renderAgencies() {
+            const list = document.getElementById('agencyList');
+            list.innerHTML = '';
+
+            const sorted = [...agencies].sort((a, b) => (b.priority === a.priority) ? 0 : b.priority ? 1 : -1);
+
+            sorted.forEach(agency => {
+                const borderClass = agency.status === 'submitted' ? 'border-green-500' : 
+                                   agency.status === 'progress' ? 'border-amber-400' : 'border-slate-300';
+                
+                const card = document.createElement('div');
+                card.className = `card bg-white rounded-xl p-5 shadow-sm border-l-4 ${borderClass} ${agency.priority ? 'is-priority' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2">
+                                <h3 class="font-bold text-lg text-slate-800">${agency.name}</h3>
+                                <button onclick="togglePriority(${agency.id})" class="priority-star ${agency.priority ? 'text-red-500' : 'text-slate-200'}">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                </button>
+                            </div>
+                            <p class="text-sm text-slate-500">${agency.info}</p>
+                        </div>
+                        <div class="flex flex-col items-end space-y-2">
+                            <span onclick="cycleStatus(${agency.id})" class="status-pill status-${agency.status}">
+                                ${statusLabels[agency.status]}
+                            </span>
+                        </div>
+                    </div>
+                    ${agency.phone ? `
+                        <div class="flex items-center space-x-2 mt-4">
+                            <a href="tel:${agency.phone}" class="flex-1 text-center py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md shadow-blue-100 flex items-center justify-center transition-transform active:scale-95">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                Call Office
+                            </a>
+                            <button onclick="deleteAgency(${agency.id})" class="p-2 text-slate-200 hover:text-red-500 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="flex justify-end mt-4">
+                            <button onclick="deleteAgency(${agency.id})" class="p-2 text-slate-200 hover:text-red-500">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    `}
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function cycleStatus(id) {
+            const agency = agencies.find(a => a.id === id);
+            agency.status = statusCycles[(statusCycles.indexOf(agency.status) + 1) % statusCycles.length];
+            saveAndRender();
+        }
+
+        function togglePriority(id) {
+            const agency = agencies.find(a => a.id === id);
+            agency.priority = !agency.priority;
+            saveAndRender();
+        }
+
+        function toggleAddModal() {
+            document.getElementById('addModal').classList.toggle('hidden');
+        }
+
+        function saveNewAgency() {
+            const name = document.getElementById('newAgencyName').value;
+            const info = document.getElementById('newAgencyInfo').value;
+            const phone = document.getElementById('newAgencyPhone').value.replace(/\D/g, '');
+            if (!name) return;
+            agencies.unshift({ id: Date.now(), name, info: info || 'General Inventory', phone, status: 'notstarted', priority: false });
+            saveAndRender();
+            toggleAddModal();
+            ['newAgencyName', 'newAgencyInfo', 'newAgencyPhone'].forEach(id => document.getElementById(id).value = '');
+        }
+
+        function deleteAgency(id) {
+            if (confirm('Delete this agency?')) {
+                agencies = agencies.filter(a => a.id !== id);
+                saveAndRender();
+            }
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('wesley_agencies', JSON.stringify(agencies));
+            renderAgencies();
+        }
+
+        function copyToClipboard(text, label) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            const toast = document.getElementById('copyToast');
+            toast.innerText = `${label} copied!`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+        }
+
+        renderAgencies();
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

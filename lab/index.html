@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Lab — Xen Build Telemetry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:   #050505;
+    --paper: #0c0c0c;
+    --char:  #161616;
+    --cream: #f4eee4;
+    --bone:  #d8d2c2;
+    --dust:  #5a5a5a;
+    --volt:  #00ff88;
+    --gold:  #ffcc40;
+    --rust:  #ff4a3d;
+    --steel: #6ad4ff;
+    --rose:  #ff5e9c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: var(--volt); color: var(--ink); }
+  html, body {
+    background: var(--ink); color: var(--cream);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* faint paper texture */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 1200px 600px at 20% 0%, rgba(0,255,136,0.04), transparent 60%),
+      radial-gradient(ellipse 800px 600px at 80% 100%, rgba(255,94,156,0.03), transparent 60%);
+  }
+
+  main { position: relative; z-index: 1; max-width: 1480px; margin: 0 auto; padding: 0 40px; }
+
+  /* ── Masthead ──────────────────────────────────────────────────────── */
+  .top {
+    padding: 32px 0 24px;
+    border-bottom: 1px solid rgba(244,238,228,0.12);
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+  }
+  .top .c { text-align: center; }
+  .top .r { text-align: right; }
+  .top .volt { color: var(--volt); }
+
+  .hero { padding: 100px 0 60px; }
+  .hero .tag {
+    color: var(--volt);
+    font-size: 11px; letter-spacing: 0.4em; text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+  .hero h1 {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: clamp(72px, 11vw, 196px);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    color: var(--cream);
+    margin-bottom: 24px;
+  }
+  .hero h1 em { color: var(--volt); font-style: italic; }
+  .hero p {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: clamp(20px, 2.4vw, 30px);
+    color: var(--bone);
+    max-width: 880px;
+    line-height: 1.35;
+  }
+
+  /* ── Banner stats ──────────────────────────────────────────────────── */
+  .stats {
+    border-top: 1px solid rgba(244,238,228,0.15);
+    border-bottom: 1px solid rgba(244,238,228,0.15);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 60px 0;
+  }
+  .stat {
+    padding: 36px 28px;
+    border-right: 1px solid rgba(244,238,228,0.08);
+  }
+  .stat:last-child { border-right: 0; }
+  .stat-label {
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+    margin-bottom: 18px;
+  }
+  .stat-value {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 56px;
+    line-height: 1;
+    color: var(--volt);
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .stat-sub {
+    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--dust);
+  }
+
+  /* ── Mission log ──────────────────────────────────────────────────── */
+  .log-head {
+    display: grid; grid-template-columns: 100px 1fr auto;
+    gap: 32px;
+    align-items: baseline;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--cream);
+    margin-bottom: 0;
+  }
+  .log-head .n {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 56px;
+    color: var(--volt);
+    line-height: 1;
+  }
+  .log-head h2 {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: clamp(36px, 5vw, 72px);
+    color: var(--cream);
+    line-height: 1;
+  }
+  .log-head h2 em { color: var(--volt); font-style: italic; }
+  .log-head .meta {
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+  }
+
+  .log { padding: 32px 0; }
+  .log-row {
+    display: grid;
+    grid-template-columns: 120px 200px 1fr 100px 70px;
+    gap: 24px;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(244,238,228,0.08);
+    align-items: baseline;
+    font-size: 13px;
+    transition: background 0.4s, padding 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .log-row:hover {
+    background: linear-gradient(90deg, rgba(0,255,136,0.04), transparent 60%);
+    padding-left: 16px;
+  }
+  .log-row .ts { color: var(--dust); font-size: 11px; letter-spacing: 0.1em; }
+  .log-row .file {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cream);
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .log-row .desc {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    color: var(--bone);
+    line-height: 1.4;
+  }
+  .log-row .size {
+    color: var(--dust);
+    text-align: right;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+  .log-row .dur {
+    text-align: right;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 28px;
+    color: var(--volt);
+    line-height: 1;
+  }
+  .log-row[data-phase="deploy"] .dur,
+  .log-row[data-phase="publish"] .dur { color: var(--gold); }
+  .log-row[data-phase="build"] .dur   { color: var(--volt); }
+
+  .pill {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    color: var(--volt);
+    margin-right: 8px;
+  }
+  .pill.deploy  { color: var(--gold); }
+  .pill.publish { color: var(--rose); }
+  .pill.build   { color: var(--volt); }
+
+  /* ── Pull quote ────────────────────────────────────────────────────── */
+  .pull {
+    padding: 100px 0 60px;
+    text-align: center;
+    border-top: 1px solid rgba(244,238,228,0.15);
+    margin-top: 80px;
+  }
+  .pull blockquote {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: clamp(36px, 5vw, 64px);
+    line-height: 1.1;
+    color: var(--cream);
+    max-width: 1100px; margin: 0 auto 24px;
+    letter-spacing: -0.02em;
+  }
+  .pull blockquote em { color: var(--volt); }
+  .pull cite {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+    font-style: normal;
+  }
+  .pull cite a { color: var(--volt); text-decoration: none; }
+
+  footer {
+    padding: 40px 0;
+    border-top: 1px solid rgba(244,238,228,0.1);
+    display: grid; grid-template-columns: 1fr auto;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--dust);
+  }
+  footer a { color: var(--volt); text-decoration: none; }
+
+  @media (max-width: 880px) {
+    .top { grid-template-columns: 1fr; gap: 4px; }
+    .top .c, .top .r { text-align: left; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat { border-bottom: 1px solid rgba(244,238,228,0.08); }
+    .log-head { grid-template-columns: auto 1fr; }
+    .log-head .meta { grid-column: 1 / -1; }
+    .log-row { grid-template-columns: 1fr; gap: 6px; padding: 16px 0; }
+    .log-row .size, .log-row .dur { text-align: left; }
+    .log-row .dur { font-size: 36px; }
+    footer { grid-template-columns: 1fr; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<main>
+
+<div class="top">
+  <div class="l volt">XEN · The Lab · v0.1</div>
+  <div class="c">Build &amp; Deploy Telemetry</div>
+  <div class="r"><a style="color:inherit;text-decoration:none" href="https://tui.xlrd.org/aua/">manifesto</a> · <a style="color:inherit;text-decoration:none" href="https://tui.xlrd.org/endpoints/">catalog</a> · <a style="color:inherit;text-decoration:none" href="https://tui.xlrd.org/status/">live</a></div>
+</div>
+
+<section class="hero">
+  <div class="tag">// Mission log · agent-built artefacts</div>
+  <h1>Sites at the <em>speed</em><br>of sentences.</h1>
+  <p>Every page in this portfolio was written, deployed, and made publicly resolvable by an AI agent in the time it would take a human to open the file picker.</p>
+  <div style="margin-top:48px;padding-top:32px;border-top:1px solid rgba(244,238,228,0.12);display:grid;grid-template-columns:1fr 1fr;gap:48px;max-width:1100px;">
+    <div>
+      <div style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--dust);margin-bottom:14px;">// Business</div>
+      <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(28px,3.6vw,48px);line-height:1.05;color:var(--cream);">We get paid<br>to save <em style="color:var(--volt);">time</em>.</div>
+    </div>
+    <div>
+      <div style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--dust);margin-bottom:14px;">// Personal</div>
+      <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(28px,3.6vw,48px);line-height:1.05;color:var(--cream);">Automate<br><em style="color:var(--rust);">or die</em>.</div>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stat">
+    <div class="stat-label">Pages shipped</div>
+    <div class="stat-value" id="pages-count">5</div>
+    <div class="stat-sub">manifesto · status · catalog · godmode · lab</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Push → first 200</div>
+    <div class="stat-value">6.3<small style="font-size:24px;color:var(--dust);">s</small></div>
+    <div class="stat-sub">GH Pages publish on push event</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Mean build</div>
+    <div class="stat-value" id="mean-build">~93<small style="font-size:24px;color:var(--dust);">s</small></div>
+    <div class="stat-sub">writing a single self-contained HTML</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Mirrors</div>
+    <div class="stat-value">2</div>
+    <div class="stat-sub">tui.xlrd.org · hitthe.link</div>
+  </div>
+</section>
+
+<section style="border-top:1px solid rgba(244,238,228,0.15);padding:100px 0 80px;">
+  <div style="font-size:11px;letter-spacing:0.4em;text-transform:uppercase;color:var(--volt);margin-bottom:32px;">// The receipts</div>
+  <h2 style="font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(48px,7vw,112px);line-height:0.95;color:var(--cream);margin-bottom:60px;letter-spacing:-0.03em;">From <em style="color:var(--rust);font-style:italic;">$1,500</em> a month<br>to under <em style="color:var(--volt);font-style:italic;">$300</em>.<br>On the way to <em style="color:var(--volt);font-style:italic;">zero</em>.</h2>
+  <style>
+    .receipts-grid { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid rgba(244,238,228,0.12); background:var(--paper); }
+    .receipts-grid > div { padding:48px 36px; border-right:1px solid rgba(244,238,228,0.08); }
+    .receipts-grid > div:last-child { border-right:0; }
+    .receipts-grid .num { font-family:'Instrument Serif',serif; font-style:italic; font-size:clamp(48px,8vw,84px); line-height:1; letter-spacing:-0.03em; word-break:keep-all; }
+    .receipts-grid .num small { font-size:clamp(16px,2.4vw,24px); color:var(--dust); font-style:normal; letter-spacing:0; white-space:nowrap; }
+    .receipts-grid .lbl-top { font-size:10px; letter-spacing:0.3em; text-transform:uppercase; color:var(--dust); margin-bottom:24px; }
+    .receipts-grid .lbl-bot { font-size:11px; letter-spacing:0.15em; text-transform:uppercase; color:var(--dust); margin-top:14px; }
+    @media (max-width:780px) {
+      .receipts-grid { grid-template-columns:1fr; }
+      .receipts-grid > div { border-right:0; border-bottom:1px solid rgba(244,238,228,0.08); padding:36px 24px; }
+      .receipts-grid > div:last-child { border-bottom:0; }
+    }
+  </style>
+  <div class="receipts-grid">
+    <div>
+      <div class="lbl-top">Industry average</div>
+      <div class="num" style="color:var(--rust);">$1,500<small>+ / mo</small></div>
+      <div class="lbl-bot">SaaS subscriptions, per individual</div>
+    </div>
+    <div style="background:linear-gradient(180deg,rgba(0,255,136,0.04),transparent);">
+      <div class="lbl-top" style="color:var(--volt);">qi · today</div>
+      <div class="num" style="color:var(--volt);">$300<small> / mo</small></div>
+      <div class="lbl-bot" style="color:var(--volt);">80% reduction · live numbers</div>
+    </div>
+    <div>
+      <div class="lbl-top">Target</div>
+      <div class="num" style="color:var(--cream);">$0<small> / mo</small></div>
+      <div class="lbl-bot">100% sovereign · FOSS · local</div>
+    </div>
+  </div>
+  <p style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(20px,2.4vw,28px);color:var(--bone);max-width:880px;margin-top:48px;line-height:1.4;">The path to zero runs through the same architecture you're reading right now. Local Ollama replaces an OpenAI subscription. AUAs over the URL bar replace SaaS dashboards. GitHub Pages replaces Vercel. Cloudflared replaces paid ngrok. Edge-TTS replaces ElevenLabs. Every subscription is one ingenious local replacement away from disappearing.</p>
+</section>
+
+<section class="log-head">
+  <div class="n">i.</div>
+  <h2>The <em>mission log</em></h2>
+  <div class="meta">// chronological · build / deploy / publish</div>
+</section>
+
+<div class="log" id="log">
+  <!-- rows injected -->
+</div>
+
+<section class="pull">
+  <blockquote>The agent doesn't <em>build the site</em>. The agent <em>is</em> the site.</blockquote>
+  <cite>— qi · <a href="https://tui.xlrd.org/aua/">AUA manifesto</a></cite>
+</section>
+
+<footer>
+  <div>XEN · The Lab · build telemetry</div>
+  <div><a href="https://hitthe.link/aua/">manifesto</a> · <a href="https://hitthe.link/endpoints/">catalog</a> · <a href="https://hitthe.link/status/">live</a></div>
+</footer>
+
+</main>
+
+<script>
+  // Embedded deploy log (snapshot at page build time; live updates via /deploys.json
+  // when this is hosted on the AUA edge)
+  const SEED = [
+    { ts: '2026-05-19T17:27:52-04:00', file: 'godmode-siri.html', size: 16107, build_s: null,
+      phase: 'build',
+      desc: 'Animated parallax shortcut walkthrough — first AUA page of the session.' },
+    { ts: '2026-05-19T18:07:09-04:00', file: 'aua.html', size: 20244, build_s: 80,
+      phase: 'build',
+      desc: 'Editorial manifesto — Instrument Serif display, drop-cap, two-column body, six tenets.' },
+    { ts: '2026-05-19T18:09:00-04:00', file: 'status.html', size: 18598, build_s: 111,
+      phase: 'build',
+      desc: 'Live dashboard — CRT scanlines, ticker tape, polls /health every five seconds.' },
+    { ts: '2026-05-19T18:10:29-04:00', file: 'endpoints.html', size: 21154, build_s: 89,
+      phase: 'build',
+      desc: 'Endpoint catalog — magazine grid, live filter, six categories, twenty-six routes.' },
+    { ts: '2026-05-19T18:14:08-04:00', file: 'hitthe.link · commit + push', size: null, build_s: 4.8,
+      phase: 'deploy',
+      desc: 'Cloned mono repo, rewrote relative paths to absolute, committed, pushed.' },
+    { ts: '2026-05-19T18:14:14-04:00', file: 'GH Pages · first 200', size: null, build_s: 6.3,
+      phase: 'publish',
+      desc: 'Push 29b2314..a4b0225 reached the edge — hitthe.link/aua/ live.' },
+  ];
+
+  // Try to fetch a live deploys.json (if hosted alongside; falls back to SEED)
+  async function loadDeploys() {
+    try {
+      const r = await fetch('https://tui.xlrd.org/share/deploys.json', { cache: 'no-store' });
+      if (r.ok) {
+        const j = await r.json();
+        if (Array.isArray(j) && j.length) return j;
+      }
+    } catch {}
+    return SEED;
+  }
+
+  function fmtTime(iso) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en-US', { hour12: false }) + ' · ' +
+           d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  function fmtSize(n) { return n == null ? '—' : (n >= 1000 ? (n/1000).toFixed(1)+'k' : n) + 'B'; }
+  function fmtDur(s)  { return s == null ? '—' : s.toFixed(1) + 's'; }
+
+  loadDeploys().then(rows => {
+    const log = document.getElementById('log');
+    log.innerHTML = rows.map(r => `
+      <div class="log-row" data-phase="${r.phase}">
+        <div class="ts">${fmtTime(r.ts)}</div>
+        <div class="file"><span class="pill ${r.phase}">${r.phase}</span>${r.file}</div>
+        <div class="desc">${r.desc}</div>
+        <div class="size">${fmtSize(r.size)}</div>
+        <div class="dur">${fmtDur(r.build_s)}</div>
+      </div>
+    `).join('');
+
+    // Recompute hero stats
+    const builds = rows.filter(r => r.phase === 'build' && r.build_s != null);
+    if (builds.length) {
+      const mean = builds.reduce((a,b)=>a+b.build_s, 0) / builds.length;
+      document.getElementById('mean-build').innerHTML =
+        Math.round(mean) + '<small style="font-size:24px;color:var(--dust);">s</small>';
+    }
+    document.getElementById('pages-count').textContent = rows.filter(r => r.phase === 'build').length + 1;
+  });
+</script>
+
+<script src="/_shared/ava-play.js" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>
+

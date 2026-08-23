@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>XEN · STEER — the command ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Spline+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --obsidian:#0a0a0c;--coal:#101015;--slate:#16161d;
+  --gold:#16d989;--gold-hi:#7dffc2;--gold-deep:#0a6e44;--gold-leaf:#2ff0a3;
+  --bone:#f3eee1;--muted:#938c7c;--faint:#5d574b;
+  --green:#9affc4;--amber:#ffc24a;--ox:#c25b4a;
+  --mono:'JetBrains Mono',ui-monospace,monospace;--body:'Spline Sans',system-ui,sans-serif;--disp:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:
+  radial-gradient(1100px 600px at 50% -8%,rgba(22,217,137,.16),transparent 60%),
+  radial-gradient(circle at 50% 30%,#14141b,var(--obsidian) 75%);
+  color:var(--bone);font-family:var(--body);font-weight:300;-webkit-font-smoothing:antialiased}
+.wrap{max-width:780px;margin:0 auto;padding:40px 18px 120px}
+.eyebrow{text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.42em;color:var(--gold);text-transform:uppercase;opacity:.85}
+h1{margin:8px 0 0;text-align:center;font-family:var(--disp);font-weight:600;font-size:clamp(30px,6vw,52px);letter-spacing:.01em;line-height:1.05;color:var(--bone)}
+h1 i{font-style:italic;font-weight:600;background:linear-gradient(100deg,var(--gold-hi),var(--gold) 48%,var(--gold-leaf));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(45,240,163,.55)) drop-shadow(0 0 4px rgba(22,217,137,.85))}
+.rule{height:1px;margin:20px auto 8px;background:linear-gradient(90deg,transparent,var(--gold-deep),var(--gold-leaf),var(--gold-deep),transparent);box-shadow:0 0 12px rgba(47,240,163,.4)}
+.ethos{text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--gold-leaf);text-transform:uppercase}
+.note{text-align:center;color:var(--muted);font-family:var(--mono);font-size:11px;margin:6px 0 0;letter-spacing:.02em}
+.bulk{margin:24px 0 8px;border:1px solid rgba(201,162,74,.22);border-radius:6px;padding:14px;background:linear-gradient(165deg,#181820,#0d0d12);position:relative;overflow:hidden}
+.bulk::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-leaf),transparent)}
+textarea{width:100%;min-height:62px;resize:vertical;background:#0b0b0f;border:1px solid var(--faint);color:var(--bone);font-family:var(--mono);font-size:13px;padding:10px;border-radius:5px;line-height:1.55}
+textarea::placeholder{color:var(--faint)} textarea:focus{outline:none;border-color:var(--gold)}
+.row{display:flex;gap:9px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.btn{cursor:pointer;border:1px solid var(--faint);background:transparent;color:var(--bone);font-family:var(--mono);font-weight:500;letter-spacing:.08em;padding:9px 15px;border-radius:4px;font-size:11.5px;text-transform:uppercase;transition:.16s}
+.btn:hover{border-color:var(--gold);color:var(--gold-hi)}
+.btn.go{background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,var(--gold-deep));color:#04140c;border:none;font-weight:700;box-shadow:0 0 20px rgba(22,217,137,.45),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn.go:hover{filter:brightness(1.08)}
+.hint{color:var(--faint);font-family:var(--mono);font-size:10.5px;letter-spacing:.02em}
+#list{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.task{display:flex;align-items:flex-start;gap:10px;background:linear-gradient(165deg,#181820,#0d0d12);border:1px solid rgba(201,162,74,.16);border-left:2px solid var(--gold-deep);border-radius:5px;padding:11px 12px;cursor:grab;transition:.14s}
+.task:hover{border-color:rgba(201,162,74,.4);border-left-color:var(--gold-leaf)} .task.dragging{opacity:.4}
+.grip{color:var(--faint);font-family:var(--mono);font-size:13px;line-height:1.3;cursor:grab;user-select:none;padding-top:2px}
+.pill{flex:0 0 auto;font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 9px;border-radius:3px;cursor:pointer;user-select:none;letter-spacing:.1em;border:1px solid transparent;transition:.12s}
+.pill.P0{background:rgba(194,91,74,.16);color:var(--ox);border-color:var(--ox)}
+.pill.P1{background:rgba(255,194,74,.12);color:var(--amber);border-color:rgba(255,194,74,.6)}
+.pill.P2{background:rgba(201,162,74,.12);color:var(--gold);border-color:rgba(201,162,74,.6)}
+.pill.P3{background:rgba(147,140,124,.12);color:var(--muted);border-color:var(--faint)}
+.pill:hover{filter:brightness(1.2)}
+.txt{flex:1;font-family:var(--body);font-weight:400;font-size:13.5px;line-height:1.45;color:var(--bone);word-break:break-word}
+.txt[contenteditable]:focus{outline:1px solid var(--gold);border-radius:3px}
+.src{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:3px;align-self:center;border:1px solid}
+.s-mac{color:var(--green);border-color:rgba(154,255,196,.4)}.s-win{color:var(--amber);border-color:rgba(255,194,74,.4)}.s-xen{color:var(--gold);border-color:rgba(201,162,74,.4)}.s-rev{color:var(--ox);border-color:rgba(194,91,74,.4)}.s-qi{color:var(--bone);border-color:var(--faint)}
+.del{color:var(--faint);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;align-self:center}
+.del:hover{color:var(--ox)}
+.mic{cursor:pointer;font-size:12px;align-self:center;opacity:.5;padding:2px 4px;user-select:none}.mic:hover{opacity:1}
+.mic.rec,.btn.rec{color:var(--ox)!important;border-color:var(--ox)!important;animation:recp .9s infinite}
+@keyframes recp{0%,100%{opacity:.45}50%{opacity:1}}
+.fire{margin-left:auto;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--gold-leaf);align-self:center;text-transform:uppercase;text-shadow:0 0 9px rgba(47,240,163,.65);animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.9}}
+#out{margin-top:22px;border:1px solid rgba(201,162,74,.22);border-radius:6px;padding:14px 16px;background:linear-gradient(165deg,#15151c,#0c0c11);display:none}
+#out pre{white-space:pre-wrap;font-family:var(--mono);font-size:12px;color:var(--gold-hi);margin:0;line-height:1.55}
+footer{margin-top:34px;text-align:center;color:var(--faint);font-family:var(--mono);font-size:10px;letter-spacing:.1em}
+footer i{font-family:var(--disp);font-style:italic;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">— Command Ledger · Parallel Goal Swarm —</div>
+  <h1>XEN · <i>Steer</i></h1>
+  <div class="rule"></div>
+  <div class="ethos">All parallel · auto-manifest · PGS backgrounds · zero delay · every time</div>
+  <div class="note">one ledger. pills weight attention — they do NOT sequence. every line fires at once, immediately.</div>
+
+  <div class="bulk">
+    <textarea id="bulk" placeholder="bulk paste — one task per line (paste a whole block, then ⊕ Add all)"></textarea>
+    <div class="row">
+      <button class="btn go" id="addall">⊕ Add all</button>
+      <button class="btn" id="dictate">🎙 Dictate</button>
+      <button class="btn" id="send">⬡ Send to Xen</button>
+      <button class="btn" id="reset">↺ reset</button>
+      <span class="hint">click a pill to cycle P0→P3 · drag ⋮ to group · click text to edit</span>
+    </div>
+  </div>
+
+  <div id="list"></div>
+  <div id="out"><pre id="outtxt"></pre></div>
+  <footer><i>hitthe.link</i> — the command ledger · noindex · weighted firing array · persists locally</footer>
+</div>
+
+<script>
+const PILLS=['P0','P1','P2','P3'];
+const SEED=[
+  {id:'nats',p:'P0',s:'mac',t:'Fix NATS omni-bridge blocker (create omni-nats-bridge.js)'},
+  {id:'p0life',p:'P0',s:'mac',t:'Audit P0 lifelines — what must survive if you step away (pre-hosp hardening)'},
+  {id:'vault',p:'P0',s:'xen',t:'Unify memory into xen-vault (full fidelity, instant, never watered down)'},
+  {id:'spog',p:'P0',s:'xen',t:'SPOG — every TUI/terminal event surfaces VERBOSE in chat, nothing hidden'},
+  {id:'distill',p:'P1',s:'xen',t:'grok-CLI memory distiller → _candidates/ (no auto-canonize)'},
+  {id:'macvault',p:'P1',s:'xen',t:'Point Mac-Xen at the unified synced vault'},
+  {id:'mesh',p:'P1',s:'mac',t:'Bridge Win↔Mac inbox state over NATS (symmetric omni-inbox)'},
+  {id:'beep',p:'P1',s:'mac',t:'Wire Beeper-beside + voice into XOS2 inbox panel'},
+  {id:'dash',p:'P1',s:'xen',t:'Single live status dashboard — every system green/red'},
+  {id:'ctx',p:'P1',s:'xen',t:'SessionStart CONTEXT.md deterministic inject + heartbeat'},
+  {id:'icons',p:'P2',s:'win',t:'Place the 10 grok chrome icons on hitthe.link'},
+  {id:'xos2',p:'P2',s:'mac',t:'Deploy XOS2 / XUI 3-panel live'},
+  {id:'harden',p:'P2',s:'xen',t:'Harden autonomous loops (EGBOps + comms + memory, lights-out)'},
+  {id:'egbship',p:'P2',s:'rev',t:'Ship queued EGBOps/Padre prospect sites (grok assets ready)'},
+  {id:'stylism',p:'P2',s:'win',t:'Confirm 700+ Pinterest stylism scrape → ready for training'},
+  {id:'exmig',p:'P2',s:'mac',t:'Confirm Exedus canonical-root migration (/Volumes/qi_)'},
+  {id:'skin',p:'P3',s:'mac',t:'Skin XUI to ledger / stylism aesthetic'},
+  {id:'xlrd',p:'P3',s:'xen',t:'xlrd.org apex → xlrd-org 3D-mascot landing (fix 525)'},
+  {id:'selgold',p:'P3',s:'win',t:'/sel gold — final pass (grok photoreal if wanted)'},
+  {id:'phound',p:'P3',s:'mac',t:'Phound — TCR submit + domain swap + API/programmatic efficiencies'},
+  {id:'egbbatch',p:'P3',s:'rev',t:'Run fresh EGBOps batch (EGBO local + XGBO remote) + Closer outreach'},
+];
+const KEY='xen-steer-v3';
+let T=load();
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.length)return s;}catch(e){}return JSON.parse(JSON.stringify(SEED));}
+function save(){localStorage.setItem(KEY,JSON.stringify(T));}
+const listEl=document.getElementById('list');
+function render(){
+  listEl.innerHTML='';
+  T.forEach(task=>{
+    const el=document.createElement('div'); el.className='task'; el.draggable=true; el.dataset.id=task.id;
+    const srcLbl={mac:'MAC',win:'WIN',xen:'XEN',rev:'REV',qi:'QI'}[task.s]||'QI';
+    el.innerHTML=`<span class="grip">⋮⋮</span>
+      <span class="pill ${task.p}" title="click to cycle priority">${task.p}</span>
+      <span class="txt" contenteditable spellcheck="false">${escapeHtml(task.t)}</span>
+      <span class="src s-${task.s}">${srcLbl}</span>
+      <span class="fire">▶ firing</span>
+      <span class="mic" title="dictate into this task">🎙</span>
+      <span class="del" title="remove">×</span>`;
+    el.querySelector('.pill').onclick=e=>{e.stopPropagation();task.p=PILLS[(PILLS.indexOf(task.p)+1)%PILLS.length];save();render();};
+    el.querySelector('.del').onclick=e=>{e.stopPropagation();T=T.filter(x=>x.id!==task.id);save();render();};
+    el.querySelector('.mic').onclick=e=>{e.stopPropagation();const m=e.currentTarget;const tx=el.querySelector('.txt');dictate((txt,fin)=>{tx.textContent=txt;if(fin){task.t=txt.trim();save();}},m);};
+    const tx=el.querySelector('.txt');
+    tx.onblur=()=>{task.t=tx.textContent.trim();save();};
+    el.addEventListener('dragstart',e=>{el.classList.add('dragging');e.dataTransfer.setData('text/plain',task.id);});
+    el.addEventListener('dragend',()=>{el.classList.remove('dragging');save();});
+    listEl.appendChild(el);
+  });
+}
+listEl.addEventListener('dragover',e=>{
+  e.preventDefault();
+  const dragging=listEl.querySelector('.dragging'); if(!dragging)return;
+  const after=getAfter(e.clientY);
+  if(after==null) listEl.appendChild(dragging); else listEl.insertBefore(dragging,after);
+});
+listEl.addEventListener('drop',e=>{
+  e.preventDefault();
+  const ids=[...listEl.querySelectorAll('.task')].map(n=>n.dataset.id);
+  T.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id)); save();
+});
+function getAfter(y){
+  const els=[...listEl.querySelectorAll('.task:not(.dragging)')];
+  return els.reduce((c,ch)=>{const b=ch.getBoundingClientRect();const o=y-b.top-b.height/2;return(o<0&&o>c.offset)?{offset:o,element:ch}:c;},{offset:-Infinity}).element||null;
+}
+function escapeHtml(s){return s.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));}
+document.getElementById('addall').onclick=()=>{
+  const lines=document.getElementById('bulk').value.split('\n').map(l=>l.replace(/^\s*[\d.\-•*]+\s*/,'').trim()).filter(Boolean);
+  lines.forEach(l=>T.unshift({id:'q'+Date.now()+Math.floor(Math.random()*999),p:'P0',s:'qi',t:l}));
+  document.getElementById('bulk').value=''; save(); render();
+};
+document.getElementById('send').onclick=()=>{
+  let txt='XEN STEER — '+T.length+' tasks, ALL PARALLEL / instant auto-manifest (pills = weight, not order):\n';
+  PILLS.forEach(p=>{const g=T.filter(x=>x.p===p);if(g.length){txt+='\n['+p+']\n';g.forEach(x=>txt+='  • '+x.t+'\n');}});
+  const out=document.getElementById('out'),o=document.getElementById('outtxt');
+  out.style.display='block';o.textContent=txt;out.scrollIntoView({behavior:'smooth'});
+  navigator.clipboard?.writeText(txt); // backup copy
+  // AUTO-INJECT into Xen via the noauth AUA endpoint (fire-and-forget, simple GET = no CORS preflight)
+  try{
+    fetch('https://tui.xlrd.org/tui?q='+encodeURIComponent('[STEER BOARD] auto-inject — execute as PGS, all parallel:\n'+txt),{mode:'no-cors'});
+    o.textContent='⚡ auto-injected into Xen (tui.xlrd.org) — also copied as backup\n\n'+txt;
+  }catch(e){ o.textContent='(inject unreachable — copied to clipboard)\n\n'+txt; }
+};
+document.getElementById('reset').onclick=()=>{if(confirm('Reset to the original gather?')){T=JSON.parse(JSON.stringify(SEED));save();render();}};
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function dictate(onText,btn){
+  if(btn&&btn._rec){btn._rec.stop();btn._rec=null;btn.classList.remove('rec');return;}
+  if(!SR){alert('Dictation needs Chrome / Edge / Comet (Web Speech API + mic permission).');return;}
+  const r=new SR();r.lang='en-US';r.interimResults=true;r.continuous=true;let fin='';
+  r.onresult=e=>{let it='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=t+' ';else it+=t;}onText((fin+it).trim(),false);};
+  r.onend=()=>{if(btn){btn.classList.remove('rec');btn._rec=null;}onText(fin.trim(),true);};
+  r.onerror=()=>{if(btn){btn.classList.remove('rec');btn._rec=null;}};
+  if(btn){btn.classList.add('rec');btn._rec=r;}
+  r.start();
+}
+document.getElementById('dictate').onclick=e=>{
+  const ta=document.getElementById('bulk');const base=ta.value;
+  dictate((txt)=>{ta.value=(base?base+'\n':'')+txt;},e.currentTarget);
+};
+render();
+
+// ── SUGGESTED PROMPTS panel ─────────────────────────────────────────────────
+// Reads ~/.xen/prompt-suggestions.jsonl via the omnimind API (api.xlrd.org)
+// and renders the last 15 captured suggestions as one-click fire buttons.
+const SUGG_KEY = 'xen-suggestions-v1';
+let SUGG = [];
+
+async function loadSuggestions() {
+  try {
+    const r = await fetch('https://api.xlrd.org/api/suggestions', {method:'GET', signal: AbortSignal.timeout(4000)});
+    if (r.ok) { SUGG = await r.json(); renderSugg(); return; }
+  } catch(e) {}
+  // Fallback: read from localStorage cache
+  try { SUGG = JSON.parse(localStorage.getItem(SUGG_KEY) || '[]'); } catch(e) { SUGG=[]; }
+  renderSugg();
+}
+
+function renderSugg() {
+  const el = document.getElementById('sugg-list');
+  if (!el) return;
+  if (!SUGG.length) { el.innerHTML='<span style="color:var(--faint);font-size:11px">No suggestions captured yet — runs after each session turn</span>'; return; }
+  // Flatten all suggestions from all entries, most recent first
+  const all = [];
+  [...SUGG].reverse().forEach(entry => {
+    (entry.suggestions||[]).forEach(s => { if(s && !all.includes(s)) all.push(s); });
+  });
+  el.innerHTML = all.slice(0,20).map(s => `
+    <button class="sugg-btn" onclick="firesugg(this)" data-s="${escapeHtml(s)}" title="Click to add to tasks or fire to Xen">
+      ${escapeHtml(s)}
+    </button>`).join('');
+}
+
+function firesugg(btn) {
+  const s = btn.dataset.s;
+  // Add to top of task list as P0
+  T.unshift({id:'s'+Date.now(),p:'P0',s:'qi',t:s});
+  save(); render();
+  // Also auto-inject
+  try { fetch('https://tui.xlrd.org/tui?q='+encodeURIComponent(s),{mode:'no-cors'}); } catch(e) {}
+  btn.style.opacity='0.4';
+}
+
+loadSuggestions();
+// Refresh every 30s in case a new turn just completed
+setInterval(loadSuggestions, 30000);
+</script>
+
+<style>
+.sugg-panel{margin:36px 0 0;border:1px solid rgba(45,240,163,.18);border-radius:10px;background:rgba(10,14,14,.55);padding:16px 16px 14px;backdrop-filter:blur(8px)}
+.sugg-panel h3{font-family:var(--mono);font-size:10px;letter-spacing:.38em;text-transform:uppercase;color:var(--gold);margin:0 0 12px;opacity:.8}
+#sugg-list{display:flex;flex-wrap:wrap;gap:8px}
+.sugg-btn{font-family:var(--body);font-size:12.5px;font-weight:400;background:rgba(22,217,137,.07);border:1px solid rgba(22,217,137,.22);border-radius:20px;color:var(--bone);padding:7px 14px;cursor:pointer;text-align:left;transition:.15s;max-width:100%}
+.sugg-btn:hover{background:rgba(22,217,137,.18);border-color:var(--gold);color:#fff;box-shadow:0 0 12px rgba(22,217,137,.2)}
+</style>
+
+<div class="wrap" style="padding-top:0">
+  <div class="sugg-panel">
+    <h3>⚡ Suggested next prompts</h3>
+    <div id="sugg-list"><span style="color:var(--faint);font-size:11px">Loading…</span></div>
+  </div>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

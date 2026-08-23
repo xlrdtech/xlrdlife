@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>XLRDTECH · L7S 11 VOICE-NATIVE CALCULATOR · v08</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://tts.rocks/tts.js"></script>
+<style>
+:root{
+  --ink:#0a0a0e; --ink-2:#15151c; --ink-3:#1f1f29;
+  --chrome:#c0c8d0; --chrome-hi:#e8eef2; --chrome-lo:#6a737d; --steel:#3a4048;
+  --iridescent-1:#7b2cbf; --iridescent-2:#06b6d4; --iridescent-3:#ec4899;
+  --gradient-iridescent:conic-gradient(from 0deg,var(--iridescent-1),var(--iridescent-2),var(--iridescent-3),var(--iridescent-1));
+  --oxblood:#5a0a14; --oxblood-hi:#8a1525; --cyan-glow:#00e0ff; --amber:#ffb300;
+  --text:#fbf9f4; --text-2:#a8aab2; --text-3:#6a6c74;
+  --pane:rgba(232,238,242,.04);
+  --pane-border:rgba(192,200,208,.10);
+  --diamond-tint:rgba(232,238,242,.06);
+  --diamond-edge:rgba(0,224,255,.30);
+  --diamond-prism-1:rgba(123,44,191,.22);
+  --diamond-prism-2:rgba(6,182,212,.22);
+  --diamond-prism-3:rgba(236,72,153,.22);
+  --green:#10b981; --red:#ef4444;
+  --font-display:"Cinzel","Instrument Serif",Georgia,serif;
+  --font-body:"Inter","Söhne",-apple-system,system-ui,sans-serif;
+  --font-mono:"JetBrains Mono","Berkeley Mono",ui-monospace,monospace;
+}
+html[data-theme="light"]{
+  --ink:#f5f3ee; --ink-2:#eae6dd; --ink-3:#dcd6c8;
+  --chrome:#5c6068; --chrome-hi:#2a2d33; --chrome-lo:#a8abb2; --steel:#a0a4ac;
+  --text:#1a1a1f; --text-2:#52555c; --text-3:#8a8d94;
+  --pane:rgba(28,28,38,.04);
+  --pane-border:rgba(28,28,38,.12);
+  --diamond-tint:rgba(28,28,38,.04);
+  --diamond-edge:rgba(123,44,191,.40);
+  --diamond-prism-1:rgba(123,44,191,.18);
+  --diamond-prism-2:rgba(6,182,212,.18);
+  --diamond-prism-3:rgba(236,72,153,.18);
+  --cyan-glow:#0093a8;
+  --oxblood:#7a1525;
+  --amber:#b87600;
+}
+
+*{box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--ink);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;transition:background .4s ease,color .4s ease}
+body{
+  background-image:
+    radial-gradient(circle at 18% 22%,var(--diamond-prism-1),transparent 38%),
+    radial-gradient(circle at 82% 78%,var(--diamond-prism-2),transparent 42%),
+    radial-gradient(circle at 50% 50%,var(--ink-2),var(--ink) 70%);
+  background-attachment:fixed;min-height:100vh;
+  display:flex;justify-content:center;align-items:center;
+  width:100vw;height:100vh;overflow:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.05;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode:overlay;
+}
+
+#device-wrap{position:relative;z-index:2;width:100%;height:100%;max-width:480px;display:flex;justify-content:center;align-items:center;perspective:1400px}
+#device-wrap::before{content:"";position:absolute;inset:6% 3%;border-radius:32px;z-index:0;background:var(--gradient-iridescent);filter:blur(70px);opacity:.20;pointer-events:none}
+#device{
+  width:100%;height:100%;max-height:920px;
+  display:grid;grid-template-rows:42% 1fr;
+  background:linear-gradient(180deg,var(--ink-3) 0%,var(--ink-2) 60%,var(--ink) 100%);
+  position:relative;transform:rotateY(-2.5deg) rotateX(1deg);transform-style:preserve-3d;
+  border-radius:20px;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(232,238,242,.08),inset 0 -2px 0 rgba(10,10,14,.7),0 4px 8px rgba(0,224,255,.05),0 30px 70px rgba(10,10,14,.7),0 0 0 1px rgba(192,200,208,.12);
+}
+
+#top{position:relative;display:flex;flex-direction:column;border-bottom:1px solid var(--pane-border);overflow:hidden}
+#canvas-container{position:absolute;inset:0;z-index:1;opacity:.80}
+.scan-line{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan-glow),transparent);opacity:.35;z-index:4;animation:scan 5s linear infinite}
+@keyframes scan{0%{transform:translateY(0);opacity:0}10%{opacity:.45}90%{opacity:.45}100%{transform:translateY(42vh);opacity:0}}
+
+.header-bar{position:relative;z-index:3;padding:11px 16px;display:flex;justify-content:space-between;align-items:center;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;font-family:var(--font-mono);color:var(--text-2)}
+.brand{display:flex;align-items:center;gap:8px;color:var(--text)}
+.brand-dot{width:7px;height:7px;border-radius:50%;background:var(--cyan-glow);box-shadow:0 0 10px var(--cyan-glow),inset 0 1px 0 rgba(255,255,255,.6);animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.6;box-shadow:0 0 6px var(--cyan-glow)}50%{opacity:1;box-shadow:0 0 16px var(--cyan-glow)}}
+.brand-label{font-weight:600}
+.brand-sub{color:var(--text-3);font-weight:400;letter-spacing:.12em}
+
+.right-rail{display:flex;align-items:center;gap:10px}
+.ticker-block{display:flex;align-items:center;gap:6px;color:var(--text-2)}
+.ticker-label{color:var(--text-3)}
+#idx-val{color:var(--cyan-glow);text-shadow:0 0 6px rgba(0,224,255,.4);font-variant-numeric:tabular-nums}
+.voice-toggle{display:inline-flex;align-items:center;justify-content:center;width:24px;height:22px;border-radius:6px;background:linear-gradient(155deg,var(--diamond-tint),rgba(0,0,0,0));border:1px solid var(--pane-border);color:var(--text-2);font-size:.85rem;cursor:pointer;padding:0;line-height:1}
+.voice-toggle[aria-pressed="true"]{color:var(--cyan-glow);box-shadow:0 0 8px rgba(0,224,255,.3),inset 0 0 0 1px rgba(0,224,255,.4)}
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:32px;height:18px;border-radius:999px;background:linear-gradient(155deg,var(--diamond-tint),rgba(0,0,0,0));border:1px solid var(--pane-border);position:relative;cursor:pointer;box-shadow:inset 0 1px 0 rgba(232,238,242,.12),inset 0 -1px 0 rgba(10,10,14,.4)}
+.theme-toggle::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:linear-gradient(155deg,var(--chrome-hi),var(--chrome) 50%,var(--chrome-lo));box-shadow:0 0 6px var(--cyan-glow),inset 0 1px 0 rgba(255,255,255,.4);transition:left .26s cubic-bezier(.4,1.4,.6,1),background .3s ease}
+html[data-theme="light"] .theme-toggle::after{left:16px;box-shadow:0 0 6px var(--amber),inset 0 1px 0 rgba(255,255,255,.6)}
+
+/* memory indicator bar */
+.mem-bar{position:relative;z-index:3;display:flex;align-items:center;gap:8px;padding:0 16px;font-family:var(--font-mono);font-size:.55rem;letter-spacing:.16em;color:var(--text-3);text-transform:uppercase}
+.mem-bar .chip{padding:2px 8px;border-radius:999px;background:var(--pane);border:1px solid var(--pane-border);color:var(--text-2)}
+.mem-bar .chip.active{background:linear-gradient(135deg,var(--diamond-prism-1),var(--diamond-prism-2));color:var(--text);border-color:rgba(0,224,255,.40)}
+.mem-bar .chip .val{color:var(--cyan-glow);font-variant-numeric:tabular-nums}
+
+#thinking{
+  position:relative;z-index:3;flex:1;
+  margin:6px 14px 4px;padding:10px 14px;
+  background:linear-gradient(180deg,rgba(10,10,14,.55) 0%,rgba(10,10,14,.85) 100%);
+  border-radius:8px;border:1px solid var(--pane-border);
+  font-family:var(--font-mono);font-size:.7rem;line-height:1.45;
+  color:var(--text-2);overflow:hidden;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  box-shadow:inset 0 1px 0 rgba(232,238,242,.05);
+}
+html[data-theme="light"] #thinking{background:linear-gradient(180deg,rgba(245,243,238,.65) 0%,rgba(245,243,238,.9) 100%)}
+#thinking::before{content:"REASONING TRACE";position:absolute;top:-7px;left:14px;background:var(--ink-2);padding:0 6px;font-size:.55rem;letter-spacing:.20em;color:var(--cyan-glow)}
+#thinking-lines{display:flex;flex-direction:column;gap:2px;height:100%;overflow-y:auto}
+#thinking-lines::-webkit-scrollbar{width:0}
+.t-line{display:flex;gap:8px;align-items:baseline;animation:fadein .3s ease-out}
+.t-line .t-tag{color:var(--text-3);font-weight:600;min-width:18px;text-align:right}
+.t-line .t-body{color:var(--text)}
+.t-line .op{color:var(--amber);font-weight:600}
+.t-line .val{color:var(--cyan-glow);font-variant-numeric:tabular-nums}
+.t-line .label{color:var(--text-2)}
+.t-divider{height:1px;background:linear-gradient(90deg,transparent,var(--pane-border) 30%,var(--pane-border) 70%,transparent);margin:3px 0}
+.t-final{color:var(--text);font-weight:700;font-size:.82rem;letter-spacing:.02em}
+.t-final .num{background:var(--gradient-iridescent);background-size:200% 200%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:iridescent-shift 8s ease-in-out infinite}
+.t-pass{color:var(--green);font-weight:700}
+.t-fail{color:var(--red);font-weight:700}
+@keyframes iridescent-shift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes fadein{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+
+#display-row{position:relative;z-index:3;padding:4px 16px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+#history{font-family:var(--font-mono);font-size:.68rem;color:var(--text-3);font-variant-numeric:tabular-nums;letter-spacing:.04em;flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#display{font-family:var(--font-display);font-size:2.1rem;font-weight:500;color:var(--text);line-height:1;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ai-processing{background:var(--gradient-iridescent);background-size:200% 200%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:iridescent-flow 1.2s ease-out}
+@keyframes iridescent-flow{0%{background-position:0% 50%;filter:brightness(1.4)}100%{background-position:200% 50%;filter:brightness(1)}}
+
+/* DIAMOND GLASS KEYPAD — 4 cols × 7 rows */
+#keypad{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(7,1fr);gap:5px;padding:7px;background:transparent}
+.btn{
+  position:relative;border:none;cursor:pointer;
+  font-family:var(--font-body);font-size:1.2rem;font-weight:500;
+  color:var(--text);display:flex;justify-content:center;align-items:center;
+  border-radius:9px;overflow:hidden;isolation:isolate;
+  background:linear-gradient(155deg,rgba(232,238,242,.10) 0%,rgba(232,238,242,.02) 35%,rgba(10,10,14,.20) 65%,rgba(232,238,242,.06) 100%);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.20),inset 0 -1px 0 rgba(0,0,0,.30),inset 1px 0 0 rgba(255,255,255,.06),inset -1px 0 0 rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.40),0 0 0 1px rgba(192,200,208,.08);
+  transition:transform .08s ease,box-shadow .14s ease;
+}
+html[data-theme="light"] .btn{background:linear-gradient(155deg,rgba(255,255,255,.65) 0%,rgba(255,255,255,.30) 35%,rgba(28,28,38,.06) 65%,rgba(255,255,255,.45) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.70),inset 0 -1px 0 rgba(28,28,38,.10),0 1px 2px rgba(28,28,38,.10),0 0 0 1px rgba(28,28,38,.08)}
+.btn::before{content:"";position:absolute;inset:0;border-radius:9px;pointer-events:none;background:linear-gradient(135deg,var(--diamond-prism-1) 0%,transparent 28%),linear-gradient(225deg,var(--diamond-prism-2) 0%,transparent 28%),linear-gradient(45deg,var(--diamond-prism-3) 0%,transparent 28%);mix-blend-mode:screen;opacity:.55;z-index:1}
+.btn::after{content:"";position:absolute;top:0;left:0;right:55%;height:38%;border-radius:9px 9px 60% 0;background:linear-gradient(140deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,0) 80%);pointer-events:none;z-index:2;mix-blend-mode:screen}
+.btn > *{position:relative;z-index:3}
+.btn:active{transform:scale(.97) translateY(1px);box-shadow:inset 0 2px 6px rgba(0,0,0,.50),inset 0 0 0 1px rgba(0,224,255,.35),0 0 18px rgba(0,224,255,.20)}
+
+.btn-num{font-size:1.4rem;font-weight:400}
+.btn-op{color:var(--amber);font-size:1.45rem;font-weight:400;text-shadow:0 0 10px rgba(255,179,0,.55)}
+.btn-fin{color:var(--cyan-glow);font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 0 8px rgba(0,224,255,.45)}
+.btn-ai{font-size:.70rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}
+.btn-ai::before{background:linear-gradient(135deg,var(--iridescent-1) 0%,transparent 40%),linear-gradient(225deg,var(--iridescent-2) 0%,transparent 40%),linear-gradient(45deg,var(--iridescent-3) 0%,transparent 40%);opacity:.32;animation:prism-shift 6s ease-in-out infinite}
+@keyframes prism-shift{0%,100%{opacity:.32}50%{opacity:.55}}
+.btn-mem{color:var(--amber);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.btn-mem.has-mem::before{background:linear-gradient(135deg,rgba(255,179,0,.30) 0%,transparent 50%),linear-gradient(225deg,rgba(255,179,0,.20) 0%,transparent 50%);opacity:.60}
+.btn-shift{color:var(--iridescent-2);font-size:.65rem;font-weight:800;letter-spacing:.10em;text-transform:uppercase}
+.btn-shift.is-on{box-shadow:inset 0 2px 6px rgba(0,0,0,.50),inset 0 0 0 1px rgba(0,224,255,.55),0 0 20px rgba(0,224,255,.30)}
+.btn-shift.is-on::before{opacity:.85}
+
+.btn-eq{font-family:var(--font-display);font-weight:700;font-size:1.7rem;color:var(--ink);background:linear-gradient(155deg,var(--chrome-hi) 0%,var(--chrome) 50%,var(--chrome-lo) 100%)}
+.btn-eq::before{background:linear-gradient(135deg,var(--iridescent-2) 0%,transparent 35%),linear-gradient(225deg,var(--iridescent-3) 0%,transparent 35%);opacity:.28}
+.btn-eq::after{background:linear-gradient(140deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 70%);opacity:.7}
+.btn-eq:active{background:linear-gradient(155deg,var(--chrome) 0%,var(--chrome-lo) 50%,var(--steel) 100%);box-shadow:inset 0 2px 6px rgba(10,10,14,.5),0 0 32px rgba(0,224,255,.35)}
+
+.btn-clear{color:var(--oxblood-hi);font-weight:700;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase}
+.btn-zero{grid-column:span 2;justify-content:flex-start;padding-left:22%}
+
+#footer{position:absolute;bottom:4px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:5px;font-family:var(--font-mono);font-size:.46rem;letter-spacing:.22em;color:var(--text-3);text-transform:uppercase;z-index:4;pointer-events:none}
+#footer .chip{padding:2px 7px;border-radius:999px;background:var(--pane);border:1px solid var(--pane-border)}
+
+@media (prefers-reduced-motion:reduce){.scan-line,.brand-dot,#display.ai-processing,.btn-ai::before,.t-final .num{animation:none}}
+@media (max-width:380px){#display{font-size:1.7rem}.btn-num{font-size:1.2rem}.btn-fin{font-size:.62rem}.btn-ai{font-size:.65rem}#thinking{font-size:.64rem}}
+</style>
+</head>
+<body>
+
+<div id="device-wrap">
+  <div id="device">
+    <div id="top">
+      <div id="canvas-container"></div>
+      <div class="scan-line"></div>
+
+      <div class="header-bar">
+        <div class="brand">
+          <span class="brand-dot"></span>
+          <span class="brand-label">XLRDTECH</span>
+          <span class="brand-sub">· L7S 11</span>
+        </div>
+        <div class="right-rail">
+          <div class="ticker-block">
+            <span class="ticker-label">IDX</span>
+            <span id="idx-val">4,291.50</span>
+            <span id="idx-arrow" style="color:#10b981">▲</span>
+          </div>
+          <button class="voice-toggle" id="voice-toggle" title="Speak SOP results (Kokoro WebGPU)" aria-pressed="false">🔇</button>
+          <div class="theme-toggle" id="theme-toggle" title="Toggle theme"></div>
+        </div>
+      </div>
+
+      <div class="mem-bar">
+        <span class="chip" id="chip-m">M: <span class="val" id="m-val">—</span></span>
+        <span class="chip" id="chip-shift">SHIFT: <span class="val" id="shift-state">OFF</span></span>
+        <span class="chip" style="margin-left:auto" id="chip-page">PAGE: <span class="val" id="page-state">A</span></span>
+      </div>
+
+      <div id="thinking">
+        <div id="thinking-lines"></div>
+      </div>
+
+      <div id="display-row">
+        <div id="history"></div>
+        <div id="display">0</div>
+      </div>
+    </div>
+
+    <div id="keypad">
+      <!-- Row 1: clear + shift + memory -->
+      <button class="btn btn-clear" onclick="input('AC')">AC</button>
+      <button class="btn btn-clear" onclick="input('DEL')">DEL</button>
+      <button class="btn btn-shift" id="shift-btn" onclick="input('SHIFT')">SHIFT</button>
+      <button class="btn btn-mem" id="mem-btn" onclick="input('MEM')">M+</button>
+
+      <!-- Row 2: fin A1-A4 / B1-B4 (toggle by SHIFT) -->
+      <button class="btn btn-fin fin-cell" id="fin-1" onclick="input('FIN-1')">TAX+</button>
+      <button class="btn btn-fin fin-cell" id="fin-2" onclick="input('FIN-2')">TAX−</button>
+      <button class="btn btn-fin fin-cell" id="fin-3" onclick="input('FIN-3')">MRG%</button>
+      <button class="btn btn-ai  fin-cell" id="fin-4" onclick="input('FIN-4')">AI&nbsp;FCST</button>
+
+      <!-- Row 3: fin A5-A8 / B5-B8 -->
+      <button class="btn btn-fin fin-cell" id="fin-5" onclick="input('FIN-5')">RUNWAY</button>
+      <button class="btn btn-fin fin-cell" id="fin-6" onclick="input('FIN-6')">CAC</button>
+      <button class="btn btn-fin fin-cell" id="fin-7" onclick="input('FIN-7')">LTV</button>
+      <button class="btn btn-fin fin-cell" id="fin-8" onclick="input('FIN-8')">PAYBK</button>
+
+      <!-- Row 4: fin A9-A11 + ÷ -->
+      <button class="btn btn-fin fin-cell" id="fin-9" onclick="input('FIN-9')">BURN×</button>
+      <button class="btn btn-fin fin-cell" id="fin-10" onclick="input('FIN-10')">R40</button>
+      <button class="btn btn-fin fin-cell" id="fin-11" onclick="input('FIN-11')">NPV</button>
+      <button class="btn btn-op" onclick="input('/')">÷</button>
+
+      <!-- Rows 5-7: numpad -->
+      <button class="btn btn-num" onclick="input('7')">7</button>
+      <button class="btn btn-num" onclick="input('8')">8</button>
+      <button class="btn btn-num" onclick="input('9')">9</button>
+      <button class="btn btn-op" onclick="input('*')">×</button>
+
+      <button class="btn btn-num" onclick="input('4')">4</button>
+      <button class="btn btn-num" onclick="input('5')">5</button>
+      <button class="btn btn-num" onclick="input('6')">6</button>
+      <button class="btn btn-op" onclick="input('-')">−</button>
+
+      <button class="btn btn-num" onclick="input('1')">1</button>
+      <button class="btn btn-num" onclick="input('2')">2</button>
+      <button class="btn btn-num" onclick="input('3')">3</button>
+      <button class="btn btn-op" onclick="input('+')">+</button>
+
+      <button class="btn btn-num btn-zero" onclick="input('0')">0</button>
+      <button class="btn btn-num" onclick="input('.')">.</button>
+      <button class="btn btn-eq" onclick="input('=')">=</button>
+    </div>
+
+    <div id="footer">
+      <span class="chip">L7S 11</span>
+      <span>FINTECH · v07 · DIAMOND</span>
+      <span class="chip">@STYLISM</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Three.js iridescent scene ──
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, container.clientWidth / container.clientHeight, 0.1, 1000);
+camera.position.set(0, -0.4, 5.6);
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+container.appendChild(renderer.domElement);
+
+const particlesCount = 700;
+const posArray = new Float32Array(particlesCount * 3);
+const colArray = new Float32Array(particlesCount * 3);
+const tmp = new THREE.Color();
+for (let i = 0; i < particlesCount; i++) {
+  const phi = Math.acos(-1 + (2 * i) / particlesCount);
+  const theta = Math.sqrt(particlesCount * Math.PI) * phi;
+  const r = 1.5;
+  posArray[i*3]   = r * Math.cos(theta) * Math.sin(phi);
+  posArray[i*3+1] = r * Math.sin(theta) * Math.sin(phi);
+  posArray[i*3+2] = r * Math.cos(phi);
+  const t = i / particlesCount;
+  if (t < 0.33)      tmp.setHex(0x7b2cbf).lerp(new THREE.Color(0x06b6d4), t / 0.33);
+  else if (t < 0.66) tmp.setHex(0x06b6d4).lerp(new THREE.Color(0xec4899), (t - 0.33) / 0.33);
+  else               tmp.setHex(0xec4899).lerp(new THREE.Color(0x7b2cbf), (t - 0.66) / 0.34);
+  colArray[i*3] = tmp.r; colArray[i*3+1] = tmp.g; colArray[i*3+2] = tmp.b;
+}
+const particlesGeom = new THREE.BufferGeometry();
+particlesGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+particlesGeom.setAttribute('color',    new THREE.BufferAttribute(colArray, 3));
+const particlesMat = new THREE.PointsMaterial({ size: 0.020, vertexColors: true, transparent: true, opacity: 0.80, blending: THREE.AdditiveBlending });
+const particleMesh = new THREE.Points(particlesGeom, particlesMat);
+scene.add(particleMesh);
+
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.22, 48, 48), new THREE.MeshBasicMaterial({ color: 0x0a0a0e, transparent: true, opacity: 0.94 })));
+const ringChrome = new THREE.Mesh(new THREE.TorusGeometry(1.92, 0.008, 16, 120), new THREE.MeshBasicMaterial({ color: 0xc0c8d0, transparent: true, opacity: 0.28 }));
+ringChrome.rotation.x = Math.PI / 2; scene.add(ringChrome);
+const ringIri = new THREE.Mesh(new THREE.TorusGeometry(2.18, 0.004, 16, 120), new THREE.MeshBasicMaterial({ color: 0x7b2cbf, transparent: true, opacity: 0.38 }));
+ringIri.rotation.x = Math.PI / 2.4; ringIri.rotation.z = Math.PI / 6; scene.add(ringIri);
+
+const clock = new THREE.Clock();
+let targetSpeed = 0.07, currentSpeed = 0.07;
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  currentSpeed += (targetSpeed - currentSpeed) * 0.05;
+  particleMesh.rotation.y += currentSpeed * dt;
+  particleMesh.rotation.x += (currentSpeed * 0.5) * dt;
+  ringChrome.rotation.z -= (currentSpeed * 1.3) * dt;
+  ringIri.rotation.z += (currentSpeed * 1.9) * dt;
+  renderer.render(scene, camera);
+}
+window.addEventListener('resize', () => {
+  camera.aspect = container.clientWidth / container.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(container.clientWidth, container.clientHeight);
+});
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  const root = document.documentElement;
+  root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+
+// ── Voice (Kokoro WebGPU via tts.rocks) ──
+let voiceOn = false;
+let kokoroReady = false;
+const voiceBtn = document.getElementById('voice-toggle');
+async function ensureKokoro() {
+  if (kokoroReady) return true;
+  if (typeof TTS === 'undefined') return false;
+  try {
+    TTS.useKokoroTTS = true;
+    if (typeof TTS.initKokoro === 'function') {
+      const ok = await TTS.initKokoro();
+      kokoroReady = ok !== false;
+    } else {
+      kokoroReady = true;
+    }
+    return kokoroReady;
+  } catch (e) { console.warn('Kokoro init failed', e); return false; }
+}
+voiceBtn.addEventListener('click', async () => {
+  voiceOn = !voiceOn;
+  voiceBtn.setAttribute('aria-pressed', voiceOn ? 'true' : 'false');
+  voiceBtn.innerText = voiceOn ? '🔊' : '🔇';
+  if (voiceOn) {
+    voiceBtn.innerText = '⏳';
+    const ok = await ensureKokoro();
+    voiceBtn.innerText = ok ? '🔊' : '⚠️';
+    if (!ok) voiceOn = false, voiceBtn.setAttribute('aria-pressed', 'false');
+  } else {
+    try { TTS && TTS.clearQueue && TTS.clearQueue(); } catch(_) {}
+  }
+});
+function speakLine(text) {
+  if (!voiceOn || !kokoroReady || typeof TTS === 'undefined' || !TTS.speak) return;
+  try { TTS.speak(String(text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g,' ').trim(), true); } catch(_) {}
+}
+
+// ── Ticker ──
+const idxArrow = document.getElementById('idx-arrow');
+const idxVal   = document.getElementById('idx-val');
+function updateTicker() {
+  let cur = parseFloat(idxVal.innerText.replace(/,/g, ''));
+  const change = (Math.random() - 0.45) * 5;
+  const next = cur + change;
+  idxVal.innerText = next.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (change >= 0) { idxArrow.innerText = '▲'; idxArrow.style.color = '#10b981'; }
+  else             { idxArrow.innerText = '▼'; idxArrow.style.color = '#ef4444'; }
+}
+
+// ── Reasoning trace ──
+const traceEl = document.getElementById('thinking-lines');
+let traceTag = 0;
+function clearTrace() { traceEl.innerHTML = ''; traceTag = 0; }
+function pushTrace(html, opts = {}) {
+  if (opts.divider) { const d = document.createElement('div'); d.className='t-divider'; traceEl.appendChild(d); return; }
+  traceTag++;
+  const div = document.createElement('div');
+  div.className = 't-line';
+  if (opts.final) div.classList.add('t-final');
+  div.innerHTML = `<span class="t-tag">${String(traceTag).padStart(2,'0')}</span><span class="t-body">${html}</span>`;
+  traceEl.appendChild(div);
+  traceEl.scrollTop = traceEl.scrollHeight;
+  if (opts.final) speakLine(div.innerText);
+}
+function seedThinking() {
+  pushTrace(`<span class="label">L7S 11</span> <span class="op">·</span> <span class="val">11 fintech logics primed</span>`);
+  pushTrace(`<span class="label">SHIFT toggles</span> <span class="op">·</span> <span class="val">page A ↔ B  ·  memory M for two-input ops</span>`);
+}
+
+function fmt(v){if(typeof v!=='number'||!isFinite(v))return String(v);return v.toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:0})}
+function dollars(v){return '$'+fmt(v)}
+function pct(v){return (v*100).toFixed(2)+'%'}
+
+// ── L7S 11 logic spec — page A is default 1-7, page B is 8-11 ──
+// (each cell maps to a logic; numbering follows the proposal)
+// PAGE A (SHIFT off):
+//   fin-1 TAX+    fin-2 TAX-   fin-3 MRG%   fin-4 AI.FCST
+//   fin-5 RUNWAY  fin-6 CAC    fin-7 LTV    fin-8 PAYBK
+//   fin-9 BURN×   fin-10 R40   fin-11 NPV
+// PAGE B (SHIFT on) — reserved for L7S-proprietary swaps:
+//   fin-1 ARR     fin-2 MRR    fin-3 GROSS  fin-4 NET
+//   fin-5 CHURN   fin-6 ARPU   fin-7 EBITDA fin-8 IRR
+//   fin-9 NPV5y   fin-10 DCF   fin-11 R40+5
+const PAGE_A_LABELS = ['TAX+','TAX−','MRG%','AI FCST','RUNWAY','CAC','LTV','PAYBK','BURN×','R40','NPV'];
+const PAGE_B_LABELS = ['ARR','MRR','GROSS%','NET%','CHURN','ARPU','EBITDA','IRR','NPV5','DCF','R40+5'];
+
+const PrecisionMath = {
+  clean: n => parseFloat(Number(n).toPrecision(14)),
+  add:(a,b)=>PrecisionMath.clean(parseFloat(a)+parseFloat(b)),
+  sub:(a,b)=>PrecisionMath.clean(parseFloat(a)-parseFloat(b)),
+  mul:(a,b)=>PrecisionMath.clean(parseFloat(a)*parseFloat(b)),
+  div:(a,b)=>b==0?'ERR: DIV/0':PrecisionMath.clean(parseFloat(a)/parseFloat(b)),
+};
+
+// ── 11 LOGICS, each: { run(current, memory) → { result, trace } } ──
+const LOGICS = {
+  'TAX+':   { run: v => {
+    const r = v * 1.20;
+    pushTrace(`<span class="label">base</span> <span class="op">=</span> <span class="val">${dollars(v)}</span>`);
+    pushTrace(`<span class="label">VAT @ 20%</span> <span class="op">×</span> <span class="val">1.20</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">gross of tax</span> <span class="op">=</span> <span class="val">${dollars(r)}</span>`);
+    pushTrace(`SOP-L1 · TAX-add · <span class="num">${dollars(r)}</span>`, {final:true});
+    return r;
+  }, label:'TAX+(20%)'},
+  'TAX−':   { run: v => {
+    const r = v / 1.20;
+    pushTrace(`<span class="label">incl. tax</span> <span class="op">=</span> <span class="val">${dollars(v)}</span>`);
+    pushTrace(`<span class="label">strip VAT</span> <span class="op">÷</span> <span class="val">1.20</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">net of tax</span> <span class="op">=</span> <span class="val">${dollars(r)}</span>`);
+    pushTrace(`SOP-L2 · TAX-strip · <span class="num">${dollars(r)}</span>`, {final:true});
+    return r;
+  }, label:'TAX−(20%)'},
+  'MRG%':   { run: v => {
+    const r = v / 0.80;
+    pushTrace(`<span class="label">unit COGS</span> <span class="op">=</span> <span class="val">${dollars(v)}</span>`);
+    pushTrace(`<span class="label">target margin</span> <span class="op">=</span> <span class="val">20%</span>`);
+    pushTrace(`<span class="label">multiplier</span> <span class="op">=</span> <span class="val">1 ÷ (1 − 0.20) = 1.25</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">list price</span> <span class="op">=</span> <span class="val">${dollars(r)}</span>`);
+    pushTrace(`SOP-L3 · 20%-margin price · <span class="num">${dollars(r)}</span>`, {final:true});
+    return r;
+  }, label:'MRG%@20'},
+  'AI.FCST':{ run: v => {
+    const mult = 1.08 + Math.random()*0.07;
+    const r = v * mult;
+    pushTrace(`<span class="label">starting ARR</span> <span class="op">=</span> <span class="val">${dollars(v)}</span>`);
+    pushTrace(`<span class="label">SaaS band</span> <span class="op">·</span> <span class="val">8–15% / yr</span>`);
+    pushTrace(`<span class="label">drawn multiplier</span> <span class="op">=</span> <span class="val">${mult.toFixed(4)}</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">projected ARR</span> <span class="op">=</span> <span class="val">${dollars(r)}</span>`);
+    pushTrace(`<span class="label">12-mo delta</span> <span class="op">=</span> <span class="val">${dollars(r - v)}</span>`);
+    pushTrace(`SOP-L4 · AI forecast · <span class="num">${dollars(r)}</span>`, {final:true});
+    return r;
+  }, label:'AI.FCST·12mo'},
+  'RUNWAY': { run: v => {
+    const burn = 12500;
+    const months = v / burn;
+    const fundTarget = burn * 18;
+    pushTrace(`<span class="label">cash on hand</span> <span class="op">=</span> <span class="val">${dollars(v)}</span>`);
+    pushTrace(`<span class="label">monthly burn</span> <span class="op">÷</span> <span class="val">${dollars(burn)}</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">runway</span> <span class="op">=</span> <span class="val">${months.toFixed(2)} mo</span>`);
+    pushTrace(`<span class="label">to reach 18-mo</span> <span class="op">→</span> <span class="val">raise ${dollars(Math.max(0, fundTarget - v))}</span>`);
+    pushTrace(`SOP-L5 · RUNWAY · <span class="num">${months.toFixed(1)} mo</span>`, {final:true});
+    return PrecisionMath.clean(months);
+  }, label:'RUNWAY·@$12.5K/mo'},
+  'CAC':    { run: (v, m) => {
+    if (m === null) { pushTrace(`<span class="label">CAC needs M</span> <span class="op">·</span> <span class="val">store total acquisition spend via M+, then enter # customers</span>`); pushTrace(`SOP-L6 · CAC · <span class="num">awaiting M</span>`, {final:true}); return v; }
+    const r = m / v;
+    pushTrace(`<span class="label">spend (M)</span> <span class="op">=</span> <span class="val">${dollars(m)}</span>`);
+    pushTrace(`<span class="label">customers</span> <span class="op">÷</span> <span class="val">${fmt(v)}</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">CAC</span> <span class="op">=</span> <span class="val">${dollars(r)} / customer</span>`);
+    pushTrace(`SOP-L6 · CAC · <span class="num">${dollars(r)}</span>`, {final:true});
+    return PrecisionMath.clean(r);
+  }, label:'CAC·M÷N'},
+  'LTV':    { run: v => {
+    const margin = 0.70, retention = 30;
+    const r = v * margin * retention;
+    pushTrace(`<span class="label">ARPU/mo</span> <span class="op">=</span> <span class="val">${dollars(v)}</span>`);
+    pushTrace(`<span class="label">gross margin</span> <span class="op">×</span> <span class="val">${pct(margin)}</span>`);
+    pushTrace(`<span class="label">retention</span> <span class="op">×</span> <span class="val">${retention} mo</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">LTV</span> <span class="op">=</span> <span class="val">${dollars(r)}</span>`);
+    pushTrace(`SOP-L7 · LTV · <span class="num">${dollars(r)}</span>`, {final:true});
+    return PrecisionMath.clean(r);
+  }, label:'LTV·ARPU×0.70×30'},
+  'PAYBK':  { run: (v, m) => {
+    if (m === null) { pushTrace(`<span class="label">PAYBACK needs M</span> <span class="op">·</span> <span class="val">store CAC via M+, then enter monthly ARPU</span>`); pushTrace(`SOP-L8 · PAYBACK · <span class="num">awaiting M</span>`, {final:true}); return v; }
+    const margin = 0.70;
+    const contrib = v * margin;
+    const months = m / contrib;
+    pushTrace(`<span class="label">CAC (M)</span> <span class="op">=</span> <span class="val">${dollars(m)}</span>`);
+    pushTrace(`<span class="label">ARPU</span> <span class="op">=</span> <span class="val">${dollars(v)}</span>`);
+    pushTrace(`<span class="label">× gross margin</span> <span class="op">·</span> <span class="val">${pct(margin)} = ${dollars(contrib)} contrib/mo</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">payback</span> <span class="op">=</span> <span class="val">${months.toFixed(2)} mo</span>`);
+    pushTrace(`SOP-L8 · CAC PAYBACK · <span class="num">${months.toFixed(1)} mo</span>`, {final:true});
+    return PrecisionMath.clean(months);
+  }, label:'PAYBK·M÷ARPU·0.7'},
+  'BURN×':  { run: (v, m) => {
+    if (m === null) { pushTrace(`<span class="label">BURN× needs M</span> <span class="op">·</span> <span class="val">store net burn via M+, then enter net new ARR</span>`); pushTrace(`SOP-L9 · BURN× · <span class="num">awaiting M</span>`, {final:true}); return v; }
+    if (v == 0) { pushTrace(`<span class="label">ERR</span> <span class="op">·</span> <span class="val">ΔARR cannot be zero</span>`); return v; }
+    const r = m / v;
+    const rating = r < 1 ? 'amazing' : r < 1.5 ? 'great' : r < 2 ? 'good' : r < 3 ? 'suspect' : 'bad';
+    pushTrace(`<span class="label">net burn (M)</span> <span class="op">=</span> <span class="val">${dollars(m)}</span>`);
+    pushTrace(`<span class="label">net new ARR</span> <span class="op">÷</span> <span class="val">${dollars(v)}</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">burn multiple</span> <span class="op">=</span> <span class="val">${r.toFixed(2)}× <span style="color:var(--text-2)">(${rating})</span></span>`);
+    pushTrace(`SOP-L9 · BURN MULTIPLE · <span class="num">${r.toFixed(2)}×</span>`, {final:true});
+    return PrecisionMath.clean(r);
+  }, label:'BURN×·M÷ΔARR'},
+  'R40':    { run: (v, m) => {
+    if (m === null) { pushTrace(`<span class="label">R40 needs M</span> <span class="op">·</span> <span class="val">store growth% via M+, then enter margin%</span>`); pushTrace(`SOP-L10 · R40 · <span class="num">awaiting M</span>`, {final:true}); return v; }
+    const score = m + v;
+    const passing = score >= 40;
+    pushTrace(`<span class="label">growth% (M)</span> <span class="op">=</span> <span class="val">${fmt(m)}%</span>`);
+    pushTrace(`<span class="label">margin%</span> <span class="op">+</span> <span class="val">${fmt(v)}%</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">Rule-of-40 score</span> <span class="op">=</span> <span class="val">${score.toFixed(1)}</span>`);
+    pushTrace(`SOP-L10 · R40 · <span class="${passing ? 't-pass' : 't-fail'}">${passing ? 'PASS ✓' : 'FAIL ✗'}</span> · <span class="num">${score.toFixed(1)}</span>`, {final:true});
+    return PrecisionMath.clean(score);
+  }, label:'R40·M+%'},
+  'NPV':    { run: v => {
+    const rate = 0.12;
+    const r = v / (1 + rate);
+    pushTrace(`<span class="label">future cash</span> <span class="op">=</span> <span class="val">${dollars(v)}</span>`);
+    pushTrace(`<span class="label">discount rate</span> <span class="op">@</span> <span class="val">${pct(rate)}</span>`);
+    pushTrace(`<span class="label">1 yr horizon</span> <span class="op">÷</span> <span class="val">(1 + 0.12) = 1.12</span>`);
+    pushTrace({divider:true});
+    pushTrace(`<span class="label">NPV today</span> <span class="op">=</span> <span class="val">${dollars(r)}</span>`);
+    pushTrace(`SOP-L11 · NPV · <span class="num">${dollars(r)}</span>`, {final:true});
+    return PrecisionMath.clean(r);
+  }, label:'NPV·@12%/1yr'}
+};
+
+// FIN cell → logic name lookup
+const FIN_LOGIC_PAGE_A = {
+  'FIN-1':'TAX+','FIN-2':'TAX−','FIN-3':'MRG%','FIN-4':'AI.FCST',
+  'FIN-5':'RUNWAY','FIN-6':'CAC','FIN-7':'LTV','FIN-8':'PAYBK',
+  'FIN-9':'BURN×','FIN-10':'R40','FIN-11':'NPV'
+};
+
+// SHIFT state, memory, display state
+let shiftOn = false;
+let memory = null;
+const displayEl = document.getElementById('display');
+const historyEl = document.getElementById('history');
+const memBtn = document.getElementById('mem-btn');
+const mValEl = document.getElementById('m-val');
+const shiftBtn = document.getElementById('shift-btn');
+const shiftStateEl = document.getElementById('shift-state');
+const pageStateEl = document.getElementById('page-state');
+const chipM = document.getElementById('chip-m');
+let currentInput = '0';
+let previousInput = null;
+let operation = null;
+let shouldResetDisplay = false;
+
+function refreshFinLabels() {
+  const labels = shiftOn ? PAGE_B_LABELS : PAGE_A_LABELS;
+  for (let i = 1; i <= 11; i++) {
+    const el = document.getElementById(`fin-${i}`);
+    if (el) el.innerHTML = labels[i-1].replace(/ /g, '&nbsp;');
+  }
+  pageStateEl.innerText = shiftOn ? 'B' : 'A';
+  shiftStateEl.innerText = shiftOn ? 'ON' : 'OFF';
+  shiftBtn.classList.toggle('is-on', shiftOn);
+}
+
+function refreshMemUI() {
+  if (memory === null) {
+    memBtn.classList.remove('has-mem');
+    memBtn.innerText = 'M+';
+    mValEl.innerText = '—';
+    chipM.classList.remove('active');
+  } else {
+    memBtn.classList.add('has-mem');
+    memBtn.innerText = 'M:' + fmt(memory).slice(0,6);
+    mValEl.innerText = fmt(memory);
+    chipM.classList.add('active');
+  }
+}
+
+function formatNumber(val){if(val==='ERR: DIV/0'||val==='CALCULATING...')return val;if(val==='-'||val==='0.')return val;if(val.toString().length>15&&!val.toString().includes('.'))return parseFloat(val).toExponential(6);const p=val.toString().split('.');p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');return p.join('.')}
+function updateDisplay(){displayEl.innerText=formatNumber(currentInput)}
+function triggerAIReaction(){targetSpeed=1.8;setTimeout(()=>{targetSpeed=0.07},900);displayEl.classList.remove('ai-processing');void displayEl.offsetWidth;displayEl.classList.add('ai-processing')}
+
+function calculateResult() {
+  if (currentInput === 'ERR: DIV/0') return;
+  let result;
+  const a = previousInput, b = currentInput;
+  switch (operation) {
+    case '+': result = PrecisionMath.add(a, b); break;
+    case '-': result = PrecisionMath.sub(a, b); break;
+    case '*': result = PrecisionMath.mul(a, b); break;
+    case '/': result = PrecisionMath.div(a, b); break;
+    default: return;
+  }
+  clearTrace();
+  const opStr = operation === '*' ? '×' : operation === '/' ? '÷' : operation === '-' ? '−' : '+';
+  pushTrace(`<span class="label">operand A</span> <span class="op">=</span> <span class="val">${fmt(parseFloat(a))}</span>`);
+  pushTrace(`<span class="label">${opStr}</span> <span class="op">·</span> <span class="val">${fmt(parseFloat(b))}</span>`);
+  pushTrace({divider:true});
+  pushTrace(`<span class="label">result</span> <span class="op">=</span> <span class="val">${fmt(parseFloat(result))}</span>`);
+  pushTrace(`SOP-EQ · evaluated · <span class="num">${fmt(parseFloat(result))}</span>`, {final:true});
+  currentInput = result.toString();
+  updateDisplay();
+}
+
+function runFinLogic(finKey) {
+  const logicName = FIN_LOGIC_PAGE_A[finKey];
+  if (shiftOn) {
+    // Page B currently un-mapped — show placeholder reasoning so qi sees the slot
+    clearTrace();
+    const idx = parseInt(finKey.split('-')[1], 10);
+    pushTrace(`<span class="label">${PAGE_B_LABELS[idx-1]}</span> <span class="op">·</span> <span class="val">page B reserved · L7S-proprietary logic awaiting qi spec</span>`);
+    pushTrace(`SOP-B${idx} · awaiting spec · <span class="num">—</span>`, {final:true});
+    triggerAIReaction();
+    return;
+  }
+  if (!logicName || !LOGICS[logicName]) return;
+  triggerAIReaction();
+  clearTrace();
+  const v = parseFloat(currentInput);
+  const m = memory;
+  const result = LOGICS[logicName].run(v, m);
+  currentInput = result.toString();
+  historyEl.innerText = LOGICS[logicName].label;
+  shouldResetDisplay = true;
+  updateDisplay();
+}
+
+function input(key) {
+  if (key >= '0' && key <= '9') {
+    if (currentInput === '0' || shouldResetDisplay) { currentInput = key; shouldResetDisplay = false; }
+    else if (currentInput.replace(/[^0-9]/g,'').length < 15) currentInput += key;
+    updateDisplay();
+  } else if (key === '.') {
+    if (shouldResetDisplay) { currentInput = '0.'; shouldResetDisplay = false; }
+    else if (!currentInput.includes('.')) currentInput += '.';
+    updateDisplay();
+  } else if (key === 'AC') {
+    currentInput = '0'; previousInput = null; operation = null;
+    shouldResetDisplay = false; historyEl.innerText = '';
+    updateDisplay(); clearTrace(); seedThinking();
+  } else if (key === 'DEL') {
+    if (currentInput.length <= 1) currentInput = '0';
+    else currentInput = currentInput.slice(0, -1);
+    updateDisplay();
+  } else if (key === 'SHIFT') {
+    shiftOn = !shiftOn;
+    refreshFinLabels();
+  } else if (key === 'MEM') {
+    if (memory === null) {
+      memory = parseFloat(currentInput);
+      historyEl.innerText = `M+ ← ${fmt(memory)}`;
+      clearTrace();
+      pushTrace(`<span class="label">memory</span> <span class="op">←</span> <span class="val">${fmt(memory)}</span>`);
+      pushTrace(`SOP-MEM · stored · <span class="num">M=${fmt(memory)}</span>`, {final:true});
+    } else {
+      memory = null;
+      historyEl.innerText = `M cleared`;
+      clearTrace();
+      pushTrace(`<span class="label">memory</span> <span class="op">→</span> <span class="val">cleared</span>`);
+      pushTrace(`SOP-MEM · clear · <span class="num">M=—</span>`, {final:true});
+    }
+    refreshMemUI();
+  } else if (key.startsWith('FIN-')) {
+    runFinLogic(key);
+  } else if (['+','-','*','/'].includes(key)) {
+    if (operation !== null && !shouldResetDisplay) calculateResult();
+    previousInput = currentInput;
+    operation = key;
+    shouldResetDisplay = true;
+    const opStr = key === '*' ? '×' : key === '/' ? '÷' : key === '-' ? '−' : key;
+    historyEl.innerText = `${formatNumber(previousInput)} ${opStr}`;
+  } else if (key === '=') {
+    if (operation !== null && previousInput !== null) {
+      const opStr = operation === '*' ? '×' : operation === '/' ? '÷' : operation === '-' ? '−' : operation;
+      const pInp = previousInput;
+      calculateResult();
+      historyEl.innerText = `${formatNumber(pInp)} ${opStr} ${formatNumber(currentInput)} =`;
+      previousInput = null; operation = null; shouldResetDisplay = true;
+    }
+  }
+}
+
+window.addEventListener('load', () => { animate(); setInterval(updateTicker, 3200); seedThinking(); refreshFinLabels(); refreshMemUI(); });
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

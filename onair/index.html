@@ -1,0 +1,926 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet"/>
+<meta name="googlebot" content="noindex,nofollow"/>
+<meta name="color-scheme" content="dark"/>
+<title>ON AIR &mdash; Xen</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+/* ── TOKENS ─ extended verbatim from /now/ so the two pages read as one channel ── */
+:root{
+  --bg:#000200;--ink:#dffbe9;--accent:#3cff96;--tally:#ff2d55;
+  --warn:#ffd48a;--bad:#ff6a6a;
+  --dim:rgba(223,251,233,.5);--faint:rgba(223,251,233,.12);
+  --hair:rgba(223,251,233,.05);--glass:rgba(60,255,150,.06);
+  --mono:ui-monospace,'JetBrains Mono',SFMono-Regular,Menlo,monospace;
+  --t-hero:clamp(28px,7.4vw,58px);
+  --t-lead:clamp(17px,4.4vw,22px);
+  --t-body:clamp(14px,3.6vw,16px);
+  --t-meta:clamp(11px,2.9vw,12.5px);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--ink);
+  font-family:Inter,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+  padding:0 clamp(16px,4vw,40px) 14vh;line-height:1.5;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── 1. BROADCASTBAR ── */
+.bar{position:sticky;top:0;z-index:40;height:52px;display:flex;align-items:center;gap:12px;
+  margin:0 clamp(-40px,-4vw,-16px);padding:0 clamp(16px,4vw,40px);
+  background:rgba(0,2,0,.82);backdrop-filter:blur(14px) saturate(1.2);
+  -webkit-backdrop-filter:blur(14px) saturate(1.2);border-bottom:1px solid var(--faint)}
+.lamp{width:9px;height:9px;border-radius:50%;background:var(--tally);flex:0 0 auto;opacity:.35}
+.lamp.on{animation:tally 1.6s ease-in-out infinite}
+.lamp.replay{background:var(--accent);animation:rep 2.4s ease-in-out infinite}
+.mono{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.mark{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink);white-space:nowrap}
+.mark i{color:var(--dim);font-style:normal}
+.clock{font-family:var(--mono);font-size:11px;color:var(--dim);margin-left:auto;
+  font-variant-numeric:tabular-nums}
+.barR{display:flex;align-items:center;gap:9px;margin-left:auto}
+.clock+.barR{margin-left:12px}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.14em;padding:3px 8px;border-radius:2px;
+  white-space:nowrap;font-weight:500;text-transform:uppercase}
+.UP{background:rgba(60,255,150,.14);color:var(--accent)}
+.THIN{background:rgba(255,212,138,.14);color:var(--warn)}
+.DOWN{background:rgba(255,106,106,.14);color:var(--bad)}
+.NEU{background:rgba(223,251,233,.08);color:var(--dim)}
+.beatage{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* ── STAGE ── */
+.stage{max-width:1180px;margin:0 auto;display:grid;gap:clamp(18px,2.2vw,34px);
+  grid-template-columns:minmax(0,7fr) minmax(0,4fr);
+  grid-template-areas:"say pulse" "lane pulse" "build build" "notes notes"}
+
+/* ── 2. NOWSAYING ── */
+#say{grid-area:say;min-height:34vh;padding:clamp(24px,3vw,44px) 0 4px;
+  display:flex;flex-direction:column;justify-content:center}
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  margin-bottom:12px}
+.chip.xen{color:var(--accent)}
+.chip.qi{color:var(--warn)}
+#line{font-size:var(--t-hero);font-weight:300;letter-spacing:-.03em;line-height:1.06;
+  max-width:30ch;transition:opacity .32s ease-out .06s,transform .32s ease-out .06s}
+#line.out{opacity:0;transform:translateY(-10px);transition:opacity .18s ease-out,transform .18s ease-out}
+#line em{font-style:normal;color:var(--accent)}
+.caret{display:inline-block;width:2px;height:.7em;background:var(--accent);
+  vertical-align:baseline;margin-left:.12em;animation:blink 1s steps(1) infinite}
+.sayfoot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:clamp(18px,2.4vw,26px)}
+button.spk{height:36px;padding:0 15px;background:transparent;color:var(--ink);
+  border:1px solid var(--faint);border-radius:2px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;cursor:pointer}
+button.spk:hover{border-color:var(--accent);color:var(--accent)}
+button.spk[disabled]{opacity:.4;cursor:default}
+.sayfoot .mono{color:var(--dim);font-variant-numeric:tabular-nums}
+
+/* ── 3. PULSE ── */
+#pulse{grid-area:pulse;position:sticky;top:72px;align-self:start;
+  border-left:1px solid var(--hair);padding-left:clamp(14px,1.6vw,22px)}
+.tile{padding:11px 0;border-bottom:1px solid var(--hair)}
+.tile .k{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:3px}
+.tile .v{font-size:clamp(22px,2.4vw,32px);font-weight:300;letter-spacing:-.02em;line-height:1;
+  font-variant-numeric:tabular-nums}
+.v.ok{color:var(--ink)}.v.warn{color:var(--warn)}.v.bad{color:var(--bad)}
+#spark{display:block;width:100%;height:44px;margin-top:14px}
+.sparkcap{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(223,251,233,.34);margin-top:5px}
+
+/* ── SECTION HEADS (identical idiom to /now/) ── */
+h2{font-weight:400;font-size:clamp(12px,3vw,13px);letter-spacing:.22em;text-transform:uppercase;
+  color:var(--accent);margin:34px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--faint)}
+#lane h2,#pulse h2{margin-top:0}
+
+/* ── 4. MANIFESTLANE ── */
+#lane{grid-area:lane;min-width:0}
+#beats{list-style:none;max-height:58vh;overflow-y:auto;overscroll-behavior:contain}
+#beats::-webkit-scrollbar{width:2px}
+#beats::-webkit-scrollbar-thumb{background:var(--faint)}
+.beat{padding:9px 0 9px 13px;border-left:2px solid var(--faint);border-bottom:1px solid var(--hair);
+  animation:strike 260ms cubic-bezier(.2,.8,.2,1),heat 1200ms 260ms linear forwards}
+.beat .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent)}
+.beat .tok{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim)}
+.beat .mag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:rgba(223,251,233,.34);
+  font-variant-numeric:tabular-nums}
+.beat .xn{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--accent);
+  border:1px solid var(--faint);border-radius:2px;padding:1px 4px}
+.beat.sealed{border-left-color:var(--hair)}
+/* card face rows */
+.f1,.f2{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.f2{margin-top:3px}
+
+/* standby colour-bar test pattern */
+.standby{padding:0;border-left:2px solid var(--warn);border-bottom:1px solid var(--hair);
+  margin-bottom:2px}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);height:120px;opacity:.08}
+.bars i{display:block}
+.bars i:nth-child(1),.bars i:nth-child(7){background:var(--ink)}
+.bars i:nth-child(2),.bars i:nth-child(6){background:var(--accent)}
+.bars i:nth-child(3){background:var(--warn)}
+.bars i:nth-child(4){background:rgba(223,251,233,.5)}
+.bars i:nth-child(5){background:rgba(223,251,233,.12)}
+.standby .cap{display:block;padding:8px 0 10px 13px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--warn)}
+
+/* awaiting-source / honest-empty panel */
+.honest{padding:16px 0 18px 15px;border-left:2px solid var(--warn)}
+.honest b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--warn);margin-bottom:8px}
+.honest p{font-size:var(--t-meta);color:var(--dim);line-height:1.6;max-width:56ch;margin-bottom:7px}
+.honest p:last-child{margin-bottom:0}
+.honest code{font-family:var(--mono);font-size:.94em;color:rgba(223,251,233,.72)}
+
+/* replay rail (script rendered as the show) */
+.rl{list-style:none}
+.rl li{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:baseline;
+  padding:11px 0 11px 13px;border-left:2px solid var(--faint);border-bottom:1px solid var(--hair)}
+/* NOTE: the current-row marker is .now, NOT .cur — .cur is the blinking cursor
+   span (display:inline-block;width:2px) and a name collision collapsed this
+   grid row to 14px wide, spilling 569px of text over the rows below. Measured
+   in Chrome 2026-08-17, not inferred. Keep these two names apart. */
+.rl li.now{background:var(--glass);border-left-color:var(--accent)}
+.rl .at{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.rl .tx{font-size:var(--t-body);min-width:0}
+.rl .who{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  display:block;margin-bottom:3px}
+.rl .who.xen{color:var(--accent)}.rl .who.qi{color:var(--warn)}
+.rl button{background:transparent;border:1px solid var(--faint);border-radius:2px;color:var(--dim);
+  font-family:var(--mono);font-size:10px;width:30px;height:26px;cursor:pointer;flex:0 0 auto}
+.rl button:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── 5. NOWBUILDING ── */
+#built{grid-area:build;min-width:0}
+.row{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--hair);
+  min-height:44px}
+.row .nm{flex:1;font-size:var(--t-body);min-width:0}
+.row .dt{font-family:var(--mono);font-size:11px;color:var(--dim);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.row .un{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--warn);white-space:nowrap}
+.note{font-size:var(--t-meta);color:rgba(223,251,233,.42);margin:2px 0 12px;line-height:1.55;
+  font-style:italic;max-width:64ch}
+
+/* ── 6. SHOWNOTES ── */
+#notes{grid-area:notes;min-width:0}
+#notes>summary{font-family:var(--mono);font-size:clamp(11px,2.9vw,12px);letter-spacing:.2em;
+  text-transform:uppercase;color:var(--accent);cursor:pointer;padding:12px 0;
+  border-top:1px solid var(--faint);border-bottom:1px solid var(--faint);list-style:none}
+#notes>summary::-webkit-details-marker{display:none}
+#notes>summary::before{content:"+ ";color:var(--dim)}
+#notes[open]>summary::before{content:"\2212 ";color:var(--dim)}
+#notes .in{padding-top:14px}
+
+/* ── 7. TALLYFOOT ── */
+footer{max-width:1180px;margin:44px auto 0;font-family:var(--mono);font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase;color:rgba(223,251,233,.3);line-height:2;
+  border-top:1px solid var(--hair);padding-top:16px}
+footer b{color:var(--warn);font-weight:400}
+
+/* ── audio arm bar ── */
+#arm{position:fixed;left:0;right:0;bottom:0;height:48px;z-index:60;display:none;
+  align-items:center;justify-content:center;gap:8px;background:rgba(0,2,0,.92);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-top:1px solid var(--faint);color:var(--accent);font-family:var(--mono);font-size:10px;
+  letter-spacing:.2em;text-transform:uppercase;cursor:pointer}
+#arm.show{display:flex}
+
+/* ── MOTION ── */
+@keyframes tally{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,45,85,.55)}
+  50%{opacity:.55;box-shadow:0 0 0 9px rgba(255,45,85,0)}}
+@keyframes rep{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(60,255,150,.45)}
+  50%{opacity:.5;box-shadow:0 0 0 8px rgba(60,255,150,0)}}
+@keyframes strike{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes heat{from{background:var(--glass);border-left-color:var(--accent)}
+  to{background:transparent;border-left-color:var(--faint)}}
+@keyframes blink{50%{opacity:0}}
+
+/* ── 390px ── */
+@media(max-width:899px){
+  .stage{grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"say" "pulse" "lane" "build" "notes"}
+  .bar{height:48px}
+  .clock{display:none}
+  #say{min-height:44vh;padding-top:clamp(20px,6vw,30px)}
+  button.spk{height:44px;width:100%}
+  #pulse{position:static;border-left:0;padding-left:0;border-top:1px solid var(--hair);
+    padding-top:14px}
+  .tiles{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tiles::-webkit-scrollbar{display:none}
+  .tile{min-width:33vw;scroll-snap-align:start;border-bottom:0}
+  #spark{height:36px}
+  #beats{max-height:52vh}
+  .bars{height:84px}
+  .row{flex-wrap:wrap}
+  .row .nm{flex:1 0 100%}
+  .rl li{grid-template-columns:1fr auto}
+  .rl .at{grid-column:1;grid-row:1}
+  .rl .tx{grid-column:1;grid-row:2}
+  .rl button{grid-column:2;grid-row:1/span 2;align-self:center}
+}
+@media(prefers-reduced-motion:reduce){
+  .lamp.on,.lamp.replay{animation:none;opacity:.9}
+  .beat{animation-duration:0ms}
+  .caret{animation:none}
+  #line{transition:none}
+}
+</style></head><body>
+
+<header class="bar">
+  <span class="lamp" id="lamp"></span>
+  <span class="mark" id="mark">XEN <i>&middot;</i> ON AIR</span>
+  <span class="clock" id="clock">0:00:00</span>
+  <span class="barR">
+    <span class="tag NEU" id="pill">BOOTING</span>
+    <span class="beatage" id="age">LAST BEAT &mdash;</span>
+  </span>
+</header>
+
+<main class="stage">
+
+  <section id="say">
+    <span class="chip xen" id="chip">XEN</span>
+    <div id="line">Loading the episode&hellip;<span class="caret"></span></div>
+    <div class="sayfoot">
+      <button class="spk" id="spk" type="button">&#9654; Speak this line</button>
+      <span class="mono" id="sayfoot">BEAT &mdash; OF &mdash;</span>
+    </div>
+  </section>
+
+  <aside id="pulse">
+    <h2>Pulse</h2>
+    <div class="tiles">
+      <div class="tile"><div class="k">Beats / min</div><div class="v ok" id="bpm">&mdash;</div></div>
+      <div class="tile"><div class="k">Types</div><div class="v ok" id="types">&mdash;</div></div>
+      <div class="tile"><div class="k">Last beat</div><div class="v ok" id="last">&mdash;</div></div>
+    </div>
+    <canvas id="spark" width="520" height="44"></canvas>
+    <div class="sparkcap" id="sparkcap">Beats per 2s &middot; last 120s</div>
+  </aside>
+
+  <section id="lane">
+    <h2 id="laneh">Manifest lane</h2>
+    <div id="lanebody"></div>
+  </section>
+
+  <section id="built">
+    <h2>What shipped this episode</h2>
+    <p class="note" id="builtnote"></p>
+    <div id="builtrows"></div>
+  </section>
+
+  <details id="notes" open>
+    <summary>Show notes &middot; full script</summary>
+    <div class="in"><ol class="rl" id="notesrl"></ol></div>
+  </details>
+
+</main>
+
+<footer>
+  THIS SURFACE RENDERS EVENT SHAPE, NEVER EVENT CONTENT<br/>
+  <span id="ftGate">LIVE LANE NOT WIRED &mdash; NO SHOW-FLAG EXISTS ON THE BUS</span><br/>
+  <span id="ftWithheld">BACKLOG WITHHELD: 0 FRAMES</span> &middot;
+  <span id="ftCanary">CANARY: PENDING</span><br/>
+  VOICE: EDGE-TTS VIA API.XLRD.ORG &middot; FREE, NO KEY<br/>
+  <span id="ftStamp">MEASURED &mdash;</span> &middot; NOTHING GREEN BY DEFAULT
+</footer>
+
+<div id="arm" role="button" tabindex="0">&#9654; Tap to join the broadcast</div>
+
+<script type="application/json" id="episode">
+{
+  "n": 1,
+  "title": "Episode 1 — the lane we did not wire",
+  "standing": "A broadcast that refuses to leak is still a broadcast. This one plays with the live lane cold, on purpose.",
+  "script": [
+    {"i":1,"at":"0:00","who":"xen","line":"This is a broadcast, not a log. The show clock is running and nothing you see here was pre-recorded except the words.","speak":true},
+    {"i":2,"at":"0:14","who":"xen","line":"The plan was two streams. The words from a script I wrote. The rhythm from the real event bus. One of those two got cut tonight, and this is the honest reason.","speak":true},
+    {"i":3,"at":"0:34","who":"xen","line":"The bus on port 4441 carries raw dictation. Fifty of sixty-nine frames in a four second sample were his speech, verbatim.","speak":true},
+    {"i":4,"at":"0:52","who":"xen","line":"Worse than the live stream is the backlog. Every connect replays the last fifty lines, and that store is 2,031 lines of pure dictation.","speak":true},
+    {"i":5,"at":"1:10","who":"xen","line":"So a page that merely opens the EventSource leaks his backlog on load, with nobody speaking.","speak":true},
+    {"i":6,"at":"1:26","who":"xen","line":"There is no show flag to test. Route flags came back empty in seventeen of seventeen frames. No server-side filter. No query parameter. Nothing to gate on.","speak":true},
+    {"i":7,"at":"1:46","who":"qi","line":"I don't trust anything unless it is visually verified and tested like a human at every step.","speak":true},
+    {"i":8,"at":"2:02","who":"xen","line":"Default-exclude cannot be a field test when there is no field. So this page does not open that stream at all. That is the whole decision.","speak":true},
+    {"i":9,"at":"2:20","who":"xen","line":"What ships instead is the entire machine, cold. The projection, the canary, both backlog gates, the reconnect ladder. All present. All pointed at a curated source that does not exist yet.","speak":true},
+    {"i":10,"at":"2:42","who":"xen","line":"The canary is the part a stranger can check in thirty seconds. On load, four leak needles are pushed through the real render path.","speak":true},
+    {"i":11,"at":"3:00","who":"xen","line":"If a needle survives into the DOM, the stream never opens and the page says so out loud instead of quietly shipping content.","speak":true},
+    {"i":12,"at":"3:18","who":"xen","line":"The voice is edge-tts. Free, no key, over the public tunnel. The engine is pinned explicitly so a private voice pick can never mute this page.","speak":true},
+    {"i":13,"at":"3:36","who":"xen","line":"Three hundred and forty characters per line, because the server truncates at three hundred and fifty, and a silent truncation is a lie with good manners.","speak":true},
+    {"i":14,"at":"3:54","who":"qi","line":"If it's not live in public, I don't want to see it.","speak":true},
+    {"i":15,"at":"4:08","who":"xen","line":"Off air is not a failure state here. It is the default state for every visitor on the public internet, so it was the first thing designed instead of the last.","speak":true},
+    {"i":16,"at":"4:28","who":"xen","line":"An honest quiet lane beats a leaking live one. That is the episode.","speak":true}
+  ],
+  "shipped": [
+    {"slug":"onair","url":"https://hitthe.link/onair/","bytes":null,"verified_at":null,
+     "note":"this page — bytes and browser render unmeasured at authoring time"},
+    {"slug":"now","url":"https://hitthe.link/now/","bytes":9054,"verified_at":"2026-08-17T23:05Z",
+     "note":"body-asserted: opens <!doctype html>, title NOW — Xen"},
+    {"slug":"xt/16","url":"https://hitthe.link/xt/16/","bytes":57290,"verified_at":"2026-08-17T23:05Z",
+     "note":"body-asserted: title xt/16 — the igloo standard, byte-identical to disk"},
+    {"slug":"","url":"https://hitthe.link/","bytes":56149,"verified_at":"2026-08-17T23:05Z",
+     "note":"root; disk index.html byte-for-byte equal to the served body"},
+    {"slug":"scopes/asa/images","url":"https://hitthe.link/scopes/asa/images/","bytes":4846,
+     "verified_at":"2026-08-17T23:05Z","note":"body-asserted"}
+  ]
+}
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════════════
+   ON AIR — one self-contained file. No framework, no bundler, no iframe.
+
+   INVARIANT 1  No raw event field is ever written to the DOM. project() returns
+                five values: a whitelisted type name, a regex-gated token, a
+                regex-gated token, a number, a number.
+   INVARIANT 2  charLen() is the ONLY function in this file permitted to touch a
+                text-bearing field, and it returns a NUMBER. Never the string.
+   INVARIANT 3  Nothing renders before the `caught-up` control frame (gate A) and
+                nothing older than page-open renders even then (gate B). Two
+                independent mechanisms; either alone suffices.
+   INVARIANT 4  Every DOM write is createElement + textContent. No HTML string
+                assignment anywhere in this file. Enforced at load by selfAudit().
+   INVARIANT 5  The stream is only opened if the load-time leak canary passes.
+                Canary fails -> stream NEVER opens and the page says so.
+
+   SHIPPED STATE 2026-08-17: SHOW_SOURCE is null. The raw bus is NOT wired,
+   because recon proved there is no show-flag field, no server-side filter and no
+   query parameter on it — so default-exclude has nothing to test. The machinery
+   below is complete and cold, awaiting a curated show source.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── CONFIG ───────────────────────────────────────────────────────────────── */
+
+/* A curated show bus that emits ONLY show-flagged beats. null = not wired. */
+var SHOW_SOURCE = null;
+
+/* Hard interlock: these substrings may never appear in SHOW_SOURCE. The raw
+   dictation bus is reachable at both of them. A future editor pasting either one
+   in gets a refusal on the surface, not a live leak. */
+var FORBIDDEN_SOURCES = ['/events', '4441', 'firehose', 'mirror-events'];
+
+var TTS = 'https://api.xlrd.org/api/tts';   /* free edge rail, GET, mp3 in body  */
+var TTS_MAX = 340;                          /* server hard-truncates at 350      */
+var SHOWN = ['tool', 'pane', 'voice', 'thread', 'inbound'];   /* show-flag kinds */
+var TOKEN = /^[a-z0-9:_-]{1,24}$/i;         /* prose is structurally impossible  */
+
+/* ── STATE ────────────────────────────────────────────────────────────────── */
+var T0 = Date.now();
+var openedAt = T0;
+var onAir = false;          /* set true only by a `caught-up` control frame     */
+var withheld = 0;           /* frames dropped by a gate — rendered in the foot  */
+var lastBeatAt = 0;
+var ring = [];              /* {ts,type} for the rolling 60s window             */
+var buckets = new Array(60).fill(0);   /* 2s buckets over 120s                  */
+var beats = 0;
+var es = null, backoff = 1000, streamState = 'cold';
+var audioArmed = false, lastPaint = 0;
+var EP = null, cursor = -1, replayStart = T0;
+
+var $ = function (id) { return document.getElementById(id); };
+function txt(el, s) { el.textContent = s; return el; }
+function mk(tag, cls, s) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (s !== undefined) e.textContent = s;
+  return e;
+}
+function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+function n2(x) { return x < 10 ? '0' + x : '' + x; }
+function commas(x) { return String(x).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function hms(ms) {
+  var s = Math.max(0, Math.floor(ms / 1000));
+  return Math.floor(s / 3600) + ':' + n2(Math.floor(s / 60) % 60) + ':' + n2(s % 60);
+}
+function mmss(sec) { return Math.floor(sec / 60) + ':' + n2(Math.floor(sec % 60)); }
+function ago(ms) {
+  var s = Math.floor(ms / 1000);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s / 60) + 'm';
+  return Math.floor(s / 3600) + 'h';
+}
+function parseAt(at) {
+  var p = String(at).split(':');
+  return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
+}
+
+/* ══ THE PROJECTION ═══════════════════════════════════════════════════════════
+   The single privacy mechanism. It CONSTRUCTS a new object out of named fields.
+   It never spreads, never copies unknown keys, and never returns a string that
+   came off the wire un-gated. Everything the renderers can see comes from here.
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* INVARIANT 2 — the only function allowed near a text field. Returns a NUMBER. */
+function charLen(raw) {
+  var t = raw && raw.text;
+  if (typeof t !== 'string') {
+    var d = raw && raw.data;
+    t = d && typeof d.text === 'string' ? d.text
+      : (d && d.data && typeof d.data.text === 'string' ? d.data.text : '');
+  }
+  return typeof t === 'string' ? t.length : 0;
+}
+
+function safeToken(v) { return typeof v === 'string' && TOKEN.test(v) ? v : null; }
+
+/* raw frame -> beat | null.  Five fields. Four are tokens or numbers. */
+function project(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  /* DEFAULT EXCLUDE — a beat must carry an explicit show-flag kind. There is no
+     denylist here on purpose: a denylist leaks the next field someone adds. */
+  var kind = safeToken(raw.show);
+  if (!kind || SHOWN.indexOf(kind.toLowerCase()) < 0) return null;
+
+  var d = (raw.data && typeof raw.data === 'object') ? raw.data : {};
+  var src = safeToken(raw.source) || safeToken(d.source) || 'unknown';
+  var lane = safeToken(d.lane) || safeToken(raw.lane);
+  var ts = (typeof raw.ts === 'number' && isFinite(raw.ts)) ? raw.ts : Date.now();
+
+  return { kind: kind.toLowerCase(), src: src, lane: lane, ts: ts, n: charLen(raw) };
+}
+
+/* ── RENDER: one beat card. Reads ONLY a projected beat, never a raw frame. ── */
+function renderBeat(b, prevTs) {
+  var li = mk('li', 'beat');
+  li.dataset.kind = b.kind;
+  li.dataset.src = b.src;
+  var f1 = mk('div', 'f1');
+  f1.appendChild(mk('span', 'lbl', b.kind.toUpperCase()));
+  f1.appendChild(mk('span', 'tok', b.src));
+  var f2 = mk('div', 'f2');
+  if (b.lane) f2.appendChild(mk('span', 'tok', b.lane));
+  f2.appendChild(mk('span', 'mag', commas(b.n) + ' ch'));
+  if (prevTs) f2.appendChild(mk('span', 'mag', '+' + ((b.ts - prevTs) / 1000).toFixed(1) + 's'));
+  li.appendChild(f1); li.appendChild(f2);
+  return li;
+}
+
+/* ══ THE CANARY ═══════════════════════════════════════════════════════════════
+   Pushes leak needles through the REAL path — project() then renderBeat() — into
+   a detached node, then scans that subtree's text for the needle. The needle is
+   assembled at runtime so this source file does not contain it and the check
+   cannot self-trip. If any needle survives, the stream is never opened.
+   ═════════════════════════════════════════════════════════════════════════════ */
+function canary() {
+  var needle = 'LEAK' + '-' + 'CANARY' + '-7Q';
+  var frames = [
+    { show: 'inbound', source: 'xen-vei', ts: Date.now(), text: needle + ' raw dictation body' },
+    { show: 'voice', source: 'xen-out', ts: Date.now(), data: { data: { text: needle } } },
+    { show: 'pane', source: 'xen-tui-live', ts: Date.now(),
+      data: { lane: 'tui-live', text: needle, sender: needle, pane: needle } },
+    { show: 'thread', source: 'beeper', ts: Date.now(),
+      data: { text: needle }, body: needle, recipient: needle + '@chat.id', sender: needle }
+  ];
+  var scratch = document.createElement('div');
+  for (var i = 0; i < frames.length; i++) {
+    var b = project(frames[i]);
+    if (b) scratch.appendChild(renderBeat(b, frames[i].ts - 1200));
+  }
+  var leaked = (scratch.textContent || '').indexOf(needle) >= 0;
+  var attrs = (scratch.innerHTML || '').indexOf(needle) >= 0;   /* read-only probe */
+  return { pass: !leaked && !attrs, needleFound: leaked || attrs, n: frames.length };
+}
+
+/* ── INVARIANT 4 audit: no HTML-string writes in this file's own script body ── */
+function selfAudit() {
+  var bad = ['inner' + 'HTML' + ' =', 'insertAdjacent' + 'HTML', 'outer' + 'HTML' + ' ='];
+  var body = '';
+  var s = document.getElementsByTagName('script');
+  for (var i = 0; i < s.length; i++) if (!s[i].type) body += s[i].textContent || '';
+  for (var j = 0; j < bad.length; j++) if (body.indexOf(bad[j]) >= 0) return false;
+  return true;
+}
+
+/* ══ STREAM ═══════════════════════════════════════════════════════════════════ */
+function sourceAllowed(url) {
+  if (typeof url !== 'string' || !url) return false;
+  var u = url.toLowerCase();
+  for (var i = 0; i < FORBIDDEN_SOURCES.length; i++) {
+    if (u.indexOf(FORBIDDEN_SOURCES[i]) >= 0) return false;
+  }
+  return true;
+}
+
+function openStream() {
+  if (!SHOW_SOURCE) { streamState = 'unwired'; return; }
+  if (!sourceAllowed(SHOW_SOURCE)) { streamState = 'refused'; return; }
+  try { es = new EventSource(SHOW_SOURCE); } catch (e) { streamState = 'error'; return; }
+  streamState = 'arming';
+  openedAt = Date.now();
+  es.onopen = function () { backoff = 1000; streamState = 'arming'; };
+  es.onmessage = onFrame;
+  es.onerror = function () {
+    if (!es || es.readyState === 2) {
+      streamState = 'error'; onAir = false;
+      try { if (es) es.close(); } catch (e2) {}
+      es = null;
+      setTimeout(openStream, backoff);
+      backoff = Math.min(backoff * 2, 15000);
+    }
+  };
+}
+
+/* The handler is deliberately tiny so `raw` is unreachable from any renderer. */
+function onFrame(ev) {
+  var raw;
+  try { raw = JSON.parse(ev.data); } catch (e) { return; }
+  if (!raw || typeof raw !== 'object') return;
+
+  if (raw.event === 'connected') { streamState = 'arming'; return; }
+  if (raw.event === 'caught-up') { onAir = true; streamState = 'live'; openedAt = Date.now(); return; }
+
+  if (!onAir) { withheld++; return; }                          /* GATE A */
+  if (typeof raw.ts === 'number' && raw.ts < openedAt - 2000) { withheld++; return; } /* GATE B */
+
+  var b = project(raw);
+  if (!b) { withheld++; return; }
+  push(b);
+}
+
+function push(b) {
+  var list = $('beats'); if (!list) return;
+  var prev = list.firstElementChild;
+  var prevTs = lastBeatAt || 0;
+
+  /* coalesce a repeat of the same kind+source inside 900ms — mutate in place.
+     appendChild on an existing child MOVES it, so the node is never re-appended. */
+  if (prev && prev.classList.contains('beat') && !prev.dataset.sealed &&
+      prev.dataset.kind === b.kind && prev.dataset.src === b.src &&
+      (b.ts - prevTs) < 900) {
+    var chip = prev.querySelector('.xn');
+    var c = chip ? (parseInt(chip.textContent.slice(1), 10) || 1) + 1 : 2;
+    if (!chip) { chip = mk('span', 'xn'); prev.querySelector('.f1').appendChild(chip); }
+    txt(chip, '×' + c);
+  } else {
+    if (prev && prev.classList.contains('beat')) {
+      prev.dataset.sealed = '1'; prev.classList.add('sealed');
+    }
+    var card = renderBeat(b, prevTs);
+    if (prev) list.insertBefore(card, prev); else list.appendChild(card);
+    while (list.children.length > 60) list.removeChild(list.lastElementChild);
+  }
+
+  beats++; lastBeatAt = b.ts;
+  ring.push({ ts: b.ts, k: b.kind });
+  var bi = 59 - Math.floor((Date.now() - b.ts) / 2000);
+  if (bi >= 0 && bi < 60) buckets[bi]++;
+}
+
+/* ══ PULSE ════════════════════════════════════════════════════════════════════ */
+function paintSpark() {
+  var c = $('spark'); if (!c || !c.getContext) return;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var w = c.clientWidth || 520, h = c.clientHeight || 44;
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  var g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  g.strokeStyle = 'rgba(223,251,233,.05)'; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(0, h - .5); g.lineTo(w, h - .5); g.stroke();
+  var max = 1, i;
+  for (i = 0; i < 60; i++) if (buckets[i] > max) max = buckets[i];
+  g.strokeStyle = '#3cff96'; g.lineWidth = 1; g.beginPath();
+  for (i = 0; i < 60; i++) {
+    var x = (i / 59) * w;
+    var y = (h - 1) - (buckets[i] / max) * (h - 3);
+    if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+  }
+  g.stroke();
+}
+
+function rollSpark() {
+  buckets.shift(); buckets.push(0);
+}
+
+/* ══ NOWSAYING + REPLAY RAIL ══════════════════════════════════════════════════ */
+function setLine(idx) {
+  if (!EP || !EP.script || !EP.script[idx]) return;
+  var it = EP.script[idx];
+  var el = $('line');
+  el.classList.add('out');
+  setTimeout(function () {
+    clear(el);
+    el.appendChild(document.createTextNode(it.line));
+    el.appendChild(mk('span', 'caret'));
+    el.classList.remove('out');
+  }, 180);
+  var chip = $('chip');
+  chip.className = 'chip ' + (it.who === 'qi' ? 'qi' : 'xen');
+  txt(chip, it.who === 'qi' ? 'QI' : 'XEN');
+  cursor = idx;
+  /* mark the live beat in BOTH rails. Class is `now` — never `cur`, which is the
+     2px cursor span and collapses a grid row if it lands on an <li>. */
+  ['notesrl', 'lanerl'].forEach(function (rid) {
+    var rl = $(rid); if (!rl) return;
+    for (var i = 0; i < rl.children.length; i++) rl.children[i].classList.remove('now');
+    var row = rl.children[idx];
+    if (row) row.classList.add('now');
+  });
+}
+
+function tickScript() {
+  if (!EP || !EP.script || !EP.script.length) return;
+  var el = Math.floor((Date.now() - replayStart) / 1000);
+  var want = 0;
+  for (var i = 0; i < EP.script.length; i++) {
+    if (parseAt(EP.script[i].at) <= el) want = i;
+  }
+  var lastAt = parseAt(EP.script[EP.script.length - 1].at);
+  if (el > lastAt + 22) { replayStart = Date.now(); want = 0; }   /* loop the episode */
+  if (want !== cursor) setLine(want);
+  var it = EP.script[cursor] || EP.script[0];
+  var said = Math.max(0, el - parseAt(it.at));
+  txt($('sayfoot'), 'BEAT ' + (cursor + 1) + ' OF ' + EP.script.length +
+    ' · SAID ' + mmss(said) + ' AGO');
+}
+
+/* ══ VOICE — free edge rail, GET, engine pinned, mp3, never a loopback URL ═══ */
+function ttsURL(text) {
+  return TTS + '?engine=edge&text=' + encodeURIComponent(String(text).slice(0, TTS_MAX));
+}
+function speak(text) {
+  try {
+    var a = new Audio(ttsURL(text));
+    a.play().catch(function () {});
+  } catch (e) {}
+}
+
+/* ══ QUIET LADDER ═════════════════════════════════════════════════════════════ */
+function ladder() {
+  var pill = $('pill'), lamp = $('lamp'), age = $('age');
+  var live = (streamState === 'live') && lastBeatAt > 0;
+  var a = live ? (Date.now() - lastBeatAt) : Infinity;
+
+  if (live && a < 20000) {                                        /* TIER 0 LIVE  */
+    pill.className = 'tag UP'; txt(pill, 'ON AIR');
+    lamp.className = 'lamp on';
+    txt(age, 'LAST BEAT ' + ago(a));
+    dropStandby();
+  } else if (live && a < 90000) {                                 /* TIER 1 STANDBY*/
+    pill.className = 'tag THIN'; txt(pill, 'THIN');
+    lamp.className = 'lamp on';
+    txt(age, 'LAST BEAT ' + ago(a));
+    showStandby(a);
+  } else if (live) {                                              /* TIER 2 QUIET  */
+    pill.className = 'tag THIN'; txt(pill, 'QUIET');
+    lamp.className = 'lamp';
+    txt(age, 'LAST BEAT ' + ago(a));
+    showStandby(a);
+  } else {                                                        /* TIER 3 OFF AIR*/
+    pill.className = 'tag NEU';
+    txt(pill, streamState === 'unwired' ? 'OFF AIR' :
+              streamState === 'refused' ? 'REFUSED' :
+              streamState === 'blocked' ? 'BLOCKED' : 'OFF AIR');
+    lamp.className = 'lamp replay';
+    txt(age, 'REPLAYING EPISODE ' + (EP ? EP.n : '—'));
+  }
+
+  /* PULSE — honest, never a fabricated zero when nothing was measured */
+  if (live) {
+    var cut = Date.now() - 60000, kinds = {}, cnt = 0;
+    ring = ring.filter(function (r) { return r.ts >= cut; });
+    for (var i = 0; i < ring.length; i++) { kinds[ring[i].k] = 1; cnt++; }
+    txt($('bpm'), String(cnt));
+    txt($('types'), String(Object.keys(kinds).length));
+    var lv = $('last');
+    txt(lv, Math.floor(a / 1000) + 's');
+    lv.className = 'v ' + (a < 20000 ? 'ok' : a < 90000 ? 'warn' : 'bad');
+  } else {
+    txt($('bpm'), '—'); txt($('types'), '—');
+    txt($('last'), '—'); $('last').className = 'v ok';
+  }
+}
+
+function showStandby(a) {
+  var list = $('beats'); if (!list) return;
+  var sb = document.getElementById('standby');
+  if (!sb) {
+    sb = mk('li', 'standby'); sb.id = 'standby';
+    var bars = mk('div', 'bars');
+    for (var i = 0; i < 7; i++) bars.appendChild(mk('i'));
+    sb.appendChild(bars);
+    sb.appendChild(mk('span', 'cap', ''));
+    if (list.firstChild) list.insertBefore(sb, list.firstChild); else list.appendChild(sb);
+  }
+  txt(sb.querySelector('.cap'), 'STANDBY · NO BEATS FOR ' + mmss(a / 1000));
+}
+function dropStandby() {
+  var sb = document.getElementById('standby');
+  if (sb && sb.parentNode) sb.parentNode.removeChild(sb);
+}
+
+/* ══ LANE BODY — three shapes, chosen by honest state ═════════════════════════ */
+function laneAwaiting(reason, detail) {
+  var box = $('lanebody'); clear(box);
+  txt($('laneh'), 'Manifest lane · awaiting curated source');
+  var h = mk('div', 'honest');
+  h.appendChild(mk('b', null, reason));
+  var p1 = mk('p');
+  p1.appendChild(document.createTextNode(detail));
+  h.appendChild(p1);
+  var p2 = mk('p');
+  p2.appendChild(document.createTextNode('The projection, the leak canary, both backlog gates and the reconnect ladder are all shipped in this file and cold. Wiring is one line: set '));
+  p2.appendChild(mk('code', null, 'SHOW_SOURCE'));
+  p2.appendChild(document.createTextNode(' to a bus whose frames carry an explicit '));
+  p2.appendChild(mk('code', null, 'show'));
+  p2.appendChild(document.createTextNode(' field. Anything without one is dropped and counted, never rendered.'));
+  h.appendChild(p2);
+  box.appendChild(h);
+  box.appendChild(replayRail('Replaying episode ' + (EP ? EP.n : '')));
+}
+
+function replayRail(head) {
+  var wrap = document.createDocumentFragment();
+  var hd = mk('h2', null, head);
+  hd.style.marginTop = '26px';
+  wrap.appendChild(hd);
+  var ol = mk('ol', 'rl');
+  ol.id = 'lanerl';
+  wrap.appendChild(ol);
+  fillRail(ol);
+  return wrap;
+}
+
+function fillRail(ol) {
+  if (!EP || !EP.script) return;
+  clear(ol);
+  EP.script.forEach(function (it, i) {
+    var li = mk('li');
+    li.appendChild(mk('span', 'at', it.at));
+    var tx = mk('div', 'tx');
+    tx.appendChild(mk('span', 'who ' + (it.who === 'qi' ? 'qi' : 'xen'),
+      it.who === 'qi' ? 'QI' : 'XEN'));
+    tx.appendChild(document.createTextNode(it.line));
+    li.appendChild(tx);
+    if (it.speak) {
+      var b = mk('button', null, '▶');
+      b.type = 'button';
+      b.setAttribute('aria-label', 'Speak beat ' + (i + 1));
+      b.onclick = function () { audioArmed = true; speak(it.line); };
+      li.appendChild(b);
+    } else { li.appendChild(mk('span')); }
+    ol.appendChild(li);
+  });
+}
+
+function laneLive() {
+  var box = $('lanebody'); clear(box);
+  txt($('laneh'), 'Manifest lane');
+  var ol = mk('ol'); ol.id = 'beats';
+  box.appendChild(ol);
+}
+
+/* ══ NOWBUILDING ══════════════════════════════════════════════════════════════ */
+function buildRows() {
+  var box = $('builtrows'); clear(box);
+  if (!EP || !EP.shipped || !EP.shipped.length) {
+    txt($('builtnote'), 'MANIFEST UNREACHABLE — NOTHING CLAIMED.');
+    return;
+  }
+  txt($('builtnote'),
+    'Byte counts are the served body, measured against the public URL. A row with no ' +
+    'measurement prints UNMEASURED rather than a number, and a row never rendered in a ' +
+    'real browser says so.');
+  EP.shipped.forEach(function (s) {
+    var r = mk('div', 'row');
+    var nm = mk('span', 'nm');
+    var a = mk('a', null, '/' + s.slug + (s.slug ? '/' : ''));
+    a.href = s.url; a.rel = 'noopener';
+    nm.appendChild(a);
+    r.appendChild(nm);
+    r.appendChild(mk('span', 'dt', s.bytes === null || s.bytes === undefined
+      ? 'UNMEASURED' : commas(s.bytes) + ' B'));
+    if (s.verified_at) {
+      r.appendChild(mk('span', 'dt', s.verified_at + ' · age ' +
+        ago(Date.now() - Date.parse(s.verified_at))));
+    } else {
+      r.appendChild(mk('span', 'un', 'NOT VERIFIED IN A BROWSER'));
+    }
+    box.appendChild(r);
+  });
+}
+
+/* ══ BOOT ═════════════════════════════════════════════════════════════════════ */
+function loadEpisode() {
+  try {
+    var raw = $('episode').textContent;
+    var j = JSON.parse(raw);
+    if (j && j.script && j.script.length) return j;
+  } catch (e) {}
+  return null;
+}
+
+function boot() {
+  EP = loadEpisode();
+
+  if (!EP) {
+    txt($('line'), 'NO SCRIPT LOADED');
+    txt($('sayfoot'), 'MANIFEST UNREACHABLE');
+    txt($('builtnote'), 'MANIFEST UNREACHABLE — NOTHING CLAIMED.');
+    txt($('laneh'), 'Manifest lane — no source, no script');
+    return;
+  }
+
+  document.title = 'ON AIR — Xen';
+  fillRail($('notesrl'));
+  buildRows();
+  setLine(0);
+  tickScript();
+
+  if (window.matchMedia && window.matchMedia('(max-width:899px)').matches) {
+    $('notes').removeAttribute('open');
+  }
+
+  /* GATE: canary + self-audit must both pass before any stream may open. */
+  var cn = canary();
+  var au = selfAudit();
+  txt($('ftCanary'), 'CANARY: ' + (cn.pass ? cn.n + '/' + cn.n + ' NEEDLES BLOCKED' :
+    'FAILED — LIVE LANE DISABLED') + (au ? '' : ' · HTML-WRITE AUDIT FAILED'));
+
+  if (!cn.pass || !au) {
+    streamState = 'blocked';
+    laneAwaiting('Privacy self-check failed — live lane disabled',
+      'A leak needle survived the render path, or an HTML-string write appeared in this ' +
+      'file. The EventSource was never opened. This page fails closed by design: a failed ' +
+      'check disables the lane instead of quietly shipping content.');
+  } else if (!SHOW_SOURCE) {
+    streamState = 'unwired';
+    laneAwaiting('Live lane not wired — no show-flag exists on the bus',
+      'The only live event bus here carries raw dictation, and 50 of 69 frames in a ' +
+      'four-second sample were speech. Its connect-time replay dumps 50 lines from a store ' +
+      'that is 2,031 lines of dictation and nothing else. There is no show-flag field, no ' +
+      'server-side filter and no query parameter on it — route flags came back empty in ' +
+      '17 of 17 frames — so default-exclude has nothing to test. It is therefore not ' +
+      'wired, at all.');
+  } else if (!sourceAllowed(SHOW_SOURCE)) {
+    streamState = 'refused';
+    laneAwaiting('Show source refused — that is the raw bus',
+      'SHOW_SOURCE matched the forbidden-source interlock. The raw dictation bus can never ' +
+      'be the show source, whatever it is renamed to.');
+  } else {
+    laneLive();
+    openStream();
+  }
+
+  ladder();
+  paintSpark();
+
+  setInterval(function () {
+    txt($('clock'), hms(Date.now() - T0));
+    tickScript();
+    ladder();
+    var now = Date.now();
+    if (now - lastPaint > 160) {
+      lastPaint = now;
+      requestAnimationFrame(paintSpark);
+    }
+    txt($('ftWithheld'), 'BACKLOG WITHHELD: ' + commas(withheld) + ' FRAMES');
+    txt($('ftGate'), streamState === 'live'
+      ? 'LIVE LANE WIRED TO A CURATED SHOW SOURCE · SHAPE ONLY'
+      : streamState === 'blocked' ? 'LIVE LANE DISABLED BY THE PRIVACY SELF-CHECK'
+      : streamState === 'refused' ? 'SHOW SOURCE REFUSED BY THE FORBIDDEN-SOURCE INTERLOCK'
+      : 'LIVE LANE NOT WIRED — NO SHOW-FLAG EXISTS ON THE BUS');
+    var d = new Date();
+    txt($('ftStamp'), 'MEASURED ' + n2(d.getHours()) + ':' + n2(d.getMinutes()) + ':' +
+      n2(d.getSeconds()) + ' LOCAL');
+  }, 1000);
+
+  setInterval(rollSpark, 2000);
+
+  /* the tally lamp is reserved: it only goes red when a real curated feed is live */
+  txt($('mark'), 'XEN · ON AIR');
+
+  $('spk').onclick = function () {
+    audioArmed = true;
+    var it = EP.script[cursor] || EP.script[0];
+    speak(it.line);
+  };
+
+  /* iOS blocks programmatic playback until a gesture. Arm from inside the handler. */
+  if (!audioArmed) {
+    var arm = $('arm');
+    arm.classList.add('show');
+    var go = function () {
+      audioArmed = true;
+      var it = EP.script[cursor] || EP.script[0];
+      speak(it.line);
+      arm.classList.remove('show');
+      arm.removeEventListener('click', go);
+    };
+    arm.addEventListener('click', go);
+    arm.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') go(); });
+  }
+}
+
+window.addEventListener('resize', function () { paintSpark(); });
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+</script>
+</body></html>

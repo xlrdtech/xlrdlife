@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Real-Time Full-Duplex Voice — the Xen stack</title>
+<meta name="description" content="How to add real-time full-duplex voice to the Xen rail WITHOUT rebuilding it or paying a meter — LiveKit Agents, semantic turn detection, and the latency budget.">
+<meta name="theme-color" content="#07090c">
+<style>
+  :root{--bg:#07090c;--ink:#eef2f6;--dim:#9aa6b2;--faint:#5b6672;--line:#1b2027;--card:#0d1117;--teal:#2dd4bf;--amber:#ffb454;--good:#4ade80;--bad:#f87171}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.65 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;padding:0 0 64px}
+  .wrap{max-width:760px;margin:0 auto;padding:34px 20px}
+  header{text-align:center;padding:14px 0 6px}
+  .kick{font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.34em;color:var(--teal);text-indent:.34em;text-transform:uppercase}
+  h1{font-size:clamp(26px,6vw,40px);line-height:1.08;margin:.4em 0 .2em;letter-spacing:-.02em}
+  .sub{color:var(--dim);font-size:15px;max-width:60ch;margin:0 auto}
+  h2{font-size:clamp(19px,4.4vw,24px);margin:2.2em 0 .5em;letter-spacing:-.01em}
+  h2 .n{color:var(--teal);font:700 15px/1 ui-monospace,monospace;margin-right:.5em}
+  p{color:#d4dae1}
+  .lead{color:var(--ink)}
+  strong{color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px;margin:14px 0}
+  .pick{border-color:rgba(45,212,191,.5);box-shadow:0 0 0 1px rgba(45,212,191,.12)}
+  .tag{display:inline-block;font:700 11px/1 ui-monospace,monospace;letter-spacing:.1em;padding:5px 9px;border-radius:999px;text-transform:uppercase}
+  .tag.win{background:rgba(74,222,128,.14);color:var(--good)}
+  .tag.no{background:rgba(248,113,113,.14);color:var(--bad)}
+  .tag.mid{background:rgba(255,180,84,.14);color:var(--amber)}
+  code{font:500 13.5px/1.5 ui-monospace,Menlo,monospace;background:#131a22;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:#cfe9ff;white-space:nowrap}
+  .codeblock{display:block;white-space:pre;overflow-x:auto;padding:14px 16px;background:#0a0f15;border:1px solid var(--line);border-radius:10px;color:#cfe9ff;font:500 13px/1.7 ui-monospace,Menlo,monospace;margin:12px 0}
+  .budget{margin:14px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px 15px;border-bottom:1px solid var(--line);align-items:baseline}
+  .row:last-child{border-bottom:0}
+  .row .lab{color:#d4dae1}.row .lab small{color:var(--faint);display:block;font-size:12.5px;letter-spacing:0}
+  .row .ms{font:700 15px/1 ui-monospace,monospace;color:var(--amber);white-space:nowrap}
+  .row.total .ms{color:var(--teal)}
+  .row.total .lab{color:#fff;font-weight:600}
+  .insight{border-left:3px solid var(--teal);background:linear-gradient(90deg,rgba(45,212,191,.08),rgba(45,212,191,0));padding:14px 16px;border-radius:0 10px 10px 0;margin:16px 0}
+  .insight b{color:var(--teal)}
+  ul{padding-left:1.1em}li{margin:.3em 0;color:#d4dae1}
+  .foot{max-width:760px;margin:34px auto 0;padding:16px 20px;border-top:1px solid var(--line);color:var(--faint);font:500 12px/1.7 ui-monospace,monospace}
+  .foot a{color:var(--teal);text-decoration:none}
+  a{color:var(--teal)}
+  @media (max-width:520px){.row{grid-template-columns:1fr}.row .ms{margin-top:2px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kick">Xen · voice architecture</div>
+    <h1>Real-time full-duplex voice —<br>without rebuilding your rail</h1>
+    <p class="sub">You already built the pieces: <strong>apple-stt</strong> in, <strong>omnimind</strong> (:4441) as the brain, <strong>ElevenLabs "East"</strong> out. The only thing missing is the real-time <em>glue</em>. You don't build that from scratch — and you don't have to pay a meter to run it.</p>
+  </header>
+
+  <h2><span class="n">01</span>The answer: an open BYO orchestration layer</h2>
+  <p class="lead">There's a whole category of open-source frameworks whose entire job is the "glue" — turn-taking, interruption, streaming — and they're <strong>bring-your-own-model</strong>. You keep every piece you built; they just conduct.</p>
+
+  <div class="card pick">
+    <span class="tag win">Recommended</span>
+    <h3 style="margin:.5em 0 .2em">LiveKit Agents</h3>
+    <p>Apache-2.0, fully self-hostable. The open <code>livekit-server</code> runs on your own box with <strong>zero per-minute charge</strong> — you only pay if you use their Cloud. Nothing throttles you mid-task.</p>
+    <p style="margin:.4em 0 0">Its standout is the <strong>turn-detector</strong>: a small open-weight transformer that predicts end-of-turn from the <em>meaning</em> of your words, not silence. Runs <strong>CPU-local</strong> (&lt;500MB), cut false interruptions ~39%.</p>
+    <span class="codeblock"># you keep all three pieces — the framework only conducts:
+apple-stt  →  custom stt.STT subclass
+omnimind   →  openai.LLM(base_url="http://localhost:4441/v1")
+East       →  elevenlabs.TTS(voice_id="East",
+                 model="eleven_flash_v2_5")   # ~75ms</span>
+  </div>
+
+  <div class="card">
+    <span class="tag mid">Equal on paper</span>
+    <h3 style="margin:.5em 0 .2em">Pipecat (Daily)</h3>
+    <p>BSD-2, self-host free, frame-based pipeline that auto-cancels TTS on interruption. Turn-taking = Silero VAD + its own open <code>smart-turn-v2</code> model. Just as capable; LiveKit edges it on WebRTC transport maturity and a more battle-tested semantic turn-detector.</p>
+  </div>
+
+  <div class="card">
+    <span class="tag no">Violates your constraints</span>
+    <h3 style="margin:.5em 0 .2em">Moshi / Kyutai</h3>
+    <p>A genuine full-duplex <em>speech-to-speech</em> model (open weights) — but it <strong>replaces</strong> omnimind and speaks in its <em>own</em> voice, not East. It's the all-in-one path, not the keep-your-pieces path. Park it as a research watch.</p>
+  </div>
+
+  <h2><span class="n">02</span>The real lesson: where the milliseconds go</h2>
+  <p>Full-duplex "speed" is misunderstood. STT runs <em>concurrently</em> with your speech, so it adds ~0 — the clock only starts when you <strong>stop talking</strong>. From there:</p>
+
+  <div class="budget">
+    <div class="row"><div class="lab">Endpoint / turn-detect<small>the real gate — too tight cuts you off, too loose = dead air</small></div><div class="ms">~200 ms</div></div>
+    <div class="row"><div class="lab">LLM first token (TTFT)<small>the dominant slice — everything waits on your first token</small></div><div class="ms">~150–300 ms</div></div>
+    <div class="row"><div class="lab">TTS first byte (ElevenLabs Flash)<small>your East clone, kept fast</small></div><div class="ms">~75–100 ms</div></div>
+    <div class="row"><div class="lab">Transport / playback</div><div class="ms">~50 ms</div></div>
+    <div class="row total"><div class="lab">End-of-speech → first audio</div><div class="ms">~600–800 ms</div></div>
+  </div>
+  <p style="color:var(--dim);font-size:14px">Production fleets report ~680ms p50 / ~1,180ms p95 for this cascaded shape.</p>
+
+  <div class="insight">
+    <p style="margin:0"><b>The non-obvious win.</b> The framework's value isn't a faster model — it's <strong>streaming + semantic endpointing</strong>. STT partials feed the LLM <em>before</em> you finish the sentence; TTS plays sentence one while sentence two is still generating; and the turn-detector reclaims the <strong>500–800ms of dead air</strong> a naive silence timer wastes, because it knows <em>"he's mid-thought, wait"</em> vs <em>"he's done, go."</em> That perceived-latency reclaim is <strong>bigger than any single model swap.</strong></p>
+  </div>
+
+  <h2><span class="n">03</span>Why this fits you specifically</h2>
+  <ul>
+    <li><strong>No meter, no flow-break.</strong> Self-hosted LiveKit (Apache-2.0) can't throttle you mid-task — the thing that destroys your flow doesn't exist here.</li>
+    <li><strong>Nothing fragments.</strong> omnimind stays the brain, East stays your voice, apple-stt stays your ears. One glue layer added, zero pieces replaced.</li>
+    <li><strong>The turn-detector runs on your box.</strong> Local, free weights, no cloud round-trip for the one decision that matters most — when to speak.</li>
+  </ul>
+  <p style="color:var(--dim);font-size:14px"><strong>One thing to confirm before building:</strong> whether apple-stt emits streaming <em>partials</em> (vs one batch result at the end) — that determines how it wires in as a streaming STT plugin.</p>
+</div>
+
+<footer class="foot">
+  Verified 2026-08-19 against primary sources · LiveKit (Apache-2.0, self-host) · Pipecat (BSD-2) · ElevenLabs Flash v2.5 · Moshi/Kyutai.<br>
+  Built for qi · <a href="https://hitthe.link">hitthe.link</a>
+</footer>
+</body>
+</html>

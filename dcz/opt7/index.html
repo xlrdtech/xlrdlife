@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diamond Cutz Studios · Stal'lyon — Atlanta Recording &amp; Live Entertainment</title>
+<meta name="description" content="Diamond Cutz Studios — Atlanta recording studio, production, mixing & live entertainment. Home of Stal'lyon's Southern Soul. For all your music & entertainment needs.">
+<meta name="theme-color" content="#05070a">
+<meta property="og:title" content="Diamond Cutz Studios · Stal'lyon">
+<meta property="og:description" content="Atlanta recording, production & live entertainment — Southern Soul. For all your music & entertainment needs.">
+<meta property="og:image" content="https://hitthe.link/dcz/assets/dcz-3.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="/dcz/assets/dcz-3.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;800&family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<!--
+  ====================================================================
+  /dcz/opt7 — "EMBLEM & SPOTLIGHTS" variant. A real-time three.js
+  scene: the Diamond Cutz LANDSCAPE arch logo (1312×762, alpha) stood
+  up as a flat chrome EMBLEM in space — a PlaneGeometry using the asset
+  as map + alphaMap so the transparent areas are cut out and only the
+  metal logo floats. A second slightly-darker copy sits ~0.04 behind it
+  for fake extrusion depth. TWO SpotLights slowly sweep left↔right for
+  dramatic moving highlights on the chrome. Pointer/drag parallax-tilts
+  the emblem toward the cursor, easing back to center when idle.
+  three.js vendored at /lib/three.module.min.js.
+  Asset: /dcz/assets/dcz-3.png (1312×762, alpha).
+  ====================================================================
+-->
+<style>
+  :root{
+    --void:#000;--abyss:#05070a;--ash:#0d1117;
+    --pearl:#f3f7fb;--bone:#c4ccd6;--mute:#7e8794;--dust:#4d5662;
+    --ice:#eef6ff;--crystal:#cfe6ff;--cyan:#a9e8ff;--azure:#7fb8ff;--glacier:#bfe9ff;
+    --fire-1:#ff9ad1;--fire-2:#9ae0ff;--fire-3:#c7a0ff;--fire-4:#9affd6;
+    --line:rgba(174,214,255,.16);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  ::selection{background:var(--cyan);color:var(--void)}
+  html{scroll-behavior:smooth}
+  html,body{background:var(--void);color:var(--pearl);font-family:'Inter',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased;overflow-x:clip}
+  body{background:
+    radial-gradient(ellipse 1100px 580px at 50% 102%, rgba(127,184,255,0.12), transparent 62%),
+    radial-gradient(ellipse 760px 420px at 50% -6%, rgba(199,160,255,0.07), transparent 60%),
+    var(--void);}
+  .facets{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.07;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'><g fill='none' stroke='%23aed6ff' stroke-width='0.4'><polygon points='300,40 540,200 540,400 300,560 60,400 60,200'/><polygon points='300,40 60,200 300,300 540,200'/><polygon points='300,560 60,400 300,300 540,400'/></g></svg>");background-size:840px 840px;background-position:center;background-repeat:repeat}
+
+  .diamond-text{
+    background:linear-gradient(110deg,
+      var(--ice) 0%, var(--glacier) 18%, #ffffff 30%,
+      var(--fire-1) 40%, var(--fire-2) 47%, #ffffff 54%,
+      var(--azure) 64%, var(--fire-3) 74%, var(--ice) 86%, #ffffff 100%);
+    background-size:280% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+    animation:fire 9s ease-in-out infinite;filter:drop-shadow(0 0 14px rgba(169,232,255,.22));
+  }
+  @keyframes fire{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  @media (prefers-reduced-motion:reduce){.diamond-text{animation:none;background-position:30% 50%}}
+
+  /* ── 3D HERO ── the chrome emblem lives on a full-viewport canvas ── */
+  .hero3d{position:relative;width:100%;height:100vh;height:100svh;overflow:hidden;background:radial-gradient(ellipse 70% 60% at 50% 45%, rgba(20,30,52,.5), transparent 70%),#000;touch-action:pan-y}
+  #coin{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1;cursor:grab}
+  #coin:active{cursor:grabbing}
+  .hero-fallback{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(86vmin,720px);z-index:0;opacity:1;transition:opacity .6s;filter:drop-shadow(0 14px 60px rgba(127,184,255,.3))}
+  .hero3d.live .hero-fallback{opacity:0;pointer-events:none}
+  .spin-cue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;font-family:'Cinzel',serif;font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:rgba(243,247,251,.5);animation:cue 2.6s ease-in-out infinite;pointer-events:none}
+  @keyframes cue{0%,100%{opacity:.3}50%{opacity:.75}}
+
+  .wrap{position:relative;z-index:10;max-width:1080px;margin:0 auto;padding:0 28px}
+  .reveal{opacity:0;transform:translateY(30px);filter:blur(5px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1),filter .7s ease;will-change:opacity,transform}
+  .reveal.in{opacity:1;transform:none;filter:none}
+
+  .intro{padding:70px 0 52px;text-align:center}
+  .intro .kicker{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:var(--glacier);margin-bottom:18px}
+  .intro h1{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:clamp(26px,5vw,52px);line-height:1.08;margin-bottom:16px}
+  .intro .stallione{font-family:'Cinzel',serif;font-weight:600;font-size:clamp(12px,1.6vw,15px);letter-spacing:.42em;color:var(--bone);text-transform:uppercase}
+  .intro .stallione span{color:var(--cyan)}
+  .cta-row{display:flex;gap:13px;justify-content:center;flex-wrap:wrap;margin-top:32px}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:15px 28px;text-decoration:none;border-radius:3px;font-family:'Inter';font-size:13px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;transition:transform .2s,box-shadow .2s,border-color .2s,background .2s}
+  .btn.primary{background:linear-gradient(135deg,#ffffff 0%,var(--glacier) 38%,var(--azure) 72%,var(--cyan) 100%);color:#04121f;font-weight:600;box-shadow:0 8px 34px rgba(127,184,255,.42),inset 0 1px 0 rgba(255,255,255,.85)}
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 42px rgba(169,232,255,.55)}
+  .btn.ghost{background:transparent;color:var(--pearl);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--cyan);background:rgba(127,184,255,.10)}
+
+  section.band{padding:60px 0;border-top:1px solid var(--line)}
+  .eyebrow{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:var(--glacier);text-align:center;margin-bottom:18px}
+  .band h3{font-family:'Cinzel',serif;font-weight:600;font-size:clamp(26px,4.4vw,44px);text-align:center;letter-spacing:.02em;margin-bottom:24px}
+  .lede{font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(18px,2.6vw,27px);color:var(--bone);line-height:1.5;max-width:780px;margin:0 auto;text-align:center}
+  .lede em{color:var(--glacier)}
+  .bio-wrap{max-width:720px;margin:0 auto;text-align:center}
+  .bio-wrap p{font-size:16px;color:var(--bone);line-height:1.75}
+
+  .offerings{display:flex;flex-wrap:wrap;justify-content:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:40px 0 0}
+  .offer{flex:1 1 230px;max-width:300px;padding:32px 26px;border-right:1px solid rgba(174,214,255,.10);text-align:center}
+  .offer:last-child{border-right:0}
+  .offer .glyph{font-family:'Cinzel',serif;font-size:36px;margin-bottom:15px}
+  .offer h4{font-family:'Cinzel',serif;font-weight:600;font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--glacier);margin-bottom:11px}
+  .offer p{font-size:13.5px;font-weight:300;color:var(--bone);line-height:1.55}
+
+  .tracks{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:8px}
+  .track{flex:1 1 220px;max-width:300px;padding:24px 22px;border:1px solid var(--line);border-radius:10px;background:rgba(174,214,255,.03);text-align:center;transition:border-color .2s,background .2s}
+  .track:hover{border-color:var(--cyan);background:rgba(127,184,255,.06)}
+  .track .t-name{font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:var(--pearl);letter-spacing:.04em}
+  .track .t-tag{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--glacier);margin-top:8px}
+  .music-note{text-align:center;color:var(--mute);font-size:13.5px;margin-top:24px;font-style:italic;font-family:'Instrument Serif',serif}
+  .music-note a{color:var(--glacier);text-decoration:none}
+
+  .events{max-width:760px;margin:0 auto;text-align:center}
+  .ev-list{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:8px}
+  .ev{padding:10px 18px;border:1px solid var(--line);border-radius:999px;font-size:13px;letter-spacing:.06em;color:var(--bone)}
+
+  .contact{text-align:center}
+  .contact .cards{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin:28px 0 22px}
+  .ccard{flex:1 1 280px;max-width:340px;padding:26px 24px;border:1px solid var(--line);border-radius:12px;background:rgba(174,214,255,.03)}
+  .ccard .role{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--glacier);margin-bottom:8px}
+  .ccard .who{font-weight:600;font-size:17px;color:var(--pearl);margin-bottom:14px}
+  .ccard a{display:block;color:var(--bone);text-decoration:none;font-size:14.5px;padding:6px 0;transition:color .15s}
+  .ccard a:hover{color:var(--glacier)}
+  .social{margin-top:8px}.social a{color:var(--cyan);text-decoration:none;font-size:14px;letter-spacing:.1em}
+  .social a:hover{color:var(--ice)}
+  .avail{font-family:'Instrument Serif',serif;font-style:italic;font-size:16px;color:var(--bone);margin-top:18px}
+
+  footer{padding:44px 0 26px;text-align:center;border-top:1px solid var(--line);font-family:'Cinzel',serif;font-size:9px;letter-spacing:.44em;text-transform:uppercase;color:var(--dust)}
+  footer a{color:var(--cyan);text-decoration:none}
+
+  @media (max-width:680px){
+    .offer{border-right:0;border-bottom:1px solid rgba(174,214,255,.10);max-width:none}
+    .offer:last-child{border-bottom:0}
+  }
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;filter:none;transition:none}.spin-cue{display:none}}
+</style>
+</head>
+<body>
+<div class="facets"></div>
+
+<!-- ── 3D EMBLEM & SPOTLIGHTS HERO ── -->
+<section class="hero3d" id="hero3d">
+  <canvas id="coin"></canvas>
+  <img class="hero-fallback" src="/dcz/assets/dcz-3.png" alt="Diamond Cutz Studios — arch emblem logo" decoding="async">
+  <div class="spin-cue">✦ drag to tilt ✦</div>
+</section>
+
+<script type="importmap">{"imports":{"three":"/lib/three.module.min.js"}}</script>
+<script type="module">
+  import * as THREE from 'three';
+  (function(){
+    var host=document.getElementById('hero3d'), canvas=document.getElementById('coin');
+    var renderer;
+    try{ renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true,powerPreference:'high-performance'}); }
+    catch(e){ return; } // no WebGL -> the <img> fallback stays
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
+    renderer.shadowMap.enabled=false;
+
+    var scene=new THREE.Scene();
+    var camera=new THREE.PerspectiveCamera(34,1,0.1,100); camera.position.set(0,0,7);
+
+    // ── emblem dimensions: asset is 1312×762 landscape ──
+    var EW=3.2, EH=3.2*762/1312;            // plane width / height (matches asset aspect)
+    var HALF_W=EW/2, HALF_H=EH/2;           // half-extents for the resize() framing
+
+    // ── brand-colored studio environment (chrome reflects this) ──
+    var ec=document.createElement('canvas'); ec.width=512; ec.height=256; var g=ec.getContext('2d');
+    var grd=g.createLinearGradient(0,0,0,256);
+    grd.addColorStop(0,'#0b1320'); grd.addColorStop(.42,'#1a2a44'); grd.addColorStop(.5,'#cfeaff');
+    grd.addColorStop(.58,'#16243a'); grd.addColorStop(1,'#05070a');
+    g.fillStyle=grd; g.fillRect(0,0,512,256);
+    function blob(x,y,r,c){ g.fillStyle=c; g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); }
+    blob(120,70,34,'rgba(255,255,255,.95)'); blob(380,60,46,'rgba(169,232,255,.85)');
+    blob(300,150,60,'rgba(199,160,255,.55)'); blob(60,150,30,'rgba(154,224,255,.6)');
+    var envTex=new THREE.CanvasTexture(ec); envTex.mapping=THREE.EquirectangularReflectionMapping; envTex.colorSpace=THREE.SRGBColorSpace;
+    var pmrem=new THREE.PMREMGenerator(renderer); var envRT=pmrem.fromEquirectangular(envTex);
+    scene.environment=envRT.texture; envTex.dispose(); pmrem.dispose();
+
+    // ── base lights (the spotlights below do the dramatic work) ──
+    scene.add(new THREE.AmbientLight(0x8198b8,0.45));
+    var key=new THREE.DirectionalLight(0xffffff,1.0); key.position.set(0.5,2.5,5); scene.add(key);
+    var rimCyan=new THREE.PointLight(0x9ae0ff,30,30); rimCyan.position.set(-4,1.5,3); scene.add(rimCyan);
+    var rimViolet=new THREE.PointLight(0xc7a0ff,22,30); rimViolet.position.set(3,-2.5,3); scene.add(rimViolet);
+
+    // ── TWO sweeping spotlights for moving chrome highlights ──
+    var spotA=new THREE.SpotLight(0xffffff,260,18,Math.PI/7,0.5,1.2);
+    spotA.position.set(-3,2.4,5); scene.add(spotA); scene.add(spotA.target);
+    var spotB=new THREE.SpotLight(0xbfe9ff,210,18,Math.PI/7,0.5,1.2);
+    spotB.position.set(3,-2.0,5); scene.add(spotB); scene.add(spotB.target);
+
+    // ── the standing emblem (flat chrome logo cut out via alphaMap) ──
+    var pivot=new THREE.Group(); scene.add(pivot);
+    var emblemReady=false;
+    var tl=new THREE.TextureLoader();
+    tl.load('/dcz/assets/dcz-3.png', function(tex){
+      tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
+
+      // alphaMap wants linear data; reuse the same image as a second, linear-space texture
+      var alphaTex=tex.clone(); alphaTex.colorSpace=THREE.NoColorSpace; alphaTex.needsUpdate=true;
+
+      var geo=new THREE.PlaneGeometry(EW,EH,1,1);
+
+      // front face — bright chrome logo standing in space
+      var faceMat=new THREE.MeshPhysicalMaterial({
+        map:tex, alphaMap:alphaTex, transparent:true, alphaTest:0.04,
+        metalness:0.5, roughness:0.3, envMapIntensity:1.4,
+        clearcoat:0.6, clearcoatRoughness:0.25, side:THREE.DoubleSide,
+        emissive:0xffffff, emissiveMap:tex, emissiveIntensity:0.10
+      });
+      var face=new THREE.Mesh(geo,faceMat); face.position.z=0; pivot.add(face);
+
+      // second, slightly darker copy ~0.04 behind it for fake extrusion depth
+      var backTex=tex.clone(); backTex.colorSpace=THREE.SRGBColorSpace; backTex.needsUpdate=true;
+      var backAlpha=tex.clone(); backAlpha.colorSpace=THREE.NoColorSpace; backAlpha.needsUpdate=true;
+      var backMat=new THREE.MeshPhysicalMaterial({
+        map:backTex, alphaMap:backAlpha, transparent:true, alphaTest:0.04,
+        color:0x8f9aa8, metalness:0.7, roughness:0.45, envMapIntensity:0.9,
+        side:THREE.DoubleSide
+      });
+      var back=new THREE.Mesh(geo,backMat); back.position.z=-0.04; pivot.add(back);
+
+      emblemReady=true;
+      host.classList.add('live'); // hide the <img> fallback once the emblem is built
+    });
+
+    // ── interaction: pointer/drag parallax tilt, eases back to center when idle ──
+    var tiltX=0, tiltY=0;            // current tilt (rad)
+    var aimX=0, aimY=0;              // target tilt toward pointer
+    var active=false, idle=0;
+    var MAXT=0.30;                   // max tilt in rad (~17°)
+
+    function aimFrom(clientX,clientY){
+      var r=host.getBoundingClientRect();
+      var nx=((clientX-r.left)/r.width)*2-1;   // -1..1
+      var ny=((clientY-r.top)/r.height)*2-1;   // -1..1
+      aimY=Math.max(-1,Math.min(1,nx))*MAXT;   // turn toward horizontal pointer
+      aimX=Math.max(-1,Math.min(1,ny))*MAXT;   // tip toward vertical pointer
+      idle=0;
+    }
+    canvas.addEventListener('pointerdown',function(e){ active=true; canvas.setPointerCapture(e.pointerId); aimFrom(e.clientX,e.clientY); });
+    canvas.addEventListener('pointermove',function(e){ if(active){ aimFrom(e.clientX,e.clientY);} });
+    // hover parallax on devices with a pointer (no drag needed)
+    host.addEventListener('mousemove',function(e){ if(!active){ aimFrom(e.clientX,e.clientY);} });
+    window.addEventListener('pointerup',function(){ active=false; });
+    host.addEventListener('mouseleave',function(){ aimX=0; aimY=0; });
+
+    var clock=new THREE.Clock();
+    function resize(){
+      var w=host.clientWidth,h=host.clientHeight; renderer.setSize(w,h,false);
+      var aspect=w/h; camera.aspect=aspect;
+      // frame the emblem with margin on whichever axis is the constraint (fits portrait + desktop)
+      var halfTan=Math.tan(camera.fov*Math.PI/180/2), margin=0.78;
+      var dH=HALF_H/(margin*halfTan);                 // distance so height fits
+      var dW=HALF_W/(margin*halfTan*aspect);          // distance so width fits
+      camera.position.z=Math.max(dH,dW,3.4);
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize',resize); resize();
+
+    (function loop(){
+      requestAnimationFrame(loop);
+      var t=clock.getElapsedTime();
+
+      // sweep the two spotlights left↔right across the emblem (offset sines)
+      var sweepA=Math.sin(t*0.55)*3.4;
+      var sweepB=Math.sin(t*0.55+Math.PI*0.85)*3.4;
+      spotA.position.x=sweepA;       spotA.target.position.set(-sweepA*0.35,0,0);
+      spotB.position.x=sweepB;       spotB.target.position.set(-sweepB*0.35,0,0);
+      spotA.target.updateMatrixWorld(); spotB.target.updateMatrixWorld();
+
+      // tilt: follow the pointer aim, decay to center when idle
+      if(!active){ idle+=0.016; if(idle>0.9){ aimX+=(0-aimX)*0.04; aimY+=(0-aimY)*0.04; } }
+      // gentle living breath layered on top so it's never dead-still
+      var breathY=Math.sin(t*0.45)*0.05, breathX=Math.sin(t*0.32)*0.03;
+      tiltY+=((aimY+breathY)-tiltY)*0.08;
+      tiltX+=((aimX+breathX)-tiltX)*0.08;
+      pivot.rotation.y=tiltY;
+      pivot.rotation.x=-tiltX;
+
+      renderer.render(scene,camera);
+    })();
+  })();
+</script>
+
+<div class="wrap">
+
+  <section class="intro reveal">
+    <div class="kicker">◆  Recording · Production · Live Entertainment  ◆</div>
+    <h1 class="diamond-text">For all your music &amp; entertainment needs.</h1>
+    <div class="stallione">A house of <span>STAL'LYON</span> · Atlanta, GA</div>
+    <div class="cta-row">
+      <a class="btn primary" href="#booking">◆  Book the studio</a>
+      <a class="btn ghost" href="#music">Hear the sound</a>
+    </div>
+  </section>
+
+  <section class="band reveal" id="about">
+    <div class="eyebrow">◆  The House  ◆</div>
+    <div class="bio-wrap">
+      <p>Diamond Cutz Studios is the home of Stal'lyon's signature sound — a Southern Soul recording and live-entertainment house rooted right here in Atlanta. We build records from the ground up: recording, producing, mixing, and mastering with that hyper-real shine and a guitar-meets-808 groove you can feel. From the studio booth to the live stage, the DJ booth to the dance floor, we bring the soul for all your music and entertainment needs. Pull up — let's cut something timeless.</p>
+    </div>
+  </section>
+
+  <section class="band reveal" id="services">
+    <div class="eyebrow">◆  What we do  ◆</div>
+    <h3 class="diamond-text">Studio &amp; Stage</h3>
+    <div class="offerings">
+      <div class="offer"><div class="glyph diamond-text">◆</div><h4>Recording</h4><p>Full sessions in-house — vocal chains, instrument tracking, comp &amp; edit, ready for mix.</p></div>
+      <div class="offer"><div class="glyph diamond-text">◇</div><h4>Production</h4><p>Guitar-and-808 hybrid beats, arrangement, and full records built around your voice.</p></div>
+      <div class="offer"><div class="glyph diamond-text">◈</div><h4>Mixing &amp; Mastering</h4><p>Every vocal, lick and 808 dialed in — mastered loud and clean for any speaker.</p></div>
+      <div class="offer"><div class="glyph diamond-text">◉</div><h4>Live &amp; Events</h4><p>Stal'lyon live, DJ sets and full-band energy — parties, weddings, trail-rides, all events.</p></div>
+    </div>
+  </section>
+
+  <section class="band reveal" id="music">
+    <div class="eyebrow">◆  The Music  ◆</div>
+    <h3 class="diamond-text">Stal'lyon</h3>
+    <div class="bio-wrap" style="margin-bottom:34px">
+      <p>Andre — known on stage as Stal'lyon — is a Southern Soul artist out of Atlanta with a sound all his own: gritty guitar riffs riding hard over knocking 808s. Charismatic, authentic, built for the stage, he turns every set into a celebration while keeping the grown-folks soul tradition alive for a new generation.</p>
+    </div>
+    <div class="tracks">
+      <div class="track"><div class="t-name">Stal'lyon Shuffle</div><div class="t-tag">Single · feat. LaTina · with the dance</div></div>
+      <div class="track"><div class="t-name">Grown Folks</div><div class="t-tag">Single</div></div>
+      <div class="track"><div class="t-name">More on the way</div><div class="t-tag">New music loading</div></div>
+    </div>
+    <p class="music-note">Streaming on all platforms — links dropping here soon. Follow <a href="https://instagram.com/diamondcutzstudios">@diamondcutzstudios</a> so you don't miss a release.</p>
+  </section>
+
+  <section class="band reveal" id="events">
+    <div class="eyebrow">◆  Book us  ◆</div>
+    <div class="events">
+      <p class="lede">From the studio to the stage — we do it <em>all</em>.</p>
+      <div class="ev-list">
+        <span class="ev">Parties</span><span class="ev">Weddings</span><span class="ev">Trail Rides</span>
+        <span class="ev">Live Sets</span><span class="ev">DJ</span><span class="ev">Studio Time</span><span class="ev">All Events</span>
+      </div>
+      <p class="music-note" style="margin-top:22px">Tour &amp; show dates announced soon. Want us at your event? Reach out below.</p>
+    </div>
+  </section>
+
+  <section class="band contact reveal" id="booking">
+    <div class="eyebrow">◆  Direct line  ◆</div>
+    <h3 class="diamond-text">Let's cut something.</h3>
+    <div class="cards">
+      <div class="ccard">
+        <div class="role">Booking &amp; Management</div>
+        <div class="who">LaTina McAllister</div>
+        <a href="tel:+17702565492">◆  (770) 256-5492</a>
+        <a href="mailto:lmcallister26@gmail.com">✉  lmcallister26@gmail.com</a>
+      </div>
+      <div class="ccard">
+        <div class="role">Artist</div>
+        <div class="who">Andre "Stal'lyon"</div>
+        <a href="tel:+14702341117">◆  (470) 234-1117</a>
+        <a href="mailto:ajm.mcallister@gmail.com">✉  ajm.mcallister@gmail.com</a>
+      </div>
+    </div>
+    <div class="social"><a href="https://instagram.com/diamondcutzstudios">◇  Instagram · @diamondcutzstudios</a></div>
+    <div class="avail">Atlanta, GA · Studio &amp; live entertainment · Booking 7 days a week</div>
+  </section>
+
+  <footer>◆ Diamond Cutz Studios · A House of Stal'lyon · Atlanta, GA · Powered by <a href="https://hitthe.link/aua/">Self Exec</a> ◆</footer>
+</div>
+
+<script>
+  (function(){
+    var els=document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in');});return;}
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+    els.forEach(function(e){io.observe(e);});
+  })();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

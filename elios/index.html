@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tracking Together &mdash; Sign In</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Tracking Together portal. Secure sign in to access your assigned qualified home-improvement leads.">
+<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0f14" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/elios/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/elios/icon-192.png">
+<link rel="apple-touch-icon" href="/elios/apple-touch-icon.png">
+<link rel="manifest" href="/elios/site.webmanifest">
+<script src="/elios/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/elios/brand.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="brand" href="/elios/index.html" style="text-decoration:none;color:inherit">
+      <img class="tt-logo" src="/elios/tt-logo.png" alt="Tracking Together" />
+      <span style="font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut);border-left:1px solid var(--line);padding-left:11px;font-weight:600">Lead Portal</span>
+    </a>
+    <div class="navbtns">
+      <a class="btn sm ghost" href="/elios/pricing.html">View plans</a>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light / dark" aria-label="Toggle theme"><span class="moon">&#127769;</span><span class="sun">&#9728;&#65039;</span></button>
+    </div>
+  </div>
+
+  <div class="center-pane">
+    <div class="auth-card">
+      <div class="kick">trackingtogether.com</div>
+      <h1 class="display">Sign in</h1>
+      <p class="sub">Secure access to your qualified home-improvement leads. Each login is scoped server-side to only the leads assigned to your account.</p>
+
+      <div id="resume" class="note ok hidden" style="margin-top:18px"></div>
+
+      <div class="card" style="margin-top:22px">
+        <form id="loginForm" autocomplete="on">
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" inputmode="text" autocapitalize="none" spellcheck="false" placeholder="e.g. nancy" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="Your password" autocomplete="current-password" required>
+          </div>
+          <button id="loginBtn" class="btn gold full" type="submit">Sign in</button>
+        </form>
+
+        <div id="msg" class="note hidden"></div>
+      </div>
+
+      <p class="sub" style="margin-top:16px;font-size:12px">
+        Your session is held securely by Supabase Auth and access to each lead is enforced by row-level security. Masters land on the console; subscribers on their dashboard.
+      </p>
+    </div>
+  </div>
+
+  <footer>Tracking Together &middot; access scoped per account by row-level security &middot; trackingtogether.com</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/elios/config.js"></script>
+<script>
+(function(){
+  var cfg = window.ELIOS_CONFIG;
+  var msg = document.getElementById('msg');
+  var form = document.getElementById('loginForm');
+  var btn = document.getElementById('loginBtn');
+  var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+  var nameOf = function(user){
+    var m = user && user.user_metadata;
+    return (m && (m.full_name || m.name)) || (user && user.email ? user.email.split('@')[0] : 'your account');
+  };
+
+  var sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+  function show(text, kind){
+    msg.className = 'note' + (kind ? ' ' + kind : '');
+    msg.textContent = text;
+    msg.classList.remove('hidden');
+  }
+  function go(role){
+    var dest = (role === 'master') ? cfg.ROUTES.admin : cfg.ROUTES.dashboard;
+    window.location.href = dest;
+  }
+  function roleOf(user){
+    return (user && user.user_metadata && user.user_metadata.role) || 'subscriber';
+  }
+
+  // Already signed in? supabase-js persists the session in localStorage.
+  // A SILENT redirect here is exactly what made login look broken: a stale
+  // session (e.g. a master left over from testing) bounced you away before
+  // you could enter a different account. Surface it instead and let you switch.
+  sb.auth.getSession().then(function(res){
+    var session = res && res.data && res.data.session;
+    if(!session || !session.user){ return; }
+    var u = session.user, role = roleOf(u);
+    var box = document.getElementById('resume');
+    box.classList.remove('hidden');
+    box.innerHTML =
+      'You are already signed in as <b>' + esc(nameOf(u)) + '</b> (' + esc(role) + ').' +
+      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn sm gold" id="resumeGo">Go to my portal</button>' +
+        '<button class="btn sm ghost" id="resumeOut">Sign out and use a different account</button>' +
+      '</div>';
+    document.getElementById('resumeGo').addEventListener('click', function(){ go(role); });
+    document.getElementById('resumeOut').addEventListener('click', async function(){
+      try{ await sb.auth.signOut(); }catch(e){}
+      box.classList.add('hidden');
+      show('Signed out. Enter the account you want to use.', 'ok');
+    });
+  }).catch(function(){ /* stay on login */ });
+
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var username = document.getElementById('username').value.trim().toLowerCase();
+    var password = document.getElementById('password').value;
+    if(!username || !password){ show('Enter your username and password.', 'err'); return; }
+    var email = username.indexOf('@') !== -1 ? username : (username + '@' + cfg.EMAIL_DOMAIN);
+    btn.disabled = true;
+    var orig = btn.textContent;
+    btn.textContent = 'Signing in...';
+    try{
+      var out = await sb.auth.signInWithPassword({ email: email, password: password });
+      if(out.error || !out.data || !out.data.session){
+        show('Sign in failed. Check your username and password.', 'err');
+        return;
+      }
+      show('Signed in. Loading your portal...', 'ok');
+      go(roleOf(out.data.user || out.data.session.user));
+    } catch(err){
+      show('Could not reach the portal. Try again shortly.', 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  });
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

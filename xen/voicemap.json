@@ -1,0 +1,35 @@
+{
+  "updated": "2026-07-16T12:02:44Z",
+  "insight": "voice-IN ≠ voice-OUT — only the :4441 audio-OUT server was down; STT capture, SMS, and display kept working the whole time, which is how qi stayed in sync while audio was silent.",
+  "voice_path": [
+    { "step": "qi speaks", "node": "apple-stt-v2.py (STT capture)", "state": "green", "note": "voice-IN works — never went down" },
+    { "step": "inject lane", "node": "→ Xen (Claude Code)", "state": "green", "note": "prompt delivered to the brain" },
+    { "step": "xen-reply-vvs", "node": "3 legs fan out", "state": "green", "note": "voice-OUT + SMS + display in parallel" },
+    { "step": "voice-OUT", "node": "omnimind :4441 web voice page", "state": "green", "note": "RECOVERED — was down (curl /health=000, 5 hard fails, launchd kickstart did NOT recover). Root cause: Node 25 undici setTypeOfService EINVAL uncaught crash-loop. Fix: pinned launchd plist to node@20. Verified 200 ×3. LANDMINE: a homebrew node upgrade re-points /opt/homebrew/bin/node to 25 and reintroduces the crash." },
+    { "step": "SMS leg", "node": "dual-SMS out", "state": "green", "note": "never went down — kept qi in sync during audio outage" },
+    { "step": "display leg", "node": "dual-display / text", "state": "green", "note": "never went down — kept qi in sync during audio outage" }
+  ],
+  "comms": [
+    { "name": "Synapse (M4)", "state": "green", "note": "homeserver :8008, /health 200" },
+    { "name": "slack", "state": "green", "note": "logged-in, no auth errors" },
+    { "name": "discord", "state": "green", "note": "logged-in, no auth errors" },
+    { "name": "telegram", "state": "green", "note": "FIXED today — as_token/hs_token/sender_localpart resynced to bridge registration.yaml" },
+    { "name": "email two-way", "state": "green", "note": "LIVE on M4 (not a container)" },
+    { "name": "omnimind :4441", "state": "green", "note": "just recovered, node@20 pinned" },
+    { "name": "whatsapp", "state": "red", "note": "LOGGED-OUT, needs QR relogin (+17707711610 / S26-2). One human action, staged." },
+    { "name": "meta / Instagram", "state": "red", "note": "LOGGED-OUT, needs relogin (acct XLRD999). One human action, staged." }
+  ],
+  "bridges_host": "xen-hetzner 100.73.217.26",
+  "comms_score": "5/7 green",
+  "board_link": "/xen/bridges.html",
+  "design_goals": [
+    {
+      "title": "Speaker attribution on the transcription lane",
+      "spec": true,
+      "requested": "qi, 2026-07-16",
+      "goal": "When qi is on a call with a third party, the terminal transcript must distinguish WHO is speaking — qi vs the other party vs Xen's own TTS replies — so Xen never ingests its own voice as input (the echo loop).",
+      "canonical_state": "Each transcript line tagged by source: [qi] / [caller] / [xen].",
+      "tags": ["qi", "caller", "xen"]
+    }
+  ]
+}

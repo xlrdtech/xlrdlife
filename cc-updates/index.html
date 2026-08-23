@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Claude Code 2.1.220 → 2.1.224</title>
+<meta name="description" content="Before and after: what changed across four Claude Code releases this week.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a0a0e;--ink-2:#15151c;--ink-3:#1f1f29;
+  --chrome:#c0c8d0;--chrome-hi:#e8eef2;--chrome-lo:#6a737d;--steel:#3a4048;
+  --iridescent-1:#7b2cbf;--iridescent-2:#06b6d4;--iridescent-3:#ec4899;
+  --gradient-iridescent:conic-gradient(from 0deg,var(--iridescent-1),var(--iridescent-2),var(--iridescent-3),var(--iridescent-1));
+  --oxblood:#5a0a14;--oxblood-hi:#8a1525;--cyan-glow:#00e0ff;--amber:#ffb300;
+  --text:#fbf9f4;--text-2:#a8aab2;--text-3:#6a6c74;
+  --lift:0 2px 4px rgba(0,224,255,.04),0 24px 60px rgba(10,10,14,.6),0 0 0 1px rgba(192,200,208,.08);
+  --fd:"Cinzel",Georgia,serif;--fb:"Inter",-apple-system,system-ui,sans-serif;--fm:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--fb);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:
+    radial-gradient(circle at 16% 20%,rgba(123,44,191,.28),transparent 38%),
+    radial-gradient(circle at 84% 70%,rgba(6,182,212,.22),transparent 42%),
+    radial-gradient(circle at 50% 50%,var(--ink-2),var(--ink) 72%);
+  background-attachment:fixed}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:90;opacity:.045;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;opacity:.45}
+.orb.a{width:50vw;height:50vw;left:-13vw;top:-9vw;background:var(--iridescent-1);animation:da 28s ease-in-out infinite}
+.orb.b{width:42vw;height:42vw;right:-11vw;bottom:-7vw;background:var(--iridescent-2);animation:db 34s ease-in-out infinite}
+@keyframes da{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(6vw,5vh) scale(1.12)}}
+@keyframes db{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-6vw,-5vh) scale(1.14)}}
+
+.wrap{position:relative;z-index:10;max-width:960px;margin:0 auto;padding:0 22px 120px}
+
+.hero{min-height:82vh;display:grid;place-content:center;text-align:center;perspective:1200px}
+.kicker{font-family:var(--fm);font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--text-3);margin-bottom:20px}
+h1{font-family:var(--fd);font-weight:700;font-size:clamp(38px,8vw,84px);line-height:.98;margin:0 0 18px;letter-spacing:-.02em;
+  background:var(--gradient-iridescent);background-size:220% 220%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:irid 9s ease-in-out infinite}
+@keyframes irid{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.lede{color:var(--text-2);font-size:clamp(15px,2.1vw,19px);font-weight:300;max-width:54ch;margin:0 auto 36px;line-height:1.6}
+
+/* before / after gauge — the sacred object */
+.gauge{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;transform:rotateX(4deg);transform-style:preserve-3d}
+.v{position:relative;flex:1 1 190px;max-width:240px;padding:26px 22px;border-radius:16px;
+  background:linear-gradient(155deg,var(--ink-3),var(--ink-2));border:1px solid rgba(192,200,208,.14);
+  box-shadow:var(--lift);transition:transform .35s,box-shadow .35s}
+.v:hover{transform:translateY(-6px);box-shadow:var(--lift),0 0 40px rgba(0,224,255,.14)}
+.v.now{background:linear-gradient(155deg,rgba(0,224,255,.14),rgba(10,10,14,.6));border-color:rgba(0,224,255,.36)}
+.v .lbl{font-family:var(--fm);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-3)}
+.v .num{font-family:var(--fd);font-size:clamp(26px,4vw,38px);font-weight:600;margin-top:6px;color:var(--chrome-hi)}
+.v.now .num{color:var(--cyan-glow);text-shadow:0 0 26px rgba(0,224,255,.45)}
+.v .cnt{font-size:13px;color:var(--text-2);margin-top:6px}
+.arrowline{width:100%;text-align:center;font-family:var(--fm);font-size:11px;letter-spacing:.2em;color:var(--text-3);margin-top:6px}
+
+section{margin-top:96px;opacity:0;transform:translateY(32px);
+  transition:opacity .9s ease,transform .9s cubic-bezier(.2,.8,.2,1)}
+section.in{opacity:1;transform:none}
+.eyebrow{font-family:var(--fm);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--cyan-glow);margin-bottom:10px}
+h2{font-family:var(--fd);font-size:clamp(24px,4vw,40px);font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
+.vtag{font-family:var(--fm);font-size:11px;color:var(--text-3);margin-bottom:22px}
+
+ul.items{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+li.item{padding:16px 20px;border-radius:12px;background:linear-gradient(155deg,var(--ink-3),var(--ink-2));
+  border:1px solid rgba(192,200,208,.12);box-shadow:var(--lift);
+  font-size:15px;color:var(--text-2);line-height:1.6}
+li.item b{color:var(--text);font-weight:500}
+li.item .k{font-family:var(--fm);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  display:inline-block;padding:3px 9px;border-radius:99px;margin-right:10px;vertical-align:1px}
+.k.add{background:rgba(78,201,138,.14);color:#4ec98a;border:1px solid rgba(78,201,138,.3)}
+.k.fix{background:rgba(255,179,0,.12);color:var(--amber);border:1px solid rgba(255,179,0,.28)}
+.k.sec{background:rgba(239,109,109,.12);color:#ef6d6d;border:1px solid rgba(239,109,109,.3)}
+.k.chg{background:rgba(192,200,208,.1);color:var(--chrome);border:1px solid rgba(192,200,208,.22)}
+
+.headline{padding:28px 30px;border-radius:16px;margin-bottom:22px;
+  background:linear-gradient(155deg,var(--steel),var(--ink-3));border:1px solid var(--chrome-lo);
+  box-shadow:inset 0 1px 0 var(--chrome),0 12px 32px rgba(10,10,14,.7)}
+.headline h3{font-family:var(--fd);margin:0 0 10px;font-size:20px;color:var(--chrome-hi)}
+.headline p{margin:0;color:var(--text-2);font-size:15px;line-height:1.65}
+
+footer{margin-top:110px;padding-top:26px;border-top:1px solid rgba(192,200,208,.1);
+  text-align:center;color:var(--text-3);font-size:11px;font-family:var(--fm);letter-spacing:.08em}
+@media (max-width:600px){.hero{perspective:800px}.gauge{transform:none}.orb{filter:blur(60px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}section{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="orb a"></div><div class="orb b"></div>
+<div class="wrap">
+
+<div class="hero">
+  <div>
+    <div class="kicker">Claude Code · release delta · this week</div>
+    <h1>Before &amp; After</h1>
+    <p class="lede">Four releases in one week. What actually changed, and which parts land on how this stack runs.</p>
+    <div class="gauge">
+      <div class="v"><div class="lbl">Start of week</div><div class="num">2.1.220</div><div class="cnt">baseline</div></div>
+      <div class="v"><div class="lbl">Then</div><div class="num">2.1.222</div><div class="cnt">7 fixes</div></div>
+      <div class="v"><div class="lbl">Then</div><div class="num">2.1.223</div><div class="cnt">3 security</div></div>
+      <div class="v now"><div class="lbl">Now — installed</div><div class="num">2.1.224</div><div class="cnt">33 entries</div></div>
+      <div class="arrowline">CURRENT · NOTHING TO UPDATE</div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="eyebrow">The headline</div>
+  <h2>Sessions can message each other</h2>
+  <div class="vtag">2.1.224</div>
+  <div class="headline">
+    <h3>Native cross-session messaging replaces hand relay</h3>
+    <p>A session sends another session a <b>summary</b> — not history, not files — and the receiver picks it up <b>mid-task</b>. It works both directions, across machines, and a session can initiate on its own when a change it made affects what another session is doing. Discovery is via <b>ListAgents</b>. macOS and Linux.</p>
+  </div>
+  <ul class="items">
+    <li class="item"><span class="k add">added</span><b>crossSessionInbound</b> and <b>dialogExpiry</b> — messages into a bypassed-permissions session are held for approval; outbound auto-delivers</li>
+    <li class="item"><span class="k add">added</span><b>claude self-hosted-runner</b> — your own machines or containers host web, mobile and desktop sessions (Team/Enterprise)</li>
+    <li class="item"><span class="k add">added</span><b>archive plugin source</b> — install from a zip over HTTPS, no git or npm, with optional SHA-256 pinning</li>
+    <li class="item"><span class="k chg">removed</span>The <b>200-subagent-per-session cap</b> is gone — long sessions no longer refuse new agents</li>
+    <li class="item"><span class="k fix">fixed</span><b>SendMessage reported "Message sent" when the write had failed.</b> Failed deliveries now surface as errors</li>
+    <li class="item"><span class="k sec">security</span>Sandbox deny entries with a trailing slash (<b>denyRead: "~/.aws/"</b>) were silently bypassable on Linux and macOS</li>
+    <li class="item"><span class="k fix">fixed</span>Long project paths resolved into <b>another project's</b> session directory under a shared sanitized prefix</li>
+    <li class="item"><span class="k chg">changed</span>Bash tool description now states outright that output goes to the model, <b>not reliably to the user</b></li>
+  </ul>
+</section>
+
+<section>
+  <div class="eyebrow">Mostly security</div>
+  <h2>Permission bypasses closed</h2>
+  <div class="vtag">2.1.223</div>
+  <ul class="items">
+    <li class="item"><span class="k sec">security</span>A <b>Bash permission bypass</b> — a crafted command could hide parts of itself from permission checks</li>
+    <li class="item"><span class="k sec">security</span>Commands padded with <b>tabs or invisible Unicode</b> could hide part of themselves from the approval dialog</li>
+    <li class="item"><span class="k sec">security</span>Workflow scripts could use <b>dynamic import()</b> to run code outside the workflow sandbox</li>
+    <li class="item"><span class="k sec">security</span>An agent definition's <b>bypassPermissions</b> ignored the org bypass-disable policy</li>
+    <li class="item"><span class="k chg">changed</span><b>/review</b> is now an alias of <b>/code-review</b>; no level given reuses your last</li>
+    <li class="item"><span class="k fix">fixed</span>Gateway model discovery hid Claude models under provider-prefixed IDs like <b>vertex_ai/claude-*</b></li>
+  </ul>
+</section>
+
+<section>
+  <div class="eyebrow">Isolation and accuracy</div>
+  <h2>Worktrees stopped leaking</h2>
+  <div class="vtag">2.1.222</div>
+  <ul class="items">
+    <li class="item"><span class="k sec">security</span>Worktree-isolated sessions and their subagents could run <b>destructive git commands against the main checkout</b></li>
+    <li class="item"><span class="k sec">security</span>PreToolUse auto-allow hooks <b>bypassed tool restrictions</b> in background agent tasks</li>
+    <li class="item"><span class="k fix">fixed</span><b>"Connection closed mid-response"</b> reported on responses that had actually completed</li>
+    <li class="item"><span class="k fix">fixed</span><b>/usage</b> overattributed usage to MCP servers — a server's share now reflects only requests that consumed its results</li>
+    <li class="item"><span class="k fix">fixed</span><b>SendMessage</b> rejected long summaries outright; it truncates now instead of failing</li>
+  </ul>
+</section>
+
+<section>
+  <div class="eyebrow">Why it matters here</div>
+  <h2>Three that land on this stack</h2>
+  <div class="headline" style="margin-top:20px">
+    <h3>1 — Cross-session messaging is the seat architecture, natively</h3>
+    <p>Seats reporting up to one operator seat has been manual relay through tmux injects. This is that channel, built in, carrying a summary instead of a transcript.</p>
+  </div>
+  <div class="headline">
+    <h3>2 — The SendMessage false-success fix</h3>
+    <p>Reporting "sent" on a write that failed is the exact failure class worth fearing: a green reading that isn't. Same shape as a health endpoint returning an app shell, or an install exiting 0 having done nothing.</p>
+  </div>
+  <div class="headline">
+    <h3>3 — The subagent cap is gone</h3>
+    <p>Long-lived sessions that fan out repeatedly used to hit a wall at 200 and refuse new agents. Concurrency and depth limits still apply.</p>
+  </div>
+</section>
+
+<footer>SOURCE: LOCAL CHANGELOG CACHE · INSTALLED 2.1.224 · NPM LATEST 2.1.224</footer>
+</div>
+<script>
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.15});
+document.querySelectorAll('section').forEach(s=>io.observe(s));
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

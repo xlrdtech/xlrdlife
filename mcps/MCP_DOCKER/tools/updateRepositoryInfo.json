@@ -1,0 +1,54 @@
+{
+  "name": "updateRepositoryInfo",
+  "description": "Update the details of a repository in the given namespace. Description, overview and status are the only fields that can be updated. While description and overview changes are fine, a status change is a dangerous operation so the user must explicitly ask for it.",
+  "inputSchema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "description": {
+        "description": "The description of the repository. If user asks for updating the description of the repository, this is the field that should be updated.",
+        "type": "string"
+      },
+      "full_description": {
+        "description": "The full description (overview)of the repository. If user asks for updating the full description or the overview of the repository, this is the field that should be updated. ",
+        "maxLength": 25000,
+        "type": "string"
+      },
+      "namespace": {
+        "description": "The namespace of the repository (required)",
+        "type": "string"
+      },
+      "repository": {
+        "description": "The repository name (required)",
+        "type": "string"
+      },
+      "status": {
+        "anyOf": [
+          {
+            "anyOf": [
+              {
+                "not": {}
+              },
+              {
+                "enum": [
+                  "active",
+                  "inactive"
+                ],
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The status of the repository. If user asks for updating the status of the repository, this is the field that should be updated. This is a dangerous operation and should be done with caution so user must be prompted to confirm the operation. Valid status are `active` (1) and `inactive` (0). Normally do not update the status if it is not strictly required by the user. It is not possible to change an `inactive` repository to `active` if it has no images."
+      }
+    },
+    "required": [
+      "namespace",
+      "repository"
+    ],
+    "type": "object"
+  }
+}

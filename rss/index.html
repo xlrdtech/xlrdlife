@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>XEN · Notification Center</title>
+<link rel="alternate" type="application/rss+xml" title="XEN RSS" href="/rss/feed.xml"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<meta name="theme-color" content="#0b1020"/>
+<style>
+  :root{--bg:#0b1020;--card:rgba(255,255,255,.04);--line:rgba(255,255,255,.09);--txt:#fff;--dim:rgba(255,255,255,.55);--grn:#39ff14;--acc:#2f8cff}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:radial-gradient(120% 120% at 50% -10%,#15213f 0%,#0b1020 55%,#070a14 100%);color:var(--txt);
+    font:400 16px/1.5 -apple-system,system-ui,"Segoe UI",sans-serif;min-height:100%}
+  body{max-width:720px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 22px) 16px calc(env(safe-area-inset-bottom,0px) + 48px)}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  h1{font-size:25px;font-weight:700;letter-spacing:-.02em;margin:0}
+  h1 i{color:var(--grn);font-style:normal}
+  .sub{color:var(--dim);font-size:13.5px;margin:4px 0 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .sub b{color:#fff;font-weight:600}
+  .sub a{color:var(--acc);text-decoration:none;border:1px solid var(--line);padding:4px 10px;border-radius:999px;font-size:12px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 9px var(--grn);display:inline-block}
+  .filters{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 16px}
+  .chip{all:unset;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.02em;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line);color:var(--dim)}
+  .chip.on{background:var(--acc);color:#fff;border-color:transparent}
+  .feed{display:flex;flex-direction:column;gap:10px}
+  .note{display:flex;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px 16px}
+  .ni{width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;font:700 14px/1 -apple-system,system-ui;color:#fff;
+    background:linear-gradient(150deg,color-mix(in srgb,var(--c) 92%,#fff 8%),color-mix(in srgb,var(--c) 65%,#000 35%));box-shadow:0 5px 14px -6px var(--c)}
+  .nb{flex:1;min-width:0}
+  .nh{display:flex;align-items:baseline;gap:8px;margin-bottom:3px}
+  .ncat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--c)}
+  .nt{font-size:11px;color:var(--dim);margin-left:auto;white-space:nowrap}
+  .ntx{font-size:14.5px;line-height:1.45;color:#eaeefb;word-wrap:break-word}
+  .npersona{font-size:11px;color:var(--dim);margin-top:4px}
+  .npersona a{color:var(--acc);text-decoration:none}
+  .empty{color:var(--dim);text-align:center;padding:50px 0}
+  .foot{color:var(--dim);font-size:11.5px;text-align:center;margin-top:30px;line-height:1.7}
+</style>
+</head>
+<body>
+  <div class="top"><h1>XEN · <i>Notifications</i></h1></div>
+  <div class="sub"><span class="dot"></span><span id="meta">loading the firehose…</span>
+    <a href="/rss/feed.xml">⊕ RSS feed</a></div>
+  <div class="filters" id="filters"></div>
+  <div class="feed" id="feed"><div class="empty">reading xen/live.json…</div></div>
+  <div class="foot" id="foot"></div>
+
+<script>
+const PAL={canon_save:'#bf5af2',design_system:'#2f8cff',ship:'#39ff14',autoship:'#39ff14',voice:'#ff9f0a',bridge:'#25d366',inbox:'#64d2ff',telephony:'#ff453a',memory:'#bf5af2',scope:'#ffd60a',goal:'#ff7ab6',hn:'#ff6600',anthropic:'#d97757',feed:'#9aa4b2'};
+const col=(t)=>{ if(PAL[t])return PAL[t]; let h=0; for(const c of(t||''))h=(h*31+c.charCodeAt(0))>>>0; const P=['#2f8cff','#0fbf3f','#ff9f0a','#bf5af2','#ff453a','#64d2ff','#ffd60a','#ff7ab6']; return P[h%P.length]; };
+const ini=(s)=>{const w=(s||'').replace(/[^A-Za-z0-9 ]/g,' ').trim().split(/\s+/).filter(Boolean);return(((w[0]||'?')[0]||'?')+((w[1]||'')[0]||'')).toUpperCase();};
+const ago=(ts)=>{const d=(Date.now()-new Date(ts).getTime())/1000;if(isNaN(d))return'';if(d<60)return Math.max(1,d|0)+'s';if(d<3600)return (d/60|0)+'m';if(d<86400)return (d/3600|0)+'h';if(d<2592000)return (d/86400|0)+'d';return new Date(ts).toLocaleDateString();};
+const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let ITEMS=[], CATS=[], filter='all';
+
+function flatten(d){
+  const items=[];
+  (d.by_capability||[]).forEach(cap=>{
+    (cap.recent||[]).forEach(r=>{
+      items.push({ts:r.ts, text:r.text||'', cat:cap.tag||'event', catName:cap.name||cap.tag||'Event', persona:r.persona||'XEN', proof:r.proof||null});
+    });
+  });
+  items.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+  return items;
+}
+function render(){
+  const feed=document.getElementById('feed');
+  const list=ITEMS.filter(i=>filter==='all'||i.cat===filter);
+  if(!list.length){ feed.innerHTML='<div class="empty">no notifications</div>'; return; }
+  feed.innerHTML=list.slice(0,200).map(i=>`
+    <div class="note" style="--c:${col(i.cat)}">
+      <div class="ni">${ini(i.catName)}</div>
+      <div class="nb">
+        <div class="nh"><span class="ncat">${esc(i.catName)}</span><span class="nt">${ago(i.ts)}</span></div>
+        <div class="ntx">${esc(i.text)}</div>
+        <div class="npersona">${esc(i.persona)}${i.proof?` · <a href="${esc(i.proof)}" target="_blank">open ↗</a>`:''}</div>
+      </div></div>`).join('');
+}
+function buildFilters(){
+  const f=document.getElementById('filters');
+  const cats=[...new Set(ITEMS.map(i=>i.cat))];
+  CATS=cats;
+  f.innerHTML=`<button class="chip on" data-c="all">All · ${ITEMS.length}</button>`+
+    cats.map(c=>{const cn=(ITEMS.find(i=>i.cat===c)||{}).catName||c;const n=ITEMS.filter(i=>i.cat===c).length;return `<button class="chip" data-c="${c}" style="--c:${col(c)}">${esc(cn)} · ${n}</button>`;}).join('');
+  f.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{filter=b.dataset.c;f.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===b));render();});
+}
+function load(){
+  Promise.all([
+    fetch('/xen/live.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({})),
+    fetch('/rss/external.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({items:[]}))
+  ]).then(([d,ext])=>{
+    const xen=flatten(d);
+    const e=(ext.items||[]).map(i=>({ts:i.ts,text:i.text,cat:i.cat,catName:i.catName,persona:i.persona,proof:i.proof||null}));
+    ITEMS=[...xen,...e].sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+    document.getElementById('meta').innerHTML=`<b>${ITEMS.length}</b> events · ${xen.length} XEN · ${e.length} feeds · updated ${ago(d.updated)} ago`;
+    document.getElementById('foot').innerHTML=`XEN RSS · xen/live.json + ${e.length} subscribed feed item(s) → omni OTLP → XOS · <a href="/life/" style="color:#2f8cff;text-decoration:none">/life</a> · <a href="/rss/feed.xml" style="color:#2f8cff;text-decoration:none">feed.xml</a>`;
+    buildFilters(); render();
+  }).catch(e=>{document.getElementById('feed').innerHTML='<div class="empty">could not load feed</div>';});
+}
+load(); setInterval(load, 30000);
+</script>
+</body>
+</html>

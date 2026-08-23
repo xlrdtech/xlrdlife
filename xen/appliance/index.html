@@ -1,0 +1,153 @@
+<div style="max-width:820px;margin:0 auto;padding:32px 24px;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#e8e8ea;line-height:1.55">
+<div style="border-bottom:2px solid #6c5ce7;padding-bottom:12px;margin-bottom:20px">
+<div style="font-size:24px;font-weight:700">XEN Appliance — PRD</div>
+<div style="opacity:.6;font-size:13px">Self-provisioning HOTL AI-receptionist · canon 2026-07-17</div></div>
+<pre style="white-space:pre-wrap;word-wrap:break-word;font-family:ui-monospace,Menlo,monospace;font-size:13px;background:#141416;padding:18px;border-radius:8px;overflow-x:auto">I have everything I need to synthesize. All three designs and the voice-deploy eval converge on the same verdict, and the judge scores make the winner clear. Producing the PRD directly.
+
+---
+
+# PRD — XEN APPLIANCE: Self-Provisioning HOTL Comms Engine
+
+**Status:** canon 2026-07-17 · engineering estimates labeled as such · voice layer verified real on disk
+
+---
+
+## 1. Product one-liner + who it&#x27;s for
+
+**A licensed, self-deploying AI receptionist appliance: a small business fills out one web form, and 60 seconds later an AI answers their phone, texts, and unified inbox — with zero terminal, zero QR-scan, zero keychain relink, ever.**
+
+**Who:** B2B service businesses that live on inbound calls/texts and can&#x27;t afford a receptionist — barbershops, salons, trades, clinics, small agencies (&quot;Diamond Cutz generalized&quot;). Sold as a licensed engine (SEL S-corp IP), not an outcome. Secondary: B2C self-serve at the low rung of the angel ladder.
+
+---
+
+## 2. Chosen architecture + why it beat the others
+
+**WINNER: `appliance-selfhost` two-plane split, grafted with the `hybrid-managed-core` Close-Kit provisioning gate and the `saas-multitenant` auth taxonomy.**
+
+### The scoreboard
+
+| Design | Kills hell (a) | Buildable (b) | Cost (c) | Scale 100s (d) | Anti-fragility (e) | **Total** |
+|---|---|---|---|---|---|---|
+| saas-multitenant | 6 | **4** | 7 | **4** | **3** | **4.8** |
+| **appliance-selfhost** | 4 | 5 | **8** | **6** | 3 | **5.2 (winner)** |
+| hybrid-managed-core | 5 | **3** | 7 | 6 | 4 | **5.0** |
+
+### Why appliance-selfhost wins on the axes that decide the business
+
+- **It is the only design that survives the M4 fragility fact.** saas-multitenant scored a fatal **3/10 on (e)** and **4/10 on (d)** for one reason all three judges circled: it bets hundreds of paying tenants on the single M4 brain that my own memory index documents swapping, wedging, and booting at 0G. &quot;When M4 wedges, EVERY tenant goes dark.&quot; The appliance&#x27;s **fat data plane on the *customer&#x27;s* cloud** structurally eliminates the correlated-outage SPOF and the noisy-neighbor blast radius. Blast radius = one tenant.
+- **It has the best cost-to-serve, honestly earned.** Judge gave it **8/10 on (c)** — the highest cost score of any design — because pushing the data plane onto the customer&#x27;s bill makes our marginal infra ~$0.40/customer and directly fixes the thesis-level problem: *recovery was unsellable because we ate the ops cost.*
+- **It scales structurally, not aspirationally.** **6/10 on (d)** vs saas-multitenant&#x27;s 4 — stateless shared control plane, per-customer isolated data plane. No &quot;re-architect onto a cluster at 100s&quot; trap.
+- **hybrid-managed-core was strategically identical but scored lower on buildability (3/10)** — it re-imports the containerized-multi-tenant-on-our-infra problem that collides with canon (&quot;no local Docker on M4 / one brain / free-first&quot;), and its own judge flagged the same. The appliance dodges that collision by construction.
+
+### What I graft in (the synthesis, not a pure pick)
+
+All three judges independently named the **same two fatal flaws** that a pure appliance-selfhost does NOT fix — so I graft:
+
+1. **From hybrid-managed-core → the Close-Kit provisioning gate.** Provision fires ONLY on `paid + verified` (YES→sign[DocuSign]→pay[Stripe]→verify[Stripe Identity+Plaid]→done). Prevents unpaid boxes and grounds the funnel in existing business canon.
+2. **From saas-multitenant → the explicit 3-class auth taxonomy** as the governing rule, plus the **fleet-update story** (the appliance&#x27;s #3 unaddressed gap: 200 customer-owned boxes on 200 versions). Fix: the licensed image is a **pinned tag pulled from GHCR at boot**; configurator checks-in a version beacon; control plane can pin a new tag + trigger rolling redeploy. Self-host does not mean un-patchable.
+3. **The QR-bridge amputation, made explicit** (all three judges&#x27; #1 fatal flaw). v1 ships **voice + Telnyx SMS/RCS + OAuth channels only** — every channel that is machine-refreshable. Consumer WhatsApp/iMessage/Signal are **NOT in v1**, not a checkbox that lies. They return later only as a proven, paid add-on. This kills the exact leg that made recovery unsellable rather than deferring-and-disclaiming it.
+
+---
+
+## 3. Self-provision core (MVP centerpiece)
+
+### 3.1 Form — captures **intent, never secrets** (3 blocks)
+
+Every channel is a **&quot;Connect&quot; OAuth button**, never a login field. Everything technical is *derived*.
+
+- **A · Identity:** business name, timezone, receptionist persona name, business hours, greeting line.
+- **B · Channels:** `[Connect Gmail]` `[Connect Google Voice]` `[Connect Instagram]` — OAuth popups only. (v1: OAuth + telephony. No consumer-QR checkbox.)
+- **C · Phone &amp; routing:** bring-a-number OR provision a Telnyx DID; IVR tree; human-escalation number; plan tier.
+
+### 3.2 JSON emitted — `xenspec/v1`
+
+```json
+{
+  &quot;spec_version&quot;: &quot;xenspec/v1&quot;,
+  &quot;tenant&quot;:  { &quot;id&quot;: &quot;t_8f3a&quot;, &quot;business_name&quot;: &quot;Diamond Cutz&quot;, &quot;timezone&quot;: &quot;America/New_York&quot;, &quot;license_key&quot;: &quot;SEL-…&quot; },
+  &quot;persona&quot;: { &quot;name&quot;: &quot;Ava&quot;, &quot;greeting&quot;: &quot;Thanks for calling Diamond Cutz…&quot;, &quot;hours&quot;: &quot;Mon-Sat 9-7&quot;, &quot;voice_id&quot;: &quot;…&quot; },
+  &quot;channels&quot;: [ { &quot;kind&quot;: &quot;gmail&quot;, &quot;auth&quot;: &quot;oauth_ref:or_1a2b&quot; },
+                { &quot;kind&quot;: &quot;gvoice&quot;, &quot;auth&quot;: &quot;oauth_ref:or_3c4d&quot; } ],
+  &quot;voice&quot;:   { &quot;engine&quot;: &quot;pipecat&quot;, &quot;number&quot;: &quot;telnyx_ref:tn_9x&quot;, &quot;transport&quot;: &quot;telnyx_sip&quot;,
+               &quot;stt&quot;: &quot;whisper_local&quot;, &quot;llm&quot;: &quot;xen_brain_callback&quot;, &quot;tts&quot;: &quot;piper_local&quot;,
+               &quot;ivr&quot;: [ { &quot;digit&quot;: &quot;1&quot;, &quot;action&quot;: &quot;book&quot; }, { &quot;digit&quot;: &quot;0&quot;, &quot;action&quot;: &quot;escalate&quot; } ] },
+  &quot;deploy&quot;:  { &quot;target&quot;: &quot;fly&quot;, &quot;region&quot;: &quot;iad&quot;, &quot;size&quot;: &quot;shared-1x&quot; },
+  &quot;billing&quot;: { &quot;close_kit_state&quot;: &quot;paid_verified&quot; }
+}
+```
+
+**Load-bearing rule:** NO raw secrets in the JSON — only `oauth_ref:` / `telnyx_ref:` pointers the control plane resolves at boot. The JSON is idempotent and versioned.
+
+### 3.3 Auto-config steps (configurator = first-boot entrypoint, runs INSIDE the customer&#x27;s box)
+
+1. **Close-Kit gate** — refuse to boot unless `close_kit_state == paid_verified`.
+2. **Verify license** or refuse to boot.
+3. **Resolve refs → live tokens** over one mTLS call to the relay; write to the box&#x27;s own secret store; **tell relay to forget** (momentary custodian — preserves data-ownership, keeps onboarding zero-touch).
+4. **Template from in-image files:** `homeserver.yaml` + per-bridge `registration.yaml` + Pipecat bot `.env` + IVR flow.
+5. **Boot in dependency order:** Postgres → Synapse → OAuth channels (self-register via token, no QR) → Pipecat voice → inbox (inline-HTML SSE) → Caddy auto-TLS.
+6. **Self-verify with auto-rollback:** health probes + **synthetic test-call + round-trip test message**; only on all-green flip to LIVE and post box URL back with a health beacon. HTTP 200 is not the gate — the synthetic call is (canon C17/C32).
+
+Customer sees exactly one screen: **form → &quot;Deploying…&quot; → &quot;Ava is answering your line.&quot;**
+
+---
+
+## 4. Recommended voice layer + deploy command
+
+**Pipecat, self-hosted on Fly.io (Railway fallback), telephony via our existing Telnyx trunk.**
+
+It is the only candidate clearing all load-bearing axes at once: **per-session container isolation** (= true per-customer receptionist, the isolation primitive), **OSS/free-first core** (Pipecat Cloud stays an optional upgrade, never a dependency), **native Telnyx/Twilio SIP** for real IVR + DTMF, and a **config-driven `bot.py`** that maps 1:1 onto `xenspec` env. The M4 stack (`apple-stt-v2.py`, `xen-tts-daemon.swift`, `voice-duplex.py`) stays **Xen&#x27;s own internal voice** — it is macOS/CoreAudio-bound, one-brain, zero per-tenant isolation, and cannot be the product substrate. Pipecat&#x27;s LLM node calls **back into the shared Xen brain**, preserving one-voice/one-brain canon.
+
+**Reference bot, stand up now:**
+```bash
+uv tool install pipecat-ai
+pipecat init quickstart      # scaffold + Dockerfile
+# add keys to .env  (default: whisper_local STT + piper_local TTS → free-first)
+uv run bot.py                # browser voice verify (~20s first-run model pull)
+fly launch                   # from generated Dockerfile → per-tenant app
+```
+Harden into the templated image; the form then drives **`fly deploy` per tenant**.
+
+**Free-first blocker to hold:** default the templated bot to **local Whisper + local Piper + xen_brain LLM callback** — never a per-minute vendor, or the per-min cost reappears one layer down and eats the license margin. Rejected: Vapi/Retell (per-minute recurring, closed — canon C6 violation), M4-as-product (no isolation, no deploy path).
+
+---
+
+## 5. Pricing tier mapping (from canon)
+
+| Canon tier | This product | Margin | Notes |
+|---|---|---|---|
+| **SelfOwn $111/mo** | Customer owns the box, we license the engine | **~99% gross** (our infra ≈$0.40/cust/mo; customer pays own Fly/Railway ~$5-15 + metered Telnyx/STT/TTS) | v1 default. &quot;You own the box.&quot; |
+| SelfOwn $222 / $333 | Higher channel counts, premium TTS, add-ons | ~90%+ | Ladder per SelfOwn vs GoHighLevel canon |
+| License band | $300–900/mo per business | — | Managed white-glove variant |
+| Angel ladder | $111 → $11,111 | — | B2C / early-adopter entry |
+
+**Path to targets:** at SelfOwn $111, **~45 licenses ≈ $5k/wk → clears $100k/2026.** Each new customer **self-funds its own runtime** — the marginal-cost win is the whole business unlock. IP licensed-never-sold in SEL S-corp; XLRD 501c3 open-sources XEN.
+
+&gt; **Honest flag:** all cost/margin/count figures are engineering estimates. The two lines that will actually move: **Telnyx voice-minutes** (scales with call volume, not per-tenant — busy receptionists cost more) and **premium TTS** if local Piper sounds too robotic to book the client. Measure both before scaling the pitch.
+
+---
+
+## 6. Three-milestone build plan
+
+**M1 — MVP: one real tenant, end-to-end, zero terminal (target ~6–8 wks).**
+Judges were unanimous that &quot;weeks for all six subsystems&quot; is fiction; so M1 scope is deliberately narrow. Ship: static form on hitthe.link → `xenspec/v1` → Close-Kit gate → **OAuth + Telnyx-SMS/RCS + Pipecat-voice ONLY** (no QR bridges) → configurator with dependency-ordered boot + synthetic-call self-verify → one Fly app for ONE real business (Diamond Cutz as design partner). Prove the configurator cold-boots unattended, every time. **Do not build the idempotent-saga-across-6-systems yet** — M1 has 3 side-effecting systems, not 6.
+
+**M2 — First paying B2B client + repeatability (target +4–6 wks).**
+Run Close Kit for real (DocuSign+Stripe+Identity+Plaid). Harden the OAuth relay broker (mTLS, per-tenant scoping, revocation, audit). Add the **fleet-update story**: version beacon + pinned GHCR tag + rolling redeploy. Add the **per-channel liveness heartbeat + one-tap self-serve re-consent** (customer-facing, never terminal). Land 1–3 paying tenants. Gate: a tenant provisions with **zero human touching a terminal/QR/keychain**, and a token revocation self-heals or self-serve re-consents.
+
+**M3 — Scale to dozens→100s + the QR question (target quarter+).**
+Multi-region Fly, health-ingest dashboard, staggered per-tenant reconnects, drop-rate scorecard as a first-class metric. **Only now** evaluate consumer WhatsApp/Signal — and only as a **proven, paid add-on** after the relay-session lifecycle survives real WhatsApp invalidation unattended for **30 days at multi-tenant scale** (the judges&#x27; hard precondition). If it doesn&#x27;t survive, it never ships as &quot;zero-touch.&quot;
+
+---
+
+## 7. The #1 risk + mitigation
+
+**RISK: The QR-linked consumer-bridge class (WhatsApp/iMessage/Signal) cannot be re-provisioned unattended** — a dead session genuinely needs the account-holder&#x27;s phone to re-scan, which is exactly the human-in-loop recovery hell the product exists to kill. All three judges named this the single fatal flaw; it is the one auth class we don&#x27;t own and the one that made recovery unsellable. Shared-host WA sessions additionally carry correlated-ban/ToS risk.
+
+**MITIGATION (build-order, decisive):**
+1. **Amputate it from v1, honestly.** No consumer-QR checkbox in the form. v1 = voice + Telnyx SMS/RCS + OAuth channels — **100% machine-refreshable.** The pitch matches the delivery: &quot;zero manual login for every channel we ship.&quot;
+2. **Prefer machine-refreshable equivalents:** Telnyx SMS/RCS instead of an iMessage device bridge; WhatsApp *Business* Cloud API (service-account grade) instead of consumer QR, where the customer qualifies — with Meta Business verification called out as its own onboarding step, not hidden.
+3. **Governing rule, enforced in code:** *every secret must be machine-refreshable or it doesn&#x27;t ship.* Any channel failing that test is a paid add-on with a re-pair SLA, never a default.
+4. **Only after a 30-day live invalidation soak** at multi-tenant scale does any QR-class channel enter the pitch — and then behind a per-provider drop-rate scorecard and a one-tap customer re-pair link (never a terminal, never our SLA silently absorbing the labor).
+
+**Secondary risk to watch (from the winner&#x27;s own gaps):** unattended configurator cold-boot fragility (&quot;false-green self-verify&quot;) — mitigated by the synthetic-call gate in §3.3 step 6 and per-tenant boot isolation, so a wedged boot is one tenant, visible, and auto-rolled-back, never a silent fleet failure.</pre>
+</div>

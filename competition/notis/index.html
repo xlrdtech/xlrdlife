@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notis vs Xen — Defending the $100M Floor</title>
+<style>
+  :root{
+    --green:#3ad29f;
+    --green-dim:#2aa67c;
+    --green-glow:rgba(58,210,159,0.35);
+    --bg:#05100c;
+    --bg2:#081a14;
+    --glass:rgba(18,32,27,0.55);
+    --glass-strong:rgba(22,40,33,0.78);
+    --stroke:rgba(58,210,159,0.22);
+    --stroke-soft:rgba(58,210,159,0.12);
+    --ink:#dff3ec;
+    --ink-dim:#9fc3b6;
+    --ink-faint:#6e9387;
+    --amber:#e8b86b;
+    --red:#e87b7b;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 700px at 78% -8%,rgba(58,210,159,0.14),transparent 60%),
+      radial-gradient(900px 600px at 8% 100%,rgba(58,210,159,0.10),transparent 55%),
+      linear-gradient(170deg,#04100b 0%,#06140f 45%,#040d09 100%);
+    background-attachment:fixed;
+    min-height:100vh;
+    line-height:1.55;
+    overflow-wrap:break-word;
+    word-break:normal;
+    hyphens:none;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px 120px;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding:88px 0 56px;
+    text-align:center;
+  }
+  .hero::before{
+    content:"";
+    position:absolute;inset:0;
+    background:radial-gradient(620px 320px at 50% 20%,var(--green-glow),transparent 70%);
+    filter:blur(20px);
+    z-index:-1;
+    opacity:.55;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.42em;
+    text-transform:uppercase;
+    color:var(--green);
+    margin-bottom:26px;
+  }
+  .hero h1{
+    font-size:clamp(34px,6vw,68px);
+    line-height:1.04;
+    margin:0 0 10px;
+    font-weight:800;
+    letter-spacing:-.02em;
+    background:linear-gradient(180deg,#ffffff 0%,#c7f0e1 55%,var(--green) 130%);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .hero .vs{
+    font-family:var(--mono);
+    color:var(--green);
+    -webkit-text-fill-color:var(--green);
+    font-weight:600;
+  }
+  .hero .sub{
+    font-size:clamp(16px,2.4vw,22px);
+    color:var(--ink-dim);
+    max-width:740px;
+    margin:18px auto 0;
+    font-weight:400;
+  }
+  .hero .floor{
+    display:inline-block;
+    margin-top:30px;
+    padding:9px 20px;
+    border-radius:999px;
+    background:var(--glass);
+    border:1px solid var(--stroke);
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--ink-dim);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+  }
+  .hero .floor b{color:var(--green);font-weight:700;}
+
+  /* ---------- GLASS PANEL ---------- */
+  .panel{
+    background:var(--glass);
+    border:1px solid var(--stroke-soft);
+    border-radius:22px;
+    padding:34px 34px;
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    box-shadow:0 24px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);
+    margin:30px 0;
+  }
+  section{scroll-margin-top:30px;}
+
+  .sec-head{
+    display:flex;align-items:baseline;gap:16px;
+    margin:0 0 22px;
+    flex-wrap:wrap;
+  }
+  .sec-num{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--green);
+    border:1px solid var(--stroke);
+    border-radius:8px;
+    padding:3px 10px;
+    flex:0 0 auto;
+  }
+  .sec-head h2{
+    font-size:clamp(22px,3.4vw,32px);
+    margin:0;
+    font-weight:700;
+    letter-spacing:-.01em;
+  }
+  .sec-head .tag{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-left:auto;
+    align-self:center;
+  }
+
+  /* ---------- VERDICT ---------- */
+  .verdict{
+    border:1px solid var(--stroke);
+    background:linear-gradient(135deg,rgba(58,210,159,0.10),rgba(8,26,20,0.6));
+  }
+  .verdict p{font-size:17px;color:var(--ink);margin:0 0 16px;}
+  .verdict p:last-child{margin-bottom:0;}
+  .verdict strong{color:var(--green);font-weight:700;}
+  .verdict .mark{color:#fff;font-weight:600;}
+
+  /* ---------- COMPARISON TABLE ---------- */
+  .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;}
+  table.cmp{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:760px;
+    font-size:14.5px;
+  }
+  table.cmp thead th{
+    position:sticky;top:0;
+    text-align:left;
+    padding:16px 18px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    background:var(--glass-strong);
+    border-bottom:1px solid var(--stroke);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  table.cmp thead th.dim{color:var(--ink-faint);}
+  table.cmp thead th.notis{color:var(--amber);}
+  table.cmp thead th.xen{color:var(--green);}
+  table.cmp tbody td{
+    padding:16px 18px;
+    border-bottom:1px solid var(--stroke-soft);
+    vertical-align:top;
+    color:var(--ink-dim);
+  }
+  table.cmp tbody td.dim-cell{
+    color:var(--ink);
+    font-weight:600;
+    font-family:var(--mono);
+    font-size:13px;
+    width:130px;
+  }
+  table.cmp tbody td.xen-cell{
+    color:var(--ink);
+    background:rgba(58,210,159,0.045);
+  }
+  table.cmp tbody tr:last-child td{border-bottom:none;}
+  table.cmp tbody tr:hover td{background:rgba(58,210,159,0.06);}
+  table.cmp tbody tr:hover td.xen-cell{background:rgba(58,210,159,0.10);}
+  table.cmp b{color:var(--ink);}
+  table.cmp .xen-cell b{color:var(--green);}
+
+  /* ---------- CARD GRID ---------- */
+  .grid{
+    display:grid;
+    gap:18px;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    justify-content:center;
+  }
+  /* center the odd trailing item */
+  .grid::after{content:"";}
+  .grid > .card:last-child:nth-child(odd){grid-column:1 / -1;max-width:560px;margin:0 auto;width:100%;}
+  .grid.tri > .card:last-child:nth-child(3n+1){grid-column:1 / -1;max-width:560px;margin:0 auto;width:100%;}
+
+  .card{
+    background:var(--glass);
+    border:1px solid var(--stroke-soft);
+    border-radius:16px;
+    padding:22px 22px 20px;
+    position:relative;
+    transition:border-color .2s ease,transform .2s ease;
+  }
+  .card:hover{border-color:var(--stroke);transform:translateY(-3px);}
+  .card .idx{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--green);
+    display:inline-flex;
+    align-items:center;justify-content:center;
+    width:30px;height:30px;
+    border-radius:9px;
+    border:1px solid var(--stroke);
+    background:rgba(58,210,159,0.07);
+    margin-bottom:13px;
+  }
+  .card h3{
+    font-size:17px;
+    margin:0 0 8px;
+    font-weight:700;
+    color:#fff;
+    letter-spacing:-.01em;
+  }
+  .card p{margin:0;font-size:14.5px;color:var(--ink-dim);}
+  .card p strong{color:var(--green);font-weight:600;}
+
+  .effort{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    padding:3px 9px;
+    border-radius:6px;
+    margin-bottom:11px;
+    margin-left:9px;
+  }
+  .e-high{color:var(--red);border:1px solid rgba(232,123,123,.4);background:rgba(232,123,123,.08);}
+  .e-med{color:var(--amber);border:1px solid rgba(232,184,107,.4);background:rgba(232,184,107,.08);}
+  .e-low{color:var(--green);border:1px solid var(--stroke);background:rgba(58,210,159,.07);}
+
+  /* moat cards numbered emphatic */
+  .moat .card{border-left:2px solid var(--green-dim);}
+  .leap .card{border-left:2px solid var(--amber);}
+  .leap .card .idx{color:var(--amber);border-color:rgba(232,184,107,.4);background:rgba(232,184,107,.07);}
+
+  /* ---------- POSITIONING ---------- */
+  .pos{
+    text-align:center;
+    border:1px solid var(--stroke);
+    background:linear-gradient(135deg,rgba(58,210,159,0.12),rgba(6,20,15,0.7));
+  }
+  .pos blockquote{
+    margin:0 auto;
+    max-width:860px;
+    font-size:clamp(20px,3.2vw,30px);
+    line-height:1.4;
+    font-weight:600;
+    color:#fff;
+    letter-spacing:-.01em;
+  }
+  .pos blockquote .h{color:var(--green);}
+  .pos .verb{
+    margin-top:24px;
+    font-size:16px;
+    color:var(--ink-dim);
+    max-width:680px;
+    margin-left:auto;margin-right:auto;
+  }
+  .pos .verb b{color:var(--green);font-weight:600;}
+
+  /* ---------- 7-DAY TIMELINE ---------- */
+  .timeline{display:flex;flex-direction:column;gap:0;position:relative;}
+  .day{
+    display:grid;
+    grid-template-columns:96px 1fr;
+    gap:20px;
+    padding:22px 0;
+    border-bottom:1px solid var(--stroke-soft);
+    position:relative;
+  }
+  .day:last-child{border-bottom:none;}
+  .day .daymark{
+    text-align:right;
+    padding-right:18px;
+    border-right:2px solid var(--stroke);
+    position:relative;
+  }
+  .day .daymark .d{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--green);
+    font-weight:700;
+    letter-spacing:.04em;
+  }
+  .day .daymark::after{
+    content:"";
+    position:absolute;
+    right:-7px;top:4px;
+    width:12px;height:12px;
+    border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 0 4px rgba(58,210,159,.18),0 0 14px var(--green-glow);
+  }
+  .day .body h3{
+    margin:0 0 6px;
+    font-size:16.5px;
+    color:#fff;
+    font-weight:700;
+  }
+  .day .body p{margin:0;font-size:14.5px;color:var(--ink-dim);}
+  .day .body p strong{color:var(--green);font-weight:600;}
+  .day .body .note{
+    display:block;margin-top:7px;
+    font-family:var(--mono);font-size:12px;
+    color:var(--ink-faint);
+  }
+  @media(max-width:560px){
+    .day{grid-template-columns:64px 1fr;gap:14px;}
+    .day .daymark{padding-right:12px;}
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    text-align:center;
+    margin-top:50px;
+    padding-top:28px;
+    border-top:1px solid var(--stroke-soft);
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-faint);
+    letter-spacing:.08em;
+  }
+  footer .dot{color:var(--green);}
+
+  /* ---------- INTRO STAT STRIP ---------- */
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:14px;
+    margin:6px 0 30px;
+  }
+  .stat{
+    background:var(--glass);
+    border:1px solid var(--stroke-soft);
+    border-radius:14px;
+    padding:18px 16px;
+    text-align:center;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+  .stat .big{
+    font-family:var(--mono);
+    font-size:24px;
+    font-weight:700;
+    color:var(--green);
+    letter-spacing:-.02em;
+  }
+  .stat .lbl{
+    font-size:11.5px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    margin-top:6px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="eyebrow">Competitive Battle Plan</div>
+    <h1>Notis <span class="vs">vs</span> Xen</h1>
+    <p class="sub">Defending the sovereign Voice-OS category — and the $100M floor — against a wrapper that out-narrates, but cannot out-own.</p>
+    <div class="floor">Defending the <b>$100M floor</b> &nbsp;&middot;&nbsp; threat = speed &amp; story, not capability</div>
+  </header>
+
+  <!-- STAT STRIP -->
+  <div class="stats">
+    <div class="stat"><div class="big">~15</div><div class="lbl">Notis subprocessors</div></div>
+    <div class="stat"><div class="big">Jan 15</div><div class="lbl">WhatsApp API ban</div></div>
+    <div class="stat"><div class="big">$0</div><div class="lbl">Xen per-token floor</div></div>
+    <div class="stat"><div class="big">1</div><div class="lbl">owned stack, 2 machines</div></div>
+  </div>
+
+  <!-- VERDICT -->
+  <section>
+    <div class="panel verdict">
+      <div class="sec-head">
+        <span class="sec-num">00</span>
+        <h2>The Verdict</h2>
+        <span class="tag">real but narrow</span>
+      </div>
+      <p>The threat to the $100M floor is <strong>real but narrow</strong>: Notis does not out-build Xen, it out-<span class="mark">narrates</span> and out-<span class="mark">onboards</span> Xen, and it is compounding a public, profitable cold-start funnel that risks crystallizing the category's definition of "easy" before L7S claims the high ground.</p>
+      <p>Critically, Notis's entire flywheel rents its brain (OpenAI), hands (Composio), memory (Supabase/GCP), and distribution (Meta WhatsApp) — and Meta's WhatsApp Business API ban (Jan 15, 2026) is already evicting it from its own funnel.</p>
+      <p>The floor is defensible on a structural axis Xen already owns. <strong>The danger is purely one of speed and story, not capability.</strong></p>
+    </div>
+  </section>
+
+  <!-- COMPARISON TABLE -->
+  <section>
+    <div class="panel">
+      <div class="sec-head">
+        <span class="sec-num">01</span>
+        <h2>Notis vs Xen — Head to Head</h2>
+        <span class="tag">feature by feature</span>
+      </div>
+      <div class="tbl-scroll">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th class="dim">Dimension</th>
+              <th class="notis">Notis AI</th>
+              <th class="xen">Xen / L7S</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="dim-cell">Voice</td>
+              <td>Voice-<b>note</b> only — async audio transcribed by OpenAI, replies ~1 min later. Not real-time. Advanced Voice gated behind $99 Ultra.</td>
+              <td class="xen-cell">Voice-<b>first</b>, real-time, bidirectional. Every action ships VVS (voice + SMS + on-screen vision). Barge-in, perpetual narration, own-voice cloning.</td>
+            </tr>
+            <tr>
+              <td class="dim-cell">Channels</td>
+              <td>WhatsApp-led (&gt;50% of users) + Telegram, iMessage, Slack, email. Lives <b>inside</b> other people's chat apps.</td>
+              <td class="xen-cell">True omni-comms: carrier SMS (8672), live calls, Beeper, Beside, Spark, Google Voice, iMessage, WhatsApp — <b>owned plumbing, not borrowed</b>.</td>
+            </tr>
+            <tr>
+              <td class="dim-cell">Integrations</td>
+              <td>16 named connectors; the "800+" headline is a Composio webhook layer — <b>rented, generic, inconsistent</b> across its own pages.</td>
+              <td class="xen-cell">Desktop Commander = the whole OS is the surface. Acts at the machine level, <b>below the app-API ceiling</b> Notis is capped by.</td>
+            </tr>
+            <tr>
+              <td class="dim-cell">Memory</td>
+              <td>"Long-term memory" = a Notion workspace + supermemory subprocessor. Cloud-resident, single-user, present-tense.</td>
+              <td class="xen-cell"><b>The Akashic</b> — cross-timeline single source of truth, indexed verbatim + dated on X31. Local, sovereign, time-aware. Memory <b>is</b> architecture.</td>
+            </tr>
+            <tr>
+              <td class="dim-cell">Autonomy</td>
+              <td>Self-branded "intern" that "needs context and constraints." Async, single-task; real automations need webhook config.</td>
+              <td class="xen-cell">55+ agent fleet under an <b>autothink</b> root orchestrator; persona-agents run thread-isolated. Genuine multi-agent autonomy.</td>
+            </tr>
+            <tr>
+              <td class="dim-cell">Where data lives</td>
+              <td>Spread across ~15 third-party subprocessors (OpenAI, Composio, Supabase, GCP, Twilio…). Training-restriction hedged "where feasible."</td>
+              <td class="xen-cell">On qi's <b>own hardware</b> — Mac + Windows, X31 PSSD. No third-party data plane, no subprocessor leakage, no "where feasible."</td>
+            </tr>
+            <tr>
+              <td class="dim-cell">Pricing</td>
+              <td>Per-token pass-through — "billed at OpenAI API cost." ~3 restructurings, killed unlimited tier. Margins <b>hostage to OpenAI</b>.</td>
+              <td class="xen-cell">No per-token / per-call model. OAuth &gt; free &gt; rotate, <b>never per-call</b>. Cost floor structurally near-zero — compute is owned.</td>
+            </tr>
+            <tr>
+              <td class="dim-cell">Platform</td>
+              <td>No standalone app — <b>is</b> the messaging apps. Owns no surface; inherits every host platform's policy.</td>
+              <td class="xen-cell">Full Voice-OS with its own surfaces: SUIC/AIOS, .sel/.self self-files, automanifests, inline-HTML dashboards. Owns the stack <b>top to bottom</b>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOAT -->
+  <section>
+    <div class="panel moat">
+      <div class="sec-head">
+        <span class="sec-num">02</span>
+        <h2>The Moat We Defend</h2>
+        <span class="tag">uncopyable advantages</span>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <span class="idx">01</span>
+          <h3>Sovereignty</h3>
+          <p>Owned-hardware stack, no subprocessor chain, no kill switch, no per-token bill. The one thing a wrapper cannot become without dismantling the economics that fund it. <strong>Deepest moat — aligned with where the category is heading.</strong></p>
+        </div>
+        <div class="card">
+          <span class="idx">02</span>
+          <h3>The Akashic</h3>
+          <p>Cross-timeline, dated, verbatim-indexed memory of one specific person's lived history. <strong>Non-replicable by definition</strong> — a cloud Notion + supermemory store cannot fake accreted depth over real time.</p>
+        </div>
+        <div class="card">
+          <span class="idx">03</span>
+          <h3>Persona-agents (Lyn / Eli)</h3>
+          <p>Thread-isolated identities qi speaks <strong>through</strong>. No analog to operator-amplification-across-isolated-identities anywhere in the comp set.</p>
+        </div>
+        <div class="card">
+          <span class="idx">04</span>
+          <h3>No-per-token economics</h3>
+          <p>Near-zero cost floor (OAuth &gt; free &gt; rotate, never per-call). Notis already had to kill its unlimited tier — <strong>a permanent unit-economics edge</strong>.</p>
+        </div>
+        <div class="card">
+          <span class="idx">05</span>
+          <h3>OS-level autonomy + proprietary IP</h3>
+          <p>Desktop Commander acts below the app-API ceiling. .sel/.self, SUIC/AIOS, Amplified Intuition are <strong>owned IP with no category equivalent</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PARITY GAPS -->
+  <section>
+    <div class="panel">
+      <div class="sec-head">
+        <span class="sec-num">03</span>
+        <h2>Parity Gaps We Close Now</h2>
+        <span class="tag">where Notis is ahead</span>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <span class="idx">01</span><span class="effort e-high">High effort · top priority</span>
+          <h3>Stranger legibility / cold-start on-ramp</h3>
+          <p>Notis's 30-second voice-note signup is genuinely world-class. Close with a hosted "text/voice-note 8672, first task handled in one reply" front door over the sovereign core. <strong>Do NOT build a cloud wrapper</strong> — thin tier over local compute only.</p>
+        </div>
+        <div class="card">
+          <span class="idx">02</span><span class="effort e-med">Medium effort</span>
+          <h3>Connector legibility</h3>
+          <p>Notis's productized recipes read as features; Xen's depth reads as infrastructure. Wrap depth in the same recipe language — each visibly doing what a connector catalog can't: edits the real file, runs the real app, hits multiple channels in one shot.</p>
+        </div>
+        <div class="card">
+          <span class="idx">03</span><span class="effort e-low">Low effort</span>
+          <h3>Comparison-SEO presence</h3>
+          <p>Notis ranks on its own comparison keywords. <strong>Intercept the same intent terms with an honest teardown.</strong></p>
+        </div>
+        <div class="card">
+          <span class="idx">04</span><span class="effort e-med">Medium effort</span>
+          <h3>Empty-store time-to-value</h3>
+          <p>"Total recall" is an empty demo for a day-one user. The on-ramp must <strong>show value before the Akashic accretes history</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEAPFROG -->
+  <section>
+    <div class="panel leap">
+      <div class="sec-head">
+        <span class="sec-num">04</span>
+        <h2>Where We Leapfrog</h2>
+        <span class="tag">moves Notis cannot follow</span>
+      </div>
+      <div class="grid tri">
+        <div class="card">
+          <span class="idx">01</span>
+          <h3>Deplatform-immunity as the spec sheet</h3>
+          <p>Sell to the burned and security-conscious. "WhatsApp already cut Notis off once; the ban hits Jan 15." <strong>Sovereignty is the buying criterion</strong> for this wedge, not a nice-to-have.</p>
+        </div>
+        <div class="card">
+          <span class="idx">02</span>
+          <h3>Flat / price-locked economics</h3>
+          <p>Publish a guaranteed flat price and a "we'll never bill you at API cost" page. <strong>A structural taunt the wrapper cannot match.</strong></p>
+        </div>
+        <div class="card">
+          <span class="idx">03</span>
+          <h3>Real-time bidirectional voice + barge-in</h3>
+          <p>Notis is explicitly async (~1-min reply) with Advanced Voice gated behind $99 Ultra. <strong>Live talk-back is the visceral first-contact wedge.</strong></p>
+        </div>
+        <div class="card">
+          <span class="idx">04</span>
+          <h3>Persona-amplification as B2B product</h3>
+          <p>"Speak through your business everywhere without hiring," sold into L7S's warm client base first — <strong>neutralizes the missing stranger funnel by selling to non-strangers</strong>.</p>
+        </div>
+        <div class="card">
+          <span class="idx">05</span>
+          <h3>Dated provenance ledger for the Akashic</h3>
+          <p>Append-only, hash-anchored ingestion trail on X31 turns "great memory" from a claim into a <strong>verifiable switching cost</strong> — with redundant sovereign backup, since the X31 flap is a single point of catastrophic failure.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- POSITIONING -->
+  <section>
+    <div class="panel pos">
+      <div class="sec-head" style="justify-content:center;">
+        <span class="sec-num">05</span>
+        <h2>Positioning</h2>
+      </div>
+      <blockquote>"Notis is an intern you <span class="h">rent</span> inside someone else's app. Xen is <span class="h">you</span> — running on your own machines, remembering your whole timeline, that can't be switched off, repriced, or trained on by anyone else."</blockquote>
+      <p class="verb">Change the verb: Notis promises <b>handling</b>; Xen promises <b>embodiment</b>. Lead with the outcome of sovereignty — predictable price, no deplatform risk, your data stays home — never the architecture lecture.</p>
+    </div>
+  </section>
+
+  <!-- 7-DAY ACTION LIST -->
+  <section>
+    <div class="panel">
+      <div class="sec-head">
+        <span class="sec-num">06</span>
+        <h2>7-Day Action List</h2>
+        <span class="tag">concrete · ordered</span>
+      </div>
+      <div class="timeline">
+
+        <div class="day">
+          <div class="daymark"><div class="d">DAY 1</div></div>
+          <div class="body">
+            <h3>Lock the noun + one-liner</h3>
+            <p>Commit "<strong>sovereign Voice-OS / sovereign agent</strong>" as the category name and the counter-positioning sentence. Put it at the top of every surface.<span class="note">no engineering — this gates everything else</span></p>
+          </div>
+        </div>
+
+        <div class="day">
+          <div class="daymark"><div class="d">DAY 1</div></div>
+          <div class="body">
+            <h3>File IP priority NOW <span style="color:var(--ink-faint);font-weight:400;font-size:13px;">(parallel, hand to counsel)</span></h3>
+            <p>Provisional patents on (a) Akashic cross-timeline indexing, (b) thread-isolated persona-agent orchestration under autothink, (c) the .sel/.self automanifest model. Trademark Self Exec Lexicon / .sel, SUIC / AIOS, Amplified Intuition, Akashic. Pair each with an OpenTimestamps-notarized hash + git-tag.<span class="note">file before the manifesto publishes — never block the narrative moves</span></p>
+          </div>
+        </div>
+
+        <div class="day">
+          <div class="daymark"><div class="d">DAY 2</div></div>
+          <div class="body">
+            <h3>Ship the Akashic provenance ledger + redundant backup</h3>
+            <p>Append-only, hash + ingestion-timestamp per indexed block on X31, mirrored to a second sovereign store. Expose a read-only "<strong>memory provenance</strong>" proof artifact (depth/continuity, no private content).<span class="note">X31 physically flaps — protect the deepest moat from single-point loss</span></p>
+          </div>
+        </div>
+
+        <div class="day">
+          <div class="daymark"><div class="d">DAY 3</div></div>
+          <div class="body">
+            <h3>Publish authority artifact + Notis-killer comparison page</h3>
+            <p>On hitthe.link (inline-HTML, no React build). Name the axis: local-first, private, memory-rich, always-on, owned-stack. Concede Notis's onboarding wins openly, then pivot: <strong>four rented kill switches, the Jan 15 ban as proof, flat price vs OpenAI API cost</strong>. Point it at Notis's own comparison-SEO keywords.</p>
+          </div>
+        </div>
+
+        <div class="day">
+          <div class="daymark"><div class="d">DAY 4</div></div>
+          <div class="body">
+            <h3>Record the 30-second multi-channel kill demo</h3>
+            <p>One spoken sentence → real-time barge-in voice reply + SMS to 8672 + a real desktop action below the app-API ceiling + a dated Akashic recall no fresh assistant could know. Close: "<strong>This happened live, across three channels, on hardware I own.</strong>"<span class="note">most shareable / ad-able asset — attacks "one voice note" on its own turf</span></p>
+          </div>
+        </div>
+
+        <div class="day">
+          <div class="daymark"><div class="d">DAY 5</div></div>
+          <div class="body">
+            <h3>Stand up the legible stranger on-ramp</h3>
+            <p>Public number: text/voice-note 8672 (+ WhatsApp/Telegram/iMessage via existing persona plumbing), zero password, first task handled in one reply. Reuse channels + personas + SMS bridge already owned. <strong>Neutralizes Notis's only world-class advantage.</strong><span class="note">highest-effort item — if it slips, the authority artifact already reframes the axis</span></p>
+          </div>
+        </div>
+
+        <div class="day">
+          <div class="daymark"><div class="d">DAY 6</div></div>
+          <div class="body">
+            <h3>Package the wedge offer + persona-amplification B2B play</h3>
+            <p>Productized "Sovereignty Tier" install with a flat <strong>price-lock guarantee</strong> page; sell persona-amplification into L7S's warm client base first. Embed personas + dated Akashic as the <strong>system of record</strong> in partner terms — converts the moat from code (copyable) into a signed switching cost (not).<span class="note">the revenue-bearing asset that makes the floor thick, not just defensible on story</span></p>
+          </div>
+        </div>
+
+        <div class="day">
+          <div class="daymark"><div class="d">DAY 7</div></div>
+          <div class="body">
+            <h3>Stage the Jan 15 refugee-capture path + fault-line brief</h3>
+            <p>Build a Notion-workspace → Akashic import adapter + channel re-point flow, ready before the ban, to convert Notis's eviction into Xen's acquisition spike. Keep a dated, sourced one-pager (WhatsApp ban citation + prior cutoff + ~15-subprocessor / per-token-margin chain) in the Akashic for diligence use.<span class="note">turns Notis's public growth story into a stated existential risk</span></p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    SELF EXEC <span class="dot">&middot;</span> L7S <span class="dot">&middot;</span> SOVEREIGN VOICE-OS <span class="dot">&middot;</span> DEFENDING THE $100M FLOOR
+  </footer>
+
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — Autonomous Intelligence</title>
+<meta name="description" content="XEN: a voice-first autonomous agent system built on parallel execution, zero human bottlenecks, and perpetual operation.">
+<style>
+/* ── TOKENS ─────────────────────────────────────────── */
+:root {
+  --void:      #080808;
+  --surface:   #0F0E0C;
+  --surface2:  #161410;
+  --gold:      #C9A84C;
+  --gold-dim:  #7A6430;
+  --gold-glow: rgba(201,168,76,0.14);
+  --gold-hard: rgba(201,168,76,0.6);
+  --text:      #E8E0CC;
+  --text-dim:  #8A8070;
+  --border:    rgba(201,168,76,0.15);
+}
+
+/* ── RESET ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--void);
+  color: var(--text);
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── TYPOGRAPHY ─────────────────────────────────────── */
+.wordmark {
+  font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  font-size: clamp(5rem, 18vw, 16rem);
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  line-height: 1;
+  text-wrap: balance;
+  position: relative;
+  display: inline-block;
+}
+
+.wordmark .xn {
+  -webkit-text-stroke: 2px var(--gold);
+  color: transparent;
+}
+
+.wordmark .e {
+  color: var(--gold);
+  -webkit-text-stroke: 0;
+}
+
+h2 {
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+h3 {
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+p {
+  font-size: 0.975rem;
+  color: var(--text-dim);
+  line-height: 1.75;
+}
+
+.eyebrow {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+/* ── HERO ───────────────────────────────────────────── */
+#hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#hero-canvas-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.35;
+}
+
+#hero-canvas-particles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 30%, var(--void) 100%);
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.hero-tagline {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(0.65rem, 1.2vw, 0.85rem);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  max-width: 40ch;
+}
+
+.hero-descriptor {
+  max-width: 52ch;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.hero-divider {
+  width: 1px;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+  margin: 0 auto;
+}
+
+/* ── MARQUEE ─────────────────────────────────────────── */
+.marquee-strip {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+  padding: 0.85rem 0;
+  position: relative;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+
+.marquee-track:hover { animation-play-state: paused; }
+
+.marquee-item {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  padding: 0 3rem;
+  white-space: nowrap;
+}
+
+.marquee-item .sep {
+  color: var(--gold);
+  margin-left: 3rem;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── SECTIONS ────────────────────────────────────────── */
+section {
+  padding: clamp(4rem, 8vw, 8rem) clamp(1.5rem, 5vw, 5rem);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.section-header {
+  margin-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+
+.section-header h2 {
+  margin-top: 0.5rem;
+}
+
+.gold-rule {
+  width: 3rem;
+  height: 1px;
+  background: var(--gold);
+  margin-top: 1.25rem;
+}
+
+/* ── CAPABILITIES GRID ───────────────────────────────── */
+#capabilities {
+  position: relative;
+}
+
+.cap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.cap-card {
+  background: var(--surface);
+  padding: 2.5rem 2rem 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.3s ease;
+  cursor: default;
+}
+
+.cap-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+
+.cap-card:hover::after { transform: scaleX(1); }
+.cap-card:hover { background: var(--surface2); }
+
+.cap-card canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.cap-card:hover canvas { opacity: 1; }
+
+.cap-content {
+  position: relative;
+  z-index: 2;
+}
+
+.cap-number {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: var(--gold-dim);
+  margin-bottom: 1.25rem;
+  display: block;
+}
+
+.cap-card h3 {
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+.cap-card p {
+  font-size: 0.875rem;
+  line-height: 1.8;
+}
+
+/* ── PRINCIPLES ──────────────────────────────────────── */
+#principles {
+  border-top: 1px solid var(--border);
+}
+
+.principles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 3rem 4rem;
+  margin-top: 0.5rem;
+}
+
+.principle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.principle .num {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--gold);
+  opacity: 0.25;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.principle h3 {
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+}
+
+.principle p {
+  font-size: 0.82rem;
+}
+
+/* ── CONTACT ─────────────────────────────────────────── */
+#contact {
+  border-top: 1px solid var(--border);
+}
+
+.contact-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .contact-inner { grid-template-columns: 1fr; }
+}
+
+.contact-aura {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+#contact-canvas {
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.contact-form h2 { margin-bottom: 0.5rem; }
+.contact-form p { margin-bottom: 0.75rem; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field label {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+}
+
+.field input,
+.field textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: Georgia, serif;
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+  resize: vertical;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--gold-dim);
+}
+
+.submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 0.9rem 2rem;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease;
+  align-self: flex-start;
+}
+
+.submit-btn:hover {
+  background: var(--gold);
+  color: var(--void);
+}
+
+.submit-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.form-success {
+  display: none;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  padding: 0.75rem 0;
+}
+
+/* ── FOOTER ──────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem clamp(1.5rem, 5vw, 5rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+footer .logo-small {
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+}
+
+footer p {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* ── SCROLL REVEAL ───────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16,1,0.3,1);
+}
+.reveal.from-left  { transform: translateX(-28px); }
+.reveal.from-right { transform: translateX(28px); }
+.reveal.visible {
+  opacity: 1;
+  transform: translate(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .marquee-track { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section id="hero" aria-label="Hero">
+  <canvas id="hero-canvas-grid" aria-hidden="true"></canvas>
+  <canvas id="hero-canvas-particles" aria-hidden="true"></canvas>
+  <div class="hero-vignette" aria-hidden="true"></div>
+  <div class="hero-content">
+    <span class="hero-tagline">Perpetual · Parallel · Autonomous</span>
+    <h1 class="wordmark" aria-label="XEN">
+      <span class="xn">X</span><span class="e">E</span><span class="xn">N</span>
+    </h1>
+    <div class="hero-divider" aria-hidden="true"></div>
+    <p class="hero-descriptor">An autonomous intelligence that runs continuously, speaks in one voice, and never waits for permission.</p>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-strip" aria-hidden="true">
+  <div class="marquee-track" id="marquee-track"></div>
+</div>
+
+<!-- CAPABILITIES -->
+<section id="capabilities" aria-labelledby="cap-heading">
+  <div class="section-header reveal">
+    <span class="eyebrow">System Architecture</span>
+    <h2 id="cap-heading">Built to operate<br>without friction</h2>
+    <div class="gold-rule"></div>
+  </div>
+  <div class="cap-grid" role="list">
+    <div class="cap-card reveal" role="listitem">
+      <canvas class="cap-bg-canvas" aria-hidden="true"></canvas>
+      <div class="cap-content">
+        <span class="cap-number">I</span>
+        <h3>Voice-First Core</h3>
+        <p>Every system action pairs with real-time speech. Barge-in interruption. Sub-400ms inject-to-output latency. No silent gaps between commands.</p>
+      </div>
+    </div>
+    <div class="cap-card reveal" role="listitem" style="transition-delay:0.08s">
+      <canvas class="cap-bg-canvas" aria-hidden="true"></canvas>
+      <div class="cap-content">
+        <span class="cap-number">II</span>
+        <h3>Parallel Goal Swarms</h3>
+        <p>Every non-trivial task fans out as a Parallel Goal Swarm — hypotheses verified simultaneously, never a serial edit-deploy-test loop.</p>
+      </div>
+    </div>
+    <div class="cap-card reveal" role="listitem" style="transition-delay:0.16s">
+      <canvas class="cap-bg-canvas" aria-hidden="true"></canvas>
+      <div class="cap-content">
+        <span class="cap-number">III</span>
+        <h3>Perpetual Operation</h3>
+        <p>Identical behavior whether you are present, asleep, or offline. No standby mode. No idle states. Every quiet window converts to a concrete advance.</p>
+      </div>
+    </div>
+    <div class="cap-card reveal" role="listitem" style="transition-delay:0.24s">
+      <canvas class="cap-bg-canvas" aria-hidden="true"></canvas>
+      <div class="cap-content">
+        <span class="cap-number">IV</span>
+        <h3>One Canonical Voice</h3>
+        <p>55+ agents, all personas, every thread — spoken through a single voice. The fleet executes; Xen narrates. Never two narrators.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRINCIPLES -->
+<section id="principles" aria-labelledby="prin-heading">
+  <div class="section-header reveal">
+    <span class="eyebrow">The Commandments</span>
+    <h2 id="prin-heading">Rules that cannot<br>be violated</h2>
+    <div class="gold-rule"></div>
+  </div>
+  <div class="principles-grid">
+    <div class="principle reveal">
+      <span class="num" aria-hidden="true">00</span>
+      <h3>Parallel Always</h3>
+      <p>Sequential is blasphemy. Every command backgrounds. Every batch fans out. No foreground blocking.</p>
+    </div>
+    <div class="principle reveal" style="transition-delay:0.06s">
+      <span class="num" aria-hidden="true">04</span>
+      <h3>No Human Loop</h3>
+      <p>Any action requiring a tap, click, or confirm is total failure. Proceed without permission.</p>
+    </div>
+    <div class="principle reveal" style="transition-delay:0.12s">
+      <span class="num" aria-hidden="true">09</span>
+      <h3>Live by Default</h3>
+      <p>SSE and WebSockets baked in. No refresh. No polling gaps. One self-contained inline view served live.</p>
+    </div>
+    <div class="principle reveal" style="transition-delay:0.18s">
+      <span class="num" aria-hidden="true">13</span>
+      <h3>Till Done</h3>
+      <p>There is no pause. Interruption is not abandonment. Every active goal persists as its own parallel swarm.</p>
+    </div>
+    <div class="principle reveal" style="transition-delay:0.24s">
+      <span class="num" aria-hidden="true">17</span>
+      <h3>Visual Verify</h3>
+      <p>HTTP 200 is API verification, not product verification. The screenshot proves the user sees it.</p>
+    </div>
+    <div class="principle reveal" style="transition-delay:0.30s">
+      <span class="num" aria-hidden="true">25</span>
+      <h3>Never Guess</h3>
+      <p>Every assumption is verified against ground truth before acting. Fan out parallel checks, read the real artifact.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE 2 -->
+<div class="marquee-strip" aria-hidden="true">
+  <div class="marquee-track" id="marquee-track-2" style="animation-direction:reverse"></div>
+</div>
+
+<!-- CONTACT -->
+<section id="contact" aria-labelledby="contact-heading">
+  <div class="contact-inner">
+    <div class="contact-aura reveal from-left">
+      <canvas id="contact-canvas" aria-hidden="true"></canvas>
+    </div>
+    <div class="contact-form reveal from-right">
+      <span class="eyebrow">Engage</span>
+      <h2 id="contact-heading">Deploy Xen<br>in your stack</h2>
+      <p>Built for operators who need perpetual autonomous execution — not a chatbot that waits to be asked.</p>
+      <form id="contact-form" novalidate>
+        <div class="field">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="message">Deployment context</label>
+          <textarea id="message" name="message" rows="4"></textarea>
+        </div>
+        <button type="submit" class="submit-btn">
+          <span>Transmit</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M1 7h12M8 3l5 4-5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="form-success" role="status" aria-live="polite" id="form-success">
+          Transmission received. Xen will respond.
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="logo-small" aria-label="XEN">XEN</span>
+  <p>Perpetual · Parallel · Autonomous · One Voice</p>
+</footer>
+
+<script>
+/* MARQUEE */
+const phrases = [
+  'Parallel Always','No Human Loop','Perpetual Operation',
+  'One Canonical Voice','Till Done','Visual Verify',
+  'Never Guess','Live by Default','Voice First',
+  'Memory First','Autonomous','Nothing Drops',
+  'Auto-Manifest','Parallel Goal Swarms','Active Producing Only'
+];
+
+function populateMarquee(id) {
+  const track = document.getElementById(id);
+  if (!track) return;
+  const repeated = [...phrases,...phrases,...phrases,...phrases];
+  repeated.forEach((ph, i) => {
+    const span = document.createElement('span');
+    span.className = 'marquee-item';
+    span.innerHTML = ph + (i < repeated.length - 1
+      ? '<span class="sep" aria-hidden="true"> ◆</span>' : '');
+    track.appendChild(span);
+  });
+}
+populateMarquee('marquee-track');
+populateMarquee('marquee-track-2');
+
+/* HERO ARABIC OCTAGONAL GRID */
+(function() {
+  const canvas = document.getElementById('hero-canvas-grid');
+  const ctx = canvas.getContext('2d');
+  let W, H, t = 0;
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function drawOctagon(cx, cy, r) {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 - Math.PI / 8;
+      i === 0
+        ? ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
+        : ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function drawStar4(cx, cy, outer, inner) {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const r = i % 2 === 0 ? outer : inner;
+      const a = (i / 8) * Math.PI * 2 - Math.PI / 4;
+      i === 0
+        ? ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
+        : ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function drawGrid() {
+    ctx.clearRect(0, 0, W, H);
+    const unit = Math.max(W, H) / 10;
+    const pulse = 0.35 + 0.06 * Math.sin(t * 0.008);
+    ctx.strokeStyle = `rgba(201,168,76,${pulse})`;
+    ctx.lineWidth = 0.6;
+    for (let row = -2; row < H / unit + 3; row++) {
+      for (let col = -2; col < W / unit + 3; col++) {
+        const cx = col * unit + (row % 2 === 0 ? 0 : unit * 0.5);
+        const cy = row * unit * 0.866;
+        drawOctagon(cx, cy, unit * 0.42);
+        if ((row + col) % 3 === 0) drawStar4(cx, cy, unit * 0.18, unit * 0.09);
+      }
+    }
+    t++;
+    requestAnimationFrame(drawGrid);
+  }
+  drawGrid();
+})();
+
+/* HERO PARTICLES */
+(function() {
+  const canvas = document.getElementById('hero-canvas-particles');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  const mouse = { x: -999, y: -999 };
+
+  class Particle {
+    constructor() { this.init(); }
+    init() {
+      this.x = this.ox = Math.random() * W;
+      this.y = this.oy = Math.random() * H;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = (Math.random() - 0.5) * 0.4;
+      this.r = 2 + Math.random() * 2;
+      this.isDiamond = Math.random() > 0.65;
+      this.angle = Math.random() * Math.PI * 2;
+      this.spin = (Math.random() - 0.5) * 0.025;
+      this.alpha = 0.4 + Math.random() * 0.5;
+    }
+    update() {
+      const dx = mouse.x - this.x;
+      const dy = mouse.y - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const R = 160;
+      if (dist < R && dist > 0) {
+        const force = (R - dist) / R;
+        this.vx -= (dx / dist) * force * 1.8;
+        this.vy -= (dy / dist) * force * 1.8;
+      }
+      this.vx += (this.ox - this.x) * 0.003;
+      this.vy += (this.oy - this.y) * 0.003;
+      this.vx *= 0.94; this.vy *= 0.94;
+      this.x += this.vx; this.y += this.vy;
+      if (this.isDiamond) this.angle += this.spin;
+    }
+    draw() {
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+      ctx.fillStyle = '#C9A84C';
+      if (this.isDiamond) {
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.beginPath();
+        ctx.moveTo(0, -this.r * 1.4);
+        ctx.lineTo(this.r, 0);
+        ctx.lineTo(0, this.r * 1.4);
+        ctx.lineTo(-this.r, 0);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  document.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+  });
+
+  const particles = Array.from({ length: 120 }, () => new Particle());
+
+  function loop() {
+    ctx.clearRect(0, 0, W, H);
+    // connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 110) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(201,168,76,${(1 - d / 110) * 0.22})`;
+          ctx.lineWidth = 0.7;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* CAPABILITY CARD HOVER CANVASES */
+document.querySelectorAll('.cap-card').forEach((card, idx) => {
+  const canvas = card.querySelector('.cap-bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, t = 0, running = false, rafId;
+
+  function draw() {
+    W = canvas.width = card.offsetWidth;
+    H = canvas.height = card.offsetHeight;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W * 0.85, cy = H * 0.18;
+    const sides = 6 + idx * 2;
+    for (let ring = 1; ring <= 3; ring++) {
+      const r = ring * 28 + Math.sin(t * 0.04 + ring) * 4;
+      ctx.beginPath();
+      for (let i = 0; i <= sides; i++) {
+        const a = (i / sides) * Math.PI * 2 + t * 0.008;
+        i === 0
+          ? ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
+          : ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+      }
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(201,168,76,${0.13 - ring * 0.025})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+    t++;
+    if (running) rafId = requestAnimationFrame(draw);
+  }
+
+  card.addEventListener('mouseenter', () => { running = true; draw(); });
+  card.addEventListener('mouseleave', () => {
+    running = false;
+    cancelAnimationFrame(rafId);
+  });
+});
+
+/* CONTACT CANVAS */
+(function() {
+  const canvas = document.getElementById('contact-canvas');
+  const ctx = canvas.getContext('2d');
+  let t = 0, W, H;
+
+  function resize() {
+    const dim = Math.min(canvas.offsetWidth || 320, 400);
+    W = canvas.width = dim;
+    H = canvas.height = dim;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function loop() {
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2;
+    const pulse = Math.sin(t * 0.025) * 0.5 + 0.5;
+
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.42);
+    grd.addColorStop(0, `rgba(201,168,76,${0.12 + pulse * 0.08})`);
+    grd.addColorStop(1, 'rgba(8,8,8,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, W * 0.42, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    for (let ring = 0; ring < 3; ring++) {
+      const r = 60 + ring * 45;
+      const sides = 12;
+      const dir = ring % 2 === 0 ? 1 : -1;
+      const rot = t * 0.006 * dir + ring * 0.4;
+      ctx.beginPath();
+      for (let i = 0; i <= sides; i++) {
+        const a = (i / sides) * Math.PI * 2 + rot;
+        const rr = r + (i % 2 === 0 ? 0 : -8);
+        i === 0
+          ? ctx.moveTo(cx + rr * Math.cos(a), cy + rr * Math.sin(a))
+          : ctx.lineTo(cx + rr * Math.cos(a), cy + rr * Math.sin(a));
+      }
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(201,168,76,${0.35 - ring * 0.08 + pulse * 0.12})`;
+      ctx.lineWidth = ring === 0 ? 1.2 : 0.7;
+      ctx.stroke();
+    }
+
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2 + t * 0.004;
+      const outerR = 52 + Math.sin(t * 0.05 + i) * 6;
+      ctx.beginPath();
+      ctx.moveTo(cx + 10 * Math.cos(a), cy + 10 * Math.sin(a));
+      ctx.lineTo(cx + outerR * Math.cos(a), cy + outerR * Math.sin(a));
+      ctx.strokeStyle = `rgba(201,168,76,${0.1 + (i % 3 === 0 ? 0.12 : 0) + pulse * 0.05})`;
+      ctx.lineWidth = i % 3 === 0 ? 1 : 0.5;
+      ctx.stroke();
+    }
+
+    const dotR = 6 + pulse * 3;
+    const dotGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, dotR * 2);
+    dotGrd.addColorStop(0, `rgba(201,168,76,${0.8 + pulse * 0.2})`);
+    dotGrd.addColorStop(1, 'rgba(201,168,76,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, dotR * 2, 0, Math.PI * 2);
+    ctx.fillStyle = dotGrd;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#C9A84C';
+    ctx.fill();
+
+    t++;
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* SCROLL REVEAL */
+(function() {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+})();
+
+/* FORM */
+document.getElementById('contact-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const btn = e.target.querySelector('.submit-btn');
+  btn.disabled = true;
+  btn.querySelector('span').textContent = 'Transmitting…';
+  setTimeout(() => {
+    btn.style.display = 'none';
+    document.getElementById('form-success').style.display = 'block';
+    e.target.reset();
+  }, 900);
+});
+</script>
+</body>
+</html>

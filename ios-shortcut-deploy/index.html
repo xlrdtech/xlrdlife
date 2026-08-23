@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iOS Shortcut deploy · 5 qi-only blocker commands</title>
+<meta name="description" content="Copy-paste recipe for the 5 qi-only blockers gating the Siri/Watch/NFC/Focus tool-router shortcut: wrangler login + CF service token + secret put + ingress route + iOS plist install.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root { --paper:#0A0A0C; --cream:#F4EEE4; --bone:#C7C2B6; --dust:#7A7A7A; --line:rgba(244,238,228,.12); --volt:#00FF88; --gold:#D2AC47; --steel:#6AD4FF; --violet:#A78BFA; --serif:'Instrument Serif',serif; --sans:'Inter',-apple-system,sans-serif; --mono:'JetBrains Mono',monospace; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--paper); color:var(--cream); font-family:var(--sans); line-height:1.55; }
+.wrap { max-width:880px; margin:0 auto; padding:60px 28px 100px; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.4em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:clamp(36px,5vw,64px); line-height:1; letter-spacing:-.025em; margin:0 0 14px; }
+h1 em { color:var(--gold); font-style:italic; }
+.lede { font-family:var(--serif); font-style:italic; font-size:20px; color:var(--bone); margin-bottom:28px; }
+.step { background:#0E0E0E; border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; padding:20px 24px; margin:18px 0; }
+.step .num { font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:6px; }
+.step h3 { font-family:var(--serif); font-style:italic; font-size:24px; color:var(--cream); margin-bottom:10px; }
+.step p { font-size:14px; color:var(--bone); line-height:1.6; margin-bottom:10px; }
+.step pre { font-family:var(--mono); font-size:12.5px; background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:12px 16px; overflow-x:auto; line-height:1.55; color:var(--cream); margin:8px 0; }
+.step pre .c { color:var(--dust); font-style:italic; }
+.step pre .k { color:var(--volt); }
+.step pre .v { color:var(--steel); }
+.step:nth-child(1) { --accent:var(--volt); }
+.step:nth-child(2) { --accent:var(--steel); }
+.step:nth-child(3) { --accent:var(--gold); }
+.step:nth-child(4) { --accent:var(--violet); }
+.step:nth-child(5) { --accent:#FF5E9C; }
+a { color:var(--volt); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">// ios shortcut · 5 qi-only blockers · 2026-05-23</div>
+<h1>The five <em>last steps</em>.</h1>
+<div class="lede">Copy-paste recipe for the Siri/Watch/NFC/Focus tool-router shortcut. Each block is one command (or one click). After all five land, the shortcut is live + routes to <code>tools.xlrd.org</code>.</div>
+
+<div class="step">
+  <div class="num">Step 1 / 5</div>
+  <h3>wrangler login</h3>
+  <p>Authenticate Cloudflare CLI on your Mac. Opens browser, click Authorize. Stored in <code>~/.wrangler/config/default.toml</code>.</p>
+  <pre><span class="c"># If wrangler not installed yet:</span>
+brew install cloudflare-wrangler
+
+<span class="c"># Login (browser opens, click Authorize):</span>
+wrangler login
+
+<span class="c"># Verify:</span>
+wrangler whoami</pre>
+</div>
+
+<div class="step">
+  <div class="num">Step 2 / 5</div>
+  <h3>CF service token</h3>
+  <p>Create a service token in Cloudflare dashboard. Used for iOS Shortcut to authenticate inbound requests at <code>tools.xlrd.org</code> via the Cloudflare Access app.</p>
+  <pre><span class="c"># GUI path (one-time, browser):</span>
+<span class="c"># 1. dash.cloudflare.com -> Zero Trust -> Access -> Service Auth</span>
+<span class="c"># 2. Create Service Token, name: "xen-ios-shortcut"</span>
+<span class="c"># 3. Save Client ID + Client Secret (you'll see them ONCE)</span>
+
+<span class="c"># OR via API:</span>
+curl -X POST "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/access/service_tokens" \
+  -H "Authorization: Bearer $CF_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data '{"name":"xen-ios-shortcut","duration":"forever"}'</pre>
+</div>
+
+<div class="step">
+  <div class="num">Step 3 / 5</div>
+  <h3>wrangler secret put (3 secrets)</h3>
+  <p>Three secrets are needed by the worker. Run in the <code>tools-runtime/</code> wrangler project directory.</p>
+  <pre><span class="c"># Peer token (used by iOS Shortcut + IFTTT applets):</span>
+wrangler secret put XEN_TOOLS_TOKEN
+<span class="c"># <- paste a strong random token (openssl rand -hex 32)</span>
+
+<span class="c"># HMAC signing key (separate from peer token):</span>
+wrangler secret put XEN_HMAC_KEY
+<span class="c"># <- paste another strong random key</span>
+
+<span class="c"># Omnimind inject token (same value as Win/Mac XEN_MAC_TOKEN):</span>
+wrangler secret put XEN_MAC_TOKEN
+<span class="c"># <- paste from ~/.xen/secrets.env XEN_MAC_TOKEN value</span></pre>
+</div>
+
+<div class="step">
+  <div class="num">Step 4 / 5</div>
+  <h3>Ingress route — tools.xlrd.org → worker</h3>
+  <p>Map the <code>tools.xlrd.org</code> hostname to the worker. Already declared in <code>wrangler.toml</code> via <code>[[routes]]</code> but needs Cloudflare to recognize the zone.</p>
+  <pre><span class="c"># Ensure xlrd.org zone is in your Cloudflare account.</span>
+<span class="c"># Add A or CNAME record for tools.xlrd.org pointing anywhere (worker overrides):</span>
+curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+  -H "Authorization: Bearer $CF_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data '{"type":"AAAA","name":"tools","content":"100::","proxied":true}'
+
+<span class="c"># Then deploy worker — route is auto-applied via wrangler.toml:</span>
+cd tools-runtime
+wrangler deploy
+
+<span class="c"># Verify:</span>
+curl https://tools.xlrd.org/health</pre>
+</div>
+
+<div class="step">
+  <div class="num">Step 5 / 5</div>
+  <h3>iOS Shortcut plist install</h3>
+  <p>Install the <code>xen-tool-call.ios-shortcut.json</code> on your iPhone. Spec was dropped at <code>~/.xen/state/xen-tool-call.ios-shortcut.json</code> on m4 (mac-xen).</p>
+  <pre><span class="c"># From mac-xen, generate an iCloud sharing link:</span>
+osascript &lt;&lt;EOF
+tell application "Shortcuts"
+  import shortcut from POSIX file "/Users/qi/.xen/state/xen-tool-call.shortcut"
+  set linkURL to iCloud link of last shortcut
+  return linkURL
+end tell
+EOF
+
+<span class="c"># OR open the .shortcut file directly from Mail/Messages on the iPhone</span>
+<span class="c"># (iOS gotcha: "Allow Untrusted Shortcuts" toggle hidden until at least one</span>
+<span class="c">#  shortcut has run on the device — see canon_agent_urls:72)</span>
+
+<span class="c"># Once installed:</span>
+<span class="c"># Settings -&gt; Shortcuts -&gt; Advanced -&gt; Allow Sharing Large Amounts of Data ON</span>
+<span class="c"># Hey Siri "Hey Xen [your trigger phrase]" -&gt; routes to tools.xlrd.org</span></pre>
+</div>
+
+<div class="step" style="border-color:var(--volt); background:rgba(0,255,136,.04);">
+  <div class="num" style="color:var(--volt);">Verify · end to end</div>
+  <h3>One curl + one Siri test</h3>
+  <pre><span class="c"># From any machine — should return 200 + ok:true</span>
+TOKEN=$(cat ~/.xen/secrets.env | grep XEN_TOOLS_TOKEN | cut -d= -f2)
+BODY='{"test":"hello from cli"}'
+SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$HMAC_KEY" -hex | cut -d' ' -f2)
+
+curl -X POST https://tools.xlrd.org/ifttt/paypal-paid \
+  -H "X-Xen-Token: $TOKEN" \
+  -H "X-Xen-Sig: $SIG" \
+  -H "Content-Type: application/json" \
+  --data "$BODY"
+
+<span class="c"># Then say "Hey Siri, Hey Xen test" — should land in omnimind pane via inject</span></pre>
+</div>
+
+<p style="font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--dust); margin-top:32px;">
+Worker source: <a href="/tools-worker/worker.js">/tools-worker/worker.js</a> · Wrangler template: <a href="/tools-worker/wrangler.toml.template">/tools-worker/wrangler.toml.template</a> · Canon: <code>canon_ifttt_tools_xlrd_org_3layer_auth_2026-05-22</code>
+</p>
+
+</div>
+<script src="/_shared/ava-play.js?mute=1" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

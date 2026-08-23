@@ -1,0 +1,75 @@
+<title>MCP Live-Streaming Data — Sourced Brief</title>
+<style>
+  :root{--bg:#0a0b0f;--card:#14161d;--ink:#e8eaf0;--dim:#9aa0b0;--acc:#5eead4;--acc2:#818cf8;--line:#242836;--warn:#fbbf24}
+  @media(prefers-color-scheme:light){:root{--bg:#f6f7fb;--card:#fff;--ink:#14161d;--dim:#5a6072;--acc:#0d9488;--acc2:#4f46e5;--line:#e3e6ef;--warn:#b45309}}
+  :root[data-theme=dark]{--bg:#0a0b0f;--card:#14161d;--ink:#e8eaf0;--dim:#9aa0b0;--acc:#5eead4;--acc2:#818cf8;--line:#242836;--warn:#fbbf24}
+  :root[data-theme=light]{--bg:#f6f7fb;--card:#fff;--ink:#14161d;--dim:#5a6072;--acc:#0d9488;--acc2:#4f46e5;--line:#e3e6ef;--warn:#b45309}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;padding:0}
+  .wrap{max-width:820px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.7rem;line-height:1.2;margin:0 0 4px;letter-spacing:-.02em}
+  .sub{color:var(--dim);font-size:.95rem;margin:0 0 28px}
+  h2{font-size:1.18rem;margin:34px 0 10px;letter-spacing:-.01em}
+  h2 .n{color:var(--acc2);font-variant-numeric:tabular-nums;margin-right:.4em}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+  code{background:rgba(129,140,248,.13);color:var(--acc);padding:1px 6px;border-radius:5px;font:.86em ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-word}
+  .kbd{color:var(--acc)}
+  strong{color:var(--ink)}
+  .tldr{border-left:3px solid var(--acc);background:rgba(94,234,212,.07)}
+  .warn{border-left:3px solid var(--warn);background:rgba(251,191,36,.07)}
+  ul{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  .pill{display:inline-block;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--acc);border:1px solid var(--line);border-radius:999px;padding:2px 9px;margin:0 6px 6px 0;vertical-align:middle}
+  .src{font-size:.82rem;color:var(--dim);word-break:break-word}
+  .src a{color:var(--acc2);text-decoration:none}
+  .flow{overflow-x:auto}
+  .flow code{white-space:nowrap}
+  hr{border:0;border-top:1px solid var(--line);margin:28px 0}
+</style>
+<div class="wrap">
+  <h1>MCP &amp; Live Streaming Data</h1>
+  <p class="sub">How an MCP server actually pushes real-time data — and the pattern to steal for Xen's live-status / voice-state dashboards. Sourced &amp; cross-verified · spec 2025-11-25.</p>
+
+  <div class="card tldr">
+    <span class="pill">the crux</span>
+    <strong>Raw WebSocket is NOT a defined MCP transport.</strong> The spec defines exactly two — <code>stdio</code> and <code>Streamable HTTP</code>. Real server→client <em>push</em> is <strong>SSE layered inside Streamable HTTP</strong>, driven by <code>resources/subscribe</code> → <code>notifications/resources/updated</code>. Most "live data" MCP servers don't actually stream — they poll under a <code>tools/call</code>. That gap is the opening for Xen's build.
+  </div>
+
+  <h2><span class="n">1</span>The native push mechanism</h2>
+  <div class="card">
+    Two standard transports only: <strong>stdio</strong> (local subprocess, newline-delimited JSON-RPC) and <strong>Streamable HTTP</strong> (remote). The MCP core team (Dec 2025) is explicit it'll "continue to support only two official transports." A WebSocket proposal (<code>SEP-1287</code>) exists but was <strong>not adopted</strong> — browsers can't set auth headers on WS, WS upgrades are GET-only (breaks POST-RPC), and SSE reuses standard HTTP infra. WS is only reachable via the <strong>Custom Transports</strong> escape hatch.
+    <br><br>
+    <strong>Push works over SSE inside Streamable HTTP:</strong> the client issues an HTTP <span class="kbd">GET</span> to the single MCP endpoint with <code>Accept: text/event-stream</code>; the server holds it open and pushes server-initiated JSON-RPC notifications/requests down it — no polling. The spec-native real-time primitives:
+    <ul>
+      <li><code>resources/subscribe</code> → server emits <code>notifications/resources/updated</code> on every change (needs the <code>resources.subscribe</code> capability). <strong>This is THE canonical push pattern.</strong></li>
+      <li><code>notifications/resources/list_changed</code>, <code>notifications/progress</code>, log notifications — all server-initiated <code>notifications/*</code>.</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">2</span>Push vs. the polling shortcut</h2>
+  <div class="card">
+    Confirmed: most "live data" MCP servers are <strong>not</strong> true streamers. They expose a <code>tools/call</code> (e.g. <code>get_ticker</code>) the agent re-invokes, or that hits a REST/WS API and returns one snapshot — <strong>request/response with polling underneath</strong>. The <em>actual</em> real-time mechanism is <code>resources/subscribe</code> + <code>notifications/resources/updated</code> over the SSE stream: server pushes on change, client never re-asks.
+    <div class="flow" style="margin-top:12px"><code>upstream feed (exchange WS / MQTT / IoT) → MCP server → on tick: notifications/resources/updated → client SSE stream → re-read</code></div>
+  </div>
+
+  <h2><span class="n">3</span>The "Connected Domains" pattern <span class="pill">verified + corrected</span></h2>
+  <div class="card">
+    Real — but it lives in <strong>MCP-UI / MCP Apps</strong>, not core MCP resource <code>_meta</code>. When a resource carries an interactive UI (iframe app view — used by <strong>Goose / block</strong>), its metadata carries a CSP block <code>_meta.ui.csp</code> with:
+    <ul>
+      <li><code>connectDomains</code> — fetch <strong>+ WebSocket</strong> origins</li>
+      <li><code>resourceDomains</code> — scripts / images / fonts</li>
+      <li><code>frameDomains</code> — nested iframes</li>
+    </ul>
+    Adding an origin to <code>connectDomains</code> relaxes the iframe's same-origin/CSP restriction (the "SIM break") so the embedded UI may open a streaming connection — including <code>ws://</code>/<code>wss://</code> — to another host. So the mechanics are right; the precise location is <strong>MCP-UI app-view <code>_meta.ui.csp.connectDomains</code></strong>, defined by the MCP-UI/MCP-Apps spec Goose implements — not a field on a plain resource.
+  </div>
+
+  <h2><span class="n">4</span>Steal it for Zen Live Status / voice states</h2>
+  <div class="card tldr">
+    <ul>
+      <li>Ship Xen's live-status UI as an <strong>MCP-UI resource</strong> whose <code>_meta.ui.csp.connectDomains</code> whitelists your VVSVEI/XOS SSE-WS origin (e.g. <code>wss://vvsvei.xlrd.org</code>); the embedded dashboard then opens its <strong>own</strong> live socket straight to your existing SSE stream (canon 9) — the MCP host just renders it.</li>
+      <li>For agent-consumable status, also expose <code>status://xen/live</code> (and <code>xen://live/voice-state</code>) as a subscribable resource, pushing <code>notifications/resources/updated</code> on each state change — so any MCP client (Goose, Claude) gets Xen's live voice/call/agent status <strong>pushed, zero polling</strong>.</li>
+    </ul>
+  </div>
+
+  <hr>
+  <p class="src"><strong>Sources:</strong> modelcontextprotocol.io/specification/<a href="https://modelcontextprotocol.io/specification/2025-11-25/">2025-11-25</a> &amp; /2025-06-18 (basic/transports, server/resources, schema); <a href="https://blog.modelcontextprotocol.io/posts/2025-12-19-mcp-transport-future/">MCP blog — transport future (2025-12-19)</a>; SEP-1287 (WebSocket PR, not merged); MCP-UI CSP docs (mcpui.dev; sunpeak.ai mcp-apps/server/resource-meta; deepwiki block/goose "Goose Apps"); real streamers: Binance MCP, Twelve Data MCP, Polygon, CoinMarketCap MCP, TradingView MCP. <br><br><em>Flag:</em> every named streaming server reaches its <em>upstream</em> feed via WebSocket/REST — none found that exposes real-time to the MCP client via spec-native <code>resources/updated</code> push instead of <code>tools/call</code>. That gap is exactly the opening for Xen's build.</p>
+</div>

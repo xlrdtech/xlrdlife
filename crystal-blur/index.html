@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Crystal Blur Launcher — Elevate your home screen to a polished, modern level.</title>
+<meta name="description" content="Crystal Blur Launcher. Elevate your home screen to a polished, modern level. 25 blur wallpapers, 35 icon packs, control center, folders, and universal search.">
+<style>
+  :root{
+    --accent:#7cc4ff;
+    --accent-2:#b79bff;
+    --glass:rgba(255,255,255,.14);
+    --glass-line:rgba(255,255,255,.28);
+    --glass-lo:rgba(255,255,255,.07);
+    --ink:#f4f6fb;
+    --ink-dim:rgba(244,246,251,.62);
+    --ink-faint:rgba(244,246,251,.4);
+    --frame:#0a0c12;
+    --icon-hue:210;
+    --icon-pad:20;
+    --radius:26px;
+    --spring:cubic-bezier(.22,1.2,.32,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;
+    background:radial-gradient(1200px 800px at 30% -10%, #1b2233, #0a0c12 60%);
+    color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;gap:32px;flex-wrap:wrap;
+    overflow-x:hidden;
+  }
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+
+  /* ---------- Marketing rail ---------- */
+  .pitch{max-width:340px;align-self:center}
+  .pitch .eyebrow{font-family:ui-monospace,"SF Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  .pitch h1{font-size:2.6rem;line-height:1.04;font-weight:800;letter-spacing:-.03em;text-wrap:balance;
+    background:linear-gradient(120deg,#fff 20%,var(--accent) 70%,var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px}
+  .pitch p{color:var(--ink-dim);line-height:1.6;font-size:1rem;margin-bottom:26px}
+  .pitch ul{list-style:none;display:flex;flex-direction:column;gap:12px}
+  .pitch li{display:flex;gap:12px;align-items:flex-start;font-size:.92rem;color:var(--ink)}
+  .pitch li b{color:#fff;font-weight:600}
+  .pitch li .dot{flex:0 0 auto;width:22px;height:22px;border-radius:8px;margin-top:1px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;font-size:12px;box-shadow:0 4px 14px rgba(124,196,255,.35)}
+  @media (max-width:720px){.pitch{max-width:420px;text-align:center}.pitch ul{text-align:left}}
+
+  /* ---------- Phone ---------- */
+  .phone{
+    position:relative;width:390px;height:820px;border-radius:56px;flex:0 0 auto;
+    background:linear-gradient(160deg,#1c1f27,#05060a);
+    padding:13px;
+    box-shadow:0 0 0 2px rgba(255,255,255,.06),0 40px 90px -20px rgba(0,0,0,.8),0 0 120px -40px var(--accent);
+  }
+  .screen{position:relative;width:100%;height:100%;border-radius:44px;overflow:hidden;background:#000;isolation:isolate}
+
+  /* wallpaper layers */
+  #wall{position:absolute;inset:0;z-index:0;transition:opacity .6s ease}
+  #wallPhoto{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:0;transition:opacity .6s ease}
+  .wall-veil{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.35));pointer-events:none}
+  .brightness{position:absolute;inset:0;z-index:40;background:#000;opacity:0;pointer-events:none;transition:opacity .25s}
+
+  /* status bar */
+  .statusbar{position:absolute;top:0;left:0;right:0;height:52px;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:0 30px;font-size:14px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .statusbar .right{display:flex;align-items:center;gap:6px}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:20px;z-index:30}
+  .batt{width:26px;height:13px;border:1.5px solid rgba(255,255,255,.85);border-radius:4px;position:relative;padding:1.5px}
+  .batt::after{content:"";position:absolute;right:-4px;top:3.5px;width:2.5px;height:4px;background:rgba(255,255,255,.85);border-radius:0 2px 2px 0}
+  .batt i{display:block;height:100%;width:78%;background:#fff;border-radius:2px}
+
+  /* home */
+  .home{position:absolute;inset:0;z-index:10;padding:66px 22px 0;display:flex;flex-direction:column}
+  .searchwrap{padding:6px 4px 18px}
+  .search{display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;border-radius:22px;
+    background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 24px -10px rgba(0,0,0,.5)}
+  .search svg{opacity:.7;flex:0 0 auto}
+  .search input{flex:1;background:none;border:none;outline:none;color:#fff;font-size:15px;font-weight:500}
+  .search input::placeholder{color:rgba(255,255,255,.55)}
+
+  .grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:min-content;gap:20px 12px;align-content:start;overflow-y:auto;scrollbar-width:none;padding-bottom:20px}
+  .grid::-webkit-scrollbar{display:none}
+  .grid.searching .app{opacity:.12;transform:scale(.9)}
+  .grid.searching .app.match{opacity:1;transform:scale(1)}
+
+  .app{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:grab;transition:opacity .3s var(--spring),transform .3s var(--spring);user-select:none}
+  .app:active{cursor:grabbing}
+  .app .tile{
+    width:60px;height:60px;position:relative;display:grid;place-items:center;
+    transition:transform .18s var(--spring),box-shadow .3s,border-radius .3s;
+    box-shadow:0 8px 20px -8px rgba(0,0,0,.55);
+  }
+  .app:active .tile{transform:scale(.86)}
+  .app .glyph{font-size:26px;line-height:1;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+  .app .label{font-size:11px;font-weight:500;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.55);max-width:70px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .app.drag-over .tile{transform:scale(1.12);box-shadow:0 0 0 3px var(--accent),0 8px 30px -6px var(--accent)}
+  .app.folder .tile{background:var(--glass)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-line)!important;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;padding:8px}
+  .app.folder .mini{font-size:12px;display:grid;place-items:center}
+
+  /* dock */
+  .dock{position:absolute;left:16px;right:16px;bottom:26px;z-index:12;height:92px;border-radius:32px;
+    background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(28px) saturate(1.5);-webkit-backdrop-filter:blur(28px) saturate(1.5);
+    display:flex;align-items:center;justify-content:space-around;padding:0 16px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 20px 40px -18px rgba(0,0,0,.7)}
+  .dock .app .label{display:none}
+
+  .grabber{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);width:130px;height:5px;border-radius:3px;background:rgba(255,255,255,.55);z-index:60;cursor:grab}
+
+  /* control center */
+  .cc{position:absolute;inset:0;z-index:55;transform:translateY(100%);transition:transform .5s var(--spring);pointer-events:none}
+  .cc.open{transform:translateY(0);pointer-events:auto}
+  .cc-scrim{position:absolute;inset:0;background:rgba(4,6,12,.35);backdrop-filter:blur(30px) saturate(1.3);-webkit-backdrop-filter:blur(30px) saturate(1.3)}
+  .cc-inner{position:absolute;inset:0;padding:64px 20px 30px;display:flex;flex-direction:column;gap:14px}
+  .cc-row{display:flex;gap:14px}
+  .tile-glass{background:var(--glass);border:1px solid var(--glass-line);border-radius:26px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .toggles{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1}
+  .toggle{display:flex;align-items:center;gap:12px;padding:16px;cursor:pointer;transition:transform .15s}
+  .toggle:active{transform:scale(.96)}
+  .toggle .ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:17px;background:rgba(255,255,255,.16);transition:background .25s,box-shadow .25s}
+  .toggle.on .ic{background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 4px 16px -2px var(--accent)}
+  .toggle .tl b{display:block;font-size:13px}.toggle .tl span{font-size:11px;color:var(--ink-dim)}
+  .bright{padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+  .bright label{font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:8px}
+  .music{padding:18px;display:flex;flex-direction:column;gap:14px}
+  .music .now{display:flex;align-items:center;gap:14px}
+  .art{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#ff8bce,#7c6bff 60%,#4dd6ff);flex:0 0 auto;box-shadow:0 6px 18px -4px rgba(124,107,255,.6)}
+  .music .meta b{display:block;font-size:15px}.music .meta span{font-size:12px;color:var(--ink-dim)}
+  .music .ctrls{display:flex;align-items:center;justify-content:center;gap:30px;font-size:20px}
+  .music .ctrls button{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;transition:transform .15s}
+  .music .ctrls button:active{transform:scale(.8)}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:5px;border-radius:3px;background:rgba(255,255,255,.25);outline:none;width:100%}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border:none;border-radius:50%;background:#fff;cursor:pointer}
+
+  /* folder overlay */
+  .folder-view{position:absolute;inset:0;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+  .folder-view.open{display:flex}
+  .folder-scrim{position:absolute;inset:0;background:rgba(4,6,12,.45);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px)}
+  .folder-panel{position:relative;width:80%;background:var(--glass);border:1px solid var(--glass-line);border-radius:34px;padding:26px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+  .folder-panel h3{text-align:center;font-size:15px;margin-bottom:20px;font-weight:600}
+  .folder-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px 12px}
+
+  /* bottom customization tray (outside phone, real controls) */
+  .tray{position:relative;width:360px;flex:0 0 auto;align-self:flex-start;display:flex;flex-direction:column;gap:16px}
+  .panel{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:18px 20px;backdrop-filter:blur(10px)}
+  .panel h4{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;font-family:ui-monospace,monospace}
+  .swatches{display:flex;flex-wrap:wrap;gap:8px;max-height:118px;overflow-y:auto;scrollbar-width:thin}
+  .sw{width:38px;height:38px;border-radius:11px;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .2s;flex:0 0 auto}
+  .sw:hover{transform:scale(1.08)}
+  .sw.sel{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+  .packs{display:flex;flex-wrap:wrap;gap:6px;max-height:130px;overflow-y:auto}
+  .pack{font-size:11px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);cursor:pointer;transition:all .18s;color:var(--ink-dim)}
+  .pack:hover{color:#fff;border-color:var(--glass-line)}
+  .pack.sel{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#04060a;font-weight:600;border-color:transparent}
+  .ctrl-row{display:flex;flex-direction:column;gap:7px;margin-top:14px}
+  .ctrl-row label{font-size:12px;color:var(--ink-dim);display:flex;justify-content:space-between}
+  .filebtn{display:inline-flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;padding:9px 14px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);cursor:pointer;transition:.18s;color:var(--ink)}
+  .filebtn:hover{border-color:var(--accent);color:#fff}
+  .filebtn input{display:none}
+  .hint{font-size:11px;color:var(--ink-faint);margin-top:8px;line-height:1.5}
+  @media (max-width:1150px){.tray{width:390px}}
+</style>
+</head>
+<body>
+
+  <!-- ============ PITCH ============ -->
+  <section class="pitch">
+    <p class="eyebrow">Crystal Blur Launcher</p>
+    <h1>Elevate your home screen to a polished, modern level.</h1>
+    <p>A sleek glass-like launcher that turns 3-D visual flourish into a pure productivity beast — frosted depth, live customization, everything one gesture away.</p>
+    <ul>
+      <li><span class="dot">✦</span><span><b>25 blur wallpapers</b> plus your own photos, all behind real frosted glass.</span></li>
+      <li><span class="dot">◆</span><span><b>35 icon packs</b> — tweak color and padding live across every icon.</span></li>
+      <li><span class="dot">▲</span><span><b>Swipe-up Control Center</b> for quick settings and music.</span></li>
+      <li><span class="dot">■</span><span><b>Drop-to-fold</b> folders and a <b>universal search</b> index.</span></li>
+    </ul>
+  </section>
+
+  <!-- ============ PHONE ============ -->
+  <div class="phone">
+    <div class="screen" id="screen">
+      <canvas id="wall"></canvas>
+      <div id="wallPhoto"></div>
+      <div class="wall-veil"></div>
+
+      <div class="island"></div>
+      <div class="statusbar">
+        <span id="clock">9:41</span>
+        <div class="right">
+          <span>􀖀</span>
+          <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2C11 2 13.2 3 14.8 4.6l-1 1.1C12.4 4.3 10.5 3.5 8.5 3.5S4.6 4.3 3.2 5.7l-1-1.1C3.8 3 6 2 8.5 2Zm0 3c1.4 0 2.7.6 3.6 1.5l-1 1.1c-.7-.7-1.6-1.1-2.6-1.1s-1.9.4-2.6 1.1l-1-1.1C5.8 5.6 7.1 5 8.5 5Zm0 3c.6 0 1.1.2 1.5.6L8.5 10 7 8.6c.4-.4.9-.6 1.5-.6Z" fill="#fff"/></svg>
+          <span class="batt"><i></i></span>
+        </div>
+      </div>
+
+      <!-- HOME -->
+      <div class="home">
+        <div class="searchwrap">
+          <div class="search">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#fff" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <input id="search" placeholder="Search" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <div class="grid" id="grid"></div>
+      </div>
+
+      <!-- DOCK -->
+      <div class="dock" id="dock"></div>
+
+      <!-- CONTROL CENTER -->
+      <div class="grabber" id="grabber"></div>
+      <div class="cc" id="cc">
+        <div class="cc-scrim"></div>
+        <div class="cc-inner">
+          <div class="cc-row">
+            <div class="toggles">
+              <div class="toggle tile-glass on" data-t><div class="ic">􀙇</div><div class="tl"><b>Wi-Fi</b><span>ExodusNet</span></div></div>
+              <div class="toggle tile-glass on" data-t><div class="ic">􀺤</div><div class="tl"><b>Bluetooth</b><span>On</span></div></div>
+              <div class="toggle tile-glass" data-t><div class="ic">✈</div><div class="tl"><b>Airplane</b><span>Off</span></div></div>
+              <div class="toggle tile-glass" data-t><div class="ic">􀉞</div><div class="tl"><b>Flashlight</b><span>Off</span></div></div>
+            </div>
+          </div>
+          <div class="bright tile-glass">
+            <label>☀︎ Brightness</label>
+            <input type="range" id="bright" min="15" max="100" value="100">
+          </div>
+          <div class="music tile-glass">
+            <div class="now">
+              <div class="art"></div>
+              <div class="meta"><b id="trk">Aurora Drift</b><span id="art">Crystal Sound</span></div>
+            </div>
+            <input type="range" id="scrub" min="0" max="100" value="34">
+            <div class="ctrls">
+              <button id="prev">􀊎</button>
+              <button id="play">􀊆</button>
+              <button id="next">􀊐</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOLDER -->
+      <div class="folder-view" id="folderView">
+        <div class="folder-scrim" id="folderScrim"></div>
+        <div class="folder-panel">
+          <h3 id="folderTitle">Folder</h3>
+          <div class="folder-grid" id="folderGrid"></div>
+        </div>
+      </div>
+
+      <div class="brightness" id="brightLayer"></div>
+    </div>
+  </div>
+
+  <!-- ============ CUSTOMIZATION TRAY ============ -->
+  <aside class="tray">
+    <div class="panel">
+      <h4>Wallpaper · 25 blur styles</h4>
+      <div class="swatches" id="swatches"></div>
+      <label class="filebtn">📷 Use your own photo
+        <input type="file" id="photo" accept="image/*">
+      </label>
+      <p class="hint">Every wallpaper renders behind live frosted glass. Pick one — or drop in your own.</p>
+    </div>
+    <div class="panel">
+      <h4>Icon Pack · 35 variants</h4>
+      <div class="packs" id="packs"></div>
+      <div class="ctrl-row">
+        <label>Icon color <span id="hueVal">210°</span></label>
+        <input type="range" id="hue" min="0" max="360" value="210">
+      </div>
+      <div class="ctrl-row">
+        <label>Icon padding <span id="padVal">20px</span></label>
+        <input type="range" id="pad" min="6" max="34" value="20">
+      </div>
+    </div>
+  </aside>
+
+<script>
+(()=>{
+  "use strict";
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+  /* ---------- clock ---------- */
+  const clock=$("#clock");
+  function tick(){const d=new Date();let h=d.getHours()%12||12;clock.textContent=h+":"+String(d.getMinutes()).padStart(2,"0");}
+  tick();setInterval(tick,10000);
+
+  /* ---------- 25 blur wallpapers (mesh gradients on canvas) ---------- */
+  const WALLS=[
+    ["#3a1c71","#d76d77","#ffaf7b"],["#0f2027","#203a43","#2c5364"],["#654ea3","#eaafc8"],
+    ["#00c6ff","#0072ff"],["#f857a6","#ff5858"],["#4facfe","#00f2fe"],["#43e97b","#38f9d7"],
+    ["#fa709a","#fee140"],["#30cfd0","#330867"],["#a8edea","#fed6e3","#5f72be"],
+    ["#5ee7df","#b490ca"],["#c471f5","#fa71cd"],["#48c6ef","#6f86d6"],["#f78ca0","#f9748f","#fd868c"],
+    ["#0ba360","#3cba92"],["#ff9a9e","#fecfef"],["#2af598","#009efd"],["#ee9ca7","#ffdde1"],
+    ["#7028e4","#e5b2ca"],["#1e3c72","#2a5298"],["#ff6e7f","#bfe9ff"],["#e100ff","#7f00ff"],
+    ["#232526","#414345","#ff512f"],["#00d2ff","#3a47d5"],["#f4c4f3","#fc67fa"]
+  ];
+  const cv=$("#wall"),ctx=cv.getContext("2d");let curWall=0,W,H;
+  function size(){const r=$("#screen").getBoundingClientRect();W=cv.width=r.width;H=cv.height=r.height;draw();}
+  function draw(){
+    const cols=WALLS[curWall];
+    const g=ctx.createLinearGradient(0,0,W,H);
+    cols.forEach((c,i)=>g.addColorStop(i/(cols.length-1),c));
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    // soft mesh blobs for depth
+    cols.forEach((c,i)=>{
+      const rg=ctx.createRadialGradient(W*(.2+.3*i),H*(.15+.25*i),0,W*(.2+.3*i),H*(.15+.25*i),W*.8);
+      rg.addColorStop(0,c+"cc");rg.addColorStop(1,c+"00");
+      ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+    });
+  }
+  window.addEventListener("resize",size);
+
+  const sw=$("#swatches");
+  WALLS.forEach((c,i)=>{
+    const d=document.createElement("div");d.className="sw"+(i===0?" sel":"");
+    d.style.background=`linear-gradient(135deg,${c.join(",")})`;
+    d.onclick=()=>{curWall=i;$("#wallPhoto").style.opacity=0;draw();$$(".sw").forEach(x=>x.classList.remove("sel"));d.classList.add("sel");};
+    sw.appendChild(d);
+  });
+
+  $("#photo").onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const url=URL.createObjectURL(f);
+    $("#wallPhoto").style.backgroundImage=`url(${url})`;
+    $("#wallPhoto").style.opacity=1;
+    $$(".sw").forEach(x=>x.classList.remove("sel"));
+  };
+
+  /* ---------- 35 icon packs ---------- */
+  const PACKS=["Squircle","Circle","Rounded","Glass","Neon Glow","Flat","Gradient","Monochrome","Outline","Clay",
+    "Frost","Aurora","Chrome","Matte","Bevel","Pill","Hex","Diamond","Ink","Vapor","Solar","Lunar","Prism","Onyx",
+    "Coral","Mint","Ember","Slate","Ivory","Cobalt","Rose","Jade","Amber","Steel","Velvet"];
+  const grid=$("#grid"),dock=$("#dock");
+  const APPS=[
+    ["Messages","💬"],["Photos","🌸"],["Music","🎵"],["Camera","📷"],
+    ["Weather","⛅"],["Clock","⏰"],["Notes","📝"],["Maps","🗺️"],
+    ["Calendar","📅"],["Mail","✉️"],["Files","📁"],["Health","❤️"],
+    ["Wallet","👛"],["Podcasts","🎙️"],["App Store","🛍️"],["Settings","⚙️"]
+  ];
+  const DOCKAPPS=[["Phone","📞"],["Safari","🧭"],["Messages","💬"],["Music","🎵"]];
+
+  function iconStyle(el,pack){
+    const hue=getComputedStyle(document.documentElement).getPropertyValue("--icon-hue").trim();
+    const t=el.querySelector(".tile");
+    const c1=`hsl(${hue},90%,62%)`,c2=`hsl(${(+hue+50)%360},85%,55%)`;
+    t.style.cssText="";t.style.borderRadius="18px";
+    switch(pack){
+      case"Circle":t.style.borderRadius="50%";t.style.background=`linear-gradient(135deg,${c1},${c2})`;break;
+      case"Rounded":t.style.borderRadius="14px";t.style.background=`linear-gradient(135deg,${c1},${c2})`;break;
+      case"Glass":case"Frost":t.style.background="var(--glass)";t.style.border="1px solid var(--glass-line)";t.style.backdropFilter="blur(10px)";t.style.borderRadius="17px";break;
+      case"Neon Glow":t.style.background="#0c0e18";t.style.border=`1.5px solid ${c1}`;t.style.boxShadow=`0 0 16px -2px ${c1},inset 0 0 10px -4px ${c1}`;t.style.borderRadius="16px";break;
+      case"Flat":case"Matte":t.style.background=c1;break;
+      case"Monochrome":case"Onyx":case"Slate":case"Steel":t.style.background=`hsl(${hue},12%,${pack==="Ivory"?85:26}%)`;break;
+      case"Outline":t.style.background="transparent";t.style.border=`1.6px solid ${c1}`;break;
+      case"Clay":t.style.background=c1;t.style.boxShadow=`inset 3px 3px 8px rgba(255,255,255,.4),inset -3px -3px 8px rgba(0,0,0,.25),0 8px 18px -6px rgba(0,0,0,.5)`;t.style.borderRadius="20px";break;
+      case"Chrome":case"Prism":t.style.background=`linear-gradient(135deg,#eee,${c1},#bbb,${c2})`;break;
+      case"Hex":t.style.borderRadius="14px";t.style.background=`linear-gradient(135deg,${c1},${c2})`;t.style.clipPath="polygon(25% 5%,75% 5%,100% 50%,75% 95%,25% 95%,0 50%)";break;
+      case"Diamond":t.style.background=`linear-gradient(135deg,${c1},${c2})`;t.style.borderRadius="14px";break;
+      case"Pill":t.style.borderRadius="30px";t.style.background=`linear-gradient(135deg,${c1},${c2})`;break;
+      case"Ivory":t.style.background="hsl(40,30%,90%)";break;
+      default:t.style.background=`linear-gradient(135deg,${c1},${c2})`;t.style.borderRadius="18px";
+    }
+  }
+  let curPack="Squircle";
+  function makeApp(name,glyph,inDock){
+    const a=document.createElement("div");a.className="app";a.draggable=!inDock;a.dataset.name=name;
+    a.innerHTML=`<div class="tile"><span class="glyph">${glyph}</span></div>`+(inDock?"":`<span class="label">${name}</span>`);
+    iconStyle(a,curPack);
+    const t=a.querySelector(".tile");t.style.padding="var(--icon-pad)".replace("var(--icon-pad)",getComputedStyle(document.documentElement).getPropertyValue("--icon-pad")+"px");
+    if(!inDock)wireDrag(a);
+    a.querySelector(".tile").addEventListener("click",e=>{if(a.classList.contains("folder"))openFolder(a);});
+    return a;
+  }
+  function renderAll(){
+    grid.innerHTML="";dock.innerHTML="";
+    APPS.forEach(([n,g])=>grid.appendChild(makeApp(n,g,false)));
+    DOCKAPPS.forEach(([n,g])=>dock.appendChild(makeApp(n,g,true)));
+    applyPad();
+  }
+  function restyleAll(){$$(".app").forEach(a=>{if(!a.classList.contains("folder"))iconStyle(a,curPack);});applyPad();}
+  function applyPad(){const p=getComputedStyle(document.documentElement).getPropertyValue("--icon-pad").trim();$$(".app:not(.folder) .tile").forEach(t=>t.style.padding=p+"px");}
+
+  const packBox=$("#packs");
+  PACKS.forEach((p,i)=>{const b=document.createElement("div");b.className="pack"+(i===0?" sel":"");b.textContent=p;
+    b.onclick=()=>{curPack=p;restyleAll();$$(".pack").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");};packBox.appendChild(b);});
+
+  $("#hue").oninput=e=>{document.documentElement.style.setProperty("--icon-hue",e.target.value);$("#hueVal").textContent=e.target.value+"°";restyleAll();};
+  $("#pad").oninput=e=>{document.documentElement.style.setProperty("--icon-pad",e.target.value);$("#padVal").textContent=e.target.value+"px";applyPad();};
+
+  /* ---------- drag to fold ---------- */
+  let dragEl=null;
+  function wireDrag(a){
+    a.addEventListener("dragstart",e=>{dragEl=a;e.dataTransfer.effectAllowed="move";});
+    a.addEventListener("dragover",e=>{e.preventDefault();if(dragEl&&dragEl!==a)a.classList.add("drag-over");});
+    a.addEventListener("dragleave",()=>a.classList.remove("drag-over"));
+    a.addEventListener("drop",e=>{e.preventDefault();a.classList.remove("drag-over");if(dragEl&&dragEl!==a)fold(a,dragEl);});
+  }
+  function fold(target,dropped){
+    let apps=[];
+    if(target.classList.contains("folder")){apps=JSON.parse(target.dataset.apps);}
+    else{apps=[[target.dataset.name,target.querySelector(".glyph").textContent]];}
+    if(dropped.classList.contains("folder")){apps=apps.concat(JSON.parse(dropped.dataset.apps));}
+    else{apps.push([dropped.dataset.name,dropped.querySelector(".glyph").textContent]);}
+    dropped.remove();
+    target.classList.add("folder");target.dataset.apps=JSON.stringify(apps);
+    target.dataset.name="Folder";
+    const lbl=target.querySelector(".label");if(lbl)lbl.textContent="Folder";
+    const tile=target.querySelector(".tile");
+    tile.innerHTML=apps.slice(0,4).map(([n,g])=>`<span class="mini">${g}</span>`).join("");
+    iconStyle(target,curPack);
+  }
+  function openFolder(f){
+    const apps=JSON.parse(f.dataset.apps);
+    $("#folderTitle").textContent="Folder";
+    $("#folderGrid").innerHTML=apps.map(([n,g])=>`<div class="app"><div class="tile" style="background:linear-gradient(135deg,hsl(${getComputedStyle(document.documentElement).getPropertyValue('--icon-hue')},90%,62%),hsl(260,85%,55%));border-radius:18px;padding:18px"><span class="glyph">${g}</span></div><span class="label">${n}</span></div>`).join("");
+    $("#folderView").classList.add("open");
+  }
+  $("#folderScrim").onclick=()=>$("#folderView").classList.remove("open");
+
+  /* ---------- universal search ---------- */
+  $("#search").addEventListener("input",e=>{
+    const q=e.target.value.trim().toLowerCase();
+    if(!q){grid.classList.remove("searching");$$(".app").forEach(a=>a.classList.remove("match"));return;}
+    grid.classList.add("searching");
+    $$("#grid .app").forEach(a=>{
+      const name=(a.dataset.name||"").toLowerCase();
+      a.classList.toggle("match",fuzzy(q,name));
+    });
+  });
+  function fuzzy(q,s){let i=0;for(const ch of s){if(ch===q[i])i++;if(i===q.length)return true;}return q.split("").every(c=>s.includes(c))&&s.includes(q[0]);}
+
+  /* ---------- control center ---------- */
+  const cc=$("#cc"),screen=$("#screen");
+  $("#grabber").addEventListener("click",()=>cc.classList.add("open"));
+  let sy=null;
+  screen.addEventListener("touchstart",e=>{sy=e.touches[0].clientY;},{passive:true});
+  screen.addEventListener("touchend",e=>{if(sy===null)return;const dy=e.changedTouches[0].clientY-sy;const h=screen.getBoundingClientRect();const fromBottom=sy>h.top+h.height*.75;if(fromBottom&&dy<-40)cc.classList.add("open");if(cc.classList.contains("open")&&dy>60)cc.classList.remove("open");sy=null;});
+  // mouse drag on grabber
+  let md=false,mdy=0;
+  $("#grabber").addEventListener("mousedown",e=>{md=true;mdy=e.clientY;});
+  window.addEventListener("mouseup",e=>{if(md&&mdy-e.clientY>30)cc.classList.add("open");md=false;});
+  $(".cc-scrim").addEventListener("click",()=>cc.classList.remove("open"));
+
+  $$("[data-t]").forEach(t=>t.addEventListener("click",()=>{t.classList.toggle("on");const s=t.querySelector(".tl span");if(s)s.textContent=t.classList.contains("on")?(t.querySelector("b").textContent==="Wi-Fi"?"ExodusNet":"On"):"Off";}));
+  $("#bright").addEventListener("input",e=>{$("#brightLayer").style.opacity=(1-e.target.value/100)*.7;});
+
+  const TRACKS=[["Aurora Drift","Crystal Sound"],["Frosted Glass","Nova Wave"],["Blur City","Prism"],["Deep Focus","Monokern"]];
+  let ti=0,playing=true;
+  function setTrack(){$("#trk").textContent=TRACKS[ti][0];$("#art").textContent=TRACKS[ti][1];}
+  $("#next").onclick=()=>{ti=(ti+1)%TRACKS.length;setTrack();};
+  $("#prev").onclick=()=>{ti=(ti-1+TRACKS.length)%TRACKS.length;setTrack();};
+  $("#play").onclick=()=>{playing=!playing;$("#play").textContent=playing?"􀊆":"􀊐";};
+
+  renderAll();size();
+})();
+</script>
+</body>
+</html>

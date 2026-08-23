@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Pipeline Council — Root Cause & Fixes</title>
+<style>
+  :root{--bg:#0a0a0c;--card:#141418;--ink:#ECECEC;--dim:#9aa0aa;--acc:#5BE3B3;--acc2:#7aa2ff;--red:#ff7a7a;--warn:#ffcf6b;--line:#23232b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.62 -apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased;padding:0 0 80px}
+  .wrap{max-width:780px;margin:0 auto;padding:0 20px}
+  header{padding:46px 20px 26px;text-align:center;border-bottom:1px solid var(--line)}
+  h1{font-size:28px;margin:0 0 8px;letter-spacing:-.02em}
+  .badge{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#04130d;background:var(--acc);padding:4px 11px;border-radius:999px;margin:6px 4px 0}
+  .badge.council{background:var(--acc2);color:#02112e}
+  .sub{color:var(--dim);margin-top:14px;font-size:15px}
+  h2{font-size:20px;margin:36px 0 12px;letter-spacing:-.01em}
+  h2 .n{color:var(--acc2);margin-right:8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+  .verdict{border-left:4px solid var(--red);padding-left:16px;margin:14px 0}
+  .verdict b{color:var(--ink)}
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;background:#1d1d24;color:var(--acc);padding:2px 6px;border-radius:5px;font-size:13px}
+  .fix{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .fix:last-child{border-bottom:0}
+  .fix .st{flex:0 0 auto;font-size:12px;font-weight:700;padding:3px 9px;border-radius:7px;margin-top:2px}
+  .st.done{background:rgba(91,227,179,.16);color:var(--acc)}
+  .st.todo{background:rgba(255,207,107,.16);color:var(--warn)}
+  .fix .body{flex:1}
+  .fix .ttl{font-weight:650}
+  .fix .d{color:var(--dim);font-size:14px;margin-top:3px}
+  .stat{display:inline-block;background:#1d1d24;border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:4px 6px 4px 0;font-size:14px}
+  .stat b{color:var(--acc);font-variant-numeric:tabular-nums}
+  .note{font-size:14px;color:var(--dim)} .note b{color:var(--ink)}
+  .reject{color:var(--dim);font-size:14px;padding:4px 0}
+  .reject b{color:var(--red)}
+  footer{text-align:center;color:#555b66;font-size:12.5px;margin-top:38px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Voice Pipeline — Root Cause &amp; Fixes</h1>
+    <div class="badge council">11-agent research council</div>
+    <div class="badge">core fixes live</div>
+    <div class="sub">Why the call went dark after the first sentence — and what's fixed. 5 researchers, 5 adversarial skeptics, 1 chief synthesizer. 984k tokens, verified against live logs.</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="n">◆</span>The verdict</h2>
+  <div class="card">
+    <div class="verdict">
+      <p style="margin:0 0 8px;"><b>The STT server was crashing itself.</b> The receiver fired up to <b>3 concurrent transcription requests</b> (<code>inflightSTT&lt;3</code>) into a server that can only do one at a time. The 2nd/3rd queued behind a 14-16s inference, hit the 20s client timeout, the socket was destroyed mid-request → <code>BrokenPipeError</code> crashed the worker → <b>every following buffer returned empty</b> until launchd restarted it.</p>
+      <p style="margin:0;" class="note">That's "first utterance works, then dark": the first request hits a healthy idle server; the reply it triggers starts a storm of concurrent re-requests that wedge the server, and it never recovers within the call.</p>
+    </div>
+    <div style="margin-top:14px">
+      <span class="stat"><b>89%</b> of speech → empty transcript</span>
+      <span class="stat"><b>138/151</b> loud-empties within 30s of a crash</span>
+      <span class="stat"><b>105</b> BrokenPipe + <b>123</b> Traceback</span>
+      <span class="stat"><b>240</b> SPEAK vs <b>112</b> injected (2.1× reply-storm)</span>
+    </div>
+  </div>
+
+  <h2><span class="n">✓</span>Fixes — live now</h2>
+  <div class="card">
+    <div class="fix"><span class="st done">LIVE</span><div class="body"><div class="ttl">FIX 1 — Serialize the STT requests</div><div class="d"><code>xen-call-receiver.js:260</code> · <code>inflightSTT&lt;3</code> → <code>&lt;1</code>. The server is single-threaded anyway; concurrent requests only created the timeout→crash chain. The 250ms tick still accumulates the next utterance — nothing lost.</div></div></div>
+    <div class="fix"><span class="st done">LIVE</span><div class="body"><div class="ttl">FIX 2 — Crash-proof the server</div><div class="d"><code>xen-stt-server.py:59-74</code> · swallow <code>BrokenPipeError</code>/<code>ConnectionResetError</code> on <b>both</b> the success and error write paths. A dropped socket can never crash the worker again.</div></div></div>
+    <div class="fix"><span class="st done">LIVE</span><div class="body"><div class="ttl">FIX 3 — Kill the reply-storm ("two voices")</div><div class="d"><code>xen-call-receiver.js</code> tee · the warm twin logged the same reply 7-14×/turn → you heard it doubled/overlapping. Now speaks only the <b>first</b> clean line per inject (gated on <code>_lastInjectAt</code>); multi-turn replies still speak.</div></div></div>
+    <div class="fix"><span class="st done">LIVE</span><div class="body"><div class="ttl">VVSVEI flood guard</div><div class="d"><code>omnimind.js</code> /voice-transcript · the web-voice path skipped dedup entirely, so one "Hello hello" injected 4×. Now a strict 1200ms exact-duplicate guard always applies; genuine repeats &gt;1.2s apart still pass.</div></div></div>
+  </div>
+
+  <h2><span class="n">▸</span>Fixes — safe follow-ups (pending)</h2>
+  <div class="card">
+    <div class="fix"><span class="st todo">NEXT</span><div class="body"><div class="ttl">FIX 4 — Shorten the echo tail</div><div class="d"><code>xen-call-receiver.js:125</code> · <code>max(1500,durMs)+2800</code> → <code>durMs+800</code>. 4.3s back-to-back keeps the capture gate armed; ~800ms covers real echo without swallowing your next turn.</div></div></div>
+    <div class="fix"><span class="st todo">NEXT</span><div class="body"><div class="ttl">FIX 5 — Truthful WAV rate (accuracy)</div><div class="d"><code>STT_RATE</code> → 8000. The wire is genuinely 8k (all frames 320B/20ms). The 16k header doesn't cause empties — it just mangles words. Fixing it sharpens accuracy.</div></div></div>
+    <div class="fix"><span class="st todo">NEXT</span><div class="body"><div class="ttl">FIX 7 — Quiet-line gain floor</div><div class="d"><code>:319</code> <code>rms&gt;12→40</code>, <code>:274</code> gain cap <code>80→20</code>. Stops amplifying the quiet Telnyx line-hiss into junk buffers that whisper returns empty for.</div></div></div>
+    <div class="fix"><span class="st todo">VERIFY</span><div class="body"><div class="ttl">FIX 8 — STT supervision</div><div class="d">61 <code>ECONNREFUSED</code> suggest ragged restarts — confirm launchd actually supervises the STT process (it was once an orphan).</div></div></div>
+  </div>
+
+  <h2><span class="n">?</span>Why 3 concurrent requests happened</h2>
+  <div class="card">
+    <p class="note" style="margin:0 0 8px;">The receiver doesn't <i>receive</i> 3 requests — it <b>manufactures</b> them. It chops your continuous speech into chunks and flushes one to transcription every 250ms when it hears a pause. But each transcription takes <b>14-16 seconds</b> on this hardware. So while request #1 is still inferring, the tick fires #2 and #3 for your next words. The old <code>inflightSTT&lt;3</code> allowed all three; the single-threaded server queued them, they hit the 20s timeout, and crashed it.</p>
+    <p class="note" style="margin:0;"><b>Deeper root (next optimization):</b> 14-16s/transcription is slow. Serializing stops the crash, but truly snappy voice needs a faster STT path — tiny/int8 whisper, streaming partials, Metal/GPU acceleration, Apple on-device Speech, or a cloud STT for the call leg.</p>
+  </div>
+
+  <h2><span class="n">✕</span>Rejected as red herrings</h2>
+  <div class="card">
+    <p class="reject"><b>"8k-vs-16k header is the cause of empties."</b> Refuted by a live model test — a genuine-8k buffer transcribes non-empty at <i>both</i> header rates. A wrong header mangles words; it doesn't blank them.</p>
+    <p class="reject"><b>"vad_filter / no_speech_threshold rejects real speech."</b> Refuted — <code>vad_filter=False</code> already; loud buffers empty because the server is <i>crashed</i>, not rejected.</p>
+    <p class="reject"><b>"Permanent one-way dark latch from the echo-gate."</b> Refuted — capture demonstrably recovers between storms. The dark is episodic per crash, not a latch. The echo-gate is an amplifier, not the root.</p>
+  </div>
+
+  <footer>Xen voice council · 2026-06-20 · call line +1 470-369-6463 · files: xen-call-receiver.js, xen-stt-server.py, omnimind.js</footer>
+</div>
+</body>
+</html>

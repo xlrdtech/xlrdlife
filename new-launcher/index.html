@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>NewLauncher — That modern, slightly futuristic feel, for any device</title>
+<meta name="description" content="NewLauncher: a minimal monochrome dot-matrix launcher with Nothing-OS vibes — for any device.">
+<style>
+  :root{
+    --bg:#000; --ink:#fff; --dim:#8a8a8a; --dimmer:#4a4a4a;
+    --line:#1c1c1c; --panel:#0c0c0c; --red:#d71921;
+    --dot:#e8e8e8; --dot-off:#242424;
+    --sans:"Helvetica Neue",Arial,"Segoe UI",system-ui,sans-serif;
+    --gap:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:#050505;color:var(--ink);font-family:var(--sans);
+    display:flex;align-items:center;justify-content:center;gap:40px;
+    min-height:100vh;padding:28px;flex-wrap:wrap;
+    background-image:radial-gradient(circle at 50% 0%,#111 0%,#050505 60%);
+  }
+
+  /* ---------- side rail ---------- */
+  .rail{width:210px;max-width:90vw}
+  .rail h1{
+    font-size:13px;letter-spacing:.42em;text-transform:uppercase;font-weight:800;
+    border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:6px;
+  }
+  .rail h1 .dot{color:var(--red)}
+  .rail .tag{color:var(--dim);font-size:11px;letter-spacing:.12em;line-height:1.6;margin:12px 0 22px;text-transform:uppercase}
+  .ctl{margin-bottom:20px}
+  .ctl-label{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--dimmer);margin-bottom:9px;font-weight:800}
+  .seg{display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+  .seg button{
+    flex:1;background:transparent;color:var(--dim);border:0;padding:8px 0;
+    font-family:var(--sans);font-size:10px;letter-spacing:.14em;font-weight:700;
+    text-transform:uppercase;cursor:pointer;transition:.18s;border-right:1px solid var(--line)
+  }
+  .seg button:last-child{border-right:0}
+  .seg button[aria-pressed=true]{background:var(--ink);color:#000}
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:2px;background:var(--line);outline:0;margin:8px 0 2px
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);cursor:pointer;border:2px solid #000;box-shadow:0 0 0 1px var(--ink)
+  }
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--line)}
+  .sw{width:34px;height:18px;border:1px solid var(--dimmer);border-radius:20px;position:relative;cursor:pointer;transition:.2s;flex:0 0 auto}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--dim);transition:.2s}
+  .sw[aria-pressed=true]{border-color:var(--ink);background:var(--ink)}
+  .sw[aria-pressed=true]::after{left:16px;background:#000}
+  .hint{color:var(--dimmer);font-size:9px;letter-spacing:.1em;margin-top:22px;line-height:1.7;text-transform:uppercase}
+
+  /* ---------- phone ---------- */
+  .phone{
+    width:340px;max-width:92vw;aspect-ratio:9/19.5;background:#000;
+    border-radius:44px;border:1px solid #262626;
+    box-shadow:0 0 0 8px #0a0a0a,0 40px 90px rgba(0,0,0,.8),inset 0 0 40px rgba(255,255,255,.02);
+    position:relative;overflow:hidden;user-select:none;touch-action:none
+  }
+  .screen{position:absolute;inset:0;border-radius:43px;overflow:hidden}
+  #fx{position:absolute;inset:0;z-index:60;pointer-events:none}
+
+  /* status bar */
+  .status{position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:11px;font-weight:700;letter-spacing:.08em;z-index:20}
+  .status .r{display:flex;gap:6px;align-items:center}
+  .bat{width:22px;height:11px;border:1px solid var(--ink);border-radius:2px;position:relative;display:inline-block}
+  .bat::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:5px;background:var(--ink)}
+  .bat i{position:absolute;inset:1px;right:auto;width:70%;background:var(--ink);display:block}
+
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:96px;height:26px;background:#000;border-radius:16px;z-index:30;border:1px solid #161616}
+
+  /* home */
+  .home{position:absolute;inset:0;padding:56px 20px 96px;display:flex;flex-direction:column}
+  .clock-widget{margin:6px 0 14px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+  .glyph-strip{display:flex;gap:6px;margin:2px 0 14px;justify-content:center;flex-wrap:wrap}
+  .glyph{width:26px;height:26px;border:1px solid var(--line);border-radius:50%;position:relative;transition:.2s}
+  .glyph.on{border-color:var(--ink);box-shadow:0 0 8px rgba(255,255,255,.35)}
+  .glyph.red.on{border-color:var(--red);box-shadow:0 0 10px rgba(215,25,33,.6)}
+  .glyph::after{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--dimmer);transition:.2s}
+  .glyph.on::after{background:var(--ink)}
+  .glyph.red.on::after{background:var(--red)}
+
+  .weather-widget{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:6px;padding:12px 16px;margin-bottom:16px}
+  .weather-widget .t{font-size:30px;font-weight:800;letter-spacing:-.02em}
+  .weather-widget .s{font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;text-align:right;line-height:1.6}
+
+  .grid{display:grid;gap:var(--gap);flex:1;align-content:start}
+  .app{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform .12s}
+  .app:active{transform:scale(.88)}
+  .app canvas{display:block}
+  .app .lbl{font-size:8px;letter-spacing:.14em;font-weight:700;text-transform:uppercase;color:var(--ink);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+  .dock{position:absolute;left:16px;right:16px;bottom:26px;height:64px;border:1px solid var(--line);border-radius:20px;display:flex;align-items:center;justify-content:space-around;padding:0 10px;background:rgba(10,10,10,.6);backdrop-filter:blur(8px);z-index:15}
+  .page-dots{position:absolute;bottom:98px;left:0;right:0;display:flex;gap:6px;justify-content:center;z-index:15}
+  .page-dots i{width:5px;height:5px;border-radius:50%;background:var(--dimmer)}
+  .page-dots i.on{background:var(--ink)}
+
+  .hbar{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);width:120px;height:4px;border-radius:4px;background:#333;z-index:40}
+
+  /* drawer */
+  .drawer{position:absolute;inset:0;background:rgba(0,0,0,.94);z-index:45;transform:translateY(100%);transition:transform .4s cubic-bezier(.16,1,.3,1);padding:52px 18px 20px;display:flex;flex-direction:column}
+  .drawer.open{transform:translateY(0)}
+  .search{width:100%;background:transparent;border:1px solid var(--line);border-radius:4px;color:var(--ink);padding:12px 14px;font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px}
+  .search::placeholder{color:var(--dimmer);letter-spacing:.24em}
+  .drawer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;overflow-y:auto;align-content:start}
+  .drawer-close{position:absolute;top:16px;right:20px;color:var(--dim);font-size:10px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;background:0;border:0;font-family:var(--sans);font-weight:700}
+
+  /* lock flash */
+  .lock{position:absolute;inset:0;background:#000;z-index:70;opacity:0;pointer-events:none;transition:opacity .35s;display:flex;align-items:center;justify-content:center}
+  .lock.on{opacity:1}
+  .lock span{font-size:10px;letter-spacing:.4em;color:var(--dim);text-transform:uppercase}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<aside class="rail">
+  <h1>NEW<span class="dot">.</span>LAUNCHER</h1>
+  <p class="tag">That modern, slightly futuristic feel — for any device.</p>
+
+  <div class="ctl">
+    <div class="ctl-label">Grid Density</div>
+    <div class="seg" id="grid-seg">
+      <button data-cols="4" aria-pressed="false">4×5</button>
+      <button data-cols="5" aria-pressed="true">5×6</button>
+      <button data-cols="6" aria-pressed="false">6×7</button>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <div class="ctl-label">Icon Style</div>
+    <div class="seg" id="icon-seg">
+      <button data-style="matrix" aria-pressed="true">Matrix</button>
+      <button data-style="outline" aria-pressed="false">Outline</button>
+      <button data-style="filled" aria-pressed="false">Filled</button>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <div class="ctl-label">Mono Intensity</div>
+    <input type="range" id="intensity" min="20" max="100" value="90">
+  </div>
+
+  <div class="ctl">
+    <div class="ctl-label">Widgets</div>
+    <div class="toggle-row">Clock<div class="sw" id="w-clock" aria-pressed="true"></div></div>
+    <div class="toggle-row">Weather<div class="sw" id="w-weather" aria-pressed="true"></div></div>
+    <div class="toggle-row">Glyph Strip<div class="sw" id="w-glyph" aria-pressed="true"></div></div>
+  </div>
+
+  <div class="ctl">
+    <div class="ctl-label">Gestures</div>
+    <div class="toggle-row" style="border:0">Swipe ↑<select class="gsel">Drawer</select></div>
+  </div>
+
+  <p class="hint">Swipe up on the phone for the app drawer · double-tap to lock · tap the clock to toggle · not limited to Nothing devices.</p>
+</aside>
+
+<div class="phone">
+  <div class="island"></div>
+  <div class="screen" id="screen">
+    <div class="status">
+      <span id="clk">9:41</span>
+      <span class="r">MATRIX 5G · <span class="bat"><i></i></span></span>
+    </div>
+
+    <div class="home" id="home">
+      <div class="clock-widget" id="clockw"><canvas id="bigclock" width="280" height="64"></canvas></div>
+      <div class="glyph-strip" id="glyphs">
+        <div class="glyph on" data-g="0"></div>
+        <div class="glyph" data-g="1"></div>
+        <div class="glyph red" data-g="2"></div>
+        <div class="glyph" data-g="3"></div>
+        <div class="glyph on" data-g="4"></div>
+      </div>
+      <div class="weather-widget" id="weatherw">
+        <div class="t">72°</div>
+        <div class="s">DETROIT<br>CLEAR · WIND 4MPH</div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="page-dots"><i class="on"></i><i></i><i></i></div>
+    <div class="dock" id="dock"></div>
+    <div class="hbar"></div>
+
+    <div class="drawer" id="drawer">
+      <button class="drawer-close" id="dclose">Close</button>
+      <input class="search" id="search" placeholder="Search apps">
+      <div class="drawer-grid" id="drawergrid"></div>
+    </div>
+
+    <div class="lock" id="lock"><span>Locked</span></div>
+    <canvas id="fx"></canvas>
+  </div>
+</div>
+
+<script>
+"use strict";
+const reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+/* ---------- app data ---------- */
+const APPS = [
+  "Phone","Messages","Camera","Photos","Clock","Weather","Notes","Maps",
+  "Calendar","Mail","Settings","Store","Files","Music","Wallet","Health",
+  "Browser","Calc","Voice","Timer","News","Books","Fitness","Cast"
+];
+const DOCK = ["Phone","Messages","Browser","Camera"];
+
+/* ---------- state ---------- */
+const state = { cols:5, rows:6, style:"matrix", intensity:0.9 };
+
+/* ---------- dot-matrix icon renderer ---------- */
+/* deterministic 8x8 glyph per app from its name hash */
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function pattern(name){
+  const h=hash(name); const N=8; const p=[];
+  // build a symmetric, recognisable-ish blob mask from hash bits
+  for(let y=0;y<N;y++){p[y]=[];for(let x=0;x<N;x++){
+    const xx=Math.min(x,N-1-x); // horizontal symmetry
+    const bit=(h>>((y*4+xx)%31))&1;
+    const edge=(x===0||y===0||x===N-1||y===N-1);
+    p[y][x]= edge? ((h>>((x+y)%29))&1) : bit;
+  }}
+  return p;
+}
+function drawIcon(cv,name,size){
+  const dpr=Math.min(devicePixelRatio||1,2);
+  cv.width=size*dpr; cv.height=size*dpr; cv.style.width=size+"px"; cv.style.height=size+"px";
+  const g=cv.getContext("2d"); g.scale(dpr,dpr); g.clearRect(0,0,size,size);
+  const on=`rgba(232,232,232,${state.intensity})`;
+  const off="rgba(255,255,255,0.05)";
+  if(state.style==="matrix"){
+    const N=8,pad=size*0.14,cell=(size-pad*2)/N,r=cell*0.34,pat=pattern(name);
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+      g.beginPath();
+      g.arc(pad+cell*x+cell/2,pad+cell*y+cell/2,r,0,7);
+      g.fillStyle=pat[y][x]?on:off; g.fill();
+    }
+  } else if(state.style==="outline"){
+    g.strokeStyle=on;g.lineWidth=1.6;g.strokeRect(size*0.2,size*0.2,size*0.6,size*0.6);
+    g.beginPath();g.arc(size/2,size/2,size*0.14,0,7);g.stroke();
+    g.fillStyle=on;g.font=`700 ${size*0.34}px ${getComputedStyle(document.body).fontFamily}`;
+    g.textAlign="center";g.textBaseline="middle";g.fillText(name[0].toUpperCase(),size/2,size*0.52);
+  } else { // filled mono
+    g.fillStyle=on;
+    (function round(x,y,w,h,rad){g.beginPath();g.moveTo(x+rad,y);g.arcTo(x+w,y,x+w,y+h,rad);g.arcTo(x+w,y+h,x,y+h,rad);g.arcTo(x,y+h,x,y,rad);g.arcTo(x,y,x+w,y,rad);g.closePath();g.fill()})(size*0.16,size*0.16,size*0.68,size*0.68,size*0.18);
+    g.fillStyle="#000";g.font=`800 ${size*0.4}px ${getComputedStyle(document.body).fontFamily}`;
+    g.textAlign="center";g.textBaseline="middle";g.fillText(name[0].toUpperCase(),size/2,size*0.54);
+  }
+}
+
+/* ---------- big dot-matrix clock ---------- */
+const FONT5x7={
+  "0":["01110","10001","10011","10101","11001","10001","01110"],
+  "1":["00100","01100","00100","00100","00100","00100","01110"],
+  "2":["01110","10001","00001","00010","00100","01000","11111"],
+  "3":["11111","00010","00100","00010","00001","10001","01110"],
+  "4":["00010","00110","01010","10010","11111","00010","00010"],
+  "5":["11111","10000","11110","00001","00001","10001","01110"],
+  "6":["00110","01000","10000","11110","10001","10001","01110"],
+  "7":["11111","00001","00010","00100","01000","01000","01000"],
+  "8":["01110","10001","10001","01110","10001","10001","01110"],
+  "9":["01110","10001","10001","01111","00001","00010","01100"],
+  ":":["00000","00100","00100","00000","00100","00100","00000"]
+};
+function drawClock(){
+  const cv=document.getElementById("bigclock");if(!cv)return;
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const now=new Date();
+  let h=now.getHours(),m=now.getMinutes();
+  const str=(h%12||12)+":"+String(m).padStart(2,"0");
+  const cols=str.length*6, rows=7, dot=6, gap=1, unit=dot+gap;
+  cv.width=cols*unit*dpr; cv.height=rows*unit*dpr;
+  cv.style.width=(cols*unit)+"px"; cv.style.height=(rows*unit)+"px";
+  const g=cv.getContext("2d");g.scale(dpr,dpr);g.clearRect(0,0,cv.width,cv.height);
+  let ox=0;
+  for(const ch of str){
+    const glyph=FONT5x7[ch]||FONT5x7["0"];
+    for(let y=0;y<7;y++)for(let x=0;x<5;x++){
+      g.beginPath();g.arc(ox+x*unit+dot/2,y*unit+dot/2,dot/2-0.5,0,7);
+      const lit=glyph[y][x]==="1";
+      g.fillStyle=lit?`rgba(232,232,232,${state.intensity})`:"rgba(255,255,255,0.06)";
+      g.fill();
+    }
+    ox+=6*unit;
+  }
+}
+
+/* ---------- build grid ---------- */
+function iconSize(){ return state.cols<=4?52:state.cols===5?44:36 }
+function buildGrid(){
+  const grid=document.getElementById("grid");
+  grid.style.gridTemplateColumns=`repeat(${state.cols},1fr)`;
+  const count=state.cols*state.rows;
+  grid.innerHTML="";
+  const sz=iconSize();
+  APPS.slice(0,Math.min(count,APPS.length)).forEach(name=>{
+    const el=document.createElement("div");el.className="app";
+    const cv=document.createElement("canvas");
+    el.appendChild(cv);
+    const lbl=document.createElement("div");lbl.className="lbl";lbl.textContent=name;
+    el.appendChild(lbl);
+    el.onclick=()=>{el.animate([{transform:"scale(.85)"},{transform:"scale(1)"}],{duration:180});};
+    grid.appendChild(el);
+    drawIcon(cv,name,sz);
+  });
+}
+function buildDock(){
+  const dock=document.getElementById("dock");dock.innerHTML="";
+  DOCK.forEach(name=>{
+    const el=document.createElement("div");el.className="app";
+    const cv=document.createElement("canvas");el.appendChild(cv);
+    dock.appendChild(el);drawIcon(cv,name,42);
+    el.onclick=()=>el.animate([{transform:"scale(.85)"},{transform:"scale(1)"}],{duration:180});
+  });
+}
+function buildDrawer(filter=""){
+  const dg=document.getElementById("drawergrid");dg.innerHTML="";
+  APPS.filter(n=>n.toLowerCase().includes(filter.toLowerCase()))
+      .sort((a,b)=>a.localeCompare(b))
+      .forEach(name=>{
+    const el=document.createElement("div");el.className="app";
+    const cv=document.createElement("canvas");el.appendChild(cv);
+    const lbl=document.createElement("div");lbl.className="lbl";lbl.textContent=name;
+    el.appendChild(lbl);dg.appendChild(el);drawIcon(cv,name,44);
+  });
+}
+function redrawAll(){buildGrid();buildDock();buildDrawer(document.getElementById("search").value);drawClock();}
+
+/* ---------- controls ---------- */
+document.getElementById("grid-seg").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed",x===b));
+  state.cols=+b.dataset.cols; state.rows=state.cols===4?5:state.cols===5?6:7;
+  buildGrid();
+};
+document.getElementById("icon-seg").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed",x===b));
+  state.style=b.dataset.style; redrawAll();
+};
+document.getElementById("intensity").oninput=e=>{state.intensity=+e.target.value/100;redrawAll();};
+function toggle(id,cb){const el=document.getElementById(id);el.onclick=()=>{const v=el.getAttribute("aria-pressed")!=="true";el.setAttribute("aria-pressed",v);cb(v);};}
+toggle("w-clock",v=>document.getElementById("clockw").style.display=v?"flex":"none");
+toggle("w-weather",v=>document.getElementById("weatherw").style.display=v?"flex":"none");
+toggle("w-glyph",v=>document.getElementById("glyphs").style.display=v?"flex":"none");
+
+document.getElementById("clockw").onclick=()=>document.getElementById("clockw").animate([{opacity:.3},{opacity:1}],{duration:300});
+document.getElementById("glyphs").onclick=e=>{const g=e.target.closest(".glyph");if(g)g.classList.toggle("on");};
+
+/* ---------- drawer + gestures ---------- */
+const drawer=document.getElementById("drawer");
+function openDrawer(){drawer.classList.add("open");setTimeout(()=>document.getElementById("search").focus(),380);}
+function closeDrawer(){drawer.classList.remove("open");document.getElementById("search").blur();}
+document.getElementById("dclose").onclick=closeDrawer;
+document.getElementById("search").oninput=e=>buildDrawer(e.target.value);
+
+const screen=document.getElementById("screen");
+let sy=0,sx=0,st=0;
+screen.addEventListener("pointerdown",e=>{sy=e.clientY;sx=e.clientX;st=Date.now();});
+screen.addEventListener("pointerup",e=>{
+  const dy=e.clientY-sy, dx=e.clientX-sx, dt=Date.now()-st;
+  if(Math.abs(dy)>55 && Math.abs(dy)>Math.abs(dx)){
+    if(dy<0 && !drawer.classList.contains("open")) openDrawer();
+    if(dy>0 && drawer.classList.contains("open")) closeDrawer();
+    if(dy>0 && !drawer.classList.contains("open")){ /* swipe down = search */ openDrawer(); }
+  }
+});
+/* double-tap = lock */
+let lastTap=0;
+screen.addEventListener("pointerup",e=>{
+  const now=Date.now();
+  if(now-lastTap<300 && !drawer.classList.contains("open")){
+    const lk=document.getElementById("lock");lk.classList.add("on");
+    setTimeout(()=>lk.classList.remove("on"),900);
+  }
+  lastTap=now;
+});
+
+/* ---------- particle / no heavy fx, keep minimal per Nothing aesthetic ---------- */
+/* subtle scanline pulse on the fx canvas */
+const fx=document.getElementById("fx");
+function sizeFx(){const r=screen.getBoundingClientRect();fx.width=r.width;fx.height=r.height;}
+sizeFx();addEventListener("resize",()=>{sizeFx();redrawAll();});
+
+/* ---------- status clock ---------- */
+function tick(){
+  const d=new Date();
+  document.getElementById("clk").textContent=(d.getHours()%12||12)+":"+String(d.getMinutes()).padStart(2,"0");
+  drawClock();
+}
+setInterval(tick,1000);
+
+/* ---------- init ---------- */
+redrawAll();tick();
+</script>
+</body>
+</html>

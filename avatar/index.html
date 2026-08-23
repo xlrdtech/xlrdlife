@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ophanim: Gemini Uplink</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #000; overflow: hidden; user-select: none; }
+        canvas { display: block; width: 100vw; height: 100vh; outline: none; }
+
+        /* HUD UI */
+        #hud {
+            position: fixed; inset: 0; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 20px;
+            transition: opacity 0.5s;
+            z-index: 10;
+        }
+        .hud-text {
+            font-family: 'Courier New', monospace; color: #00ff41; text-shadow: 0 0 5px #00ff41;
+            font-size: 12px; letter-spacing: 2px;
+        }
+        .hud-row { display: flex; justify-content: space-between; width: 100%; align-items: flex-start; }
+
+        /* INTERACTIVE BUTTONS */
+        .cyber-btn {
+            background: rgba(0, 20, 0, 0.8);
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            padding: 8px 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            pointer-events: auto;
+            text-shadow: 0 0 5px #00ff41;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .cyber-btn:hover {
+            background: #00ff41;
+            color: #000;
+            box-shadow: 0 0 20px #00ff41;
+        }
+
+        /* NEURAL INTERFACE (CHAT) */
+        #neural-interface {
+            position: fixed; top: 80px; left: 20px; width: 300px;
+            background: rgba(0, 10, 0, 0.9);
+            border: 1px solid #00ff41;
+            border-radius: 4px;
+            padding: 10px;
+            display: none;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+            z-index: 20;
+        }
+        #chat-history {
+            height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #aaffaa;
+            padding-right: 5px;
+        }
+        #chat-history::-webkit-scrollbar { width: 4px; }
+        #chat-history::-webkit-scrollbar-thumb { background: #00ff41; }
+        .msg-user { color: #fff; margin-bottom: 8px; text-align: right; }
+        .msg-ai { color: #00ff41; margin-bottom: 8px; text-align: left; }
+        .msg-system { color: #0088ff; font-style: italic; margin-bottom: 5px; text-align: center; font-size: 9px; }
+
+        #chat-input-area { display: flex; gap: 5px; }
+        #chat-input {
+            background: transparent; border: 1px solid #00ff41; color: #fff;
+            flex-grow: 1; padding: 5px; font-family: 'Courier New', monospace; font-size: 12px;
+            outline: none;
+        }
+        #chat-input:focus { box-shadow: 0 0 5px #00ff41; }
+
+        #voice-hud {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            display: none; flex-direction: column; align-items: center; gap: 5px;
+            pointer-events: none;
+        }
+        .voice-wave { display: flex; align-items: flex-end; gap: 3px; height: 30px; }
+        .bar {
+            width: 4px; background: #00ff41; border-radius: 2px;
+            height: 5px; box-shadow: 0 0 10px #00ff41;
+            transition: height 0.05s ease;
+        }
+
+        #center-crosshair {
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 50%;
+        }
+        #center-dot {
+            position: absolute; top: 50%; left: 50%; width: 2px; height: 2px;
+            background: #00ff41; transform: translate(-50%, -50%);
+        }
+        #controls-hint {
+            position: absolute; bottom: 30px; left: 30px;
+            background: rgba(0,0,0,0.7); padding: 15px; border-left: 2px solid #00ff41;
+            opacity: 0.7;
+        }
+        .key { color: #fff; font-weight: bold; }
+
+        #throttle-container {
+            position: fixed; right: 30px; bottom: 100px; width: 6px; height: 200px;
+            background: rgba(0, 50, 20, 0.5); border: 1px solid #00ff41;
+            border-radius: 3px;
+        }
+        #throttle-fill {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+            background: #00ff41; box-shadow: 0 0 10px #00ff41;
+            transition: height 0.1s;
+        }
+
+        #scan-line {
+            position: fixed; top: 0; left: 0; width: 100%; height: 5px;
+            background: rgba(0, 255, 65, 0.5);
+            box-shadow: 0 0 15px #00ff41;
+            display: none; pointer-events: none;
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan { 0% { top: -10%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 110%; opacity: 0; } }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <canvas id="gl-canvas"></canvas>
+    <div id="scan-line"></div>
+
+    <div id="neural-interface">
+        <div style="border-bottom: 1px solid #00ff41; margin-bottom: 10px; padding-bottom: 5px; font-weight: bold; color: #00ff41;">
+            > NEURAL UPLINK V.2.0
+        </div>
+        <div id="chat-history">
+            <div class="msg-system">Initializing Secure Connection...</div>
+            <div class="msg-ai">OPHANIM: Systems online, Pilot. Awaiting directives.</div>
+        </div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Enter command..." autocomplete="off">
+            <button id="send-btn" class="cyber-btn" style="margin-top:0; padding: 2px 10px;">></button>
+        </div>
+    </div>
+
+    <div id="hud">
+        <div class="hud-row">
+            <div>
+                <div class="hud-text">SYS: ONLINE</div>
+                <div class="hud-text" id="mode-display">MODE: FREE FLIGHT</div>
+                <button id="toggle-chat-btn" class="cyber-btn">✨ NEURAL UPLINK</button>
+            </div>
+        </div>
+
+        <div id="voice-hud">
+            <div class="hud-text" id="voice-status">LISTENING...</div>
+            <div class="voice-wave">
+                <div class="bar" id="bar1"></div>
+                <div class="bar" id="bar2"></div>
+                <div class="bar" id="bar3"></div>
+                <div class="bar" id="bar4"></div>
+                <div class="bar" id="bar5"></div>
+            </div>
+        </div>
+
+        <div id="center-crosshair"><div id="center-dot"></div></div>
+        <div id="throttle-container"><div id="throttle-fill"></div></div>
+        <div style="flex-grow: 1;"></div>
+
+        <div class="hud-row" style="align-items: flex-end;">
+            <div id="controls-hint" class="hud-text">
+                <div id="hint-flight">
+                    <div><span class="key">SCROLL</span> SET CRUISE SPEED</div>
+                    <div><span class="key">TAP + HOLD</span> TURBO BOOST</div>
+                    <div><span class="key">MOUSE</span> STEER (AUTO-ROLL)</div>
+                </div>
+                <div id="hint-ar" style="display:none;">
+                    <div><span class="key">DRAG</span> MOVE POSITION</div>
+                    <div><span class="key">SCROLL</span> ADJUST DISTANCE</div>
+                </div>
+                <div style="margin-top:10px; color:white;">DBL CLICK: TOGGLE MODE</div>
+            </div>
+            <div>
+                <div class="hud-text" id="speed-display">SPD: 000 KM/H</div>
+                <div class="hud-text" id="alt-display">ALT: 0000 FT</div>
+            </div>
+        </div>
+    </div>
+
+    <video id="ar-video" playsinline style="display:none"></video>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        const apiKey = "";
+
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatHistory = document.getElementById('chat-history');
+        const neuralInterface = document.getElementById('neural-interface');
+        const toggleChatBtn = document.getElementById('toggle-chat-btn');
+        let isProcessingAI = false;
+
+        toggleChatBtn.addEventListener('click', () => {
+            if(neuralInterface.style.display === 'block') { neuralInterface.style.display = 'none'; }
+            else { neuralInterface.style.display = 'block'; chatInput.focus(); }
+        });
+
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = sender === 'user' ? 'msg-user' : (sender === 'system' ? 'msg-system' : 'msg-ai');
+            div.textContent = (sender === 'ai' ? "OPHANIM: " : "") + text;
+            chatHistory.appendChild(div);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        async function callGemini(userText) {
+            if (!apiKey) { addMessage("Error: API Key missing. Unable to establish uplink.", "system"); return; }
+            isProcessingAI = true;
+            const currentMode = isAR ? "Companion AR Mode" : "Flight Simulation Mode";
+            const systemPrompt = `You are Ophanim, a highly advanced, cryptic, yet loyal AI flight companion in a cyberpunk world.
+            Current status: ${currentMode}.
+            Your responses are brief, efficient, and slightly poetic.
+            You refer to the user as 'Pilot'.
+            Do not break character.
+            If asked to generate a mission, invent a cool cyberpunk objective.`;
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: userText }] }], systemInstruction: { parts: [{ text: systemPrompt }] } })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Signal interrupted.";
+                addMessage(aiText, 'ai');
+            } catch (error) { console.error(error); addMessage("Uplink destabilized. Connection failed.", "system"); }
+            finally { isProcessingAI = false; }
+        }
+
+        function handleSend() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+            addMessage(text, 'user'); chatInput.value = ''; callGemini(text);
+        }
+        sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
+
+        const CONFIG = { moveSpeed: 100.0, turnSpeed: 1.2, rollFactor: 0.8, friction: 0.96, cameraLag: 0.08 };
+
+        const canvas = document.getElementById("gl-canvas");
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050510, 0.0025);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 20000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
+
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1; bloomPass.strength = 1.5; bloomPass.radius = 0.8;
+        composer.addPass(bloomPass);
+
+        const size = 512;
+        const data = new Uint8Array(size * size * 4);
+        for(let i=0; i<size*size*4; i+=4) { const v = Math.floor(Math.random() * 255); data[i] = v; data[i+1] = v; data[i+2] = v; data[i+3] = 255; }
+        const noiseTexture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+        noiseTexture.needsUpdate = true;
+
+        const playerContainer = new THREE.Group();
+        scene.add(playerContainer);
+        const ophanimMesh = new THREE.Group();
+        playerContainer.add(ophanimMesh);
+
+        const holoGroup = new THREE.Group();
+        ophanimMesh.add(holoGroup);
+        holoGroup.visible = false;
+        function createHoloPanel(w, h, color, x, y, z, rotY) {
+            const geo = new THREE.PlaneGeometry(w, h);
+            const mat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.3, wireframe: true, blending: THREE.AdditiveBlending });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z); mesh.rotation.y = rotY; return mesh;
+        }
+        holoGroup.add(createHoloPanel(1.5, 1, 0x00aaff, -2, 0, 1, 0.5));
+        holoGroup.add(createHoloPanel(1.5, 2, 0x00ff41, 2, 0.5, 1, -0.5));
+
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.95, bumpMap: noiseTexture, bumpScale: 0.02 });
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00ff41 });
+        const allEyes = [];
+        function createRing(r, tube, eyeCount) {
+            const grp = new THREE.Group();
+            const mesh = new THREE.Mesh(new THREE.TorusGeometry(r, tube, 32, 100), metalMat);
+            grp.add(mesh);
+            const eyeInst = new THREE.InstancedMesh(new THREE.SphereGeometry(tube * 0.6, 16, 16), eyeMat, eyeCount);
+            const dummy = new THREE.Object3D();
+            for(let i=0; i<eyeCount; i++) {
+                const angle = (i/eyeCount) * Math.PI * 2;
+                dummy.position.set(Math.cos(angle)*r, Math.sin(angle)*r, 0);
+                dummy.lookAt(dummy.position.x*2, dummy.position.y*2, 0);
+                dummy.translateZ(tube*0.8); dummy.updateMatrix();
+                eyeInst.setMatrixAt(i, dummy.matrix);
+                allEyes.push({ mesh: eyeInst, index: i, baseScale: dummy.scale.clone(), dummy: dummy.clone(), blink: 0, speed: 0.1+Math.random()*0.2 });
+            }
+            grp.add(eyeInst); return grp;
+        }
+        const r1 = createRing(2.0, 0.2, 20);
+        const r2 = createRing(3.5, 0.25, 30);
+        const r3 = createRing(5.0, 0.2, 40);
+        r1.rotation.set(Math.random(), Math.random(), Math.random());
+        r2.rotation.set(Math.random(), Math.random(), Math.random());
+        r3.rotation.set(Math.random(), Math.random(), Math.random());
+        ophanimMesh.add(r1); ophanimMesh.add(r2); ophanimMesh.add(r3);
+
+        const coreMat = new THREE.ShaderMaterial({
+            uniforms: { uTime: {value:0}, uAudioLevel: {value:0.0}, uThinking: {value: 0.0} },
+            vertexShader: `varying vec2 vUv; varying vec3 vNormal; void main() { vUv = uv; vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+            fragmentShader: `uniform float uTime; uniform float uAudioLevel; uniform float uThinking; varying vec2 vUv; varying vec3 vNormal;
+                void main() {
+                    float pulse = uAudioLevel * 2.0;
+                    float thinkPulse = uThinking * sin(uTime * 10.0) * 0.5;
+                    float noise = sin(vUv.x * 20.0 + uTime + pulse) * sin(vUv.y * 20.0 - uTime);
+                    vec3 baseCol = vec3(0.0, 0.8, 0.2);
+                    if (uThinking > 0.5) { baseCol = vec3(0.2, 0.8, 1.0); }
+                    vec3 pulseCol = vec3(0.5, 1.0, 0.5) * (pulse + thinkPulse);
+                    vec3 col = baseCol + pulseCol + (noise * 0.2);
+                    float rim = pow(1.0 - max(dot(vNormal, vec3(0,0,1)), 0.0), 3.0);
+                    gl_FragColor = vec4(col + rim*0.5, 1.0);
+                }`
+        });
+        const core = new THREE.Mesh(new THREE.SphereGeometry(1.2, 64, 64), coreMat);
+        ophanimMesh.add(core);
+
+        const cityGroup = new THREE.Group();
+        scene.add(cityGroup);
+        const buildGeo = new THREE.BoxGeometry(1, 1, 1); buildGeo.translate(0, 0.5, 0);
+        const buildMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1, metalness: 0.8, emissive: 0x001133, emissiveIntensity: 0.2 });
+        const count = 3000;
+        const cityMesh = new THREE.InstancedMesh(buildGeo, buildMat, count);
+        cityGroup.add(cityMesh);
+        const neonMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshBasicMaterial({ color: 0x00ff41 }), count/2);
+        cityGroup.add(neonMesh);
+        const dummy = new THREE.Object3D();
+        const citySize = 2000;
+        for(let i=0; i<count; i++) {
+            dummy.position.set((Math.random()-0.5)*citySize, -100, (Math.random()-0.5)*citySize);
+            const h = Math.random()*80 + 10; const w = Math.random()*15 + 5;
+            dummy.scale.set(w, h, w); dummy.updateMatrix();
+            cityMesh.setMatrixAt(i, dummy.matrix);
+            if(i < count/2) { dummy.position.y = -100 + h; dummy.scale.set(1,1,1); dummy.updateMatrix(); neonMesh.setMatrixAt(i, dummy.matrix); }
+        }
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.1));
+        const playerLight = new THREE.PointLight(0x00ff41, 2, 100);
+        playerContainer.add(playerLight);
+        const sun = new THREE.DirectionalLight(0xff00ff, 0.5);
+        sun.position.set(100, 50, 100); scene.add(sun);
+
+        let mouseX = 0, mouseY = 0;
+        let cruiseLevel = 0.0;
+        let isThrusting = false;
+        let isAR = false;
+        let arPos = { x: 2.5, y: 0.5, z: -6 };
+        let isDraggingAR = false;
+        let previousMouse = { x: 0, y: 0 };
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+            if (isAR && isDraggingAR) {
+                arPos.x += (e.clientX - previousMouse.x) * 0.01;
+                arPos.y -= (e.clientY - previousMouse.y) * 0.01;
+                previousMouse = { x: e.clientX, y: e.clientY };
+            }
+        });
+        document.addEventListener('wheel', (e) => {
+            if (!isAR) { cruiseLevel -= e.deltaY * 0.0005; cruiseLevel = THREE.MathUtils.clamp(cruiseLevel, 0, 1); updateThrottleUI(); }
+            else { arPos.z -= e.deltaY * 0.005; arPos.z = THREE.MathUtils.clamp(arPos.z, -20, -1.5); }
+        }, { passive: true });
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.closest('#neural-interface') || e.target.closest('#toggle-chat-btn')) return;
+            if (!isAR) isThrusting = true;
+            else { isDraggingAR = true; previousMouse = { x: e.clientX, y: e.clientY }; }
+        });
+        document.addEventListener('mouseup', () => { isThrusting = false; isDraggingAR = false; });
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('#neural-interface') || e.target.closest('#toggle-chat-btn')) return;
+            if (!isAR) isThrusting = true;
+            else { isDraggingAR = true; previousMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
+        }, {passive: false});
+        document.addEventListener('touchmove', (e) => {
+            if (isAR && isDraggingAR) {
+                e.preventDefault();
+                const t = e.touches[0];
+                arPos.x += (t.clientX - previousMouse.x) * 0.01;
+                arPos.y -= (t.clientY - previousMouse.y) * 0.01;
+                previousMouse = { x: t.clientX, y: t.clientY };
+            }
+        }, {passive: false});
+        document.addEventListener('touchend', () => { isThrusting = false; isDraggingAR = false; });
+
+        function updateThrottleUI() {
+            const h = Math.max(cruiseLevel * 100, isThrusting ? 100 : 0);
+            document.getElementById('throttle-fill').style.height = `${h}%`;
+            if (isThrusting) { document.getElementById('throttle-fill').style.backgroundColor = '#fff'; document.getElementById('throttle-fill').style.boxShadow = '0 0 20px #fff'; }
+            else { document.getElementById('throttle-fill').style.backgroundColor = '#00ff41'; document.getElementById('throttle-fill').style.boxShadow = '0 0 10px #00ff41'; }
+        }
+
+        let audioContext, analyser, dataArray, audioInitialized = false, micVolume = 0;
+        async function initAudio() {
+            if(audioInitialized) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 64;
+                source.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                audioInitialized = true;
+                document.getElementById('voice-status').innerText = "LISTENING: ACTIVE";
+                document.getElementById('voice-status').style.color = "#00ff41";
+            } catch(e) { document.getElementById('voice-status').innerText = "MIC ACCESS DENIED"; document.getElementById('voice-status').style.color = "red"; }
+        }
+
+        const velocity = new THREE.Vector3();
+        const rotationVelocity = new THREE.Vector3();
+        const video = document.getElementById('ar-video');
+
+        async function toggleAR() {
+            if (isAR) {
+                isAR = false;
+                const stream = video.srcObject;
+                if (stream) stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                scene.background = null;
+                scene.fog = new THREE.FogExp2(0x050510, 0.0025);
+                cityGroup.visible = true; holoGroup.visible = false;
+                playerContainer.position.set(0, 0, 0);
+                document.getElementById('scan-line').style.display = 'none';
+                document.getElementById('voice-hud').style.display = 'none';
+                document.getElementById('mode-display').innerText = "MODE: FREE FLIGHT";
+                document.getElementById('hint-flight').style.display = 'block';
+                document.getElementById('hint-ar').style.display = 'none';
+                document.getElementById('speed-display').style.display = 'block';
+                document.getElementById('alt-display').style.display = 'block';
+                document.getElementById('throttle-container').style.display = 'block';
+                return;
+            }
+            isAR = true; await initAudio();
+            try {
+                document.getElementById('scan-line').style.display = 'block';
+                document.getElementById('voice-hud').style.display = 'flex';
+                document.getElementById('mode-display').innerText = "MODE: COMPANION AR";
+                document.getElementById('hint-flight').style.display = 'none';
+                document.getElementById('hint-ar').style.display = 'block';
+                document.getElementById('speed-display').style.display = 'none';
+                document.getElementById('alt-display').style.display = 'none';
+                document.getElementById('throttle-container').style.display = 'none';
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                video.srcObject = stream; video.play();
+                const tex = new THREE.VideoTexture(video);
+                tex.colorSpace = THREE.SRGBColorSpace;
+                scene.background = tex; scene.fog = null;
+                cityGroup.visible = false;
+                playerContainer.position.set(0, 0, 0); playerContainer.rotation.set(0,0,0); velocity.set(0,0,0);
+                arPos = { x: 2.5, y: 0.5, z: -6 };
+                ophanimMesh.position.set(arPos.x, arPos.y, arPos.z);
+                ophanimMesh.lookAt(0, 0, -5);
+                holoGroup.visible = true;
+                camera.position.set(0, 0, 0); camera.rotation.set(0, 0, 0);
+            } catch(e) { console.log("AR Error", e); }
+        }
+        document.addEventListener('dblclick', toggleAR);
+
+        const clock = new THREE.Clock();
+        const bars = [
+            document.getElementById('bar1'), document.getElementById('bar2'),
+            document.getElementById('bar3'), document.getElementById('bar4'), document.getElementById('bar5')
+        ];
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+            const time = clock.getElapsedTime();
+            if(audioInitialized && analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+                micVolume = sum / dataArray.length / 255;
+                bars.forEach((bar, i) => { bar.style.height = `${5 + (micVolume * 40 * (Math.random() * 0.5 + 0.5))}px`; });
+            } else { micVolume = 0; }
+
+            coreMat.uniforms.uTime.value = time;
+            coreMat.uniforms.uAudioLevel.value = micVolume;
+            coreMat.uniforms.uThinking.value = isProcessingAI ? 1.0 : 0.0;
+            updateThrottleUI();
+
+            if (!isAR) {
+                const targetThrust = isThrusting ? 1.0 : cruiseLevel;
+                const targetRoll = -mouseX * CONFIG.rollFactor;
+                const targetPitch = mouseY * CONFIG.turnSpeed;
+                const targetYaw = -mouseX * CONFIG.turnSpeed;
+                rotationVelocity.x += (targetPitch - rotationVelocity.x) * 5 * dt;
+                rotationVelocity.y += (targetYaw - rotationVelocity.y) * 5 * dt;
+                rotationVelocity.z += (targetRoll - rotationVelocity.z) * 3 * dt;
+                playerContainer.rotateX(rotationVelocity.x * dt);
+                playerContainer.rotateY(rotationVelocity.y * dt);
+                ophanimMesh.rotation.z = THREE.MathUtils.lerp(ophanimMesh.rotation.z, targetRoll, dt * 5);
+                const accel = new THREE.Vector3(0, 0, -targetThrust).applyQuaternion(playerContainer.quaternion).multiplyScalar(CONFIG.moveSpeed * dt);
+                velocity.add(accel);
+                velocity.multiplyScalar(CONFIG.friction);
+                playerContainer.position.add(velocity.clone().multiplyScalar(dt));
+                const snap = 200;
+                if(Math.abs(playerContainer.position.x - cityGroup.position.x) > snap) cityGroup.position.x = playerContainer.position.x;
+                if(Math.abs(playerContainer.position.z - cityGroup.position.z) > snap) cityGroup.position.z = playerContainer.position.z;
+                const offset = new THREE.Vector3(0, 3, 12);
+                offset.applyQuaternion(playerContainer.quaternion);
+                camera.position.lerp(playerContainer.position.clone().add(offset), CONFIG.cameraLag);
+                camera.lookAt(playerContainer.position);
+                document.getElementById('speed-display').innerText = `SPD: ${Math.round(velocity.length() * 100)} KM/H`;
+                document.getElementById('alt-display').innerText = `ALT: ${Math.round(playerContainer.position.y + 100)} FT`;
+            } else {
+                ophanimMesh.position.set(arPos.x, arPos.y, arPos.z);
+                ophanimMesh.position.y += Math.sin(time * 1.5) * 0.05;
+                holoGroup.rotation.y = time * 0.1;
+                ophanimMesh.lookAt(0, 0, -2);
+                ophanimMesh.rotation.z = 0;
+            }
+            r1.rotation.x += 0.05; r2.rotation.y += 0.03; r3.rotation.z += 0.02;
+            const updateSet = new Set();
+            allEyes.forEach(eye => {
+                if(eye.blink === 0 && Math.random() < 0.001) eye.blink = 0.01;
+                if(eye.blink > 0) {
+                    eye.blink += eye.speed;
+                    if(eye.blink >= Math.PI) { eye.blink = 0; eye.dummy.scale.copy(eye.baseScale); }
+                    else { const s = 1 - Math.sin(eye.blink) * 0.9; eye.dummy.scale.set(eye.baseScale.x, eye.baseScale.y * s, eye.baseScale.z); }
+                    eye.dummy.updateMatrix(); eye.mesh.setMatrixAt(eye.index, eye.dummy.matrix);
+                    updateSet.add(eye.mesh);
+                }
+            });
+            updateSet.forEach(m => m.instanceMatrix.needsUpdate = true);
+            composer.render();
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

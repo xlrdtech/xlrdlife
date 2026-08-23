@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TrackingTogether · Internal Docs · 50/50 memo</title>
+<meta name="description" content="TrackingTogether internal documentation — entity structure, 50/50 venture-revenue split, owned + client folder split, active P0s.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="/trackingtogether/manifest.json">
+<meta name="theme-color" content="#0A0A0C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TT · Internal">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:#0A0A0C; --cream:#F4EEE4; --bone:#C7C2B6; --dust:#7A7A7A; --line:rgba(244,238,228,.12);
+  --volt:#00FF88; --gold:#D2AC47; --steel:#6AD4FF; --violet:#A78BFA; --rose:#FF5E9C; --rust:#E5552A;
+  --serif:'Instrument Serif',serif; --sans:'Inter',-apple-system,sans-serif; --mono:'JetBrains Mono',monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; overflow-wrap:break-word; }
+html, body { background:var(--paper); color:var(--cream); font-family:var(--sans); line-height:1.6; overflow-x:hidden; }
+body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background:radial-gradient(ellipse 1200px 600px at 50% 0%, rgba(106,212,255,.06), transparent 60%); }
+.wrap { position:relative; z-index:1; max-width:920px; margin:0 auto; padding:48px 24px 90px; }
+
+.crumb { font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--steel); margin-bottom:24px; }
+.crumb a { color:var(--bone); text-decoration:none; transition:color .15s; }
+.crumb a:hover { color:var(--cream); }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.4em; text-transform:uppercase; color:var(--volt); margin-bottom:14px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:clamp(40px,6vw,72px); line-height:0.98; letter-spacing:-.02em; margin:0 0 14px; }
+h1 em { color:var(--steel); font-style:italic; }
+.lede { font-family:var(--serif); font-style:italic; font-size:clamp(17px,2vw,21px); color:var(--bone); max-width:760px; line-height:1.45; margin-bottom:32px; }
+
+.canon-strip { display:flex; gap:10px; flex-wrap:wrap; margin:8px 0 28px; font-family:var(--mono); font-size:10.5px; }
+.canon-chip { padding:5px 12px; border:1px solid var(--line); border-radius:50px; color:var(--bone); letter-spacing:.05em; }
+.canon-chip strong { color:var(--cream); }
+
+.section { background:linear-gradient(155deg,#141414,#0E0E0E); border:1px solid var(--line); border-radius:14px; padding:24px 28px; margin:14px 0; border-left:3px solid var(--accent); }
+.section.accent-steel { --accent:var(--steel); }
+.section.accent-volt { --accent:var(--volt); }
+.section.accent-gold { --accent:var(--gold); }
+.section.accent-rose { --accent:var(--rose); }
+.section.accent-violet { --accent:var(--violet); }
+
+h2 { font-family:var(--serif); font-weight:400; font-size:clamp(24px,3.5vw,34px); margin-bottom:14px; color:var(--cream); letter-spacing:-.005em; }
+h2 em { color:var(--accent,var(--steel)); font-style:italic; }
+h3 { font-family:var(--mono); font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--accent,var(--steel)); margin:18px 0 10px; }
+p { color:var(--bone); font-size:15px; line-height:1.65; margin-bottom:12px; }
+p strong { color:var(--cream); font-weight:600; }
+p em { font-style:italic; color:var(--cream); }
+code { font-family:var(--mono); font-size:13px; background:rgba(106,212,255,.08); color:var(--steel); padding:2px 6px; border-radius:4px; }
+
+table { width:100%; border-collapse:collapse; margin:14px 0 4px; font-size:14px; }
+th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); color:var(--bone); }
+th { font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--dust); }
+td.status-active { color:var(--volt); font-family:var(--mono); font-size:12px; }
+td.status-pending { color:var(--gold); font-family:var(--mono); font-size:12px; }
+
+pre { font-family:var(--mono); font-size:12.5px; background:rgba(0,0,0,.4); padding:14px 18px; border-radius:8px; color:var(--cream); margin:10px 0 14px; overflow-x:auto; border:1px solid var(--line); line-height:1.55; }
+ul { margin:8px 0 12px 22px; }
+li { color:var(--bone); margin-bottom:6px; font-size:15px; line-height:1.5; }
+li strong { color:var(--cream); }
+
+footer { margin-top:48px; padding-top:24px; border-top:1px solid var(--line); font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--dust); text-align:center; }
+footer .line { display:block; margin-bottom:8px; font-family:var(--serif); font-style:italic; font-size:14px; letter-spacing:.04em; text-transform:none; color:var(--bone); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="crumb"><a href="/trackingtogether/">TrackingTogether</a> · internal · docs</div>
+
+<div class="eyebrow">◐ Internal · 50/50 Memo · Operating Doc</div>
+<h1>The <em>memo</em></h1>
+<p class="lede">TrackingTogether is qi sole-prop. Anthony Vasquez gets 50/50 at the venture-revenue layer. Eli executes against both lanes. This page is the operating doc — the legal layer, the folder split, the active priorities.</p>
+
+<div class="canon-strip">
+  <span class="canon-chip"><strong>qi</strong> sole-prop</span>
+  <span class="canon-chip"><strong>AV</strong> 50/50 revenue</span>
+  <span class="canon-chip"><strong>Eli</strong> operating agent</span>
+  <span class="canon-chip"><strong>noindex</strong> · internal only</span>
+</div>
+
+<div class="section accent-steel">
+  <h2>Entity · <em>structure</em></h2>
+  <p><strong>TrackingTogether</strong> is the brand. Single-pane-of-glass automation agency scope. Operating umbrella for every automation lane the venture runs.</p>
+  <p><strong>Legal entity</strong>: qi sole-prop under qi's portfolio. AV is not a co-owner of the legal entity. AV is a 50/50 partner at the venture-revenue layer, structured as a revenue-share at the TrackingTogether scope.</p>
+  <p><strong>Operating agent</strong>: <code>Eli</code> persona — executes against both owned ventures and client engagements. Eli is the single named operator across both lanes for context-continuity reasons.</p>
+  <p><strong>Naming convention</strong>: <code>TrackingTogether</code> CamelCase for brand surfaces. <code>trackingtogether_</code> lowercase-with-underscore for filesystem paths.</p>
+</div>
+
+<div class="section accent-volt">
+  <h2>Folder · <em>split</em></h2>
+  <p>Two top-level branches under <code>trackingtogether_/</code>: <strong>owned_</strong> and <strong>clients_</strong>. The split is not stylistic — it enforces IP boundary, equity boundary, access-rule boundary at the filesystem level.</p>
+  <pre>trackingtogether_/
+  ├── owned_/                  # AV-owned ventures, equity + IP retained
+  │   ├── net_meter_/
+  │   ├── pfc_farms_/
+  │   ├── ixl_/                # paired with Net Meter
+  │   └── _holdings_-private_/
+  └── clients_/                # TT runs automations FOR them, IP to client
+      ├── acme_/               # + other auto-vendor list
+      ├── culligan_/
+      └── ...</pre>
+  <p><strong>Why split is non-negotiable</strong>: Flat folder blurs the IP boundary. Eli's per-job context resolution becomes ambiguous (own project vs client project = different deliverable rules, different access posture, different revenue treatment). The split makes IP / access / equity legible from the path alone.</p>
+</div>
+
+<div class="section accent-gold">
+  <h2>Active <em>P0s</em></h2>
+  <h3>This week</h3>
+  <ul>
+    <li><strong>Eli RingCentral opt-out scrub</strong> — scan STOP / opt-out across active phone outreach → red-mark master Google sheet → 3-day re-scan schedule. Outbound calling is blocked until first pass completes.</li>
+    <li><strong>Sheet consolidation</strong> — 3 chronological sheets merge to 1 master under TT scope. qi to send 3 sheet links to Eli; Eli executes merge.</li>
+    <li><strong>Agriculture / patent pivot</strong> — fertilizer patent filed. White-girl ally surfaces food-system-collapse thesis with adjacent scope: wineries (partnership lane) + manufacturing-equipment (B2B lane).</li>
+  </ul>
+</div>
+
+<div class="section accent-violet">
+  <h2>Owned · <em>ventures</em></h2>
+  <p>AV-owned ventures under TT umbrella. AV equity + IP retained. Revenue from these flows through the 50/50 layer.</p>
+  <table>
+    <thead><tr><th>Venture</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Net Meter</strong></td><td class="status-active">active</td><td>paired with IXL</td></tr>
+      <tr><td><strong>PFC Farms</strong></td><td class="status-active">active</td><td>agriculture lane · fertilizer-patent adjacent</td></tr>
+      <tr><td><strong>IXL</strong></td><td class="status-active">active</td><td>paired with Net Meter</td></tr>
+      <tr><td><strong>_holdings_-private_/</strong></td><td class="status-active">active</td><td>catch-all AV equity holdings</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section accent-rose">
+  <h2>Client · <em>roster</em></h2>
+  <p>Clients where TT runs the automation lane FOR them. IP to client, revenue flows through TT scope at agreed cadence.</p>
+  <table>
+    <thead><tr><th>Client</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Acme</strong></td><td class="status-active">active</td><td>+ other auto-vendor list</td></tr>
+      <tr><td><strong>Culligan</strong></td><td class="status-active">active</td><td>list</td></tr>
+      <tr><td><strong>(pending lanes 1+2)</strong></td><td class="status-pending">pending</td><td>Beside + Asana + Otter intake</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section accent-steel">
+  <h2>Proving · <em>ground</em></h2>
+  <p>TrackingTogether is the first proving ground for <strong>universal-intake-pipeline</strong> canon — every channel routes to contact notebook → OSS-local inference (Nitro Qwen/Llama) → reply → append-back. AV intake is the test case; the pipeline rolls out to every other contact / venture / client after AV-side proves clean.</p>
+</div>
+
+<footer>
+  <span class="line">Operating doc · revisable · the split is the boundary.</span>
+  ◐ TrackingTogether · Internal · 50/50 memo · noindex ◐
+</footer>
+
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

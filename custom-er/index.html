@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth antialiased overflow-x-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Custom ER | Emergency Software Response</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Manrope', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            red: '#DC2626',
+                            teal: '#0D9488',
+                            navy: '#0F172A'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 20s infinite alternate ease-in-out',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%': { transform: 'translate(0, 0) scale(1)' },
+                            '100%': { transform: 'translate(5%, 5%) scale(1.05)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --color-bg: #F8FAFC;
+            --text-header: #0F172A;
+            --text-body: #334155;
+            --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --glass-edge: rgba(255, 255, 255, 0.8);
+            --glass-shadow: rgba(15, 23, 42, 0.08);
+            --glass-blur: 30px;
+            --mouse-x: 50%; /* Default center */
+            --btn-glass-bg: rgba(220, 38, 38, 0.9);
+            --btn-glass-text: #FFFFFF;
+            --engrave-shadow: rgba(0, 0, 0, 0.1);
+            --engrave-highlight: rgba(255, 255, 255, 0.6);
+        }
+
+        .dark {
+            --color-bg: #0A0A0B;
+            --text-header: #FFFFFF;
+            --text-body: #94A3B8;
+            --glass-bg: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.4) 100%);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-edge: rgba(255, 255, 255, 0.15);
+            --glass-shadow: rgba(0, 0, 0, 0.4);
+            --engrave-shadow: rgba(0, 0, 0, 0.5);
+            --engrave-highlight: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--text-body);
+            transition: background-color 0.8s ease;
+            overflow-x: hidden; /* Critical for mobile to prevent horizontal drift */
+        }
+
+        /* HEAVENLY MEDICAL BACKGROUND */
+        #glow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            animation: float 20s infinite alternate ease-in-out;
+        }
+        .orb-1 { width: 60vw; height: 60vw; top: -10%; left: -10%; background: #FECACA; } /* Red tint */
+        .orb-2 { width: 50vw; height: 50vw; bottom: -10%; right: -5%; background: #99F6E4; animation-delay: -5s; } /* Teal tint */
+
+        /* SHINY GLASS PANELS */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-top: 1.5px solid var(--glass-edge);
+            box-shadow: 0 20px 50px -15px var(--glass-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-capsule {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-top: 1.5px solid white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .dark .nav-capsule {
+            background: rgba(15, 23, 42, 0.8);
+            border-top: 1.5px solid rgba(255,255,255,0.1);
+        }
+
+        /* SPECULAR SHINE */
+        .shine-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transform: skewX(-25deg);
+            left: var(--mouse-x);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 5;
+        }
+        .shine-card:hover::after { opacity: 1; }
+
+        /* ENGRAVED PHYSICS */
+        .logo-engraved {
+            filter: drop-shadow(1px 1px 0.5px var(--engrave-highlight))
+                    drop-shadow(-1px -1px 0.5px var(--engrave-shadow));
+            opacity: 0.9;
+        }
+
+        /* BUTTONS */
+        .btn-brand {
+            background: var(--btn-glass-bg);
+            color: white;
+            font-weight: 800;
+            border-top: 1.5px solid rgba(255,255,255,0.3);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            touch-action: manipulation; /* Improves touch response */
+        }
+        .btn-brand:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 0 15px 30px rgba(220, 38, 38, 0.2);
+        }
+
+        .reveal { opacity: 0; transform: translateY(20px); animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes reveal { to { opacity: 1; transform: translateY(0); } }
+
+        /* Mobile Adjustments */
+        @media (max-width: 640px) {
+            .glass-panel {
+                backdrop-filter: blur(20px); /* Reduce blur cost on mobile */
+            }
+        }
+
+        ::-webkit-scrollbar { width: 0px; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="glow-container">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <!-- Floating Navbar -->
+    <header id="main-header" class="fixed top-4 md:top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none reveal">
+        <div class="pointer-events-auto nav-capsule rounded-full px-4 md:px-6 py-2 md:py-3 flex items-center justify-between w-full max-w-5xl shine-card">
+            <div class="flex items-center gap-3">
+                <div class="bg-red-600 p-1.5 rounded-lg shadow-sm">
+                    <i data-lucide="activity" class="h-4 w-4 md:h-5 md:w-5 text-white"></i>
+                </div>
+                <span class="font-extrabold tracking-tight text-brand-navy dark:text-white uppercase text-xs md:text-sm leading-none mt-0.5">Custom<span class="text-red-600">ER</span></span>
+            </div>
+
+            <nav class="hidden md:flex items-center gap-2">
+                <a href="#symptoms" class="px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5 transition-all text-brand-navy dark:text-white">Symptoms</a>
+                <a href="#treatments" class="px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5 transition-all text-brand-navy dark:text-white">Treatments</a>
+            </nav>
+
+            <div class="flex items-center gap-2 md:gap-4">
+                <button onclick="toggleDarkMode()" class="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-brand-navy dark:text-white">
+                    <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-yellow-400"></i>
+                </button>
+                <button onclick="toggleTriage()" class="px-4 md:px-6 py-2 rounded-full text-[10px] font-black btn-brand uppercase tracking-widest shadow-md flex items-center gap-2">
+                    <i data-lucide="siren" class="w-3 h-3 animate-pulse"></i>
+                    <span>Start Triage</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative z-10 w-full overflow-hidden">
+        <!-- Hero Section -->
+        <section class="pt-32 md:pt-40 pb-20 px-4 md:px-6 flex flex-col items-center text-center max-w-7xl mx-auto">
+            <div class="reveal w-full">
+                <div class="inline-flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 px-4 py-1.5 rounded-full mb-8">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                    </span>
+                    <span class="text-[10px] font-black text-red-600 uppercase tracking-[0.2em]">Urgent Care Deployed</span>
+                </div>
+
+                <h1 class="text-4xl sm:text-5xl md:text-8xl font-black tracking-tighter text-brand-navy dark:text-white mb-8 uppercase leading-[0.9]">
+                    Is Your Business <br />
+                    <span class="text-red-600">Flatlining?</span>
+                </h1>
+
+                <p class="text-base md:text-xl font-bold max-w-2xl mx-auto mb-12 opacity-80 leading-relaxed text-brand-navy dark:text-white">
+                    Generic software is a band-aid. You need a specialist. We perform emergency CRM transplants and automation bypasses.
+                </p>
+
+                <div class="flex flex-col sm:flex-row gap-4 justify-center w-full sm:w-auto px-4">
+                    <button onclick="toggleTriage()" class="w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 rounded-2xl btn-brand text-xs tracking-[0.2em] uppercase shadow-2xl shine-card">
+                        Admit Patient Now
+                    </button>
+                    <a href="#treatments" class="w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 rounded-2xl glass-panel text-xs tracking-[0.2em] uppercase font-black hover:bg-white/50 transition-all shine-card text-brand-navy dark:text-white flex items-center justify-center">
+                        View Methods
+                    </a>
+                </div>
+            </div>
+
+            <!-- Heartbeat Monitor Visual -->
+            <div class="mt-16 md:mt-20 w-full max-w-4xl reveal px-2">
+                <div class="glass-panel rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 shine-card border-b-4 border-red-500/20">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center gap-4">
+                            <i data-lucide="heart-pulse" class="w-8 h-8 text-red-600 logo-engraved"></i>
+                            <div class="text-left">
+                                <h3 class="font-black uppercase text-xs tracking-widest opacity-40 text-brand-navy dark:text-white">Vital Signs</h3>
+                                <p class="font-black text-sm uppercase text-brand-navy dark:text-white">Business Efficiency</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="bg-red-100 dark:bg-red-900/40 text-red-600 px-3 py-1 rounded-full text-[10px] font-black">STABLE</span>
+                        </div>
+                    </div>
+                    <svg viewBox="0 0 800 100" class="w-full h-16 md:h-24 stroke-red-500 fill-none stroke-[3] opacity-50 overflow-visible">
+                        <path d="M0 50 L150 50 L170 20 L190 80 L210 50 L400 50 L420 10 L440 90 L460 50 L800 50" vector-effect="non-scaling-stroke">
+                            <animate attributeName="stroke-dasharray" from="0,1000" to="1000,0" dur="3s" repeatCount="indefinite" />
+                        </path>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Symptoms Grid -->
+        <section id="symptoms" class="py-16 md:py-24 px-4 md:px-6 max-w-7xl mx-auto">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-3xl md:text-6xl font-black uppercase tracking-tighter mb-4 text-brand-navy dark:text-white">The Symptoms</h2>
+                <div class="w-20 h-1.5 bg-red-600 mx-auto rounded-full"></div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 md:gap-8">
+                <div class="glass-panel p-8 md:p-10 rounded-[2.5rem] md:rounded-[3rem] shine-card reveal group hover:border-red-500/30 transition-all duration-500">
+                    <div class="w-14 h-14 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                        <i data-lucide="database" class="w-7 h-7 text-red-600"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-black uppercase tracking-tight mb-4 text-brand-navy dark:text-white">Sheet Paralysis</h3>
+                    <p class="font-bold text-sm opacity-70 text-brand-navy dark:text-white leading-relaxed">Running a million-dollar company on a 2012 Excel file. It's one broken formula away from collapse.</p>
+                </div>
+
+                <div class="glass-panel p-8 md:p-10 rounded-[2.5rem] md:rounded-[3rem] shine-card reveal group hover:border-red-500/30 transition-all duration-500" style="animation-delay: 0.1s">
+                    <div class="w-14 h-14 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                        <i data-lucide="alert-circle" class="w-7 h-7 text-red-600"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-black uppercase tracking-tight mb-4 text-brand-navy dark:text-white">SaaS Rejection</h3>
+                    <p class="font-bold text-sm opacity-70 text-brand-navy dark:text-white leading-relaxed">Spending $2k/mo on Salesforce but your team still tracks leads in their email drafts.</p>
+                </div>
+
+                <div class="glass-panel p-8 md:p-10 rounded-[2.5rem] md:rounded-[3rem] shine-card reveal group hover:border-red-500/30 transition-all duration-500" style="animation-delay: 0.2s">
+                    <div class="w-14 h-14 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                        <i data-lucide="zap-off" class="w-7 h-7 text-red-600"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-black uppercase tracking-tight mb-4 text-brand-navy dark:text-white">Manual Blocking</h3>
+                    <p class="font-bold text-sm opacity-70 text-brand-navy dark:text-white leading-relaxed">Morale is low because your talent spends 50% of their day copying and pasting data.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Treatments Section (Timeline Style) -->
+        <section id="treatments" class="py-16 md:py-24 px-4 md:px-6 bg-white/30 dark:bg-white/5 border-y border-black/5 dark:border-white/5">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-16 md:mb-20 reveal">
+                    <h2 class="text-3xl md:text-6xl font-black uppercase tracking-tighter mb-4 text-brand-navy dark:text-white">Emergency Protocol</h2>
+                    <p class="text-red-600 font-black tracking-[0.5em] text-xs uppercase">Precision Operations</p>
+                </div>
+
+                <div class="relative border-l-4 border-red-100 dark:border-red-900/30 ml-4 md:ml-6 space-y-12 md:space-y-16 pb-4">
+                    <div class="relative pl-10 md:pl-12 reveal">
+                        <div class="absolute -left-[1.2rem] md:-left-[1.3rem] top-0 w-9 h-9 md:w-10 md:h-10 rounded-full bg-red-600 text-white flex items-center justify-center font-black text-lg md:text-xl shadow-lg border-4 border-white dark:border-[#1E293B]">1</div>
+                        <h4 class="text-xl md:text-2xl font-black uppercase mb-2 text-brand-navy dark:text-white">Triage & Diagnosis</h4>
+                        <p class="font-bold opacity-70 text-brand-navy dark:text-white leading-relaxed">A 60-minute deep dive into your operational bottlenecks. We find the leak.</p>
+                    </div>
+
+                    <div class="relative pl-10 md:pl-12 reveal">
+                        <div class="absolute -left-[1.2rem] md:-left-[1.3rem] top-0 w-9 h-9 md:w-10 md:h-10 rounded-full bg-white dark:bg-[#1E293B] text-red-600 border-4 border-red-600 flex items-center justify-center font-black text-lg md:text-xl">2</div>
+                        <h4 class="text-xl md:text-2xl font-black uppercase mb-2 text-brand-navy dark:text-white">Custom CRM Transplant</h4>
+                        <p class="font-bold opacity-70 text-brand-navy dark:text-white leading-relaxed">We build your tool from scratch. No bloat. Just the features that drive revenue.</p>
+                    </div>
+
+                    <div class="relative pl-10 md:pl-12 reveal">
+                        <div class="absolute -left-[1.2rem] md:-left-[1.3rem] top-0 w-9 h-9 md:w-10 md:h-10 rounded-full bg-red-600 text-white flex items-center justify-center font-black text-lg md:text-xl shadow-lg border-4 border-white dark:border-[#1E293B]">3</div>
+                        <h4 class="text-xl md:text-2xl font-black uppercase mb-2 text-brand-navy dark:text-white">Automation Bypass</h4>
+                        <p class="font-bold opacity-70 text-brand-navy dark:text-white leading-relaxed">Connecting your tools so data flows without human intervention. Zero manual entry.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-20 border-t border-black/5 dark:border-white/5 pt-24 pb-12 px-6 glass-panel !rounded-none !border-x-0 shine-card">
+        <div class="max-w-7xl mx-auto flex flex-col items-center text-center">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="bg-red-600 p-2 rounded-xl">
+                    <i data-lucide="activity" class="h-8 w-8 text-white"></i>
+                </div>
+                <span class="text-3xl font-black tracking-tighter uppercase text-brand-navy dark:text-white">Custom<span class="text-red-600">ER</span></span>
+            </div>
+            <p class="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 mb-12 text-brand-navy dark:text-white">Disciples of Efficiency Forever.</p>
+            <button onclick="toggleTriage()" class="btn-brand px-12 py-4 rounded-full text-[11px] font-black uppercase tracking-widest shadow-2xl shine-card">Connect Now</button>
+            <div class="mt-20 text-[10px] font-black uppercase tracking-[1em] opacity-20 text-brand-navy dark:text-white">
+                &copy; 2026 Custom ER Solutions.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Triage Modal (Wizard) -->
+    <div id="triage-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-fade-in">
+        <div class="glass-panel rounded-[2rem] md:rounded-[3rem] w-full max-w-xl shadow-3xl transform scale-up relative overflow-hidden">
+            <button onclick="toggleTriage()" class="absolute top-6 right-6 md:top-8 md:right-8 p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors z-10 text-brand-navy dark:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <div class="p-8 md:p-10">
+                <div id="wizard-content" class="reveal">
+                    <!-- Step content injected here via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Specular Shine Logic
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.shine-card');
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                card.style.setProperty('--mouse-x', `${x}%`);
+            });
+        });
+
+        // Toggle Dark Mode
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // Triage Wizard Logic
+        const state = { step: 1, email: '' };
+        const triageModal = document.getElementById('triage-modal');
+        const wizardContent = document.getElementById('wizard-content');
+        const body = document.body;
+
+        function toggleTriage() {
+            triageModal.classList.toggle('hidden');
+            if (!triageModal.classList.contains('hidden')) {
+                state.step = 1;
+                renderStep();
+                body.style.overflow = 'hidden'; // Lock scroll
+            } else {
+                body.style.overflow = ''; // Unlock scroll
+            }
+        }
+
+        function handleChoice(choice) {
+            state.step++;
+            renderStep();
+        }
+
+        function handleFinalSubmit(e) {
+            e.preventDefault();
+            state.step++;
+            renderStep();
+        }
+
+        function renderStep() {
+            wizardContent.innerHTML = '';
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'animate-slide-up';
+
+            if (state.step === 1) {
+                stepDiv.innerHTML = `
+                    <h2 class="text-2xl md:text-3xl font-black uppercase mb-4 text-brand-navy dark:text-white">Patient Diagnosis</h2>
+                    <p class="font-bold opacity-60 mb-8 text-brand-navy dark:text-white">What is the primary symptom your business is experiencing?</p>
+                    <div class="space-y-3">
+                        ${['Spreadsheet Fragmentation', 'Process Hemorrhaging', 'Legacy System Failure', 'Data Silos'].map(opt => `
+                            <button onclick="handleChoice()" class="w-full text-left p-5 md:p-6 rounded-2xl glass-panel hover:bg-red-50 dark:hover:bg-red-900/20 font-black uppercase text-xs tracking-widest transition-all text-brand-navy dark:text-white border border-transparent hover:border-red-200 dark:hover:border-red-800/50">${opt}</button>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (state.step === 2) {
+                stepDiv.innerHTML = `
+                    <h2 class="text-2xl md:text-3xl font-black uppercase mb-4 text-brand-navy dark:text-white">Admission Info</h2>
+                    <p class="font-bold opacity-60 mb-8 text-brand-navy dark:text-white">Where should we send the treatment plan?</p>
+                    <form onsubmit="handleFinalSubmit(event)" class="space-y-4">
+                        <input type="email" placeholder="YOUR EMAIL" required class="w-full p-5 rounded-2xl bg-white/50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-red-600 font-black text-xs outline-none text-brand-navy dark:text-white placeholder-brand-navy/40 dark:placeholder-white/40">
+                        <button type="submit" class="w-full py-5 rounded-2xl btn-brand text-xs font-black uppercase tracking-widest">Submit for Review</button>
+                    </form>
+                `;
+            } else {
+                stepDiv.innerHTML = `
+                    <div class="text-center py-10">
+                        <div class="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i data-lucide="check-circle" class="w-10 h-10 text-green-600"></i>
+                        </div>
+                        <h2 class="text-2xl md:text-3xl font-black uppercase mb-4 text-brand-navy dark:text-white">Order Received</h2>
+                        <p class="font-bold opacity-60 mb-8 text-brand-navy dark:text-white">The surgeon is reviewing your chart. ETA: 2 hours.</p>
+                        <button onclick="toggleTriage()" class="font-black uppercase text-[10px] tracking-widest opacity-40 hover:opacity-100 transition-opacity text-brand-navy dark:text-white">Close Chart</button>
+                    </div>
+                `;
+            }
+            wizardContent.appendChild(stepDiv);
+            lucide.createIcons();
+        }
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

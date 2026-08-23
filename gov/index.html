@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <title>GGV</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        * { margin: 0; padding: 0; }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: normal;
+            hyphens: none;
+        }
+
+        .app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        /* --- STATUS BAR --- */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            min-height: 36px;
+        }
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ea4335;
+        }
+        .status-dot.connected { background-color: #34a853; animation: pulse-dot 2s infinite; }
+        .status-label {
+            font-size: 10px;
+            color: #a1a1aa;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .settings-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: #71717a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .settings-btn:active { background: rgba(255,255,255,0.1); }
+        .settings-btn svg { width: 18px; height: 18px; }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* --- CONNECT SCREEN --- */
+        .connect-screen {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .connect-card {
+            width: 100%;
+            max-width: 340px;
+            background: #1a1a1e;
+            border: 1px solid #333;
+            border-radius: 20px;
+            padding: 32px 24px;
+            text-align: center;
+        }
+        .connect-card h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+        .connect-card p {
+            font-size: 13px;
+            color: #71717a;
+            margin-bottom: 24px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+        .connect-input {
+            width: 100%;
+            background: #202124;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 17px;
+            text-align: center;
+            outline: none;
+            margin-bottom: 16px;
+        }
+        .connect-input::placeholder { color: #71717a; }
+        .connect-input:focus { border-color: #8ab4f8; }
+        .connect-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: #34a853;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .connect-btn:active { background: #2d9249; }
+        .connect-btn:disabled { background: #333; color: #71717a; }
+        .connect-error {
+            font-size: 12px;
+            color: #ea4335;
+            margin-top: 12px;
+            min-height: 18px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        /* --- PHONE SCREEN (keypad + in-call) --- */
+        .phone-screen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+        }
+        .phone-screen.active { display: flex; }
+
+        /* --- KEYPAD VIEW --- */
+        .keypad-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-evenly;
+            padding: 8px 24px 16px;
+        }
+
+        .contact-input-wrap { width: 100%; }
+        .contact-input {
+            width: 100%;
+            background-color: #202124;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 17px;
+            outline: none;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: normal;
+            hyphens: none;
+        }
+        .contact-input::placeholder { color: #71717a; }
+        .contact-input:focus { box-shadow: 0 0 0 1px #52525b; }
+
+        .dial-display {
+            font-size: 42px;
+            font-weight: 300;
+            color: #fff;
+            text-align: center;
+            min-height: 56px;
+            letter-spacing: 0.05em;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        .key-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            row-gap: 14px;
+            column-gap: 36px;
+            color: #fff;
+            justify-items: center;
+        }
+
+        .key-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .key-btn:active { background-color: rgba(39, 39, 42, 0.6); }
+
+        .key-num { font-size: 40px; font-weight: 400; line-height: 1; }
+        .key-chars {
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            color: #a1a1aa;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        .key-star { font-size: 44px; font-weight: 300; line-height: 1; padding-top: 12px; }
+        .key-hash { font-size: 36px; font-weight: 300; line-height: 1; }
+
+        .keypad-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 36px;
+        }
+
+        .call-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            background-color: #34a853;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .call-btn:active { transform: scale(0.95); background-color: #2d9249; }
+        .call-btn svg { width: 28px; height: 28px; }
+
+        .action-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            background: transparent;
+            color: #a1a1aa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .action-btn:active { background: rgba(255,255,255,0.15); }
+        .action-btn svg { width: 24px; height: 24px; }
+
+        /* --- IN-CALL VIEW --- */
+        .incall-view {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-evenly;
+            padding: 40px 24px 24px;
+        }
+        .incall-view.active { display: flex; }
+
+        .incall-number {
+            font-size: 28px;
+            font-weight: 300;
+            color: #fff;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+        .incall-status {
+            font-size: 14px;
+            color: #a1a1aa;
+            text-align: center;
+            margin-top: 4px;
+        }
+        .incall-timer {
+            font-size: 18px;
+            color: #8ab4f8;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .incall-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            justify-items: center;
+        }
+        .incall-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            background: transparent;
+            color: #d4d4d8;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 16px;
+            transition: background 0.2s;
+        }
+        .incall-btn:active { background: rgba(255,255,255,0.15); }
+        .incall-btn .ic-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .incall-btn .ic-icon svg { width: 24px; height: 24px; }
+        .incall-btn.active .ic-icon { background: #fff; }
+        .incall-btn.active .ic-icon svg { stroke: #000; fill: #000; }
+        .incall-btn .ic-label { font-size: 12px; font-weight: 500; }
+
+        .incall-hangup {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: none;
+            background-color: #ea4335;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .incall-hangup:active { transform: scale(0.95); background-color: #d33426; }
+        .incall-hangup svg { width: 32px; height: 32px; }
+
+        /* Hide inactive view */
+        .view-hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- STATUS BAR -->
+        <div class="status-bar">
+            <div class="status-left">
+                <div id="status-dot" class="status-dot"></div>
+                <span id="status-label" class="status-label">Disconnected</span>
+            </div>
+            <button id="settings-btn" class="settings-btn" style="display:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+        </div>
+
+        <!-- CONNECT SCREEN -->
+        <div id="connect-screen" class="connect-screen">
+            <div class="connect-card">
+                <h1>GGV</h1>
+                <p>Connect to Grok Phone on your Mac</p>
+                <input id="server-input" class="connect-input" type="text" placeholder="192.168.x.x:3457" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false">
+                <button id="connect-btn" class="connect-btn">Connect</button>
+                <div id="connect-error" class="connect-error"></div>
+            </div>
+        </div>
+
+        <!-- PHONE SCREEN -->
+        <div id="phone-screen" class="phone-screen">
+
+            <!-- KEYPAD -->
+            <div id="keypad-view" class="keypad-view">
+                <div class="contact-input-wrap">
+                    <input id="contact-input" type="text" placeholder="Enter a name or number" class="contact-input" inputmode="tel">
+                </div>
+
+                <div id="dial-display" class="dial-display"></div>
+
+                <div class="key-grid">
+                    <button class="key-btn" data-digit="1"><span class="key-num">1</span></button>
+                    <button class="key-btn" data-digit="2"><span class="key-num">2</span><span class="key-chars">A B C</span></button>
+                    <button class="key-btn" data-digit="3"><span class="key-num">3</span><span class="key-chars">D E F</span></button>
+                    <button class="key-btn" data-digit="4"><span class="key-num">4</span><span class="key-chars">G H I</span></button>
+                    <button class="key-btn" data-digit="5"><span class="key-num">5</span><span class="key-chars">J K L</span></button>
+                    <button class="key-btn" data-digit="6"><span class="key-num">6</span><span class="key-chars">M N O</span></button>
+                    <button class="key-btn" data-digit="7"><span class="key-num">7</span><span class="key-chars">P Q R S</span></button>
+                    <button class="key-btn" data-digit="8"><span class="key-num">8</span><span class="key-chars">T U V</span></button>
+                    <button class="key-btn" data-digit="9"><span class="key-num">9</span><span class="key-chars">W X Y Z</span></button>
+                    <button class="key-btn" data-digit="*"><span class="key-star">*</span></button>
+                    <button class="key-btn" data-digit="0"><span class="key-num">0</span></button>
+                    <button class="key-btn" data-digit="#"><span class="key-hash">#</span></button>
+                </div>
+
+                <div class="keypad-actions">
+                    <button id="backspace-btn" class="action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+                    </button>
+                    <button id="call-btn" class="call-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </button>
+                    <button id="hangup-keypad-btn" class="action-btn" style="color:#ea4335;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- IN-CALL -->
+            <div id="incall-view" class="incall-view">
+                <div>
+                    <div id="incall-number" class="incall-number"></div>
+                    <div id="incall-status" class="incall-status">Calling...</div>
+                </div>
+                <div id="incall-timer" class="incall-timer">0:00</div>
+                <div class="incall-controls">
+                    <button id="ic-mute" class="incall-btn">
+                        <div class="ic-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg></div>
+                        <span class="ic-label">Mute</span>
+                    </button>
+                    <button id="ic-keypad" class="incall-btn">
+                        <div class="ic-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="4" r="1.5"/><circle cx="12" cy="4" r="1.5"/><circle cx="18" cy="4" r="1.5"/><circle cx="6" cy="10" r="1.5"/><circle cx="12" cy="10" r="1.5"/><circle cx="18" cy="10" r="1.5"/><circle cx="6" cy="16" r="1.5"/><circle cx="12" cy="16" r="1.5"/><circle cx="18" cy="16" r="1.5"/></svg></div>
+                        <span class="ic-label">Keypad</span>
+                    </button>
+                    <button id="ic-hold" class="incall-btn">
+                        <div class="ic-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></div>
+                        <span class="ic-label">Hold</span>
+                    </button>
+                    <button id="ic-speaker" class="incall-btn">
+                        <div class="ic-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></div>
+                        <span class="ic-label">Speaker</span>
+                    </button>
+                    <button id="ic-message" class="incall-btn">
+                        <div class="ic-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+                        <span class="ic-label">Message</span>
+                    </button>
+                    <button id="ic-add" class="incall-btn">
+                        <div class="ic-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+                        <span class="ic-label">Add call</span>
+                    </button>
+                </div>
+                <button id="ic-hangup" class="incall-hangup">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // --- DOM refs ---
+        var $ = function(id) { return document.getElementById(id); };
+        var connectScreen = $('connect-screen');
+        var phoneScreen = $('phone-screen');
+        var keypadView = $('keypad-view');
+        var incallView = $('incall-view');
+        var serverInput = $('server-input');
+        var connectBtn = $('connect-btn');
+        var connectError = $('connect-error');
+        var settingsBtn = $('settings-btn');
+        var statusDot = $('status-dot');
+        var statusLabel = $('status-label');
+        var contactInput = $('contact-input');
+        var dialDisplay = $('dial-display');
+        var incallNumber = $('incall-number');
+        var incallStatus = $('incall-status');
+        var incallTimer = $('incall-timer');
+
+        // --- State ---
+        var serverBase = '';
+        var dialNumber = '';
+        var callActive = false;
+        var callStartTime = 0;
+        var callTimerInterval = null;
+        var pollInterval = null;
+        var healthInterval = null;
+        var connected = false;
+
+        // --- Haptic ---
+        function haptic() {
+            if (navigator.vibrate) navigator.vibrate(10);
+        }
+
+        // --- API helpers ---
+        function api(method, path, body) {
+            var opts = { method: method, headers: {} };
+            if (body !== undefined) {
+                opts.headers['Content-Type'] = 'text/plain';
+                opts.body = body;
+            }
+            return fetch(serverBase + path, opts).then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            });
+        }
+
+        function rendererExec(js) {
+            return api('POST', '/renderer-exec', js);
+        }
+
+        // --- Connection ---
+        function setConnected(ok) {
+            connected = ok;
+            statusDot.className = 'status-dot' + (ok ? ' connected' : '');
+            statusLabel.textContent = ok ? 'Connected' : 'Disconnected';
+        }
+
+        function connect(host) {
+            // Normalize: add http:// if missing, strip trailing slash
+            if (host.indexOf('://') === -1) host = 'http://' + host;
+            host = host.replace(/\/+$/, '');
+            serverBase = host;
+
+            connectBtn.disabled = true;
+            connectBtn.textContent = 'Connecting...';
+            connectError.textContent = '';
+
+            fetch(serverBase + '/health', { signal: AbortSignal.timeout(5000) })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.status === 'ok') {
+                        localStorage.setItem('ggv-server', serverBase);
+                        setConnected(true);
+                        showPhone();
+                        startPolling();
+                        startHealthCheck();
+                    } else {
+                        throw new Error('Unexpected response');
+                    }
+                })
+                .catch(function(err) {
+                    connectError.textContent = 'Could not connect: ' + err.message;
+                    setConnected(false);
+                })
+                .finally(function() {
+                    connectBtn.disabled = false;
+                    connectBtn.textContent = 'Connect';
+                });
+        }
+
+        connectBtn.addEventListener('click', function() {
+            var val = serverInput.value.trim();
+            if (val) connect(val);
+        });
+
+        serverInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') connectBtn.click();
+        });
+
+        settingsBtn.addEventListener('click', function() {
+            stopPolling();
+            setConnected(false);
+            phoneScreen.classList.remove('active');
+            connectScreen.style.display = '';
+            settingsBtn.style.display = 'none';
+            serverInput.value = serverBase.replace('http://', '');
+        });
+
+        // --- Views ---
+        function showPhone() {
+            connectScreen.style.display = 'none';
+            phoneScreen.classList.add('active');
+            settingsBtn.style.display = '';
+            showKeypad();
+        }
+
+        function showKeypad() {
+            keypadView.classList.remove('view-hidden');
+            incallView.classList.remove('active');
+        }
+
+        function showIncall(number) {
+            keypadView.classList.add('view-hidden');
+            incallView.classList.add('active');
+            incallNumber.textContent = number || 'Unknown';
+            incallStatus.textContent = 'Calling...';
+        }
+
+        // --- Keypad logic ---
+        document.querySelectorAll('.key-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                haptic();
+                var digit = btn.dataset.digit;
+                dialNumber += digit;
+                dialDisplay.textContent = dialNumber;
+                contactInput.value = dialNumber;
+            });
+        });
+
+        contactInput.addEventListener('input', function() {
+            dialNumber = contactInput.value;
+            dialDisplay.textContent = dialNumber;
+        });
+
+        contactInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                $('call-btn').click();
+            }
+        });
+
+        $('backspace-btn').addEventListener('click', function() {
+            haptic();
+            dialNumber = dialNumber.slice(0, -1);
+            dialDisplay.textContent = dialNumber;
+            contactInput.value = dialNumber;
+        });
+
+        // --- Call ---
+        $('call-btn').addEventListener('click', function() {
+            var num = dialNumber || contactInput.value;
+            if (!num || !connected) return;
+            haptic();
+            statusLabel.textContent = 'Calling...';
+            api('GET', '/test-call?number=' + encodeURIComponent(num))
+                .then(function(data) {
+                    if (data.triggered) {
+                        enterCallUI(num);
+                    }
+                })
+                .catch(function(err) {
+                    statusLabel.textContent = 'Call failed';
+                    setTimeout(function() { statusLabel.textContent = connected ? 'Connected' : 'Disconnected'; }, 2000);
+                });
+        });
+
+        // --- Hangup ---
+        function doHangup() {
+            haptic();
+            rendererExec("document.getElementById('ic-hangup').click()").catch(function() {});
+            exitCallUI();
+        }
+
+        $('hangup-keypad-btn').addEventListener('click', doHangup);
+        $('ic-hangup').addEventListener('click', doHangup);
+
+        // --- In-call controls ---
+        $('ic-mute').addEventListener('click', function() {
+            haptic();
+            rendererExec("document.getElementById('ic-mute').click()");
+        });
+
+        $('ic-hold').addEventListener('click', function() {
+            haptic();
+            rendererExec("document.getElementById('ic-hold').click()");
+        });
+
+        $('ic-speaker').addEventListener('click', function() {
+            haptic();
+            rendererExec("document.getElementById('ic-speaker').click()");
+        });
+
+        $('ic-message').addEventListener('click', function() {
+            haptic();
+            rendererExec("document.getElementById('ic-message').click()");
+        });
+
+        $('ic-keypad').addEventListener('click', function() {
+            haptic();
+            showKeypad();
+        });
+
+        $('ic-add').addEventListener('click', function() {
+            haptic();
+            showKeypad();
+        });
+
+        // --- Call UI state ---
+        function enterCallUI(number) {
+            callActive = true;
+            callStartTime = Date.now();
+            showIncall(number);
+            incallStatus.textContent = 'Connected';
+            statusLabel.textContent = 'In call';
+
+            if (callTimerInterval) clearInterval(callTimerInterval);
+            callTimerInterval = setInterval(function() {
+                var elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+                var min = Math.floor(elapsed / 60);
+                var sec = elapsed % 60;
+                incallTimer.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
+            }, 1000);
+        }
+
+        function exitCallUI() {
+            callActive = false;
+            if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
+            incallTimer.textContent = '0:00';
+            showKeypad();
+            statusLabel.textContent = connected ? 'Connected' : 'Disconnected';
+            dialNumber = '';
+            dialDisplay.textContent = '';
+            contactInput.value = '';
+        }
+
+        // --- Polling ---
+        function pollState() {
+            api('GET', '/renderer-state')
+                .then(function(state) {
+                    // Sync call state
+                    if (state.callActive === true && !callActive) {
+                        enterCallUI(state.currentCallNumber || state.dialNumber || 'Unknown');
+                    } else if (state.callActive === false && callActive) {
+                        exitCallUI();
+                    }
+                    // Sync mute/hold from desktop (poll renderer for button states)
+                    if (callActive) {
+                        rendererExec(
+                            "(function(){" +
+                            "var m=document.getElementById('ic-mute');" +
+                            "var h=document.getElementById('ic-hold');" +
+                            "return{muted:m?m.classList.contains('active'):false,held:h?h.classList.contains('active'):false};" +
+                            "})()"
+                        ).then(function(r) {
+                            if (!r || !r.result) return;
+                            var muteBtn = $('ic-mute');
+                            var holdBtn = $('ic-hold');
+                            if (r.result.muted) {
+                                muteBtn.classList.add('active');
+                                muteBtn.querySelector('.ic-label').textContent = 'Unmute';
+                            } else {
+                                muteBtn.classList.remove('active');
+                                muteBtn.querySelector('.ic-label').textContent = 'Mute';
+                            }
+                            if (r.result.held) {
+                                holdBtn.classList.add('active');
+                                holdBtn.querySelector('.ic-label').textContent = 'Resume';
+                            } else {
+                                holdBtn.classList.remove('active');
+                                holdBtn.querySelector('.ic-label').textContent = 'Hold';
+                            }
+                        }).catch(function() {});
+                    }
+                })
+                .catch(function() {
+                    setConnected(false);
+                });
+        }
+
+        function startPolling() {
+            stopPolling();
+            pollState();
+            pollInterval = setInterval(pollState, 2000);
+        }
+
+        function stopPolling() {
+            if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+        }
+
+        // --- Health check ---
+        function startHealthCheck() {
+            if (healthInterval) clearInterval(healthInterval);
+            healthInterval = setInterval(function() {
+                fetch(serverBase + '/health', { signal: AbortSignal.timeout(3000) })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) { if (d.status === 'ok') setConnected(true); })
+                    .catch(function() { setConnected(false); });
+            }, 10000);
+        }
+
+        // --- Auto-reconnect from saved server ---
+        var saved = localStorage.getItem('ggv-server');
+        if (saved) {
+            serverInput.value = saved.replace('http://', '');
+            connect(saved);
+        }
+
+        // --- Service Worker ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(function() {});
+        }
+    })();
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

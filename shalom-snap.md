@@ -1,0 +1,360 @@
+- generic "Google Maps" [ref=e9]:
+  - generic [ref=e3]:
+    - application "Map · Use arrow keys to pan the map. · Get details about a place by pressing its corresponding number key." [ref=e10]
+    - search [ref=e15]:
+      - generic [ref=e16]:
+        - combobox [ref=e18]: soul food restaurant East Point GA
+        - button "Search" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: 
+        - button "Close" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]: 
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - list [ref=e28]:
+          - listitem [ref=e29]:
+            - button "Menu" [ref=e30] [cursor=pointer]:
+              - generic [ref=e32]: 
+          - listitem [ref=e33]:
+            - button "Saved" [ref=e34] [cursor=pointer]:
+              - generic [ref=e36]: 
+              - generic [ref=e38]: Saved
+          - listitem [ref=e39]:
+            - button "Recents" [disabled] [ref=e40]:
+              - generic [ref=e42]: 
+              - generic [ref=e44]: Recents
+          - listitem [ref=e46]:
+            - button "Get app" [ref=e47] [cursor=pointer]:
+              - generic [ref=e49]: 
+              - generic [ref=e51]: Get app
+        - main [ref=e56]:
+          - generic [ref=e57]:
+            - feed "Results for soul food restaurant East Point GA" [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e61]:
+                  - heading "Results" [level=1] [ref=e62]
+                  - button "Learn more about legal disclosure regarding public reviews on Google Maps" [ref=e66]:
+                    - generic [ref=e70]: 
+                - button "Share" [ref=e74]:
+                  - generic [ref=e75] [cursor=pointer]:
+                    - generic [ref=e76]: 
+                    - generic [ref=e77]: Share
+              - article "South Fork Soul Food" [ref=e79]:
+                - link "South Fork Soul Food" [ref=e80] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/place/South+Fork+Soul+Food/data=!4m7!3m6!1s0x88f50371461a804b:0xbb84f2c87b15e39b!8m2!3d33.7180669!4d-84.3821268!16s%2Fg%2F11ltv9zx6_!19sChIJS4AaRnED9YgRm-MVe8jyhLs?authuser=0&hl=en&rclk=1
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: South Fork Soul Food
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - img "4.7 stars 208 Reviews":
+                                    - text: "4.7"
+                                    - text: (208)
+                                - generic: · $10–20
+                            - generic:
+                              - generic:
+                                - generic: Restaurant
+                                - generic:
+                                  - text: ·
+                                  - img "Wheelchair accessible entrance" [ref=e81] [cursor=pointer]:
+                                    - generic [ref=e82]: 
+                                - generic: · 186 McDonough Blvd SE suit B
+                              - generic:
+                                - generic:
+                                  - generic: Closed · Opens 8 AM Mon
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "\"Great customer service, clean environment, FANTASTIC soul food.\""
+                    - link "Order online" [ref=e83] [cursor=pointer]:
+                      - /url: https://www.google.com/searchviewer/42?cvd=CLw_EicKJeICIjIgEhkiF9LX29IPEQoNL2cvMTFsdHY5eng2XxgAOgMI8A0%3D&hl=en-US&gl=us&fo_m=MfohQo559jFvMUOzJVpjPL1YMfZ3bInYwBDuMfaXTPp5KXh-&utm_source=tactile&gei=_9kcau_nJt6KwbkPzPi6-A8&ei=_9kcau_nJt6KwbkPzPi6-A8&fo_s=OA,SOE&opi=79508299&ebb=1&cs=0&foub=mcpp
+                      - generic [ref=e84]:
+                        - generic [ref=e85]: 
+                        - text: Order online
+              - article "This Is It! Southern Kitchen & Bar-B-Q" [ref=e88]:
+                - link "This Is It! Southern Kitchen & Bar-B-Q" [ref=e89] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/place/This+Is+It!+Southern+Kitchen+%26+Bar-B-Q/data=!4m7!3m6!1s0x88f4e215b7f11467:0x78481bda42c4b59d!8m2!3d33.6548335!4d-84.5007928!16s%2Fg%2F1tls3p17!19sChIJZxTxtxXi9IgRnbXEQtobSHg?authuser=0&hl=en&rclk=1
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: This Is It! Southern Kitchen & Bar-B-Q
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - img "4.0 stars 4,037 Reviews":
+                                    - text: "4.0"
+                                    - text: (4,037)
+                                - generic: · $10–20
+                            - generic:
+                              - generic:
+                                - generic: Soul
+                                - generic:
+                                  - text: ·
+                                  - img "Wheelchair accessible entrance" [ref=e90] [cursor=pointer]:
+                                    - generic [ref=e91]: 
+                                - generic: · 3430 Creek Pointe Ave
+                              - generic:
+                                - generic: Counter-serve soul food stop
+                              - generic:
+                                - generic:
+                                  - generic: Closed · Opens 11 AM Mon
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "\"The smothered pork chop was well seasoned and the gravy was spectacular.\""
+                    - link "Order online" [ref=e92] [cursor=pointer]:
+                      - /url: https://www.google.com/searchviewer/42?cvd=CLw_EiUKI-ICIDIeEhciFdLX29IPDwoLL2cvMXRsczNwMTcYADoDCPAN&hl=en-US&gl=us&fo_m=MfohQo559jFvMUOzJVpjPL1YMfZ3bInYwBDuMfaXTPp5KXh-&utm_source=tactile&gei=_9kcau_nJt6KwbkPzPi6-A8&ei=_9kcau_nJt6KwbkPzPi6-A8&fo_s=OA,SOE&opi=79508299&ebb=1&cs=0&foub=mcpp
+                      - generic [ref=e93]:
+                        - generic [ref=e94]: 
+                        - text: Order online
+              - article "Lickety Split Southern Kitchen & Bar" [ref=e97]:
+                - link "Lickety Split Southern Kitchen & Bar" [ref=e98] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/place/Lickety+Split+Southern+Kitchen+%26+Bar/data=!4m7!3m6!1s0x88f4fd0aae562c61:0xbdbf781f6f3fb554!8m2!3d33.6596638!4d-84.4281838!16s%2Fg%2F11h6l3l63k!19sChIJYSxWrgr99IgRVLU_bx94v70?authuser=0&hl=en&rclk=1
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: Lickety Split Southern Kitchen & Bar
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - img "4.4 stars 2,899 Reviews":
+                                    - text: "4.4"
+                                    - text: (2,899)
+                                - generic: · $20–30
+                            - generic:
+                              - generic:
+                                - generic: Soul
+                                - generic:
+                                  - text: ·
+                                  - img "Wheelchair accessible entrance" [ref=e99] [cursor=pointer]:
+                                    - generic [ref=e100]: 
+                                - generic: · 1155 Virginia Ave Suite F
+                              - generic:
+                                - generic: Homestyle eats in an upbeat setting
+                              - generic:
+                                - generic:
+                                  - generic: Closed · Opens 11 AM Tue
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "\"The ribs, grilled chicken, cabbage, greens and candied yams alllll slapped!\""
+                    - link "Order online" [ref=e101] [cursor=pointer]:
+                      - /url: https://www.google.com/searchviewer/42?cvd=CLw_EicKJeICIjIgEhkiF9LX29IPEQoNL2cvMTFoNmwzbDYzaxgAOgMI8A0%3D&hl=en-US&gl=us&fo_m=MfohQo559jFvMUOzJVpjPL1YMfZ3bInYwBDuMfaXTPp5KXh-&utm_source=tactile&gei=_9kcau_nJt6KwbkPzPi6-A8&ei=_9kcau_nJt6KwbkPzPi6-A8&fo_s=OA,SOE&opi=79508299&ebb=1&cs=0&foub=mcpp
+                      - generic [ref=e102]:
+                        - generic [ref=e103]: 
+                        - text: Order online
+              - article "Walter's Soul Food Cafe" [ref=e106]:
+                - link "Walter's Soul Food Cafe" [ref=e107] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/place/Walter%27s+Soul+Food+Cafe/data=!4m7!3m6!1s0x88f50285fd68e68d:0x9b48c284d82ab850!8m2!3d33.680612!4d-84.401637!16s%2Fg%2F1tffq5c1!19sChIJjeZo_YUC9YgRULgq2ITCSJs?authuser=0&hl=en&rclk=1
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: Walter's Soul Food Cafe
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - img "4.0 stars 1,588 Reviews":
+                                    - text: "4.0"
+                                    - text: (1,588)
+                                - generic: · $10–20
+                            - generic:
+                              - generic:
+                                - generic: Soul
+                                - generic:
+                                  - text: ·
+                                  - img "Wheelchair accessible entrance" [ref=e108] [cursor=pointer]:
+                                    - generic [ref=e109]: 
+                                - generic: · 394 Cleveland Ave SW
+                              - generic:
+                                - generic: Classic Southern dishes & BBQ
+                              - generic:
+                                - generic:
+                                  - generic: Closed · Opens 11 AM Mon
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "\"Great seasoned soul food with some of the best prices in the city\""
+              - article "A1 Soulfood" [ref=e112]:
+                - link "A1 Soulfood" [ref=e113] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/place/A1+Soulfood/data=!4m7!3m6!1s0x88f51d62aec6bc27:0x39b3e80f2eb3f589!8m2!3d33.7527051!4d-84.4742758!16s%2Fg%2F11g0g8k1c5!19sChIJJ7zGrmId9YgRifWzLg_oszk?authuser=0&hl=en&rclk=1
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: A1 Soulfood
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - img "4.1 stars 1,713 Reviews":
+                                    - text: "4.1"
+                                    - text: (1,713)
+                                - generic: · $10–20
+                            - generic:
+                              - generic:
+                                - generic: Soul
+                                - generic:
+                                  - text: ·
+                                  - img "Wheelchair accessible entrance" [ref=e114] [cursor=pointer]:
+                                    - generic [ref=e115]: 
+                                - generic: · 2636 M.L.K. Jr Dr SW suite 10
+                              - generic:
+                                - generic: Counter-style soul food at any meal
+                              - generic:
+                                - generic:
+                                  - generic: Closed · Opens 7 AM Mon
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "\"Great soul food, service is amazing and hospitable and atmosphere is great.\""
+                    - link "Order online" [ref=e116] [cursor=pointer]:
+                      - /url: https://www.google.com/searchviewer/42?cvd=CLw_EicKJeICIjIgEhkiF9LX29IPEQoNL2cvMTFnMGc4azFjNRgAOgMI8A0%3D&hl=en-US&gl=us&fo_m=MfohQo559jFvMUOzJVpjPL1YMfZ3bInYwBDuMfaXTPp5KXh-&utm_source=tactile&gei=_9kcau_nJt6KwbkPzPi6-A8&ei=_9kcau_nJt6KwbkPzPi6-A8&fo_s=OA,SOE&opi=79508299&ebb=1&cs=0&foub=mcpp
+                      - generic [ref=e117]:
+                        - generic [ref=e118]: 
+                        - text: Order online
+              - article "Virgil's Gullah Kitchen & Bar West Midtown" [ref=e121]:
+                - link "Virgil's Gullah Kitchen & Bar West Midtown" [ref=e122] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/place/Virgil%27s+Gullah+Kitchen+%26+Bar+West+Midtown/data=!4m7!3m6!1s0x88f505c270024fa7:0xff094cf41765efa0!8m2!3d33.7747021!4d-84.4066173!16s%2Fg%2F11qb69823l!19sChIJp08CcMIF9YgRoO9lF_RMCf8?authuser=0&hl=en&rclk=1
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: Virgil's Gullah Kitchen & Bar West Midtown
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - img "4.4 stars 2,826 Reviews":
+                                    - text: "4.4"
+                                    - text: (2,826)
+                                - generic: · $20–60
+                            - generic:
+                              - generic:
+                                - generic: Soul
+                                - generic:
+                                  - text: ·
+                                  - img "Wheelchair accessible entrance" [ref=e123] [cursor=pointer]:
+                                    - generic [ref=e124]: 
+                                - generic: · 822 Marietta St NW
+                              - generic:
+                                - generic:
+                                  - generic: Open · Closes 11 PM
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "\"Outstanding soul food dishes and wonderful friendly service.\""
+                    - generic:
+                      - generic:
+                        - link "Reserve a table" [ref=e125] [cursor=pointer]:
+                          - /url: https://www.google.com/maps/reserve/v/dine/c/ht18kGWp6Eg?source=pa&opi=79508299&hl=en-US&gei=_9kcau_nJt6KwbkPzPi6-A8&ahbb=1&sourceurl=https://www.google.com/search?tbm%3Dmap%26authuser%3D0%26hl%3Den%26gl%3Dus%26q%3Dsoul%2Bfood%2Brestaurant%2BEast%2BPoint%2BGA%26pb%3D!1ssoul%2Bfood%2Brestaurant%2BEast%2BPoint%2BGA!7i20!10b1!12m50!1m5!18b1!30b1!31m1!1b1!34e1!2m4!5m1!6e2!20e3!39b1!6m23!32i1!49b1!63m0!66b1!85b1!114b1!149b1!206b1!209b1!212b1!216b1!222b1!223b1!232b1!234b1!235b1!244b1!246b1!250b1!253b1!260b1!266b1!273b1!10b1!12b1!13b1!14b1!16b1!17m1!3e1!20m3!5e2!6b1!14b1!46m1!1b0!96b1!99b1!19m4!2m3!1i360!2i120!4i8!20m57!2m2!1i203!2i100!3m2!2i4!5b1!6m6!1m2!1i86!2i86!1m2!1i408!2i240!7m33!1m3!1e1!2b0!3e3!1m3!1e2!2b1!3e2!1m3!1e2!2b0!3e3!1m3!1e8!2b0!3e3!1m3!1e10!2b0!3e3!1m3!1e10!2b1!3e2!1m3!1e10!2b0!3e4!1m3!1e9!2b1!3e2!2b1!9b0!15m8!1m7!1m2!1m1!1e2!2m2!1i195!2i195!3i20!22m5!1s_9kcaoGPE9qNwbkPnZWlKQ!7e81!14m1!3s_9kcaoGPE9qNwbkPnZWlKQ!15i9937!24m107!1m25!13m9!2b1!3b1!4b1!6i1!8b1!9b1!14b1!20b1!25b1!18m14!3b1!4b1!5b1!6b1!13b1!14b1!17b1!21b1!22b1!32b1!33m1!1b1!34b1!36e2!10m1!8e3!11m1!3e1!17b1!20m2!1e3!1e6!24b1!25b1!26b1!27b1!29b1!30m1!2b1!36b1!37b1!39m3!2m2!2i1!3i1!43b1!52b1!54m1!1b1!55b1!56m1!1b1!61m2!1m1!1e1!65m5!3m4!1m3!1m2!1i224!2i298!72m22!1m8!2b1!5b1!7b1!12m4!1b1!2b1!4m1!1e1!4b1!8m10!1m6!4m1!1e1!4m1!1e3!4m1!1e4!3sother_user_google_review_posts__and__hotel_and_vr_partner_review_posts!6m1!1e1!9b1!89b1!90m2!1m1!1e2!98m3!1b1!2b1!3b1!103b1!113b1!114m3!1b1!2m1!1b1!117b1!122m1!1b1!126b1!127b1!128m1!1b0!26m4!2m3!1i80!2i92!4i8!30m28!1m6!1m2!1i0!2i0!2m2!1i530!2i768!1m6!1m2!1i974!2i0!2m2!1i1024!2i768!1m6!1m2!1i0!2i0!2m2!1i1024!2i20!1m6!1m2!1i0!2i748!2m2!1i1024!2i768!34m19!2b1!3b1!4b1!6b1!8m6!1b1!3b1!4b1!5b1!6b1!7b1!9b1!12b1!14b1!20b1!23b1!25b1!26b1!31b1!37m1!1e81!42b1!49m10!3b1!6m2!1b1!2b1!7m2!1e3!2b1!8b1!9b1!10e2!50m3!2e2!3m1!3b1!61b1!67m5!7b1!10b1!14b1!15m1!1b0!69i780!77b1
+                          - generic [ref=e126]:
+                            - generic [ref=e127]: 
+                            - text: Reserve a table
+                        - link "Order online" [ref=e128] [cursor=pointer]:
+                          - /url: https://www.google.com/searchviewer/42?cvd=CLw_EicKJeICIjIgEhkiF9LX29IPEQoNL2cvMTFxYjY5ODIzbBgAOgMI8A0%3D&hl=en-US&gl=us&fo_m=MfohQo559jFvMUOzJVpjPL1YMfZ3bInYwBDuMfaXTPp5KXh-&utm_source=tactile&gei=_9kcau_nJt6KwbkPzPi6-A8&ei=_9kcau_nJt6KwbkPzPi6-A8&fo_s=OA,SOE&opi=79508299&ebb=1&cs=0&foub=mcpp
+                          - generic [ref=e129]:
+                            - generic [ref=e130]: 
+                            - text: Order online
+              - article "Southern Queenz" [ref=e133]:
+                - link "Southern Queenz" [ref=e134] [cursor=pointer]:
+                  - /url: https://www.google.com/maps/place/Southern+Queenz/data=!4m7!3m6!1s0x88f5018f207818fb:0xa8e8fccf2beceac0!8m2!3d33.7478127!4d-84.333684!16s%2Fg%2F11q1dbgfkp!19sChIJ-xh4II8B9YgRwOrsK8_86Kg?authuser=0&hl=en&rclk=1
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: Southern Queenz
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - img "4.6 stars 2,872 Reviews":
+                                    - text: "4.6"
+                                    - text: (2,872)
+                                - generic: · $20–60
+                            - generic:
+                              - generic:
+                                - generic: Soul
+                                - generic:
+                                  - text: ·
+                                  - img "Wheelchair accessible entrance" [ref=e135] [cursor=pointer]:
+                                    - generic [ref=e136]: 
+                                - generic: · 1648 Memorial Dr SE D
+                              - generic:
+                                - generic:
+                                  - generic: Closed · Opens 11 AM Wed
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: "\"Fried chicken wings, yams, mac & cheese were out of this world.\""
+                    - link "Order online" [ref=e137] [cursor=pointer]:
+                      - /url: https://www.google.com/searchviewer/42?cvd=CLw_EicKJeICIjIgEhkiF9LX29IPEQoNL2cvMTFxMWRiZ2ZrcBgAOgMI8A0%3D&hl=en-US&gl=us&fo_m=MfohQo559jFvMUOzJVpjPL1YMfZ3bInYwBDuMfaXTPp5KXh-&utm_source=tactile&gei=_9kcau_nJt6KwbkPzPi6-A8&ei=_9kcau_nJt6KwbkPzPi6-A8&fo_s=OA,SOE&opi=79508299&ebb=1&cs=0&foub=mcpp
+                      - generic [ref=e138]:
+                        - generic [ref=e139]: 
+                        - text: Order online
+              - heading "Get the most out of Google Maps Sign in" [level=2] [ref=e175]:
+                - generic [ref=e176]: Get the most out of Google Maps
+                - button "Sign in" [ref=e179] [cursor=pointer]:
+                  - generic [ref=e181]: Sign in
+            - checkbox "Update results when map moves" [ref=e184] [cursor=pointer]:
+              - generic [ref=e186]: 
+              - text: Update results when map moves
+      - button "Collapse side panel" [ref=e188] [cursor=pointer]:
+        - generic [ref=e189]: 

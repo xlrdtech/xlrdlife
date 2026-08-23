@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agnostic Send</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d6efd">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .drop-zone {
+            border: 2px dashed #dee2e6;
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+            cursor: pointer;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #0d6efd;
+            background-color: #e9ecef;
+        }
+        .file-card {
+            transition: transform 0.2s;
+        }
+        .file-card:hover {
+            transform: translateY(-2px);
+        }
+        #install-button {
+            display: none;
+        }
+        .status-toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary shadow-sm">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-share-fill me-2"></i>Agnostic Send
+            </span>
+            <button id="install-button" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-download me-1"></i>Install App
+            </button>
+        </div>
+    </nav>
+
+    <main class="container my-4 flex-grow-1">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <!-- Drop Zone -->
+                <div id="drop-zone" class="drop-zone p-5 text-center mb-4 shadow-sm">
+                    <i class="bi bi-cloud-arrow-up display-1 text-primary mb-3"></i>
+                    <h4>Drag & Drop Files Here</h4>
+                    <p class="text-muted">or click to browse local files</p>
+                    <input type="file" id="file-input" multiple class="d-none">
+                </div>
+
+                <!-- File List -->
+                <div id="file-list-container" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Selected Files (<span id="file-count">0</span>)</h5>
+                        <button id="clear-all" class="btn btn-outline-danger btn-sm">Clear All</button>
+                    </div>
+                    <div id="file-list" class="list-group shadow-sm mb-4">
+                        <!-- Files injected here -->
+                    </div>
+                    <button id="share-btn" class="btn btn-primary btn-lg w-100 shadow">
+                        <i class="bi bi-send-fill me-2"></i>Share Files
+                    </button>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="text-center py-5">
+                    <p class="text-muted">No files selected yet.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast-container status-toast">
+        <div id="status-toast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-message"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+        const fileListContainer = document.getElementById('file-list-container');
+        const emptyState = document.getElementById('empty-state');
+        const fileCountSpan = document.getElementById('file-count');
+        const shareBtn = document.getElementById('share-btn');
+        const clearAllBtn = document.getElementById('clear-all');
+        const installBtn = document.getElementById('install-button');
+
+        let selectedFiles = [];
+
+        // UI Updates
+        function updateUI() {
+            if (selectedFiles.length > 0) {
+                fileListContainer.style.display = 'block';
+                emptyState.style.display = 'none';
+                fileCountSpan.textContent = selectedFiles.length;
+            } else {
+                fileListContainer.style.display = 'none';
+                emptyState.style.display = 'block';
+            }
+            renderFileList();
+        }
+
+        function renderFileList() {
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const size = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center file-card';
+                item.innerHTML = `
+                    <div class="d-flex align-items-center overflow-hidden">
+                        <i class="bi bi-file-earmark-text h3 mb-0 me-3 text-secondary"></i>
+                        <div class="text-truncate">
+                            <h6 class="mb-0 text-truncate">${file.name}</h6>
+                            <small class="text-muted">${file.type || 'Unknown type'} • ${size}</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-link text-danger p-0" onclick="removeFile(${index})">
+                        <i class="bi bi-x-circle-fill h5"></i>
+                    </button>
+                `;
+                fileList.appendChild(item);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateUI();
+        }
+
+        function showToast(message, type = 'success') {
+            const toastEl = document.getElementById('status-toast');
+            const toastMsg = document.getElementById('toast-message');
+            toastEl.classList.remove('bg-success', 'bg-danger', 'bg-warning');
+            toastEl.classList.add(`bg-${type}`);
+            toastMsg.textContent = message;
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        // File Handling
+        function handleFiles(files) {
+            const newFiles = Array.from(files);
+            selectedFiles = [...selectedFiles, ...newFiles];
+            updateUI();
+        }
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        clearAllBtn.addEventListener('click', () => {
+            selectedFiles = [];
+            updateUI();
+        });
+
+        // Web Share API
+        shareBtn.addEventListener('click', async () => {
+            if (selectedFiles.length === 0) return;
+
+            if (!navigator.share) {
+                showToast('Web Share API not supported on this browser.', 'danger');
+                return;
+            }
+
+            try {
+                const data = {
+                    title: 'Shared Files',
+                    text: `Sending ${selectedFiles.length} file(s) via Agnostic Send`,
+                    files: selectedFiles
+                };
+
+                // Check if sharing files is actually supported
+                if (navigator.canShare && navigator.canShare({ files: selectedFiles })) {
+                    await navigator.share(data);
+                    showToast('Files shared successfully!');
+                } else {
+                    showToast('Sharing these specific files is not supported.', 'warning');
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Sharing failed', err);
+                    showToast('Error sharing files: ' + err.message, 'danger');
+                }
+            }
+        });
+
+        // PWA Installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                installBtn.style.display = 'none';
+            }
+            deferredPrompt = null;
+        });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW failed', err));
+            });
+        }
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

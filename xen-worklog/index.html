@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Xen · Work Log — live</title>
+<style>
+  :root{
+    --ink:#08080c; --card:#12121a; --edge:#22222e; --text:#f4f2ee; --mut:#8f93a3;
+    --irid1:#7b2cbf; --irid2:#06b6d4; --irid3:#ec4899;
+    --ok:#1fd67a; --run:#00d3ff; --gate:#ffb300; --hot:#ff4d6d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1100px 700px at 50% -12%,#171226 0%,var(--ink) 62%);
+    color:var(--text);font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh;padding:26px 15px 70px;text-align:center;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:780px;margin:0 auto}
+  h1{font-size:clamp(25px,6.5vw,38px);font-weight:800;letter-spacing:-.02em;line-height:1.15;
+     background:linear-gradient(94deg,var(--irid1),var(--irid2),var(--irid3));
+     -webkit-background-clip:text;background-clip:text;color:transparent}
+  .tag{color:var(--mut);font-size:13px;margin:8px 0 4px}
+  .pulse{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--run);
+         letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--run);
+       box-shadow:0 0 0 0 rgba(0,211,255,.7);animation:p 1.9s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(0,211,255,.6)}70%{box-shadow:0 0 0 11px rgba(0,211,255,0)}100%{box-shadow:0 0 0 0 rgba(0,211,255,0)}}
+  h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#c3c8d4;
+     margin:34px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--edge)}
+  .card{background:linear-gradient(180deg,var(--card),#0d0d14);border:1px solid var(--edge);
+        border-left-width:4px;border-radius:13px;padding:15px 17px;margin:11px 0;text-align:left}
+  .card.ok{border-left-color:var(--ok)} .card.run{border-left-color:var(--run)}
+  .card.gate{border-left-color:var(--gate)} .card.hot{border-left-color:var(--hot)}
+  .t{font-weight:700;font-size:15.5px;display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+  .b{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+     padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .b.ok{background:#0d3b26;color:var(--ok);border:1px solid #1fd67a55}
+  .b.run{background:#04303c;color:var(--run);border:1px solid #00d3ff55}
+  .b.gate{background:#3a2a05;color:var(--gate);border:1px solid #ffb30055}
+  .b.hot{background:#3a0a16;color:var(--hot);border:1px solid #ff4d6d55}
+  .d{color:#ccd1dc;font-size:14px;margin-top:6px}
+  .d b{color:#fff}
+  ul{margin:8px 0 0 18px} li{margin:5px 0;color:#ccd1dc;font-size:14px}
+  code{background:#00000066;padding:1px 6px;border-radius:5px;font-size:.88em;color:#dfe6ee}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:9px;margin:12px 0}
+  .stat{background:var(--card);border:1px solid var(--edge);border-radius:11px;padding:12px 8px}
+  .stat .n{font-size:26px;font-weight:800;line-height:1.1}
+  .stat .l{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+  .step{display:flex;gap:12px;text-align:left;margin:9px 0}
+  .step .ts{color:var(--irid2);font-weight:800;font-size:13px;min-width:46px;font-variant-numeric:tabular-nums}
+  .step .tx{font-size:14px;color:#ccd1dc}
+  .foot{color:var(--mut);font-size:12px;margin-top:34px;line-height:1.8}
+  .miss{border-left-color:#a2632a}
+</style></head><body><div class="wrap">
+
+  <h1>Xen · Work Log</h1>
+  <div class="tag">Everything in flight, every agent, and what I got wrong</div>
+  <div class="pulse"><span class="dot"></span><span id="live">live · updating</span></div>
+
+  <div class="grid" id="stats"></div>
+
+  <h2>Right now</h2>
+  <div id="now"></div>
+
+  <h2>Step by step</h2>
+  <div id="steps"></div>
+
+  <h2>The agent team</h2>
+  <div id="team"></div>
+
+  <h2>What I got wrong today</h2>
+  <div id="wrong"></div>
+
+  <h2>The thing worth fixing</h2>
+  <div class="card gate">
+    <div class="d">Your action items were never landing anywhere durable. The goal store at
+      <code>~/.xen/state/goals</code> was last updated <b>May 27</b>, every cluster file frozen since
+      <b>July 23</b>, and the only six goals carrying a status were machine housekeeping — npm cache,
+      torch caches, disk reclaim. <b>Zero</b> items sourced from anything you said.
+      The action board froze <b>July 25</b>. The Google Voice thread kept collecting through
+      <b>July 28</b>, then stopped too.
+      <br><br>Commandment 9b says a task living only in a transcript does not exist. Yours have been
+      living only in transcripts. The sweep recovers them. The intake path that stops it happening
+      again is the build that follows.</div>
+  </div>
+
+  <div class="foot">
+    One voice · one field · nothing drops.<br>
+    <span id="gen">…</span> · regenerates itself · <span id="quiet"></span>
+  </div>
+</div>
+
+<script>
+// Live by default (canon 9): the page polls its own status file rather than
+// making you refresh. status.json is regenerated from ground truth -- the
+// workflow journal, git, and an assert-on-body check of the live URL.
+const STEPS = [
+  ["12:03","Verified the seat before anything else: pane %0 correct, omnimind :4441 answering, OmniRoute :20128 serving, claude-mem daemon writing."],
+  ["12:04","You typed x twice. I ran a health probe and then made my first mistake — spoke three wrong answers out loud about what was loading the machine."],
+  ["12:06","Measured properly. Only WindowServer (20%) and the HID driver (11%) were actually burning CPU: four displays with Jump Desktop streaming. Memory was fine the whole time, swap flat at zero."],
+  ["12:07","You said you wanted quiet. Set the canonical gate and proved it blocks by firing a test line that produced nothing. That gate silences the whole daemon fleet, not just me."],
+  ["12:10","Checked what quiet costs today: routine digests and daily loops only. No appointments, nothing medical. The mom-hairdresser reminders are dated Aug 7 and already expired."],
+  ["12:13","You told me to get on the action items and said <b>claude mem</b>. That was the real job and I had not been doing it."],
+  ["12:15","Verified claude-mem was alive <i>and writing</i> (WAL moving), then launched an 11-angle sweep across it and your disk goal stores."],
+  ["12:17","Found the mechanical reason your items vanish — the goal store had nothing of yours in it, only a July cleanup swarm's own chores."],
+  ["12:21","Found the XEN ACTION BOARD live at hitthe.link/action-board, last touched July 25, carrying your real money work."],
+  ["12:24","Read the First Care file. The technical work is <b>already done</b> — the whole thing is gated on four questions Andre never answered at a July 25 meeting."],
+  ["12:27","Drafted the three client messages so the block clears the moment you say go. Nothing sent."],
+  ["12:30","You saved a document on the S26 and couldn't find it. Scanned both phones: zero PDFs, nothing written in 45 minutes. A corrected query found it at storage root, saved 12:30:42."],
+  ["12:33","Pulled it and thought I'd found a broken warranty disclaimer. Rendered the page and <b>looked</b> instead — the document was clean. My extractor was skipping bold spans."],
+  ["12:38","You showed me the generator erasing your input. Read the source, found three real bugs."],
+  ["12:41","Patched them. The test caught <b>my own fix failing</b>. Rewrote it so values survive across contract-type switches, retested, all green."],
+  ["12:43","Committed, rebased onto origin, pushed. Started polling the live URL to confirm it serves the fix rather than trusting a 200."]
+];
+
+const FINDERS = [
+  ["imperative","Your direct orders — “I need you to”, “make sure”, “don't forget”."],
+  ["commitments","Things I promised you and never delivered."],
+  ["blocked","Work left broken or abandoned mid-flight."],
+  ["frustration","You repeating yourself or getting annoyed — the strongest signal of a dropped item."],
+  ["clients","Vette, Big 3 ATL, Allendale, DCZ, M_B, Asa, Eli, Anthony, Squires, XLRD, Self Exec."],
+  ["money","Invoices, unpaid AR, deposits, receipts, quotes, contracts."],
+  ["builds","Flyers, one-pagers, hero pages, decks, 3D — anything half-shipped."],
+  ["infra","OmniRoute, voice, SMS, Beeper, phone, daemons, cookies, auth, 1Password."],
+  ["schedule","Anything with a date attached that hasn't happened."],
+  ["chrono","No keywords at all — walked claude-mem chronologically to catch what no search term matches."],
+  ["disk","Ignored claude-mem entirely; read your goal stores, handoff file, logs and profile tree direct."]
+];
+
+const WRONG = [
+  ["Named two innocent processes as CPU hogs","<code>ps -r</code> sorts by instantaneous CPU, so 2-second-old processes sort to the top. Fixed by sampling twice and diffing."],
+  ["Said contactsd burned a core for five hours","Cumulative CPU time means “at some point”, not “right now”. It was idle."],
+  ["Spent your deep-thinking budget on myself","You said ultrathink and I analysed my own narration failure instead of your work."],
+  ["Nearly told you your client contract was broken","My PDF text extractor skipped bold spans and invented six holes in the legal language. Rendering it and looking was the only thing that caught it."],
+  ["Trusted an HTTP 200","Something else was already bound to my test port and answered 200 for every path. The page I “tested” was never your generator."],
+  ["Shipped a fix that didn't work","My first patch only snapshotted the visible form, so switching contract type still ate everything. The test caught it, not me."]
+];
+
+const el = (h) => { const d = document.createElement('div'); d.innerHTML = h; return d.firstElementChild; };
+
+function paintStatic(){
+  const s = document.getElementById('steps');
+  STEPS.forEach(([t,x]) => s.appendChild(el(
+    `<div class="step"><div class="ts">${t}</div><div class="tx">${x}</div></div>`)));
+
+  const w = document.getElementById('wrong');
+  WRONG.forEach(([h,d]) => w.appendChild(el(
+    `<div class="card miss"><div class="t">${h}</div><div class="d">${d}</div></div>`)));
+}
+
+function paint(j){
+  const sw = j.sweep || {}, lv = (j.ship && j.ship.live) || {};
+
+  document.getElementById('stats').innerHTML = [
+    ['agents', sw.agents_started, 'var(--run)'],
+    ['returned', sw.agents_returned, 'var(--run)'],
+    ['candidates', sw.raw_candidates, '#fff'],
+    ['verified', sw.verified, 'var(--ok)'],
+    ['still open', sw.still_open, 'var(--gate)'],
+    ['already done', sw.already_done, 'var(--mut)']
+  ].map(([l,n,c]) => `<div class="stat"><div class="n" style="color:${c}">${n ?? '–'}</div><div class="l">${l}</div></div>`).join('');
+
+  const shipLive = lv.passed;
+  document.getElementById('now').innerHTML = `
+    <div class="card ${shipLive ? 'ok' : 'gate'}">
+      <div class="t">L7S Legal Engine — three bugs fixed
+        <span class="b ${shipLive ? 'ok' : 'gate'}">${shipLive ? 'live · verified' : 'pushed · not live yet'}</span></div>
+      <div class="d">The dropdown was wiping your client name, address and all five service checkboxes.
+        The header title didn't match the selected contract type, so switching and printing without
+        regenerating shipped an OMNI-OPERATIONS header on a client agreement. And the Ref ID was
+        stamped once per page load, so every contract in a session carried the same one.
+        <ul>
+          <li>Commit <code>${(j.ship && j.ship.commit || '').split(' ')[0] || '—'}</code></li>
+          <li>Served <b>${lv.served_bytes ?? '?'}</b> bytes vs <b>${lv.disk_bytes ?? '?'}</b> on disk</li>
+          <li>Fix marker on the live page: <b>${lv.fix_marker_live ?? 0}</b> (needs to be above zero)</li>
+        </ul></div>
+    </div>
+
+    <div class="card run">
+      <div class="t">Action-item sweep across claude-mem <span class="b run">running</span></div>
+      <div class="d">Eleven finders, each blind to the others so no single blind spot hides an item,
+        then one verifier per distinct item. <b>${sw.raw_candidates ?? '?'}</b> raw candidates
+        deduplicated, <b>${sw.verified ?? 0}</b> checked against real artifacts so far —
+        <b>${sw.still_open ?? 0}</b> genuinely open, <b>${sw.already_done ?? 0}</b> correctly thrown
+        out as already done.</div>
+    </div>
+
+    <div class="card hot">
+      <div class="t">My client drafts — retired as duplicates <span class="b hot">corrected</span></div>
+      <div class="d">I wrote three before reading the July 25 follow-up brief, which already held
+        better reconciled drafts signed East. Mine carried <b>three factual errors</b>, including an
+        ask aimed at the person who had <b>already paid</b>. Sending them would have double-messaged
+        the client with wrong numbers. Retired and superseded rather than left sitting in the tree.
+        <br>Canonical drafts live in <code>dcz-firstcare-followup-2026-07-25.md §7</code>.
+        Nothing has been sent, and nothing goes out without your word.</div>
+    </div>
+
+    <div class="card ok">
+      <div class="t">Your agreement, recovered <span class="b ok">done</span></div>
+      <div class="d">Ref ID GEN-452630, 3 pages, 315,000 bytes. Firefox had dumped it at the
+        <b>root of internal storage</b> under a machine name. Now in Downloads as
+        <code>L7S-Universal-Agreement-GEN-452630-2026-08-09.pdf</code> and filed to
+        <code>brain_/projects/L7S/</code>.</div>
+    </div>`;
+
+  document.getElementById('team').innerHTML = `
+    <div class="card run">
+      <div class="t">Finders — 11 agents <span class="b ok">all returned</span></div>
+      <div class="d">One search angle each, deliberately blind to each other.
+        <ul>${FINDERS.map(([n,d]) => `<li><b>${n}</b> — ${d}</li>`).join('')}</ul></div>
+    </div>
+    <div class="card run">
+      <div class="t">Verifiers — ${sw.verifiers_launched ?? '–'} agents
+        <span class="b run">${sw.verified ?? 0} finished</span></div>
+      <div class="d">One per distinct item. Each is told to <b>assume the item is already done</b> and
+        go find proof, because a false “still open” wastes your attention on finished work. They search
+        claude-mem for later mentions and check the real artifact. An HTTP 200 doesn't count — they
+        assert on content.</div>
+    </div>
+    <div class="card run">
+      <div class="t">Ranker — 1 agent <span class="b gate">last in line</span></div>
+      <div class="d">Ranks the survivors: owed to another human first, then money, then what unblocks
+        other work — grouped by your own scopes, never re-derived.</div>
+    </div>`;
+
+  document.getElementById('gen').textContent = 'updated ' + (j.generated_human || '');
+  document.getElementById('quiet').textContent = j.quiet_gate ? 'voice quiet · your call' : 'voice live';
+}
+
+paintStatic();
+async function tick(){
+  try{
+    const r = await fetch('status.json?cb=' + Date.now(), {cache:'no-store'});
+    if(r.ok){ paint(await r.json()); document.getElementById('live').textContent = 'live · updating'; }
+    else { document.getElementById('live').textContent = 'live · status ' + r.status; }
+  }catch(e){ document.getElementById('live').textContent = 'live · reconnecting'; }
+}
+tick(); setInterval(tick, 5000);
+</script>
+</body></html>

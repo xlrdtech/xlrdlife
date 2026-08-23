@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="robots" content="noindex">
+<title>desk · XEN's universal inbox</title>
+<meta name="description" content="desk — one universal place to drop any file, any type, any size. It reaches XEN.">
+<meta name="theme-color" content="#050507">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="desk">
+<meta property="og:title" content="desk · XEN's universal inbox">
+<meta property="og:description" content="Drop any file, any size. It reaches XEN.">
+<meta property="og:type" content="website">
+
+<link rel="manifest" href="/desk/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/desk/icon.png">
+<link rel="icon" href="/desk/icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!--
+  /desk v2 — XEN's universal inbox, now FULL-SCREEN. The real-time three.js 3D
+  hyper-real desk fills the entire viewport (the desk IS the page). Drop ANY file
+  (any type, any size) anywhere on the page and it (a) uploads to XEN via base64
+  POST to DESK_UPLOAD_URL, and (b) lands on the desk as a 3D paper/card object
+  that settles with a bounce. Files dropped from ANY device also appear: the page
+  polls DESK_LIST_URL (~5s) and renders each returned file as an object on the
+  desk. three.js is vendored locally at /lib/three.module.min.js (same as /dcz).
+  Graceful: if WebGL fails a CSS fallback desk shows (never blank); if
+  DESK_LIST_URL is unreachable we just show locally-dropped files (no error spam).
+  No secrets in this page — it is public + client-facing.
+-->
+<style>
+  :root{
+    --bg:#050507; --bg-2:#0a0a0d; --ink:#eef1f6; --mute:#9aa3b2; --faint:#5c6473;
+    --accent:#b8c6ff; --accent-2:#8ea0ff; --good:#74e0a8; --bad:#ff8d8d;
+    --line:rgba(255,255,255,.10);
+    --glass-fill:rgba(14,15,22,.62); --glass-fill-hi:rgba(22,24,33,.7);
+    --glass-border:rgba(255,255,255,.14); --glass-inset:inset 0 1px 0 rgba(255,255,255,.16);
+    --glass-blur:blur(20px) saturate(160%);
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  ::selection{background:var(--accent);color:#050507}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.55;
+    overflow:hidden;width:100vw;height:100svh;height:100dvh;position:fixed;inset:0;
+    -webkit-font-smoothing:antialiased;overscroll-behavior:none;touch-action:none}
+
+  /* ── FULL-SCREEN 3D DESK STAGE ── */
+  .stage{position:fixed;inset:0;width:100vw;height:100svh;height:100dvh;overflow:hidden;
+    background:
+      radial-gradient(1100px 760px at 50% 22%, rgba(120,135,210,.14), transparent 62%),
+      radial-gradient(820px 700px at 84% 80%, rgba(150,120,90,.07), transparent 58%),
+      radial-gradient(900px 800px at 10% 92%, rgba(90,110,180,.06), transparent 58%),
+      linear-gradient(180deg,#08080b 0%,#050507 60%,#020203 100%)}
+  #deskCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1;cursor:grab}
+  #deskCanvas.grabbing{cursor:grabbing}
+
+  /* CSS fallback desk — visible until WebGL confirms live, or permanently if it fails (never blank) */
+  .fallback{position:absolute;top:54%;left:50%;transform:translate(-50%,-50%);
+    width:min(78vmin,560px);aspect-ratio:1.5/1;z-index:0;opacity:1;transition:opacity .7s}
+  .stage.live .fallback{opacity:0;pointer-events:none}
+  .fallback .top{position:absolute;left:5%;right:5%;top:28%;bottom:12%;border-radius:16px;
+    background:linear-gradient(168deg,#16161b 0%,#0d0d11 42%,#050506 100%);
+    box-shadow:0 40px 80px rgba(0,0,0,.7),inset 0 2px 0 rgba(200,210,255,.1),inset 0 -12px 36px rgba(0,0,0,.6),
+      0 0 0 1px rgba(184,198,255,.08);border:1px solid #0a0a0c}
+  .fallback .top::after{content:"";position:absolute;left:0;right:0;top:0;height:42%;border-radius:16px 16px 40% 40%/16px 16px 22% 22%;
+    background:linear-gradient(180deg,rgba(184,198,255,.14),transparent);mix-blend-mode:screen}
+  .fallback .sheet{position:absolute;left:32%;top:36%;width:36%;aspect-ratio:3/4;border-radius:5px;
+    background:linear-gradient(180deg,#f6f7fb,#dfe3ec);transform:rotate(-5deg);box-shadow:0 16px 30px rgba(0,0,0,.6)}
+  .fallback .shadow{position:absolute;left:10%;right:10%;bottom:4%;height:9%;border-radius:50%;
+    background:radial-gradient(ellipse,rgba(0,0,0,.6),transparent 70%);filter:blur(8px)}
+
+  /* ── SLIM TOP BAR (overlay) ── */
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));
+    background:linear-gradient(180deg,rgba(5,5,7,.7),rgba(5,5,7,0));pointer-events:none}
+  .topbar .left{display:flex;align-items:baseline;gap:12px;pointer-events:auto}
+  .topbar .nm{font-weight:700;font-size:15px;letter-spacing:.36em;text-transform:lowercase;
+    background:linear-gradient(100deg,#f4f7ff,var(--accent) 60%,#f4f7ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .topbar .by{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .status{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.06em;
+    color:var(--mute);background:rgba(14,15,22,.5);border:1px solid var(--line);border-radius:999px;padding:6px 12px;
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);white-space:nowrap}
+  .status .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);box-shadow:0 0 0 0 rgba(116,224,168,0);
+    transition:background .3s}
+  .status.online .dot{background:var(--good);animation:pulse 2.4s ease-in-out infinite}
+  .status.busy .dot{background:var(--accent)}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(116,224,168,.5)}50%{box-shadow:0 0 0 5px rgba(116,224,168,0)}}
+
+  /* ── BOTTOM ACTION DOCK (overlay) ── */
+  .dock{position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:40;
+    display:flex;align-items:center;gap:10px;max-width:min(92vw,640px);width:max-content;pointer-events:none}
+  .dock>*{pointer-events:auto}
+  .pick{display:inline-flex;align-items:center;gap:9px;cursor:pointer;
+    font-weight:600;font-size:14px;letter-spacing:.01em;padding:13px 22px;border-radius:14px;transition:.2s;
+    color:#050507;border:1px solid rgba(184,198,255,.6);
+    background:linear-gradient(135deg,#eef2ff 0%,#b8c6ff 48%,#8ea0ff 100%);
+    box-shadow:0 14px 34px rgba(120,135,210,.4),var(--glass-inset);white-space:nowrap}
+  .pick:hover{transform:translateY(-2px);box-shadow:0 20px 46px rgba(142,160,255,.5),0 0 26px rgba(142,160,255,.3),var(--glass-inset)}
+  .pick:active{transform:translateY(0)}
+  .pick svg{width:18px;height:18px}
+  .connect{display:none;align-items:center;gap:8px;cursor:pointer;
+    font-weight:600;font-size:13px;letter-spacing:.01em;padding:11px 16px;border-radius:14px;transition:.2s;
+    color:var(--ink);border:1px solid var(--line);background:rgba(10,11,18,.62);
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);white-space:nowrap}
+  .connect[data-supported="1"]{display:inline-flex}
+  .connect.on{border-color:rgba(116,224,168,.5);color:#74e0a8}
+  .connect:hover{transform:translateY(-2px)}
+  .connect svg{width:16px;height:16px}
+  .note{flex:1 1 auto;min-width:0;background:rgba(10,11,18,.62);border:1px solid var(--line);border-radius:14px;
+    color:var(--ink);font-family:var(--sans);font-size:14px;font-weight:300;padding:13px 16px;transition:.2s;
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);max-width:280px}
+  .note::placeholder{color:var(--faint)}
+  .note:focus{outline:none;border-color:rgba(184,198,255,.6);box-shadow:0 0 0 3px rgba(142,160,255,.16)}
+  @media(max-width:560px){
+    .note{display:none}
+    .connect{display:none!important}
+    /* on phones the dock spans the width and the picker becomes a big, obvious,
+       thumb-friendly tap target (no drag possible on touch → tap to add). */
+    .dock{width:calc(100vw - 24px);max-width:none;left:0;right:0;transform:none;
+      padding:0 12px;justify-content:center;
+      bottom:max(16px,calc(env(safe-area-inset-bottom) + 10px))}
+    .pick{flex:1 1 auto;justify-content:center;font-size:16px;padding:17px 22px;border-radius:18px;
+      max-width:520px;min-height:56px}
+  }
+  @media(max-width:560px) and (pointer:coarse){ .pick svg{width:20px;height:20px} }
+
+  /* full-window drag tint + landing ring */
+  .dropring{position:fixed;inset:5vmin;z-index:30;border-radius:28px;pointer-events:none;
+    border:2px dashed rgba(184,198,255,.5);background:radial-gradient(ellipse at 50% 56%,rgba(142,160,255,.14),transparent 70%);
+    opacity:0;transform:scale(.97);transition:opacity .22s,transform .22s}
+  body.dragging .dropring{opacity:1;transform:scale(1)}
+  .dropring b{position:absolute;left:0;right:0;top:46%;transform:translateY(-50%);text-align:center;
+    font-weight:600;font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:#dfe5ff;text-shadow:0 2px 12px rgba(0,0,0,.7)}
+  body.dragging::after{content:"";position:fixed;inset:0;z-index:29;pointer-events:none;
+    box-shadow:inset 0 0 160px rgba(142,160,255,.2)}
+
+  /* idle hint */
+  .cue{position:fixed;left:50%;bottom:max(86px,calc(env(safe-area-inset-bottom) + 86px));transform:translateX(-50%);z-index:35;
+    font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:rgba(238,241,246,.4);
+    animation:cuef 3s ease-in-out infinite;pointer-events:none;text-align:center}
+  @keyframes cuef{0%,100%{opacity:.26}50%{opacity:.7}}
+  .cue.hide{opacity:0!important;animation:none}
+
+  /* count / overflow badge (top-right under status, shows how many objects on desk) */
+  .count{position:fixed;top:max(56px,calc(env(safe-area-inset-top) + 44px));right:max(16px,env(safe-area-inset-right));z-index:38;
+    font-size:10.5px;letter-spacing:.08em;color:var(--mute);background:rgba(10,11,18,.5);border:1px solid var(--line);
+    border-radius:999px;padding:5px 11px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+  .count.show{opacity:1}
+
+  /* floating object tooltip (filename / size on hover or tap) */
+  .otip{position:fixed;z-index:42;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;
+    background:linear-gradient(180deg,var(--glass-fill-hi),var(--glass-fill));border:1px solid var(--glass-border);
+    -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border-radius:12px;padding:9px 13px;
+    box-shadow:var(--glass-inset),0 18px 44px rgba(0,0,0,.55);max-width:62vw}
+  .otip.show{opacity:1;transform:translateY(0)}
+  .otip .on{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw}
+  .otip .om{font-size:11px;color:var(--mute);margin-top:2px;letter-spacing:.02em}
+  .otip .os{font-size:10px;margin-top:5px;letter-spacing:.06em;text-transform:uppercase}
+  .otip .os.up{color:var(--accent)} .otip .os.ok{color:var(--good)} .otip .os.err{color:var(--bad)}
+
+  /* upload progress toasts (kept from v1: per-file progress, retry) — bottom-left */
+  .toasts{position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(80px,calc(env(safe-area-inset-bottom) + 80px));
+    z-index:39;display:flex;flex-direction:column;gap:9px;width:min(86vw,320px);max-height:50vh;overflow:hidden auto;
+    -ms-overflow-style:none;scrollbar-width:none}
+  .toasts::-webkit-scrollbar{display:none}
+  .file{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:13px;position:relative;overflow:hidden;
+    background:linear-gradient(180deg,rgba(22,24,33,.78),rgba(12,13,20,.82));
+    border:1px solid var(--glass-border);box-shadow:var(--glass-inset),0 14px 34px rgba(0,0,0,.5);
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    animation:slidein .42s cubic-bezier(.2,.9,.25,1.3) both}
+  @keyframes slidein{0%{opacity:0;transform:translateX(-26px)}100%{opacity:1;transform:none}}
+  .file .ic{flex:0 0 auto;width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,rgba(184,198,255,.22),rgba(142,160,255,.1));border:1px solid var(--line);font-size:16px}
+  .file .b{flex:1 1 auto;min-width:0}
+  .file .n{font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .file .m{font-size:11px;color:var(--mute);margin-top:1px;letter-spacing:.02em}
+  .file .s{flex:0 0 auto;display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:500}
+  .file .bar{position:absolute;left:0;bottom:0;height:2px;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .2s}
+  .spinner{width:15px;height:15px;border-radius:50%;border:2px solid rgba(184,198,255,.25);border-top-color:var(--accent);animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .file.ok .s{color:var(--good)} .file.err .s{color:var(--bad)}
+  .retry{cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border:1px solid rgba(184,198,255,.4);background:rgba(184,198,255,.08);border-radius:999px;padding:4px 10px;transition:.18s}
+  .retry:hover{background:rgba(184,198,255,.18);border-color:rgba(184,198,255,.7)}
+
+  @media (prefers-reduced-motion:reduce){.cue{display:none}.file{animation:none}.status.online .dot{animation:none}}
+</style>
+</head>
+<body>
+
+<!-- ── FULL-SCREEN 3D DESK ── -->
+<div class="stage" id="stage">
+  <canvas id="deskCanvas"></canvas>
+  <div class="fallback" aria-hidden="true">
+    <div class="shadow"></div>
+    <div class="top"><div class="sheet"></div></div>
+  </div>
+</div>
+
+<!-- slim top bar overlay -->
+<header class="topbar">
+  <div class="left">
+    <span class="nm">desk</span>
+    <span class="by">XEN's universal inbox</span>
+  </div>
+  <span class="status" id="status"><span class="dot"></span><span class="txt">connecting…</span></span>
+</header>
+
+<div class="count" id="count"></div>
+
+<!-- idle hint -->
+<div class="cue" id="cue">✦ drop a file anywhere ✦</div>
+
+<!-- landing ring while dragging -->
+<div class="dropring"><b>Release to drop on the desk</b></div>
+
+<!-- bottom action dock -->
+<div class="dock">
+  <input class="note" id="noteField" type="text" placeholder="Note for Xen (optional)…" autocomplete="off">
+  <label class="pick" for="fileInput">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+    Drop a file
+  </label>
+  <input id="fileInput" type="file" accept="*/*" multiple style="display:none">
+  <button class="connect" id="connectFolderBtn" type="button" data-supported="0" title="Sync new files from a local folder automatically">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
+    <span id="connectFolderLabel">Connect a folder</span>
+  </button>
+</div>
+
+<!-- object tooltip -->
+<div class="otip" id="otip"><div class="on"></div><div class="om"></div><div class="os"></div></div>
+
+<!-- upload progress toasts -->
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     THREE.JS FULL-SCREEN DESK — exposes:
+       window.__desk.react(state)          'hover' | 'rest' | 'drop'
+       window.__desk.add(meta) -> id       drop a real object on the desk
+       window.__desk.setStatus(id,kind)    'up' | 'ok' | 'err'
+       window.__desk.has(key)              de-dupe check by name+ts key
+       window.__desk.count()               number of objects on the desk
+     Renders ONLY real objects passed by the app (local drops + DESK_LIST_URL).
+   ════════════════════════════════════════════════════════════════════════ -->
+<script type="importmap">{"imports":{"three":"/lib/three.module.min.js"}}</script>
+<script type="module">
+  import * as THREE from 'three';
+  (function(){
+    var stage=document.getElementById('stage'), canvas=document.getElementById('deskCanvas');
+    var otip=document.getElementById('otip');
+    var renderer;
+    function noop(){}
+    // minimal no-op API so the app never crashes if WebGL is unavailable
+    window.__desk={react:noop,add:function(){return null;},setStatus:noop,has:function(){return false;},count:function(){return 0;}};
+
+    try{ renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true,powerPreference:'high-performance'}); }
+    catch(e){ return; } // CSS fallback stays visible — never blank
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.04;
+    renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+    var scene=new THREE.Scene();
+    var camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+    // CAM_BASE is recomputed responsively in frameCamera(): landscape pulls in
+    // tight, portrait phones pull WAY back + raise FOV so the whole desk fits.
+    var CAM_BASE={x:0,y:3.1,z:5.4};
+    function frameCamera(){
+      var w=stage.clientWidth||(window.visualViewport&&window.visualViewport.width)||window.innerWidth;
+      var h=stage.clientHeight||(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+      var aspect=w/h;
+      // t = how "portrait/narrow" we are (0 = wide desktop, 1 = tall phone portrait)
+      var t=Math.max(0, Math.min(1, (1.0 - aspect) / 0.85));
+      // wider FOV + further/higher camera as the viewport narrows so the full
+      // desk (and dropped objects) stays comfortably in frame in portrait.
+      camera.fov   = 40 + t*26;                 // 40° landscape → ~66° portrait
+      CAM_BASE.y   = 3.1 + t*1.9;               // raise camera in portrait
+      CAM_BASE.z   = 5.4 + t*5.6;               // pull back hard in portrait so the full desk fits
+      camera.position.set(CAM_BASE.x,CAM_BASE.y,CAM_BASE.z);
+      camera.aspect=aspect; camera.lookAt(0,0.05,0); camera.updateProjectionMatrix();
+    }
+    frameCamera();
+
+    // ── studio environment (cool key + warm fill) for glossy obsidian reflections ──
+    var ec=document.createElement('canvas'); ec.width=512; ec.height=256; var g=ec.getContext('2d');
+    var grd=g.createLinearGradient(0,0,0,256);
+    grd.addColorStop(0,'#0a0c14'); grd.addColorStop(.42,'#1a2236'); grd.addColorStop(.52,'#cdd6ff');
+    grd.addColorStop(.6,'#171922'); grd.addColorStop(1,'#040406');
+    g.fillStyle=grd; g.fillRect(0,0,512,256);
+    function blob(x,y,r,c){ g.fillStyle=c; g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); }
+    blob(130,60,46,'rgba(255,255,255,.9)'); blob(392,54,50,'rgba(184,198,255,.62)');
+    blob(300,150,64,'rgba(150,140,170,.32)');
+    var envTex=new THREE.CanvasTexture(ec); envTex.mapping=THREE.EquirectangularReflectionMapping; envTex.colorSpace=THREE.SRGBColorSpace;
+    var pmrem=new THREE.PMREMGenerator(renderer); var envRT=pmrem.fromEquirectangular(envTex);
+    scene.environment=envRT.texture; envTex.dispose(); pmrem.dispose();
+
+    scene.add(new THREE.AmbientLight(0x8a93ab,0.5));
+    var key=new THREE.DirectionalLight(0xfff4e6,2.1); key.position.set(3.4,6.2,3.8);
+    key.castShadow=true; key.shadow.mapSize.set(2048,2048);
+    key.shadow.camera.left=-4; key.shadow.camera.right=4; key.shadow.camera.top=4; key.shadow.camera.bottom=-4;
+    key.shadow.camera.near=1; key.shadow.camera.far=18; key.shadow.bias=-0.0005; scene.add(key);
+    var fill=new THREE.PointLight(0xb8c6ff,16,34); fill.position.set(-4.5,2.4,3.5); scene.add(fill);
+    var warm=new THREE.PointLight(0xffcaa0,8,26); warm.position.set(3.8,-1,2.5); scene.add(warm);
+    // chrome-edge rim glow that swells on hover/drop
+    var rim=new THREE.PointLight(0x8ea0ff,0,16); rim.position.set(0,1.6,2.6); scene.add(rim);
+
+    var deskGroup=new THREE.Group(); scene.add(deskGroup);
+
+    // ── obsidian desktop slab: black gloss + chrome edge band ──
+    var DESK_W=4.4, DESK_D=2.6, TOP_THK=0.2, TOP_Y=0.0;
+    var topMat=new THREE.MeshPhysicalMaterial({ color:0x0a0a0d, metalness:0.35, roughness:0.12,
+      clearcoat:1.0, clearcoatRoughness:0.06, envMapIntensity:1.25, reflectivity:0.6 });
+    var top=new THREE.Mesh(new THREE.BoxGeometry(DESK_W,TOP_THK,DESK_D),topMat);
+    top.position.y=TOP_Y; top.castShadow=true; top.receiveShadow=true; deskGroup.add(top);
+    var SURF_Y=TOP_Y+TOP_THK/2; // y of the desktop surface objects rest on
+
+    // chrome edge band wrapping the slab
+    var chrome=new THREE.MeshPhysicalMaterial({ color:0xdfe4ee, metalness:1.0, roughness:0.16, envMapIntensity:1.6, clearcoat:0.5 });
+    var band=new THREE.Mesh(new THREE.BoxGeometry(DESK_W+0.06,0.055,DESK_D+0.06),chrome);
+    band.position.y=TOP_Y-TOP_THK/2-0.005; band.castShadow=true; deskGroup.add(band);
+    // subtle inner reflection plane (gives the glossy top a "depth" sheen)
+    var glaze=new THREE.Mesh(new THREE.PlaneGeometry(DESK_W-0.18,DESK_D-0.18),
+      new THREE.MeshPhysicalMaterial({ color:0x12131b, metalness:0.2, roughness:0.05, clearcoat:1, transparent:true, opacity:0.5, envMapIntensity:1.4 }));
+    glaze.rotation.x=-Math.PI/2; glaze.position.y=SURF_Y+0.002; deskGroup.add(glaze);
+
+    // ── legs (dark chromed steel) ──
+    var legMat=new THREE.MeshPhysicalMaterial({ color:0x14151b, metalness:0.85, roughness:0.3, clearcoat:0.4 });
+    var LEGH=3.0, LY=TOP_Y-TOP_THK/2-LEGH/2;
+    [[-DESK_W/2+0.28,-DESK_D/2+0.26],[DESK_W/2-0.28,-DESK_D/2+0.26],[-DESK_W/2+0.28,DESK_D/2-0.26],[DESK_W/2-0.28,DESK_D/2-0.26]].forEach(function(p){
+      var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.06,LEGH,24),legMat);
+      leg.position.set(p[0],LY,p[1]); leg.castShadow=true; deskGroup.add(leg);
+    });
+
+    // ── soft contact shadow under the desk ──
+    var floor=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.ShadowMaterial({ opacity:0.34 }));
+    floor.rotation.x=-Math.PI/2; floor.position.y=LY-LEGH/2-0.01; floor.receiveShadow=true; scene.add(floor);
+
+    // ── procedural paper/card surface texture (subtle fibre grain) — cached &
+    //    cheap: one small canvas reused for all light cards, one for dark, so it
+    //    never tanks mobile framerate. Gives a real paper micro-roughness sheen. ──
+    var _paperCache={};
+    function paperTexture(light){
+      var k=light?'l':'d'; if(_paperCache[k]) return _paperCache[k];
+      var c=document.createElement('canvas'); c.width=256; c.height=256; var x=c.getContext('2d');
+      x.fillStyle=light?'#ffffff':'#3a3f4d'; x.fillRect(0,0,256,256);
+      // fine speckle grain (very low contrast so it reads as fibre, not noise)
+      var img=x.getImageData(0,0,256,256), d=img.data;
+      for(var i=0;i<d.length;i+=4){ var n=(Math.random()*2-1)* (light?10:14);
+        d[i]=Math.max(0,Math.min(255,d[i]+n)); d[i+1]=Math.max(0,Math.min(255,d[i+1]+n)); d[i+2]=Math.max(0,Math.min(255,d[i+2]+n)); }
+      x.putImageData(img,0,0);
+      var tex=new THREE.CanvasTexture(c); tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+      tex.repeat.set(2,2); tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=2; tex.__shared=true;
+      _paperCache[k]=tex; return tex;
+    }
+
+    // ── soft round contact-shadow sprite (a blurred radial alpha) baked once and
+    //    reused per object, so each file casts a believable soft shadow on the wood
+    //    even at grazing angles — cheaper & softer than relying on shadow maps alone. ──
+    var _contactTex=null;
+    function contactShadowTexture(){
+      if(_contactTex) return _contactTex;
+      var c=document.createElement('canvas'); c.width=128; c.height=128; var x=c.getContext('2d');
+      var g=x.createRadialGradient(64,64,4,64,64,62);
+      g.addColorStop(0,'rgba(0,0,0,.55)'); g.addColorStop(.55,'rgba(0,0,0,.28)'); g.addColorStop(1,'rgba(0,0,0,0)');
+      x.fillStyle=g; x.beginPath(); x.arc(64,64,62,0,Math.PI*2); x.fill();
+      _contactTex=new THREE.CanvasTexture(c); _contactTex.colorSpace=THREE.SRGBColorSpace; _contactTex.__shared=true; return _contactTex;
+    }
+
+    // ── label canvas helper (filename text drawn onto the object, printed-ink look) ──
+    function labelTexture(name,tint){
+      var c=document.createElement('canvas'); c.width=512; c.height=128; var x=c.getContext('2d');
+      x.clearRect(0,0,512,128);
+      var t=(name||'file'); if(t.length>30) t=t.slice(0,14)+'…'+t.slice(-13);
+      x.font='600 40px Inter, system-ui, sans-serif'; x.textAlign='center'; x.textBaseline='middle';
+      x.fillStyle='rgba(0,0,0,.3)'; x.fillText(t,257,67);            // soft drop for ink depth
+      x.fillStyle=tint||'#2a2f3d'; x.fillText(t,256,64);
+      var tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=4; return tex;
+    }
+
+    // ── small colored corner-tag texture (file-type cue: PDF / IMG / VID …) ──
+    function cornerTagTexture(cue,hexAccent){
+      var c=document.createElement('canvas'); c.width=128; c.height=128; var x=c.getContext('2d');
+      x.clearRect(0,0,128,128);
+      var col='#'+('000000'+(hexAccent>>>0).toString(16)).slice(-6);
+      // a folded corner triangle in the accent color
+      x.fillStyle=col; x.beginPath(); x.moveTo(128,0); x.lineTo(128,128); x.lineTo(0,0); x.closePath(); x.fill();
+      // crease highlight
+      x.strokeStyle='rgba(255,255,255,.35)'; x.lineWidth=3; x.beginPath(); x.moveTo(0,0); x.lineTo(128,128); x.stroke();
+      // type letters on the tag
+      x.save(); x.translate(86,42); x.rotate(Math.PI/4);
+      x.fillStyle='rgba(8,9,14,.92)'; x.font='700 30px Inter, system-ui, sans-serif';
+      x.textAlign='center'; x.textBaseline='middle'; x.fillText((cue||'•'),0,0); x.restore();
+      var tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=4; return tex;
+    }
+
+    // category → look (color of card + accent corner + short type cue). Real type
+    // only, never fake content. kind drives realism: 'paper' = thick page stack,
+    // 'card' = single beveled card. cue = tiny type tag printed on the corner.
+    function look(meta){
+      var n=(meta.name||'').toLowerCase(), tp=(meta.type||'');
+      if(/image\//.test(tp)||/\.(png|jpe?g|gif|webp|heic|svg|avif)$/.test(n)) return {c:0xeef1f8,kind:'photo',accent:0x8ea0ff,cue:'IMG'};
+      if(/video\//.test(tp)||/\.(mp4|mov|mkv|webm|avi)$/.test(n)) return {c:0x1c1f2b,kind:'card',accent:0xff9d8d,cue:'VID'};
+      if(/audio\//.test(tp)||/\.(mp3|wav|m4a|aac|flac|ogg)$/.test(n)) return {c:0x16202a,kind:'card',accent:0x74e0a8,cue:'AUD'};
+      if(/pdf/.test(tp)||/\.pdf$/.test(n)) return {c:0xf3efe6,kind:'paper',accent:0xff8d8d,cue:'PDF'};
+      if(/zip|rar|7z|tar|gz/.test(tp+n)) return {c:0x2a2622,kind:'card',accent:0xffcaa0,cue:'ZIP'};
+      if(/\.(psd|ai|fig|sketch|xd)$/.test(n)) return {c:0x231a2c,kind:'card',accent:0xb88eff,cue:'ART'};
+      if(/\.(xls|xlsx|csv|numbers)$/.test(n)) return {c:0xeaf4ec,kind:'paper',accent:0x74e0a8,cue:'XLS'};
+      if(/\.(ppt|pptx|key)$/.test(n)) return {c:0x2a2226,kind:'card',accent:0xffcaa0,cue:'PPT'};
+      if(/\.(doc|docx|pages|txt|rtf|md)$/.test(n)) return {c:0xf6f7fb,kind:'paper',accent:0x8ea0ff,cue:'DOC'};
+      return {c:0xf2f3f8,kind:'paper',accent:0xb8c6ff,cue:'FILE'};
+    }
+
+    // ── objects on the desk (real files only) ──
+    var objects=[];           // {mesh,meta,id,status,phys}
+    var objById={};
+    var seen={};              // de-dupe by key
+    var nextId=1;
+    var MAX=30;
+
+    function placement(){
+      // scatter across the desktop with slight bias toward center, avoid edges
+      var mx=DESK_W/2-0.55, mz=DESK_D/2-0.45;
+      return { x:(Math.random()*2-1)*mx*0.92, z:(Math.random()*2-1)*mz*0.9, rot:(Math.random()-0.5)*0.9 };
+    }
+
+    // shared geometries/materials reused across objects (perf: no per-file allocs
+    // of the same shape — only the textured top card + tag are unique per file).
+    var EDGE_MAT=new THREE.MeshStandardMaterial({ color:0xd9dbe0, roughness:0.9, metalness:0.0 });
+    var EDGE_MAT_DARK=new THREE.MeshStandardMaterial({ color:0x2a2e38, roughness:0.92, metalness:0.0 });
+    EDGE_MAT.__shared=true; EDGE_MAT_DARK.__shared=true;
+
+    function buildMesh(meta){
+      var lk=look(meta);
+      var grp=new THREE.Group();
+      var lightCard=(lk.c>0x808080);
+      var w=0.80, h=0.58;
+      // real thickness: paper stacks are taller, single cards thinner. Randomize a
+      // touch so no two look identical.
+      var isPaper=(lk.kind==='paper');
+      var thick=(isPaper?0.05:0.03) + Math.random()*0.018;
+
+      // ── the body: a thick slab with paper grain (map + roughnessMap) so the
+      //    edges read as a real stack of sheets, not a flat plane ──
+      var grain=paperTexture(lightCard);
+      var bodyMat=new THREE.MeshPhysicalMaterial({
+        color:lk.c, map:grain, roughnessMap:grain,
+        roughness:isPaper?0.86:0.62, metalness:0.0,
+        clearcoat:isPaper?0.06:0.28, clearcoatRoughness:isPaper?0.7:0.35,
+        envMapIntensity:0.6 });
+      var body=new THREE.Mesh(new THREE.BoxGeometry(w,thick,h),bodyMat);
+      body.castShadow=true; body.receiveShadow=true; grp.add(body);
+
+      // ── beveled top card: a slightly smaller, slightly raised sheet with a
+      //    crisp lighter edge → gives the "card with beveled edges" silhouette ──
+      var topW=w*0.965, topH=h*0.965, topT=0.006;
+      var topMat2=new THREE.MeshPhysicalMaterial({
+        color:lk.c, map:grain, roughnessMap:grain,
+        roughness:isPaper?0.8:0.5, metalness:0.0,
+        clearcoat:isPaper?0.1:0.4, clearcoatRoughness:0.3, envMapIntensity:0.7 });
+      var topCard=new THREE.Mesh(new THREE.BoxGeometry(topW,topT,topH),topMat2);
+      topCard.position.y=thick/2+topT/2-0.001; topCard.castShadow=true; topCard.receiveShadow=true; grp.add(topCard);
+      var topY=topCard.position.y+topT/2; // surface objects print onto
+
+      // ── thin edge liners on the sheet sides (the "pages" highlight) ──
+      var liner=new THREE.Mesh(new THREE.BoxGeometry(w*0.998,thick*0.5,h*0.998), lightCard?EDGE_MAT:EDGE_MAT_DARK);
+      liner.position.y=-thick*0.18; grp.add(liner);
+
+      // ── filename label printed flat on the top card (ink that suits the card) ──
+      var labMat=new THREE.MeshBasicMaterial({ map:labelTexture(meta.name, lightCard?'#2a2f3d':'#dfe5ff'), transparent:true });
+      var lab=new THREE.Mesh(new THREE.PlaneGeometry(topW*0.9,(topW*0.9)*0.25),labMat);
+      lab.rotation.x=-Math.PI/2; lab.position.set(0,topY+0.0015,h*0.1); grp.add(lab);
+
+      // ── file-type cue: folded colored corner tag in the top-right ──
+      var tagMat=new THREE.MeshBasicMaterial({ map:cornerTagTexture(lk.cue,lk.accent), transparent:true });
+      var tagSz=Math.min(topW,topH)*0.26;
+      var tag=new THREE.Mesh(new THREE.PlaneGeometry(tagSz,tagSz),tagMat);
+      tag.rotation.x=-Math.PI/2; tag.position.set(topW/2-tagSz/2, topY+0.0016, -topH/2+tagSz/2); grp.add(tag);
+
+      // ── soft contact shadow that hugs the desk under this object ──
+      var shMat=new THREE.MeshBasicMaterial({ map:contactShadowTexture(), transparent:true, depthWrite:false,
+        opacity:0.5, blending:THREE.NormalBlending });
+      var sh=new THREE.Mesh(new THREE.PlaneGeometry(w*1.5,h*1.5),shMat);
+      // sit the shadow just above the glaze plane (SURF_Y+0.002) to avoid z-fight
+      sh.rotation.x=-Math.PI/2; sh.position.y=-thick/2+0.0035; sh.renderOrder=2; grp.add(sh);
+      grp.userData.contact=sh; grp.userData.thick=thick;
+
+      var pl=placement();
+      grp.position.set(pl.x, SURF_Y+2.6+Math.random()*0.8, pl.z); // start high, fall
+      grp.rotation.y=pl.rot;
+      // slight natural tilt so a pile of files never looks machine-stacked
+      grp.rotation.x=(Math.random()-0.5)*0.04; grp.rotation.z=(Math.random()-0.5)*0.04;
+      grp.userData.restY=SURF_Y+thick/2+0.004; // sit just above the glaze sheen; stacking added in stackAdjust
+      return grp;
+    }
+
+    function stackAdjust(mesh){
+      // rest height so the slab's bottom sits flush on the desk; if landing near
+      // another object, sit slightly on top of it (natural stacking).
+      var myThick=mesh.userData.thick||0.04;
+      var rest=SURF_Y+myThick/2+0.004, near=0;
+      for(var i=0;i<objects.length;i++){
+        var o=objects[i].mesh; if(o===mesh) continue;
+        var dx=o.position.x-mesh.position.x, dz=o.position.z-mesh.position.z;
+        if(dx*dx+dz*dz<0.34){ var ot=o.userData.thick||0.04; rest=Math.max(rest, o.userData.restY+ot/2+myThick/2+0.002); near++; }
+      }
+      mesh.userData.restY=rest;
+      // when stacked above the desk, fade the contact shadow (it's no longer on wood)
+      if(mesh.userData.contact){ var lift=rest-(SURF_Y+myThick/2+0.004); mesh.userData.contact.material.opacity=Math.max(0.12, 0.5-lift*4); }
+    }
+
+    // public: add a real object
+    function add(meta){
+      if(!meta||!meta.name) return null;
+      var k=meta.key||(meta.name+'|'+(meta.ts||''));
+      if(seen[k]) return objById[seen[k]]?seen[k]:null;
+      var id='o'+(nextId++);
+      var mesh=buildMesh(meta);
+      stackAdjust(mesh);
+      mesh.userData.vy=0; mesh.userData.landed=false; mesh.userData.settle=0; mesh.userData.id=id;
+      deskGroup.add(mesh);
+      var rec={mesh:mesh,meta:meta,id:id,status:meta.status||'ok',key:k};
+      objects.push(rec); objById[id]=rec; seen[k]=id;
+      // cap: remove oldest beyond MAX (keep newest on the desk)
+      if(objects.length>MAX){
+        var old=objects.shift(); deskGroup.remove(old.mesh); delete objById[old.id]; delete seen[old.key];
+        disposeGroup(old.mesh);
+      }
+      pulse(); rim.intensity=2.6;
+      return id;
+    }
+    function disposeGroup(grp){ grp.traverse(function(n){
+      if(n.geometry)n.geometry.dispose();
+      if(n.material){
+        // never dispose SHARED resources (cached grain/contact textures, edge mats)
+        if(n.material.map && !n.material.map.__shared) n.material.map.dispose();
+        if(!n.material.__shared) n.material.dispose();
+      }
+    }); }
+
+    function setStatus(id,kind){ var r=objById[id]; if(r) r.status=kind; }
+    function has(key){ return !!seen[key]; }
+    function count(){ return objects.length; }
+
+    // ── interaction state ──
+    var target={lift:0,glow:0,pulse:0,orbX:0,orbY:0};
+    function pulse(){ target.pulse=1; }
+    window.__desk={ react:function(state){
+        if(state==='hover'){ target.lift=0.18; target.glow=1; rim.intensity=Math.max(rim.intensity,2.2); }
+        else if(state==='drop'){ target.pulse=1; rim.intensity=3.2; }
+        else { target.lift=0; target.glow=0; }
+      }, add:add, setStatus:setStatus, has:has, count:count };
+
+    // ── DRAG-TO-ORBIT (pointer/touch) + idle drift + pinch-zoom (touch) ──
+    var dragging=false, lastX=0,lastY=0, userOrbX=0,userOrbY=0, tUserOrbX=0,tUserOrbY=0;
+    var pointerNDC=new THREE.Vector2(-2,-2), hovering=false;
+    // user zoom: 1 = framed default, <1 = closer, >1 = further. Pinch + wheel.
+    var userZoom=1, tUserZoom=1;
+    function clampZoom(z){ return Math.max(0.55, Math.min(1.9, z)); }
+    canvas.addEventListener('pointerdown',function(e){ dragging=true; lastX=e.clientX; lastY=e.clientY; canvas.classList.add('grabbing'); canvas.setPointerCapture&&canvas.setPointerCapture(e.pointerId); });
+    window.addEventListener('pointerup',function(){ dragging=false; canvas.classList.remove('grabbing'); });
+    window.addEventListener('pointermove',function(e){
+      var r=canvas.getBoundingClientRect();
+      pointerNDC.x=((e.clientX-r.left)/r.width)*2-1; pointerNDC.y=-(((e.clientY-r.top)/r.height)*2-1);
+      if(dragging){ var dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+        tUserOrbY+=dx*0.006; tUserOrbX+=dy*0.004;
+        tUserOrbX=Math.max(-0.35,Math.min(1.0,tUserOrbX)); // vertical: from the side up to near top-down (never under the floor)
+        // horizontal (tUserOrbY): UNCLAMPED → full 360° spin all the way around the desk
+      }
+    });
+    canvas.addEventListener('pointerleave',function(){ pointerNDC.set(-2,-2); });
+
+    // desktop scroll-wheel zoom
+    canvas.addEventListener('wheel',function(e){ e.preventDefault(); tUserZoom=clampZoom(tUserZoom*(1+e.deltaY*0.0012)); },{passive:false});
+
+    // ── TOUCH: 1-finger orbit (via pointer above), 2-finger pinch-zoom ──
+    var pinchStartDist=0, pinchStartZoom=1, pinching=false;
+    function touchDist(t){ var a=t[0],b=t[1]; var dx=a.clientX-b.clientX,dy=a.clientY-b.clientY; return Math.hypot(dx,dy); }
+    canvas.addEventListener('touchstart',function(e){
+      if(e.touches.length===2){ pinching=true; dragging=false; canvas.classList.remove('grabbing');
+        pinchStartDist=touchDist(e.touches); pinchStartZoom=tUserZoom; e.preventDefault(); }
+    },{passive:false});
+    canvas.addEventListener('touchmove',function(e){
+      if(pinching && e.touches.length===2){
+        var d=touchDist(e.touches); if(pinchStartDist>0){ tUserZoom=clampZoom(pinchStartZoom*(pinchStartDist/d)); }
+        e.preventDefault();
+      }
+    },{passive:false});
+    function endPinch(e){ if(e.touches && e.touches.length<2){ pinching=false; pinchStartDist=0; } }
+    canvas.addEventListener('touchend',endPinch); canvas.addEventListener('touchcancel',endPinch);
+
+    // ── raycast hover/tap → tooltip (filename + size + status) ──
+    var ray=new THREE.Raycaster();
+    function pick(){
+      ray.setFromCamera(pointerNDC,camera);
+      var hits=ray.intersectObjects(objects.map(function(o){return o.mesh;}),true);
+      if(hits.length){ var m=hits[0].object; while(m.parent && !m.userData.id) m=m.parent; return objById[m.userData.id]||null; }
+      return null;
+    }
+    var hoverRec=null, lastClientX=0, lastClientY=0;
+    window.addEventListener('pointermove',function(e){ lastClientX=e.clientX; lastClientY=e.clientY; });
+    function showTip(rec,cx,cy){
+      var sz=rec.meta.size!=null?fmtSize(rec.meta.size):'';
+      otip.querySelector('.on').textContent=rec.meta.name||'file';
+      otip.querySelector('.om').textContent=[sz, rec.meta.type||''].filter(Boolean).join(' · ');
+      var os=otip.querySelector('.os'); os.className='os '+(rec.status==='up'?'up':rec.status==='err'?'err':'ok');
+      os.textContent=rec.status==='up'?'uploading…':rec.status==='err'?'upload failed':'on the desk';
+      otip.classList.add('show');
+      var ox=Math.min(window.innerWidth-otip.offsetWidth-12, Math.max(12, cx+14));
+      var oy=Math.min(window.innerHeight-otip.offsetHeight-12, Math.max(56, cy-otip.offsetHeight-12));
+      otip.style.left=ox+'px'; otip.style.top=oy+'px';
+    }
+    function hideTip(){ otip.classList.remove('show'); }
+    // tap on touch shows tip briefly
+    canvas.addEventListener('click',function(e){
+      var r=canvas.getBoundingClientRect();
+      pointerNDC.x=((e.clientX-r.left)/r.width)*2-1; pointerNDC.y=-(((e.clientY-r.top)/r.height)*2-1);
+      var rec=pick(); if(rec){ showTip(rec,e.clientX,e.clientY); clearTimeout(showTip._t); showTip._t=setTimeout(hideTip,2600); }
+      else hideTip();
+    });
+
+    function fmtSize(b){ if(b==null)return''; if(b<1024)return b+' B';
+      var u=['KB','MB','GB','TB'],i=-1; do{b/=1024;i++;}while(b>=1024&&i<u.length-1);
+      return b.toFixed(b<10?1:0)+' '+u[i]; }
+
+    // ── resize ── use the REAL visible viewport (visualViewport handles iOS
+    // Safari dynamic bars / dvh), cap DPR at 2 for mobile perf, and re-frame the
+    // camera responsively on every resize + orientation change.
+    var clock=new THREE.Clock();
+    function resize(){
+      // match the drawing buffer to the element's ACTUAL painted CSS box (the stage
+      // is position:fixed;inset:0;height:100dvh → clientHeight tracks iOS dynamic
+      // bars correctly), so the render never stretches. DPR capped at 2 for perf.
+      var ww=stage.clientWidth||(window.visualViewport&&window.visualViewport.width)||window.innerWidth;
+      var hh=stage.clientHeight||(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+      renderer.setSize(ww,hh,false);
+      frameCamera();
+    }
+    window.addEventListener('resize',resize);
+    window.addEventListener('orientationchange',function(){ resize(); setTimeout(resize,250); });
+    if(window.visualViewport){ window.visualViewport.addEventListener('resize',resize); }
+    resize();
+
+    // ── render loop ──
+    var lift=0,glow=0,pulseV=0;
+    (function loop(){
+      requestAnimationFrame(loop);
+      var t=clock.getElapsedTime(), dt=Math.min(clock.getDelta(),0.05);
+      lift+=(target.lift-lift)*0.1; glow+=(target.glow-glow)*0.1;
+      pulseV+=(0-pulseV)*0.07; if(target.pulse){ pulseV=1; target.pulse=0; }
+      userOrbX+=(tUserOrbX-userOrbX)*0.1; userOrbY+=(tUserOrbY-userOrbY)*0.1;
+      userZoom+=(tUserZoom-userZoom)*0.12;
+      if(!dragging){ tUserOrbX*=0.985; } // tilt eases back; horizontal angle HOLDS so you can rest at any point of the full 360° spin
+
+      // gentle idle motion + user orbit + drag lift
+      deskGroup.rotation.y=Math.sin(t*0.22)*0.13 + userOrbY;
+      deskGroup.rotation.x=Math.sin(t*0.17)*0.025 + userOrbX*0.6;
+      deskGroup.position.y=lift*0.4 + Math.sin(t*0.8)*0.012 + pulseV*0.06;
+
+      // reactive light: cool brighten on hover/drop, chrome rim swell
+      key.intensity=2.1+glow*0.7+pulseV*1.0;
+      fill.intensity=16+glow*16+pulseV*22;
+      rim.intensity+=(0-rim.intensity)*0.05; if(glow>0.5) rim.intensity=Math.max(rim.intensity,1.4*glow);
+      // apply responsive base framing + user pinch/wheel zoom + drag-lift offset
+      camera.position.y=CAM_BASE.y*userZoom-lift*0.5; camera.position.z=CAM_BASE.z*userZoom-lift*0.4; camera.lookAt(0,0.05,0);
+
+      // physics: objects fall and settle with a little bounce
+      for(var i=0;i<objects.length;i++){ var o=objects[i].mesh, u=o.userData;
+        if(!u.landed){ u.vy-=9.8*dt*0.16; o.position.y+=u.vy;
+          o.rotation.z+=0.002; // tiny tumble while falling
+          if(o.position.y<=u.restY){ o.position.y=u.restY; u.vy*=-0.34; u.settle++;
+            if(Math.abs(u.vy)<0.02||u.settle>4){ u.landed=true; o.position.y=u.restY; u.vy=0; } }
+        }
+      }
+
+      // hover detection (desktop): update tooltip near cursor
+      if(!('ontouchstart' in window)){
+        var rec=pick();
+        if(rec){ if(rec!==hoverRec){ hoverRec=rec; } showTip(rec,lastClientX,lastClientY); canvas.style.cursor=dragging?'grabbing':'pointer'; }
+        else { if(hoverRec){ hoverRec=null; hideTip(); } canvas.style.cursor=dragging?'grabbing':'grab'; }
+      }
+
+      renderer.render(scene,camera);
+    })();
+
+    // mark live (fade CSS fallback) after first frame
+    requestAnimationFrame(function(){ stage.classList.add('live'); });
+  })();
+</script>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     APP: upload flow (base64 POST → DESK_UPLOAD_URL) + DESK_LIST_URL polling.
+     Renders ONLY real local drops and real server-listed files on the desk.
+   ════════════════════════════════════════════════════════════════════════ -->
+<script>
+  // ──────────────────────────────────────────────────────────────────────────
+  //  ENDPOINTS — change here only. Wired separately on the backend.
+  const DESK_UPLOAD_URL = "https://xen.xlrd.org/api/desk-drop"; // base64 POST target
+  const DESK_LIST_URL   = "https://xen.xlrd.org/api/desk-list"; // GET { files:[{name,size,ts}] }
+  // ──────────────────────────────────────────────────────────────────────────
+
+  (function(){
+    var toasts=document.getElementById('toasts');
+    var input=document.getElementById('fileInput');
+    var noteField=document.getElementById('noteField');
+    var statusEl=document.getElementById('status');
+    var countEl=document.getElementById('count');
+    var cue=document.getElementById('cue');
+    var dragDepth=0, gotFirstDrop=false;
+
+    // touch-aware affordance: you can't drag a file on a phone, so make the cue +
+    // picker label say "tap to add" on touch devices (tapping opens the picker,
+    // and the chosen file lands on the desk + uploads through the same pipeline).
+    var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints>0);
+    if(isTouch){
+      try{
+        cue.textContent='✦ tap below to add a file ✦';
+        var pickLabel=document.querySelector('.pick');
+        if(pickLabel){ pickLabel.lastChild.textContent=' Tap to add a file'; }
+      }catch(e){}
+    }
+
+    function react(s){ try{ window.__desk.react(s); }catch(e){} }
+    function deskHas(key){ try{ return window.__desk.has(key); }catch(e){ return false; } }
+    function deskAdd(meta){ try{ return window.__desk.add(meta); }catch(e){ return null; } }
+    function deskStatus(id,k){ try{ window.__desk.setStatus(id,k); }catch(e){} }
+    function deskCount(){ try{ return window.__desk.count(); }catch(e){ return 0; } }
+
+    function setStatusBar(kind,txt){
+      statusEl.className='status'+(kind?(' '+kind):'');
+      statusEl.querySelector('.txt').textContent=txt;
+    }
+    function refreshCount(extra){
+      var n=deskCount();
+      if(n<=0){ countEl.classList.remove('show'); return; }
+      countEl.textContent=n+' on the desk'+(extra?(' · '+extra):'');
+      countEl.classList.add('show');
+    }
+    function hideCue(){ if(!gotFirstDrop){ gotFirstDrop=true; cue.classList.add('hide'); } }
+
+    function fmtSize(b){ if(b==null)return''; if(b<1024)return b+' B';
+      var u=['KB','MB','GB','TB'],i=-1; do{b/=1024;i++;}while(b>=1024&&i<u.length-1);
+      return b.toFixed(b<10?1:0)+' '+u[i]; }
+    function iconFor(type,name){
+      var t=(type||'')+' '+(name||'').toLowerCase();
+      if(/image\//.test(type)||/\.(png|jpe?g|gif|webp|heic|svg|avif)$/.test(name)) return '🖼️';
+      if(/video\//.test(type)||/\.(mp4|mov|mkv|webm|avi)$/.test(name)) return '🎬';
+      if(/audio\//.test(type)||/\.(mp3|wav|m4a|aac|flac|ogg)$/.test(name)) return '🎵';
+      if(/pdf/.test(t)) return '📄';
+      if(/zip|rar|7z|tar|gz/.test(t)) return '🗜️';
+      if(/\.(doc|docx|pages|txt|rtf|md)$/.test(name)) return '📝';
+      if(/\.(xls|xlsx|csv|numbers)$/.test(name)) return '📊';
+      if(/\.(ppt|pptx|key)$/.test(name)) return '📽️';
+      if(/\.(psd|ai|fig|sketch|xd)$/.test(name)) return '🎨';
+      return '📎';
+    }
+
+    function readAsBase64(file){
+      return new Promise(function(resolve,reject){
+        var fr=new FileReader();
+        fr.onload=function(){ var s=String(fr.result||''); var c=s.indexOf(','); resolve(c>=0?s.slice(c+1):s); };
+        fr.onerror=function(){ reject(fr.error||new Error('read failed')); };
+        fr.readAsDataURL(file);
+      });
+    }
+
+    // ── upload progress toast (kept from v1: per-file progress + retry) ──
+    function makeToast(file){
+      var row=document.createElement('div'); row.className='file';
+      row.innerHTML=
+        '<div class="ic">'+iconFor(file.type,file.name)+'</div>'+
+        '<div class="b"><div class="n"></div><div class="m"></div></div>'+
+        '<div class="s"><span class="spinner"></span><span class="t">Uploading…</span></div>'+
+        '<div class="bar"></div>';
+      row.querySelector('.n').textContent=file.name||'file';
+      row.querySelector('.m').textContent=fmtSize(file.size)+(file.type?(' · '+file.type):'');
+      toasts.prepend(row);
+      return row;
+    }
+    function toastState(row,kind,msg){
+      var s=row.querySelector('.s'); row.classList.remove('ok','err');
+      if(kind==='ok'){ row.classList.add('ok'); s.innerHTML='<span class="t">✓ Sent to Xen</span>';
+        setTimeout(function(){ row.style.transition='opacity .5s,transform .5s'; row.style.opacity='0'; row.style.transform='translateX(-26px)';
+          setTimeout(function(){ row.remove(); },520); },3200); }
+      else if(kind==='err'){ row.classList.add('err');
+        s.innerHTML='<span class="t">✗ '+(msg||'Failed')+'</span> <button class="retry" type="button">Retry</button>'; }
+      else { s.innerHTML='<span class="spinner"></span><span class="t">'+(msg||'Uploading…')+'</span>'; }
+    }
+
+    function uploadFile(file,row,objId){
+      toastState(row,'progress','Reading…');
+      var bar=row.querySelector('.bar');
+      return readAsBase64(file).then(function(b64){
+        return new Promise(function(resolve,reject){
+          var xhr=new XMLHttpRequest();
+          xhr.open('POST',DESK_UPLOAD_URL,true);
+          xhr.setRequestHeader('Content-Type','application/json');
+          xhr.upload.onprogress=function(e){ if(e.lengthComputable){ var p=Math.round(e.loaded/e.total*100);
+            bar.style.width=p+'%'; toastState(row,'progress','Uploading '+p+'%'); } };
+          xhr.onload=function(){ if(xhr.status>=200&&xhr.status<300){ bar.style.width='100%'; resolve(); } else reject(new Error('Server '+xhr.status)); };
+          xhr.onerror=function(){ reject(new Error('Network error')); };
+          xhr.send(JSON.stringify({
+            filename:file.name||'file', contentType:file.type||'application/octet-stream',
+            size:file.size, caption:(noteField.value||'').trim(), b64:b64
+          }));
+        });
+      }).then(function(){ toastState(row,'ok'); deskStatus(objId,'ok'); refreshCount(); })
+      .catch(function(err){
+        toastState(row,'err',(err&&err.message)||'Failed'); deskStatus(objId,'err');
+        row.querySelector('.retry').addEventListener('click',function(){ uploadFile(file,row,objId); },{once:true});
+      });
+    }
+
+    function handleFiles(list){
+      var files=Array.prototype.slice.call(list||[]).filter(function(f){ return f && (f.size>0 || f.type); });
+      if(!files.length) return;
+      hideCue(); react('drop');
+      files.forEach(function(file){
+        // land a real object on the desk immediately (status: uploading)
+        var key=file.name+'|local|'+Date.now()+'|'+Math.random().toString(36).slice(2,6);
+        var objId=deskAdd({ name:file.name, size:file.size, type:file.type, ts:Date.now(), key:key, status:'up' });
+        var row=makeToast(file);
+        uploadFile(file,row,objId);
+      });
+      refreshCount();
+    }
+
+    // ── file input (tap to choose) ──
+    input.addEventListener('change',function(){ handleFiles(input.files); input.value=''; });
+
+    // ── full-window drag & drop (incl. folders via DataTransferItem) ──
+    function readEntries(reader){ return new Promise(function(res){ reader.readEntries(function(e){ res(e); }, function(){ res([]); }); }); }
+    function entryFile(entry){ return new Promise(function(res){ entry.file(function(f){ res(f); }, function(){ res(null); }); }); }
+    async function walkEntry(entry,out){
+      if(!entry) return;
+      if(entry.isFile){ var f=await entryFile(entry); if(f) out.push(f); }
+      else if(entry.isDirectory){ var reader=entry.createReader(),batch;
+        do{ batch=await readEntries(reader); for(var i=0;i<batch.length;i++) await walkEntry(batch[i],out); }while(batch.length); }
+    }
+    async function filesFromItems(items){
+      var out=[],promises=[];
+      for(var i=0;i<items.length;i++){ var it=items[i];
+        var entry=it.webkitGetAsEntry?it.webkitGetAsEntry():null;
+        if(entry) promises.push(walkEntry(entry,out));
+        else if(it.kind==='file'){ var f=it.getAsFile(); if(f) out.push(f); }
+      }
+      await Promise.all(promises); return out;
+    }
+
+    window.addEventListener('dragenter',function(e){ e.preventDefault(); dragDepth++; document.body.classList.add('dragging'); react('hover'); });
+    window.addEventListener('dragover',function(e){ e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='copy'; });
+    window.addEventListener('dragleave',function(e){ e.preventDefault(); dragDepth=Math.max(0,dragDepth-1);
+      if(dragDepth===0){ document.body.classList.remove('dragging'); react('rest'); } });
+    window.addEventListener('drop',function(e){
+      e.preventDefault(); dragDepth=0; document.body.classList.remove('dragging'); react('rest');
+      var dt=e.dataTransfer; if(!dt) return;
+      if(dt.items && dt.items.length && dt.items[0].webkitGetAsEntry){ filesFromItems(dt.items).then(function(files){ handleFiles(files); }); }
+      else { handleFiles(dt.files); }
+    });
+
+    // ── DESK_LIST_URL POLLING — render real files dropped from ANY device ──
+    // Returns JSON { files:[{name,size,ts}, ...] } most-recent first. De-dupe by
+    // name+ts. Graceful: on unreachable/non-200, keep local objects, no error spam.
+    var listFailLogged=false;
+    function pollList(){
+      var ctrl, to;
+      try{ ctrl=new AbortController(); to=setTimeout(function(){ try{ctrl.abort();}catch(e){}},8000); }catch(e){ ctrl=null; }
+      fetch(DESK_LIST_URL,{ method:'GET', cache:'no-store', credentials:'omit', signal:ctrl?ctrl.signal:undefined })
+        .then(function(r){ if(to)clearTimeout(to); if(!r.ok) throw new Error('status '+r.status); return r.json(); })
+        .then(function(data){
+          var files=(data&&Array.isArray(data.files))?data.files:[];
+          // server returns most-recent first; cap to MAX (renderer also caps at ~30)
+          var added=0, total=files.length;
+          files.slice(0,30).forEach(function(f){
+            if(!f||!f.name) return;
+            var key=f.name+'|'+(f.ts!=null?f.ts:'');
+            if(deskHas(key)) return; // de-dupe by name+ts
+            deskAdd({ name:f.name, size:f.size, type:f.type||'', ts:f.ts, key:key, status:'ok' });
+            added++;
+          });
+          setStatusBar('online','Xen is online');
+          refreshCount(total>30?('+'+(total-30)+' more'):'');
+          listFailLogged=false;
+        })
+        .catch(function(){
+          if(to)clearTimeout(to);
+          // graceful: show only local drops; no error spam, just a soft status
+          if(deskCount()>0) setStatusBar('online','showing local drops');
+          else setStatusBar('','offline — drops still send');
+          listFailLogged=true;
+        });
+    }
+    // first poll on load, then every ~5s
+    setStatusBar('busy','connecting…');
+    pollList();
+    setInterval(pollList,5000);
+
+    // ── CONNECTED FOLDER — File System Access API (desktop Chrome/Edge only).
+    // User picks a local folder once; the handle is remembered in IndexedDB so
+    // future visits don't need re-picking (browser still requires a one-click
+    // permission re-grant per session — that's a security boundary, not a bug).
+    // Every ~10s we re-scan the folder for files not yet seen and upload them
+    // through the SAME uploadFile() pipeline as a manual drop. No new deps,
+    // no server changes — this is purely a client-side automated "drop".
+    (function(){
+      var btn=document.getElementById('connectFolderBtn');
+      var label=document.getElementById('connectFolderLabel');
+      var supported = !!(window.showDirectoryPicker);
+      btn.dataset.supported = supported ? '1' : '0';
+      if(!supported) return;
+
+      var DB_NAME='desk-folder-connect', STORE='handles', KEY='dir';
+      var seen=Object.create(null); // relative path -> true, resets per session (fresh dir load re-walks but re-uploads are skipped via desk key de-dupe too)
+      var dirHandle=null, scanTimer=null;
+
+      function idbOpen(){
+        return new Promise(function(resolve,reject){
+          var req=indexedDB.open(DB_NAME,1);
+          req.onupgradeneeded=function(){ req.result.createObjectStore(STORE); };
+          req.onsuccess=function(){ resolve(req.result); };
+          req.onerror=function(){ reject(req.error); };
+        });
+      }
+      function idbGet(){
+        return idbOpen().then(function(db){
+          return new Promise(function(resolve){
+            var tx=db.transaction(STORE,'readonly').objectStore(STORE).get(KEY);
+            tx.onsuccess=function(){ resolve(tx.result||null); };
+            tx.onerror=function(){ resolve(null); };
+          });
+        });
+      }
+      function idbSet(handle){
+        return idbOpen().then(function(db){
+          return new Promise(function(resolve){
+            var tx=db.transaction(STORE,'readwrite').objectStore(STORE).put(handle,KEY);
+            tx.onsuccess=function(){ resolve(); };
+            tx.onerror=function(){ resolve(); };
+          });
+        });
+      }
+      function idbClear(){
+        return idbOpen().then(function(db){
+          return new Promise(function(resolve){
+            var tx=db.transaction(STORE,'readwrite').objectStore(STORE).delete(KEY);
+            tx.onsuccess=function(){ resolve(); }; tx.onerror=function(){ resolve(); };
+          });
+        });
+      }
+
+      async function walkDir(handle,prefix,out){
+        for await (var entry of handle.values()){
+          var path=prefix?(prefix+'/'+entry.name):entry.name;
+          if(entry.kind==='file') out.push({path:path,handle:entry});
+          else if(entry.kind==='directory') await walkDir(entry,path,out);
+        }
+      }
+      async function scanAndUpload(){
+        if(!dirHandle) return;
+        var perm;
+        try{ perm=await dirHandle.queryPermission({mode:'read'}); }catch(e){ return stopConnection(true); }
+        if(perm!=='granted') return; // don't re-prompt automatically mid-poll; wait for user to reconnect
+        var files=[];
+        try{ await walkDir(dirHandle,'',files); }catch(e){ return; }
+        var fresh=[];
+        for(var i=0;i<files.length;i++){
+          if(seen[files[i].path]) continue;
+          seen[files[i].path]=true;
+          fresh.push(files[i]);
+        }
+        if(!fresh.length) return;
+        for(var j=0;j<fresh.length;j++){
+          try{
+            var file=await fresh[j].handle.getFile();
+            handleFiles([file]);
+          }catch(e){}
+        }
+      }
+      function startConnection(handle){
+        dirHandle=handle;
+        btn.classList.add('on'); label.textContent='Connected: '+handle.name;
+        seen=Object.create(null);
+        scanAndUpload();
+        if(scanTimer) clearInterval(scanTimer);
+        scanTimer=setInterval(scanAndUpload,10000);
+      }
+      function stopConnection(keepHandle){
+        dirHandle=null;
+        btn.classList.remove('on'); label.textContent='Connect a folder';
+        if(scanTimer){ clearInterval(scanTimer); scanTimer=null; }
+        if(!keepHandle) idbClear();
+      }
+
+      var pendingHandle=null; // set only while a previously-connected folder needs a fresh permission grant
+
+      btn.addEventListener('click', async function(){
+        if(dirHandle){ stopConnection(); return; }
+        if(pendingHandle){
+          var h=pendingHandle; pendingHandle=null;
+          try{
+            var re=await h.requestPermission({mode:'read'});
+            if(re==='granted') startConnection(h); else { idbClear(); label.textContent='Connect a folder'; }
+          }catch(e){ idbClear(); label.textContent='Connect a folder'; }
+          return;
+        }
+        try{
+          var handle=await window.showDirectoryPicker({mode:'read'});
+          await idbSet(handle);
+          startConnection(handle);
+        }catch(e){ /* user cancelled the picker */ }
+      });
+
+      // on load, try to resume a previously-connected folder (needs a fresh
+      // permission grant per browser session — if denied/revoked, just clear it
+      // rather than nagging).
+      idbGet().then(async function(handle){
+        if(!handle) return;
+        try{
+          var perm=await handle.queryPermission({mode:'read'});
+          if(perm==='granted'){ startConnection(handle); return; }
+          if(perm==='prompt'){ pendingHandle=handle; label.textContent='Reconnect folder'; return; }
+          idbClear();
+        }catch(e){ idbClear(); }
+      });
+    })();
+
+    // ── PWA service worker ──
+    if('serviceWorker' in navigator){
+      window.addEventListener('load',function(){ navigator.serviceWorker.register('/desk/sw.js').catch(function(){}); });
+    }
+  })();
+</script>
+
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

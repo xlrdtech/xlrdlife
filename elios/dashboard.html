@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tracking Together &mdash; Your Leads</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Your Tracking Together dashboard. The qualified leads assigned to your account.">
+<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0f14" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/elios/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/elios/icon-192.png">
+<link rel="apple-touch-icon" href="/elios/apple-touch-icon.png">
+<link rel="manifest" href="/elios/site.webmanifest">
+<script src="/elios/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/elios/brand.css">
+<style>
+  .metric{padding:18px 20px}
+  .metric .big{font-family:"Fraunces",Georgia,serif;font-size:38px;font-weight:600;line-height:1;color:var(--ink)}
+  .metric .big.is-money{font-size:32px;color:var(--gold1)}
+  .metric .lbl{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mut);margin-top:8px}
+  .lead-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;padding:14px 0;border-top:1px solid var(--line)}
+  .lead-row:first-child{border-top:none}
+  .lead-name{font-weight:650;color:var(--ink);font-size:15px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .lead-meta{font-size:12.5px;color:var(--mut);margin-top:4px;line-height:1.55;word-break:break-word}
+  .lead-meta a{color:var(--gold1);text-decoration:none}
+  .lead-meta b{color:var(--ink);font-weight:600}
+  .stage{font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:4px 9px;border-radius:7px;border:1px solid;white-space:nowrap}
+  .stage.tap{cursor:pointer;transition:transform .08s ease,filter .12s ease}
+  .stage.tap:hover{filter:brightness(.96)}
+  .stage.tap:active{transform:scale(.94)}
+  .stage.tap::after{content:" ›";opacity:.55;font-weight:700}
+  .stage.New{color:#7c3aed;border-color:rgba(124,58,237,.4);background:rgba(124,58,237,.1)}
+  .stage.FollowUp{color:var(--warn);border-color:rgba(180,83,9,.4);background:rgba(180,83,9,.09)}
+  .stage.Attempted{color:#c2410c;border-color:rgba(194,65,12,.4);background:rgba(194,65,12,.09)}
+  .stage.Interested{color:var(--gold1);border-color:rgba(216,180,106,.4);background:rgba(216,180,106,.09)}
+  .stage.Booked{color:var(--ok);border-color:rgba(216,180,106,.4);background:rgba(216,180,106,.1)}
+  .stage.default{color:var(--steel1);border-color:var(--line);background:rgba(15,23,42,.05)}
+  .stage.STOP{color:#fff;border-color:#b91c1c;background:linear-gradient(135deg,#f87171,#dc2626);box-shadow:0 1px 6px -1px rgba(220,38,38,.5)}
+  .lead-row.stop-row{background:rgba(220,38,38,.08);border-left:4px solid #dc2626;padding-left:12px;margin-left:-16px;border-radius:0 10px 10px 0}
+  .lead-row.stop-row .lead-name{color:#b91c1c}
+  /* disposition — Anthony's traffic-light "touch" (sold=GREEN, visit=BLUE, stop=RED) */
+  .disp{font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 8px 3px 7px;border-radius:6px;border:1px solid;white-space:nowrap;text-transform:uppercase;display:inline-flex;align-items:center;gap:5px}
+  .disp::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+  .disp.sold{color:#15803d;border-color:rgba(22,163,74,.45);background:rgba(22,163,74,.12)}
+  .disp.visit{color:#1d4ed8;border-color:rgba(37,99,235,.45);background:rgba(37,99,235,.12)}
+  .disp.stop{color:#dc2626;border-color:rgba(220,38,38,.5);background:rgba(220,38,38,.14)}
+  .lead-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+  .blockval{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:16px;font-weight:600;color:var(--gold1);white-space:nowrap}
+  .blockval.zero{color:var(--mut);font-weight:400}
+  .lead-actions{display:flex;gap:7px;flex-shrink:0}
+  .act{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:15px;border:1px solid var(--line);background:var(--surface);text-decoration:none}
+  .act.call{border-color:rgba(216,180,106,.4);color:var(--ok)}
+  .act.text{border-color:rgba(216,180,106,.4);color:var(--gold1)}
+  .empty{text-align:center;padding:46px 20px;color:var(--mut);font-size:13px}
+  .alert-flag{font-size:10.5px;font-weight:700;color:var(--err);border:1px solid rgba(220,38,38,.35);background:rgba(220,38,38,.07);border-radius:7px;padding:3px 8px}
+  .act.edit{border-color:rgba(216,180,106,.4);color:var(--gold1);cursor:pointer;background:var(--surface);font-family:inherit}
+  /* edit modal */
+  .scrim{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+  .scrim.on{display:flex}
+  .modal{background:var(--glass);border:1px solid var(--line);border-radius:16px;width:100%;max-width:480px;max-height:92vh;overflow:auto;box-shadow:0 24px 70px -24px rgba(0,0,0,.45)}
+  .mhead{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line)}
+  .mhead h3{font-family:"Fraunces",Georgia,serif;font-size:19px;font-weight:600}
+  .iconbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font-size:15px;line-height:1}
+  .mbody{padding:18px 22px;display:grid;gap:13px}
+  .mbody label{display:block;font-size:12px;color:var(--mut);margin-bottom:5px;letter-spacing:.02em}
+  .mbody select,.mbody textarea{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:14.5px;font-family:inherit}
+  .mbody select:focus,.mbody textarea:focus{outline:none;border-color:rgba(216,180,106,.6);box-shadow:0 0 0 3px rgba(216,180,106,.13)}
+  .mbody textarea{resize:vertical;min-height:80px}
+  .mfoot{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:16px 22px;border-top:1px solid var(--line)}
+  .image-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .image-list .img-card{width:74px;height:74px;border-radius:8px;border:1px solid var(--line);
+    background:var(--surface);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .image-list .img-card img{width:100%;height:100%;object-fit:cover}
+  .image-list .img-card .kind-badge{position:absolute;bottom:0;left:0;right:0;font-size:9px;letter-spacing:.03em;
+    text-transform:uppercase;text-align:center;background:rgba(0,0,0,.55);color:#fff;padding:2px 0}
+  .image-list .img-card.pdf{font-size:11px;color:var(--mut);flex-direction:column;gap:4px}
+
+  /* --- animated gradient background toggle (ported from /eliops/) --- */
+  body.elios-bg::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:linear-gradient(125deg,rgba(216,180,106,.16),rgba(37,99,235,.10),rgba(216,180,106,.13),rgba(124,58,237,.10));
+    background-size:320% 320%;
+    animation:eliosBgShift 26s ease infinite;
+    opacity:.55;
+  }
+  @media(prefers-color-scheme:dark){body.elios-bg::before{opacity:.4}}
+  @keyframes eliosBgShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  @media(prefers-reduced-motion:reduce){body.elios-bg::before{animation:none}}
+  .hdr-icon{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font-size:15px;line-height:1;display:inline-grid;place-items:center}
+  .hdr-icon:hover{border-color:rgba(216,180,106,.6)}
+  .hdr-icon.on{border-color:rgba(216,180,106,.7);color:var(--gold1);background:rgba(216,180,106,.1)}
+
+  /* --- guided tour coachmarks (pure CSS/JS, no libs) --- */
+  .tour-scrim{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:80;display:none}
+  .tour-scrim.on{display:block}
+  .tour-spot{position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(15,23,42,.55),0 0 0 3px var(--gold);transition:.2s ease;pointer-events:none}
+  .tour-pop{position:absolute;z-index:81;max-width:300px;background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 20px 60px -20px rgba(0,0,0,.5)}
+  .tour-pop h4{font-family:"Fraunces",Georgia,serif;font-size:16px;font-weight:600;margin:0 0 6px;color:var(--ink)}
+  .tour-pop p{font-size:13px;line-height:1.55;color:var(--mut);margin:0}
+  .tour-foot{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .tour-foot .step{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+  .tour-foot .spacer{flex:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="brand" href="/elios/dashboard.html" style="text-decoration:none;color:inherit">
+      <img class="tt-logo" src="/elios/tt-logo.png" alt="Tracking Together">
+      <span style="font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut);border-left:1px solid var(--line);padding-left:11px;font-weight:600">Lead Portal</span>
+    </a>
+    <div class="navbtns">
+      <a class="btn sm ghost" href="/elios/pricing.html">Plans</a>
+      <button class="hdr-icon" id="exportBtn" title="Export your leads to CSV" aria-label="Export CSV">&#8675;</button>
+      <button class="hdr-icon" id="tourBtn" title="Guided tour" aria-label="Guided tour">?</button>
+      <button class="hdr-icon" id="bgBtn" title="Toggle animated background" aria-label="Toggle animated background">&#9673;</button>
+      <button class="btn sm ghost" id="signOutBtn">Sign out</button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light / dark" aria-label="Toggle theme"><span class="moon">&#127769;</span><span class="sun">&#9728;&#65039;</span></button>
+    </div>
+  </div>
+
+  <div id="loadingPane" class="center-pane"><div class="loader"></div></div>
+
+  <div id="app" class="hidden">
+    <div id="errBanner" class="note err hidden"></div>
+
+    <div class="kick" id="welcomeKick">Welcome back</div>
+    <h1 class="display" id="buyerName">Your leads</h1>
+    <p class="sub" id="planLine">The qualified leads assigned to your account.</p>
+
+    <div class="grid cols3" style="margin-top:24px">
+      <div class="card metric">
+        <div class="big" id="mGranted">0</div>
+        <div class="lbl">Leads assigned</div>
+      </div>
+      <div class="card metric">
+        <div class="big" id="mActive">0</div>
+        <div class="lbl">In active pipeline</div>
+        <div class="sub" style="font-size:11.5px;margin-top:8px">New + Attempted + Follow Up</div>
+      </div>
+      <div class="card metric">
+        <div class="big is-money" id="mPortfolio">$0</div>
+        <div class="lbl">Portfolio value</div>
+        <div class="sub" style="font-size:11.5px;margin-top:8px">Total $ across your blocks</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="spread" style="margin-bottom:6px">
+        <h2>Your lead allotment</h2>
+        <span class="mono muted" style="font-size:12px" id="leadCountTag"></span>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="filters">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="q" type="search" placeholder="Search name, phone, service, notes...">
+        </div>
+        <select id="f-event"><option value="">All Events</option></select>
+        <select id="f-rep"><option value="">All Reps</option></select>
+        <button class="clearf" id="f-clear">Clear</button>
+      </div>
+      <div id="filter-banner"><span id="filter-banner-text"></span><button id="filter-banner-clear">Show all leads</button></div>
+      <div class="count" id="count"></div>
+      <div id="leadList"></div>
+    </div>
+  </div>
+
+  <footer>Tracking Together &middot; leads scoped to your account by row-level security &middot; trackingtogether.com</footer>
+</div>
+
+<div class="scrim" id="editScrim">
+  <div class="modal">
+    <div class="mhead">
+      <h3>Update <span id="editLeadName">lead</span></h3>
+      <button class="iconbtn" id="editClose" type="button" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="mbody">
+      <input type="hidden" id="e-id">
+      <div><label for="e-stage">Status</label><select id="e-stage"></select></div>
+      <div><label for="e-notes">Notes</label><textarea id="e-notes" rows="4" placeholder="Call outcome, next step, details..."></textarea></div>
+      <div id="imagesSection">
+        <label>Images (invoices, logos &middot; permanent)</label>
+        <div id="imageList" class="image-list"></div>
+        <input type="file" id="imageFile" accept="image/png,image/jpeg,image/webp,application/pdf" style="display:none">
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <select id="imageKind" style="width:auto;flex:none">
+            <option value="invoice">Invoice</option>
+            <option value="logo">Logo</option>
+            <option value="other">Other</option>
+          </select>
+          <button class="btn ghost" id="imageUploadBtn" type="button">Upload image</button>
+          <span id="imageUploadMsg" class="note hidden" style="margin:0"></span>
+        </div>
+      </div>
+    </div>
+    <div id="editMsg" class="note hidden" style="margin:6px 22px 0"></div>
+    <div class="mfoot">
+      <button class="btn ghost" id="editCancel" type="button">Cancel</button>
+      <button class="btn gold" id="editSave" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="tour-scrim" id="tourScrim">
+  <div class="tour-spot" id="tourSpot"></div>
+  <div class="tour-pop" id="tourPop">
+    <h4 id="tourTitle"></h4>
+    <p id="tourText"></p>
+    <div class="tour-foot">
+      <span class="step" id="tourStepLbl"></span>
+      <span class="spacer"></span>
+      <button class="btn sm ghost" id="tourSkip" type="button">Skip</button>
+      <button class="btn sm gold" id="tourNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/elios/config.js"></script>
+<script>
+(function(){
+  var cfg = window.ELIOS_CONFIG;
+  var $ = function(s){ return document.querySelector(s); };
+  var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+  var telHref = function(p){ return 'tel:'+String(p||'').replace(/[^0-9+]/g,''); };
+  var smsHref = function(p){ return 'sms:'+String(p||'').replace(/[^0-9+]/g,''); };
+  var hasPhone = function(p){ return p && /\d/.test(p); };
+  var stageClass = function(s){ return ({'New':'New','Follow Up':'FollowUp','Attempted':'Attempted','Interested':'Interested','Booked':'Booked','STOP':'STOP'})[s] || 'default'; };
+  // Anthony's traffic-light touch state: sold=GREEN, visit=BLUE, stop=RED (read-only for subscribers).
+  var DISP_LABEL = { sold:'SOLD', visit:'VISIT', stop:'STOP' };
+  function dispBadge(d){ return (d && DISP_LABEL[d]) ? (' <span class="disp ' + d + '" title="Touch: ' + DISP_LABEL[d] + '">' + DISP_LABEL[d] + '</span>') : ''; }
+  var numVal = function(v){ var n = Number(v); return isFinite(n) ? n : 0; };
+  var money = function(v){ return '$' + numVal(v).toLocaleString('en-US', { maximumFractionDigits: 0 }); };
+
+  var MY_LEADS = [];
+  var FILT = { chip:'all', q:'', event:'', rep:'' };
+  function isStop(l){ return (l.pipeline_stage || '') === 'STOP'; }
+
+  var sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  function toLogin(){ window.location.href = cfg.ROUTES.login; }
+  function roleOf(user){ return (user && user.user_metadata && user.user_metadata.role) || 'subscriber'; }
+  function nameOf(user){
+    var m = user && user.user_metadata;
+    return (m && (m.full_name || m.name)) || (user && user.email ? user.email.split('@')[0] : null);
+  }
+
+  $('#signOutBtn').addEventListener('click', async function(){
+    try{ await sb.auth.signOut(); } catch(e){}
+    toLogin();
+  });
+
+  function showErr(text){
+    var b = $('#errBanner');
+    b.textContent = text;
+    b.classList.remove('hidden');
+  }
+
+  function render(model){
+    $('#loadingPane').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+
+    MY_LEADS = model.leads || [];
+    $('#buyerName').textContent = model.full_name ? (model.full_name + "'s leads") : 'Your leads';
+    if(model.full_name){ $('#welcomeKick').textContent = 'Welcome back, ' + model.full_name; }
+
+    // metric cards reflect the FULL allotment, not the active filter
+    var used = MY_LEADS.length;
+    $('#mGranted').textContent = used;
+    var activeStages = ['New','Attempted','Follow Up'];
+    $('#mActive').textContent = MY_LEADS.filter(function(l){ return activeStages.indexOf(l.pipeline_stage) !== -1; }).length;
+    var portfolio = MY_LEADS.reduce(function(sum, l){ return sum + numVal(l.block_value); }, 0);
+    $('#mPortfolio').textContent = money(portfolio);
+    $('#leadCountTag').textContent = used + ' lead' + (used===1?'':'s');
+
+    populateFilterDropdowns();
+    applyFilters();
+  }
+
+  // ---- status chips (live counts over your allotment) ----
+  function stageCounts(){
+    var c = { all: MY_LEADS.length, New:0, Booked:0, 'Follow Up':0, Attempted:0, STOP:0 };
+    MY_LEADS.forEach(function(l){ if(isStop(l)){ c.STOP++; return; } var s=l.pipeline_stage; if(s in c) c[s]++; });
+    return c;
+  }
+  function renderChips(){
+    var c = stageCounts(), box = $('#chips'); box.innerHTML = '';
+    var defs = [['all','All'],['New','New'],['Booked','Booked'],['Follow Up','Follow Up'],['Attempted','Attempted'],['STOP','STOP']];
+    defs.forEach(function(d){
+      var k = d[0];
+      var b = document.createElement('button');
+      b.className = 'chip' + (k==='STOP'?' stop':'') + (FILT.chip===k?' on':'');
+      b.innerHTML = '<span class="n">' + (k==='all'?c.all:(c[k]||0)) + '</span> ' + d[1];
+      b.addEventListener('click', function(){ FILT.chip = k; applyFilters(); });
+      box.appendChild(b);
+    });
+  }
+  function fillSelect(sel, values, allLabel){
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">' + allLabel + '</option>';
+    values.forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+    if(prev && values.indexOf(prev)!==-1) sel.value = prev;
+  }
+  function populateFilterDropdowns(){
+    var events={}, reps={};
+    MY_LEADS.forEach(function(l){ if(l.event) events[l.event]=1; if(l.rep) reps[l.rep]=1; });
+    fillSelect($('#f-event'), Object.keys(events).sort(), 'All Events');
+    fillSelect($('#f-rep'), Object.keys(reps).sort(), 'All Reps');
+  }
+  function visibleLeads(){
+    return MY_LEADS.filter(function(l){
+      if(FILT.chip === 'STOP') return isStop(l);
+      if(isStop(l)) return false;                                  // STOPs hidden unless STOP chip active
+      if(FILT.chip !== 'all' && (l.pipeline_stage||'') !== FILT.chip) return false;
+      if(FILT.event && l.event !== FILT.event) return false;
+      if(FILT.rep && l.rep !== FILT.rep) return false;
+      if(FILT.q){
+        var q = FILT.q.toLowerCase();
+        var hay = [l.name,l.phone,l.address,l.project_type,l.notes,l.event,l.rep].map(function(x){return x||'';}).join(' ').toLowerCase();
+        if(hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+  }
+  function renderFilterBanner(){
+    var b = $('#filter-banner');
+    var active = FILT.chip !== 'all' || FILT.q || FILT.event || FILT.rep;
+    if(!active){ b.classList.remove('on'); return; }
+    var parts = [];
+    if(FILT.chip !== 'all') parts.push('status <b>' + esc(FILT.chip) + '</b>');
+    if(FILT.event) parts.push('event <b>' + esc(FILT.event) + '</b>');
+    if(FILT.rep) parts.push('rep <b>' + esc(FILT.rep) + '</b>');
+    if(FILT.q) parts.push('matching <b>"' + esc(FILT.q) + '"</b>');
+    $('#filter-banner-text').innerHTML = 'Filtering by ' + parts.join(' &middot; ');
+    b.classList.add('on');
+  }
+  function clearFilters(){
+    FILT = { chip:'all', q:'', event:'', rep:'' };
+    if($('#q')) $('#q').value=''; if($('#f-event')) $('#f-event').value=''; if($('#f-rep')) $('#f-rep').value='';
+    applyFilters();
+  }
+  function applyFilters(){ renderChips(); renderFilterBanner(); renderList(); }
+
+  function renderList(){
+    var leads = visibleLeads();
+    $('#count').textContent = leads.length + ' of ' + MY_LEADS.length + ' leads shown';
+    var list = $('#leadList');
+    list.innerHTML = '';
+    if(!MY_LEADS.length){
+      list.innerHTML = '<div class="empty">No leads assigned to your account yet. New leads appear here as they are allocated to you.</div>';
+      return;
+    }
+    if(!leads.length){
+      list.innerHTML = '<div class="empty">No leads match this filter.</div>';
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    leads.forEach(function(l){
+      var row = document.createElement('div');
+      row.className = 'lead-row' + (isStop(l) ? ' stop-row' : '');
+      var ph = hasPhone(l.phone);
+      var bv = numVal(l.block_value);
+      var stage = l.pipeline_stage || 'New';
+      var valHtml = '<span class="blockval' + (bv > 0 ? '' : ' zero') + '" title="Block value">' +
+        (bv > 0 ? money(bv) : 'no value yet') + '</span>';
+      row.innerHTML =
+        '<div>' +
+          '<div class="lead-name">' + esc(l.name || 'Unnamed lead') +
+            ' <span class="stage tap ' + stageClass(stage) + '" data-cycle="' + esc(l.id) + '" title="Tap to advance status">' + esc(stage) + '</span>' + dispBadge(l.disposition) +
+          '</div>' +
+          '<div class="lead-meta">' +
+            (ph ? ('Phone <a href="' + telHref(l.phone) + '">' + esc(l.phone) + '</a> &middot; ') : '') +
+            'Service <b>' + esc(l.project_type || 'General') + '</b>' +
+            (l.event ? (' &middot; ' + esc(l.event)) : '') +
+            (l.address ? ('<br>&#128205; ' + esc(l.address)) : '') +
+            (l.notes ? ('<br>' + esc(l.notes)) : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="lead-right">' +
+          valHtml +
+          '<div class="lead-actions">' +
+            (ph ? ('<a class="act call" href="' + telHref(l.phone) + '" title="Call">&#9742;</a>' +
+                   '<a class="act text" href="' + smsHref(l.phone) + '" title="Text">&#128172;</a>') : '') +
+            '<button class="act edit" data-edit="' + esc(l.id) + '" title="Update status / notes">&#9998;</button>' +
+          '</div>' +
+        '</div>';
+      frag.appendChild(row);
+    });
+    list.appendChild(frag);
+    Array.prototype.forEach.call(list.querySelectorAll('.act.edit'), function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-edit');
+        var l = MY_LEADS.filter(function(x){ return x.id === id; })[0];
+        if(l) openEdit(l);
+      });
+    });
+    // tap-to-advance status (ported from the Luminescent crew view) — one tap cycles the badge
+    Array.prototype.forEach.call(list.querySelectorAll('.stage.tap'), function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        var id = b.getAttribute('data-cycle');
+        var l = MY_LEADS.filter(function(x){ return x.id === id; })[0];
+        if(l) cycleStatus(l, b);
+      });
+    });
+  }
+
+  var CYCLE = ['New','Attempted','Follow Up','Interested','Booked','Not Interested','STOP'];
+  async function cycleStatus(l, badgeEl){
+    var cur = l.pipeline_stage || 'New';
+    var next = CYCLE[(CYCLE.indexOf(cur) + 1) % CYCLE.length];
+    if(next === 'STOP' && !confirm('Mark "' + (l.name||'this lead') + '" as STOP? This removes it from your active pipeline view.')) return;
+    if(badgeEl){ badgeEl.style.opacity = '.5'; badgeEl.style.pointerEvents = 'none'; }
+    try{
+      var res = await sb.rpc('update_my_lead', { p_lead_id:l.id, p_stage:next, p_notes:(l.notes||'') });
+      if(res.error){ alert('Could not update status: ' + (res.error.message||'error')); return; }
+      l.pipeline_stage = next;       // reflect locally + recompute metrics/chips/list
+      var activeStages = ['New','Attempted','Follow Up'];
+      $('#mActive').textContent = MY_LEADS.filter(function(x){ return activeStages.indexOf(x.pipeline_stage) !== -1; }).length;
+      renderChips(); applyFilters();
+    } catch(err){
+      alert('Update error: ' + ((err && err.message) || String(err)));
+    }
+  }
+
+  // ---------- subscriber edit modal: stage + notes via update_my_lead RPC ----------
+  var STAGES = ['New','Attempted','Follow Up','Interested','Booked','Not Interested','STOP'];
+  function fillStageSelect(current){
+    var sel = $('#e-stage'); sel.innerHTML = '';
+    var opts = STAGES.slice();
+    if(current && opts.indexOf(current) === -1) opts.unshift(current);
+    opts.forEach(function(s){ var o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+    sel.value = current || 'New';
+  }
+  function showEditMsg(t,k){ var m=$('#editMsg'); m.className='note'+(k?' '+k:''); m.textContent=t; m.classList.remove('hidden'); }
+  function closeEditModal(){ $('#editScrim').classList.remove('on'); $('#editMsg').classList.add('hidden'); }
+  async function loadImages(leadId){
+    var list = $('#imageList'); list.innerHTML = '';
+    if(!leadId) return;
+    var res = await sb.from('lead_images').select('id, storage_path, kind, file_name, content_type').eq('lead_id', leadId).order('created_at', {ascending:false});
+    if(res.error){ return; }
+    for(var i=0;i<(res.data||[]).length;i++){
+      var img = res.data[i];
+      var card = document.createElement('div'); card.className = 'img-card';
+      if((img.content_type||'').indexOf('pdf') !== -1){
+        card.classList.add('pdf'); card.textContent = 'PDF';
+      } else {
+        var signed = await sb.storage.from('lead-images').createSignedUrl(img.storage_path, 3600);
+        var el = document.createElement('img');
+        el.src = (signed.data && signed.data.signedUrl) || '';
+        el.alt = img.file_name || img.kind;
+        card.appendChild(el);
+      }
+      var badge = document.createElement('div'); badge.className='kind-badge'; badge.textContent = img.kind;
+      card.appendChild(badge);
+      list.appendChild(card);
+    }
+  }
+  function showImageUploadMsg(t,k){ var m=$('#imageUploadMsg'); m.className='note'+(k?' '+k:''); m.textContent=t; m.classList.remove('hidden'); }
+  $('#imageUploadBtn').addEventListener('click', function(){ $('#imageFile').click(); });
+  $('#imageFile').addEventListener('change', async function(){
+    var file = this.files && this.files[0]; this.value = '';
+    if(!file) return;
+    var leadId = $('#e-id').value; if(!leadId) return;
+    var kind = $('#imageKind').value;
+    var btn = $('#imageUploadBtn'); btn.disabled = true; var orig = btn.textContent; btn.textContent = 'Uploading...';
+    try{
+      var path = leadId + '/' + crypto.randomUUID() + '-' + file.name;
+      var up = await sb.storage.from('lead-images').upload(path, file, { contentType: file.type });
+      if(up.error){ showImageUploadMsg('Upload failed: ' + esc(up.error.message||'error'), 'err'); return; }
+      var reg = await sb.rpc('add_lead_image', {
+        p_lead_id: leadId, p_storage_path: path, p_kind: kind,
+        p_file_name: file.name, p_content_type: file.type, p_size_bytes: file.size
+      });
+      if(reg.error){ showImageUploadMsg('Registration failed: ' + esc(reg.error.message||'error'), 'err'); return; }
+      showImageUploadMsg('Uploaded.', 'ok');
+      await loadImages(leadId);
+    } catch(err){ showImageUploadMsg('Upload error: ' + esc((err&&err.message)||String(err)), 'err'); }
+    finally{ btn.disabled = false; btn.textContent = orig; }
+  });
+  function openEdit(l){
+    $('#e-id').value = l.id;
+    $('#editLeadName').textContent = l.name || 'Lead';
+    fillStageSelect(l.pipeline_stage || 'New');
+    $('#e-notes').value = l.notes || '';
+    $('#editMsg').classList.add('hidden');
+    $('#imageUploadMsg').classList.add('hidden');
+    loadImages(l.id);
+    $('#editScrim').classList.add('on');
+  }
+  $('#editClose').addEventListener('click', closeEditModal);
+  $('#editCancel').addEventListener('click', closeEditModal);
+  $('#editScrim').addEventListener('click', function(e){ if(e.target === this) closeEditModal(); });
+  $('#editSave').addEventListener('click', async function(){
+    var id = $('#e-id').value;
+    this.disabled=true; var orig=this.textContent; this.textContent='Saving...';
+    try{
+      var res = await sb.rpc('update_my_lead', { p_lead_id:id, p_stage:$('#e-stage').value, p_notes:$('#e-notes').value });
+      if(res.error){ showEditMsg('Save failed: ' + esc(res.error.message||'error'), 'err'); return; }
+      // reflect locally then re-render
+      var l = MY_LEADS.filter(function(x){ return x.id===id; })[0];
+      if(l){ l.pipeline_stage = $('#e-stage').value; l.notes = $('#e-notes').value; }
+      closeEditModal(); applyFilters();
+    } catch(err){ showEditMsg('Save error: ' + esc((err&&err.message)||String(err)), 'err'); }
+    finally{ this.disabled=false; this.textContent=orig; }
+  });
+
+  $('#q').addEventListener('input', function(){ FILT.q = this.value.trim(); renderFilterBanner(); renderList(); });
+  $('#f-event').addEventListener('change', function(){ FILT.event = this.value; applyFilters(); });
+  $('#f-rep').addEventListener('change', function(){ FILT.rep = this.value; applyFilters(); });
+  $('#f-clear').addEventListener('click', clearFilters);
+  $('#filter-banner-clear').addEventListener('click', clearFilters);
+
+  async function boot(){
+    var sessRes = await sb.auth.getSession();
+    var session = sessRes && sessRes.data && sessRes.data.session;
+    if(!session || !session.user){ toLogin(); return; }
+    var user = session.user;
+
+    // Masters belong on the console.
+    if(roleOf(user) === 'master'){ window.location.href = cfg.ROUTES.admin; return; }
+
+    var fullName = nameOf(user);
+    try{
+      var res = await sb.from('my_leads').select();
+      if(res.error){ throw res.error; }
+      render({ full_name: fullName, leads: res.data || [] });
+    } catch(e){
+      $('#loadingPane').classList.add('hidden');
+      $('#app').classList.remove('hidden');
+      showErr('Could not load your leads: ' + (e.message || e) + '.');
+      render({ full_name: fullName, leads: [] });
+    }
+  }
+
+  // ---------- animated background toggle (persisted in localStorage 'elios.bg') ----------
+  function applyBg(on){
+    document.body.classList.toggle('elios-bg', !!on);
+    var b = $('#bgBtn'); if(b){ b.classList.toggle('on', !!on); }
+  }
+  (function initBg(){
+    var on = false;
+    try{ on = localStorage.getItem('elios.bg') === '1'; }catch(e){}
+    applyBg(on);
+    var b = $('#bgBtn');
+    if(b) b.addEventListener('click', function(){
+      var next = !document.body.classList.contains('elios-bg');
+      applyBg(next);
+      try{ localStorage.setItem('elios.bg', next ? '1' : '0'); }catch(e){}
+    });
+  })();
+
+  // ---------- CSV export (currently filtered my_leads rows) ----------
+  function csvCell(v){
+    var s = (v == null) ? '' : String(v);
+    if(/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  // Honor the active rep filter in the export: when a specific rep/username is
+  // selected (FILT.rep), export ONLY that rep's rows and name the file after the
+  // rep. "All Reps" (FILT.rep === '') keeps the full export. visibleLeads()
+  // already enforces FILT.rep + status/event/search, so it is the source of truth.
+  function repSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+  function exportCsv(){
+    var rows = (typeof visibleLeads === 'function') ? visibleLeads()
+      : (FILT.rep ? MY_LEADS.filter(function(l){ return l.rep === FILT.rep; }) : MY_LEADS);
+    var cols = ['name','phone','address','project_type','event','rep','pipeline_stage','disposition','block_value','notes'];
+    var lines = [cols.join(',')];
+    rows.forEach(function(l){
+      lines.push(cols.map(function(c){ return csvCell(l[c]); }).join(','));
+    });
+    var d = new Date();
+    var stamp = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+    var who = FILT.rep ? ('-rep-' + repSlug(FILT.rep)) : '';
+    var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'tracking-together-leads' + who + '-' + stamp + '.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
+  }
+  $('#exportBtn').addEventListener('click', exportCsv);
+
+  // ---------- guided tour (coachmarks; auto-runs once via 'elios.tour.done') ----------
+  var TOUR = [
+    { sel:'#chips', title:'Status filters', text:'Tap these chips to filter your leads by pipeline stage. The STOP chip surfaces leads you marked stop.' },
+    { sel:'.filters', title:'Search and refine', text:'Search by name, phone, service, or notes, and narrow by event or rep.' },
+    { sel:'.stage.tap', title:'Advance a lead', text:'Tap a status badge to advance the lead through your pipeline in one tap. The call, text, and edit buttons sit alongside it.' },
+    { sel:'#exportBtn', title:'Export to CSV', text:'Download your currently filtered leads as a spreadsheet at any time.' }
+  ];
+  var tourIdx = 0;
+  function positionTour(){
+    var st = TOUR[tourIdx];
+    var el = document.querySelector(st.sel);
+    var spot = $('#tourSpot'), pop = $('#tourPop');
+    if(!el){ nextTour(); return; }
+    el.scrollIntoView({ block:'center' });
+    var r = el.getBoundingClientRect();
+    var pad = 6;
+    spot.style.left = (r.left - pad) + 'px';
+    spot.style.top = (r.top - pad) + 'px';
+    spot.style.width = (r.width + pad*2) + 'px';
+    spot.style.height = (r.height + pad*2) + 'px';
+    $('#tourTitle').textContent = st.title;
+    $('#tourText').textContent = st.text;
+    $('#tourStepLbl').textContent = 'Step ' + (tourIdx+1) + ' of ' + TOUR.length;
+    $('#tourNext').textContent = (tourIdx === TOUR.length-1) ? 'Done' : 'Next';
+    var popTop = r.bottom + 14;
+    if(popTop + 200 > window.innerHeight) popTop = r.top - 200;
+    popTop = Math.min(Math.max(14, popTop), window.innerHeight - 200);
+    var popLeft = Math.min(Math.max(14, r.left), window.innerWidth - 320);
+    pop.style.top = popTop + 'px';
+    pop.style.left = popLeft + 'px';
+  }
+  function startTour(){ tourIdx = 0; $('#tourScrim').classList.add('on'); positionTour(); }
+  function endTour(){
+    $('#tourScrim').classList.remove('on');
+    try{ localStorage.setItem('elios.tour.done', '1'); }catch(e){}
+  }
+  function nextTour(){ if(tourIdx >= TOUR.length-1){ endTour(); return; } tourIdx++; positionTour(); }
+  $('#tourBtn').addEventListener('click', startTour);
+  $('#tourNext').addEventListener('click', nextTour);
+  $('#tourSkip').addEventListener('click', endTour);
+  $('#tourScrim').addEventListener('click', function(e){ if(e.target === this) endTour(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && $('#tourScrim').classList.contains('on')) endTour(); });
+  window.addEventListener('resize', function(){ if($('#tourScrim').classList.contains('on')) positionTour(); });
+  // On-demand only (the ? button). Auto-launch was removed: it could overlay the
+  // page before content positioned, leaving everything looking unclickable.
+  function maybeAutoTour(){ /* no auto-launch */ }
+
+  boot().then(maybeAutoTour);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Xenphone — Steps to GTM (attempt 11)</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="The canonical path to ship Xenphone: one shell, one backend, one source. The 8-step build order + the guardrails that break the 10-failure loop.">
+<meta name="theme-color" content="#07070a">
+<link rel="icon" href="/favicon.png">
+<style>
+  :root{
+    --bg:#07070a; --ink:#ececf2; --mut:#8b8b9a;
+    --steel1:#b8c0cc; --steel2:#6e7787; --gold1:#f4e2a8; --gold2:#b8923e;
+    --line:rgba(255,255,255,.08); --ok:#7fe3a3; --warn:#ffd479; --red:#ff7a7a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 620px at 72% -12%,#15151f 0%,#07070a 60%);
+    color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+    padding:46px 20px 90px;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:920px;margin:0 auto}
+  .kick{letter-spacing:.32em;font-size:11px;color:var(--mut);text-transform:uppercase}
+  h1{font-size:clamp(28px,5vw,46px);line-height:1.04;margin:10px 0 6px;font-weight:800;
+    background:linear-gradient(92deg,var(--steel1),#fff 28%,var(--gold1) 54%,var(--gold2) 80%,var(--steel2));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--mut);font-size:13.5px;max-width:680px}
+  .goal{margin:18px 0 6px;padding:14px 18px;border:1px solid rgba(216,180,106,.28);border-radius:12px;
+    background:linear-gradient(180deg,rgba(216,180,106,.06),rgba(216,180,106,.01));font-size:14.5px}
+  h2{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold1);margin:34px 0 14px}
+  .shape{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .shape div{border:1px solid var(--line);border-radius:12px;padding:14px;background:rgba(255,255,255,.03)}
+  .shape b{display:block;font-size:12px;color:var(--gold1);letter-spacing:.04em;margin-bottom:5px}
+  .shape span{font-size:13px;color:var(--ink)}
+  .step{display:flex;gap:16px;padding:16px 0;border-top:1px solid var(--line)}
+  .step:first-of-type{border-top:none}
+  .n{flex:0 0 38px;height:38px;border-radius:10px;display:grid;place-items:center;font-weight:800;
+    font-family:ui-monospace,Menlo,monospace;border:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(244,226,168,.14),rgba(184,146,62,.05));color:var(--gold1)}
+  .step.blk .n{border-color:rgba(255,122,122,.5);color:var(--red);background:rgba(255,122,122,.08)}
+  .step h3{font-size:15.5px;font-weight:700;margin-bottom:3px}
+  .step p{font-size:13.5px;color:var(--mut)}
+  .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:middle}
+  .tag.blocker{background:rgba(255,122,122,.14);color:var(--red);border:1px solid rgba(255,122,122,.4)}
+  .tag.gate{background:rgba(127,227,163,.12);color:var(--ok);border:1px solid rgba(127,227,163,.35)}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.9em;color:var(--gold1);background:rgba(216,180,106,.1);padding:1px 5px;border-radius:5px}
+  .danger{margin-top:30px;padding:18px 20px;border-radius:14px;border:1px solid rgba(255,122,122,.3);
+    background:linear-gradient(180deg,rgba(255,122,122,.07),rgba(255,122,122,.01))}
+  .danger h3{color:var(--red);font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
+  .inv{margin-top:26px;padding:16px 20px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)}
+  .inv li{margin:6px 0 6px 18px;font-size:14px}
+  footer{margin-top:34px;color:var(--mut);font-size:12px;text-align:center;letter-spacing:.03em}
+  @media(max-width:600px){.shape{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kick">Xenphone · GTM · Attempt 11</div>
+  <h1>Steps to Get This Done</h1>
+  <div class="sub">One shipped Xenphone where messaging, SMS, voice, browser, and the omni inbox all work together, live and stable, behind a single installable app. After 10 failed attempts, this is the path that breaks the loop.</div>
+
+  <div class="goal"><b style="color:var(--gold1)">THE SHAPE (decide first — this is where every prior attempt forked):</b></div>
+  <div class="shape">
+    <div><b>ONE SHELL</b><span>XUI 3-panel command center. React XOS becomes a tile inside it, not a 2nd app.</span></div>
+    <div><b>ONE BACKEND</b><span>omnimind spine at api.xlrd.org. Every function fans from here.</span></div>
+    <div><b>ONE SOURCE</b><span>Mac <code>xp/</code> edits → <code>E:\hitthe.link</code> pushes. Never edit the deployed copy.</span></div>
+  </div>
+
+  <h2>The 8-step build order · each gated by the prior</h2>
+
+  <div class="step blk"><div class="n">1</div><div>
+    <h3>Reconcile the split-brain<span class="tag blocker">BLOCKER · do first</span></h3>
+    <p>Mac <code>xp/</code> is ahead of deployed <code>E:\hitthe.link\{xos,xui}</code> despite the same commit. Pick <code>xp/</code> as winner, copy forward, commit once, tag <code>xenphone-canon-v11</code>. Also fix the <code>chatID</code>→<code>chatId</code> mismatch that silently breaks sends. Edits never reached users until this is true.</p>
+  </div></div>
+
+  <div class="step"><div class="n">2</div><div>
+    <h3>Stand up the spine as contract owner</h3>
+    <p>Confirm <code>omnimind.js</code> serves all routes on :4441 and the <code>api.xlrd.org</code> tunnel is up. Health check becomes a deploy gate.</p>
+  </div></div>
+
+  <div class="step"><div class="n">3</div><div>
+    <h3>Wire Beeper into the omni inbox</h3>
+    <p>Spine folds Beeper threads into <code>/api/omni/threads</code> (source:beeper). <code>beeper-warm-keeper</code> holds the bridge live. XUI left panel already filters by source + persona.</p>
+  </div></div>
+
+  <div class="step"><div class="n">4</div><div>
+    <h3>Wire Beside SMS + dialer into the right panel</h3>
+    <p>Beside inbound → omni (source:beside); <code>/api/omni/send</code> sends; keypad/contacts → <code>/api/call-start</code>; SMS → <code>/send</code>. Call lifecycle closed by <code>/api/call-end</code>.</p>
+  </div></div>
+
+  <div class="step"><div class="n">5</div><div>
+    <h3>Embed VVSVEI voice + muse into the middle panel</h3>
+    <p>Mic (Web Speech → composer) + muse/3 webview already wired, echo-immune. Verify the iframe + mic both load. No new wiring.</p>
+  </div></div>
+
+  <div class="step"><div class="n">6</div><div>
+    <h3>Embed the browser</h3>
+    <p>Middle webview = the WebView of the wrapper showing the same XUI. Native XenBrowser (:9999) is the Mac power tool, not required for GTM.</p>
+  </div></div>
+
+  <div class="step"><div class="n">7</div><div>
+    <h3>Wrap as the installable app</h3>
+    <p>VVSVEI WebView wrapper: iOS WKWebView IPA + Android WebView APK, both loading the canonical XUI over https. Sign the IPA + publish the APK — that's the gap between "demoable" and "shippable."</p>
+  </div></div>
+
+  <div class="step"><div class="n">8</div><div>
+    <h3>Deploy gate<span class="tag gate">DONE = passes the gate</span></h3>
+    <p>Push → GitHub Pages. "Live" = HTTP 200 + no template tokens + real-browser render with ZERO console errors + spine health 200. Anything less is "deployed," not "live."</p>
+  </div></div>
+
+  <div class="danger">
+    <h3>⚠ The single biggest GTM blocker</h3>
+    <p>The whole live experience depends on the <b>omnimind spine running only on the Mac</b> (api.xlrd.org → Mac :4441 via Cloudflare tunnel). Mac sleeps or tunnel drops = every shell silently empties = <b>"Mac-Death."</b> Until the spine is redundant (always-on host or cloud fallback), the product is one closed laptop lid from total outage. Fix before GTM.</p>
+  </div>
+
+  <div class="inv">
+    <b style="color:var(--gold1);font-size:12px;letter-spacing:.14em">ATTEMPT-11 INVARIANTS (on the wall)</b>
+    <ol>
+      <li>ONE shell (XUI), ONE backend (spine), ONE source (<code>xp/</code> → <code>E:\hitthe.link</code> → push).</li>
+      <li>Reconcile the split-brain + fix <code>chatId</code> BEFORE adding features.</li>
+      <li>Lock VVSVEI as the only wrapper. Electron + Capacitor archived.</li>
+      <li>"Looks live" ≠ "is live" — the deploy gate is the only definition of done.</li>
+      <li>No live secret in the repo; rotate nothing, scrub to keychain/SSH.</li>
+    </ol>
+  </div>
+
+  <footer>Staged at E:\xenphone-merge · canonical XUI source = Mac xp/ · one shell, one spine, one source</footer>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

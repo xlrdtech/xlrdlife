@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M1 Service Interactive Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The application is structured as a user-friendly, single-page journey. It begins with a hero section to grab attention, followed by an interactive pricing comparison with a chart to visually highlight savings. A tabbed feature explorer breaks down complex information into digestible categories (AI, Phone, Productivity). This is followed by a clear 'How it Works' section, social proof through testimonials, and an interactive FAQ accordion to answer common questions without cluttering the UI. A sticky navigation bar provides easy access to all sections. This top-down, narrative structure was chosen to guide a potential customer from initial interest and value proposition (price) to deep understanding (features) and finally to trust and action (testimonials, FAQ, CTA), making the evaluation process intuitive and engaging. -->
+    <!-- Visualization & Content Choices: 
+    - Report Info: Pricing (Monthly vs. Yearly). Goal: Compare costs & show value. Viz: Interactive toggle and a Bar Chart. Interaction: User toggles between monthly/yearly, which updates text and the chart, visually showing the ~44% savings. Justification: A visual chart makes the financial benefit immediately clear and more impactful than text alone. Library: Chart.js.
+    - Report Info: Long list of features. Goal: Organize and detail features without overwhelming. Viz: Tabbed interface for categories. Interaction: Clicking a tab (e.g., 'AI Assistant') reveals only the features in that category. Justification: Progressive disclosure reduces cognitive load and allows users to explore features based on their interests. Library: Vanilla JS.
+    - Report Info: FAQ questions. Goal: Provide answers compactly. Viz: Accordion list. Interaction: Clicking a question expands to show the answer, collapsing others. Justification: Accordions are a standard, space-saving UI pattern for FAQs, keeping the layout clean. Library: Vanilla JS.
+    - Report Info: How to get started. Goal: Simplify the onboarding process. Viz: Numbered step-by-step visual guide. Interaction: Minor hover effects for engagement. Justification: A visual, numbered flow is easier to scan and understand than a paragraph. Library: HTML/Tailwind. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #1a1a1a;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .smooth-scroll {
+            scroll-behavior: smooth;
+        }
+        .faq-item .faq-answer {
+            display: none;
+            transition: max-height 0.3s ease-out;
+        }
+        .faq-item.open .faq-answer {
+            display: block;
+        }
+        .faq-item.open .plus-icon {
+            transform: rotate(45deg);
+        }
+        .plus-icon {
+            transition: transform 0.3s ease-in-out;
+        }
+        .feature-tab.active {
+            background-color: #4A4E69;
+            color: #FFFFFF;
+        }
+        .feature-content {
+            display: none;
+        }
+        .feature-content.active {
+            display: grid;
+        }
+    </style>
+</head>
+<body class="smooth-scroll">
+
+    <header class="bg-[#F8F7F4]/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-200">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-[#22223B]">M1 Explorer</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="#pricing" class="text-gray-600 hover:text-[#4A4E69]">Pricing</a>
+                <a href="#features" class="text-gray-600 hover:text-[#4A4E69]">Features</a>
+                <a href="#how-it-works" class="text-gray-600 hover:text-[#4A4E69]">How It Works</a>
+                <a href="#faq" class="text-gray-600 hover:text-[#4A4E69]">FAQ</a>
+            </div>
+            <a href="#cta" class="hidden md:block bg-[#4A4E69] text-white px-5 py-2 rounded-lg hover:bg-opacity-90 transition">Try for Free</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="py-20 md:py-32">
+            <div class="container mx-auto px-6 text-center">
+                <h1 class="text-4xl md:text-6xl font-bold text-[#22223B] mb-4">Your AI-Powered Business Phone</h1>
+                <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8">An all-in-one solution to streamline communication, cut costs, and enhance your productivity with a powerful AI assistant.</p>
+                <div class="flex justify-center space-x-4">
+                    <a href="#pricing" class="bg-[#4A4E69] text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition">View Pricing</a>
+                    <a href="#features" class="bg-white border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition">Explore Features</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="pricing" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-[#22223B]">Find the Perfect Plan</h2>
+                    <p class="text-lg text-gray-600 mt-2">Choose the plan that's right for you. Get a massive discount by paying yearly.</p>
+                </div>
+                
+                <div class="flex justify-center mb-8">
+                    <div class="bg-gray-200 rounded-lg p-1 flex">
+                        <button id="monthlyBtn" class="px-6 py-2 rounded-md text-sm font-medium focus:outline-none transition">Monthly</button>
+                        <button id="yearlyBtn" class="px-6 py-2 rounded-md text-sm font-medium focus:outline-none transition">Yearly</button>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-start">
+                    <div id="monthlyCard" class="border border-gray-200 rounded-xl p-8 transform transition duration-300">
+                        <h3 class="text-2xl font-semibold mb-2">Monthly</h3>
+                        <p class="text-4xl font-bold mb-4">$29.99<span class="text-lg font-normal text-gray-500">/mo</span></p>
+                        <button class="w-full bg-[#9A8C98] text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition mb-6">Get Started</button>
+                        <ul class="space-y-3 text-gray-600">
+                            <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Unlimited texts & calls (US & CA)</li>
+                            <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Phone call and in-person recorder</li>
+                            <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> AI summaries with next steps</li>
+                            <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Daily Recap with key points & tasks</li>
+                            <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Virtual Receptionist for voicemail</li>
+                            <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Infinite memory searchable with AI</li>
+                        </ul>
+                    </div>
+                    <div id="yearlyCard" class="border-2 border-[#4A4E69] rounded-xl p-8 transform transition duration-300 relative">
+                        <span class="absolute top-0 right-4 -mt-3 bg-[#C9ADA7] text-[#22223B] text-xs font-bold px-3 py-1 rounded-full">44% Discount</span>
+                        <h3 class="text-2xl font-semibold mb-2">Yearly</h3>
+                        <p class="text-4xl font-bold mb-4">$199.99<span class="text-lg font-normal text-gray-500">/yr</span></p>
+                        <button class="w-full bg-[#4A4E69] text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition mb-6">Start Free Trial</button>
+                        <ul class="space-y-3 text-gray-600">
+                            <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Includes everything from Monthly</li>
+                            <li class="flex items-center font-bold text-[#4A4E69]"><span class="text-green-500 mr-2">✓</span> Best value for long-term savings</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-16">
+                    <h3 class="text-2xl font-bold text-center mb-4 text-[#22223B]">Annual Cost Comparison</h3>
+                    <p class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">This chart illustrates the total cost over a year for both plans. The yearly plan offers significant savings, making it the most cost-effective choice for professionals committed to improving their workflow.</p>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="features" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-[#22223B]">A Feature for Every Need</h2>
+                    <p class="text-lg text-gray-600 mt-2 max-w-3xl mx-auto">M1 is more than a phone number; it's a complete productivity suite. Explore how our AI-powered, core phone, and advanced features can transform your business communication.</p>
+                </div>
+
+                <div class="flex justify-center mb-8 border-b border-gray-300">
+                    <button class="feature-tab px-4 py-3 md:px-8 md:py-4 -mb-px border-b-2 border-transparent text-gray-600 font-medium hover:text-[#4A4E69]" data-tab="ai">AI Assistant</button>
+                    <button class="feature-tab px-4 py-3 md:px-8 md:py-4 -mb-px border-b-2 border-transparent text-gray-600 font-medium hover:text-[#4A4E69]" data-tab="phone">Core Phone</button>
+                    <button class="feature-tab px-4 py-3 md:px-8 md:py-4 -mb-px border-b-2 border-transparent text-gray-600 font-medium hover:text-[#4A4E69]" data-tab="productivity">Productivity</button>
+                </div>
+
+                <div id="featuresContent" class="mt-8">
+                    <div id="ai-content" class="feature-content gap-8"></div>
+                    <div id="phone-content" class="feature-content gap-8"></div>
+                    <div id="productivity-content" class="feature-content gap-8"></div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="how-it-works" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-[#22223B]">Get Started in 3 Simple Steps</h2>
+                    <p class="text-lg text-gray-600 mt-2">Onboarding is quick and easy. You'll be making smarter calls in minutes.</p>
+                </div>
+                <div class="max-w-4xl mx-auto grid md:grid-cols-3 gap-8 md:gap-4 text-center">
+                    <div class="flex flex-col items-center">
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-[#C9ADA7] text-[#22223B] text-2xl font-bold mb-4">1</div>
+                        <h3 class="text-xl font-semibold mb-2">Download M1 App</h3>
+                        <p class="text-gray-600">Available on the App Store. Get a new number or port your existing one.</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-[#C9ADA7] text-[#22223B] text-2xl font-bold mb-4">2</div>
+                        <h3 class="text-xl font-semibold mb-2">Meet Your M1 Assistant</h3>
+                        <p class="text-gray-600">Give your M1 assistant key details about your business to get set up.</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-[#C9ADA7] text-[#22223B] text-2xl font-bold mb-4">3</div>
+                        <h3 class="text-xl font-semibold mb-2">Start Calling & Texting</h3>
+                        <p class="text-gray-600">Let your M1 Assistant handle the details while you focus on the conversation.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="testimonials" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-[#22223B]">Trusted by Professionals</h2>
+                     <p class="text-lg text-gray-600 mt-2">Hear from entrepreneurs and business owners like you.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="bg-white rounded-lg p-8 shadow-sm">
+                        <p class="text-gray-700 mb-6">“I switched from Google voice, this app is so much better”</p>
+                        <div class="font-semibold text-[#22223B]">Alex G.</div>
+                        <div class="text-sm text-gray-500">Consultant</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-8 shadow-sm">
+                        <p class="text-gray-700 mb-6">“This is a game changer and a must-have for anyone who is in business that needs a second number”</p>
+                        <div class="font-semibold text-[#22223B]">Konstant</div>
+                        <div class="text-sm text-gray-500">Business Owner</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-8 shadow-sm">
+                        <p class="text-gray-700 mb-6">“M1 has completely transformed the way I work on the phone”</p>
+                        <div class="font-semibold text-[#22223B]">Mike</div>
+                        <div class="text-sm text-gray-500">Financial Advisor</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="faq" class="py-20 bg-white">
+            <div class="container mx-auto px-6 max-w-3xl">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-[#22223B]">Frequently Asked Questions</h2>
+                    <p class="text-lg text-gray-600 mt-2">Have questions? We've got answers. Explore the topics below to learn more about how M1 works and how it can benefit you.</p>
+                </div>
+                <div id="faq-container" class="space-y-4">
+                </div>
+            </div>
+        </section>
+
+        <section id="cta" class="py-20 bg-[#22223B] text-white">
+            <div class="container mx-auto px-6 text-center">
+                 <h2 class="text-3xl md:text-4xl font-bold mb-4">Ready to Transform Your Communication?</h2>
+                 <p class="text-lg text-gray-300 max-w-2xl mx-auto mb-8">Join thousands of professionals who trust M1. Get started today with a free trial and experience the future of business calls.</p>
+                 <a href="#" class="bg-white text-[#22223B] px-10 py-4 rounded-lg text-lg font-bold hover:bg-gray-200 transition">Try M1 for Free</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white py-8 border-t">
+        <div class="container mx-auto px-6 text-center text-gray-500">
+             &copy; 2025 Interface, Inc. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const monthlyBtn = document.getElementById('monthlyBtn');
+            const yearlyBtn = document.getElementById('yearlyBtn');
+            const monthlyCard = document.getElementById('monthlyCard');
+            const yearlyCard = document.getElementById('yearlyCard');
+            
+            let costChart;
+            const chartData = {
+                monthlyCost: 29.99 * 12,
+                yearlyCost: 199.99
+            };
+            
+            function createOrUpdateChart() {
+                const ctx = document.getElementById('costChart').getContext('2d');
+                const isYearly = yearlyBtn.classList.contains('bg-[#4A4E69]');
+                
+                if (costChart) {
+                    costChart.destroy();
+                }
+
+                costChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Billed Monthly (Annual Total)', 'Billed Yearly'],
+                        datasets: [{
+                            label: 'Total Annual Cost ($)',
+                            data: [chartData.monthlyCost.toFixed(2), chartData.yearlyCost.toFixed(2)],
+                            backgroundColor: [
+                                isYearly ? '#C9ADA7' : '#9A8C98',
+                                isYearly ? '#4A4E69' : '#C9ADA7'
+                            ],
+                            borderColor: [
+                                isYearly ? 'rgba(0,0,0,0)' : '#4A4E69',
+                                isYearly ? '#4A4E69' : 'rgba(0,0,0,0)'
+                            ],
+                            borderWidth: 2,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#e5e7eb'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value;
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function setPlan(plan) {
+                if (plan === 'yearly') {
+                    yearlyBtn.classList.add('bg-[#4A4E69]', 'text-white');
+                    monthlyBtn.classList.remove('bg-[#4A4E69]', 'text-white');
+                    yearlyCard.classList.add('scale-105', 'shadow-xl');
+                    monthlyCard.classList.remove('scale-105', 'shadow-xl');
+                } else {
+                    monthlyBtn.classList.add('bg-[#4A4E69]', 'text-white');
+                    yearlyBtn.classList.remove('bg-[#4A4E69]', 'text-white');
+                    monthlyCard.classList.add('scale-105', 'shadow-xl');
+                    yearlyCard.classList.remove('scale-105', 'shadow-xl');
+                }
+                createOrUpdateChart();
+            }
+
+            monthlyBtn.addEventListener('click', () => setPlan('monthly'));
+            yearlyBtn.addEventListener('click', () => setPlan('yearly'));
+
+            setPlan('yearly');
+            
+            const featuresData = {
+                ai: [
+                    { title: "Transcript and Summary", description: "Transcribes and takes notes for every call with to-dos and events." },
+                    { title: "Voicemail Receptionist", description: "Answers missed calls and captures key details from callers." },
+                    { title: "AI Powered Search", description: "Builds a searchable memory of all your calls, texts and voicemails." },
+                    { title: "Daily Recap", description: "Sends you a daily recap of your to-dos and follow-ups." },
+                    { title: "Writing Assistant", description: "Helps you craft smarter text messages." }
+                ],
+                phone: [
+                    { title: "Unlimited Text and Calls", description: "US & Canada coverage for seamless communication." },
+                    { title: "Use Your Own Number", description: "Get a new number or easily bring your own." },
+                    { title: "Spam Protection", description: "Advanced filtering to block unwanted calls and texts." },
+                    { title: "Custom Area Code", description: "Choose a local area code that suits your business." },
+                    { title: "Caller ID", description: "Know who's calling before you pick up." },
+                    { title: "Free Number Change", description: "Need a different number? Change it for free." }
+                ],
+                productivity: [
+                    { title: "Call Recorder", description: "Record important phone calls for your records." },
+                    { title: "Voice Memos", description: "Quickly capture thoughts and ideas on the go." },
+                    { title: "Call Forwarding", description: "Redirect calls to another number when you're unavailable." },
+                    { title: "Business Hours", description: "Set your availability and manage after-hours calls." },
+                    { title: "Voicemail Transcripts", description: "Read your voicemails instead of listening to them." },
+                    { title: "Silence Unknown Callers", description: "Automatically silence calls from numbers not in your contacts." }
+                ]
+            };
+            
+            const featuresContent = document.getElementById('featuresContent');
+            const aiContent = document.getElementById('ai-content');
+            const phoneContent = document.getElementById('phone-content');
+            const productivityContent = document.getElementById('productivity-content');
+
+            const createFeatureCard = (feature) => {
+                return `
+                    <div class="bg-white p-6 rounded-lg border border-gray-200">
+                        <h4 class="font-bold text-lg text-[#22223B] mb-2">${feature.title}</h4>
+                        <p class="text-gray-600">${feature.description}</p>
+                    </div>
+                `;
+            };
+
+            aiContent.innerHTML = featuresData.ai.map(createFeatureCard).join('');
+            phoneContent.innerHTML = featuresData.phone.map(createFeatureCard).join('');
+            productivityContent.innerHTML = featuresData.productivity.map(createFeatureCard).join('');
+
+            const featureTabs = document.querySelectorAll('.feature-tab');
+            const featureContents = document.querySelectorAll('.feature-content');
+
+            function switchTab(tab) {
+                featureTabs.forEach(t => t.classList.remove('active', 'border-[#4A4E69]'));
+                featureContents.forEach(c => c.classList.remove('active'));
+
+                tab.classList.add('active', 'border-[#4A4E69]');
+                document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+            }
+
+            featureTabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab));
+            });
+            
+            switchTab(document.querySelector('.feature-tab[data-tab="ai"]'));
+
+            const faqData = [
+                { question: "How do I install M1?", answer: "M1 is available for download on the iOS App Store. Simply search for 'M1 Business Phone' and follow the installation instructions." },
+                { question: "Can I use my current phone number with M1?", answer: "Yes, you can either get a new number from us or easily port your existing phone number to use with your M1 account." },
+                { question: "Is M1 available on my computer?", answer: "Currently, M1 is a mobile-first application available on iOS. A desktop version is in our future roadmap." },
+                { question: "Should I tell the other party that I'm transcribing our call?", answer: "Call recording and transcription laws vary by location. It is your responsibility to comply with all applicable laws. In many jurisdictions, you are required to obtain consent from all parties before recording or transcribing a conversation." },
+                { question: "Is M1 secure?", answer: "Yes, security is a top priority. We use industry-standard encryption and security practices to protect your data and communications." }
+            ];
+
+            const faqContainer = document.getElementById('faq-container');
+            faqData.forEach(item => {
+                const faqItem = document.createElement('div');
+                faqItem.className = 'faq-item bg-white border border-gray-200 rounded-lg';
+                faqItem.innerHTML = `
+                    <div class="faq-question flex justify-between items-center p-5 cursor-pointer">
+                        <h4 class="font-semibold text-lg text-[#22223B]">${item.question}</h4>
+                        <span class="plus-icon text-2xl text-gray-400 font-light">+</span>
+                    </div>
+                    <div class="faq-answer px-5 pb-5 text-gray-600">
+                        <p>${item.answer}</p>
+                    </div>
+                `;
+                faqContainer.appendChild(faqItem);
+            });
+            
+            faqContainer.addEventListener('click', (e) => {
+                const questionHeader = e.target.closest('.faq-question');
+                if (questionHeader) {
+                    const faqItem = questionHeader.parentElement;
+                    const wasOpen = faqItem.classList.contains('open');
+                    
+                    document.querySelectorAll('.faq-item.open').forEach(item => item.classList.remove('open'));
+                    
+                    if (!wasOpen) {
+                        faqItem.classList.add('open');
+                    }
+                }
+            });
+
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>UNBLOCK — what Xen needs from qi</title>
+<style>
+  :root{--bg:#0a0b0d;--card:#121419;--line:#23272f;--ink:#e9edf2;--dim:#8b94a3;--faint:#5b6472;
+    --gold:#d8b46a;--good:#3ecf8e;--doc:#7aa2ff;--dec:#ffcf6b;--asset:#ff8f6b;--act:#c08bff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 ui-sans-serif,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:30px 18px 90px}
+  h1{font-size:25px;margin:0 0 2px;letter-spacing:-.01em}h1 .g{color:var(--gold)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 8px}
+  .bar{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,var(--bg) 70%,rgba(10,11,13,0));padding:10px 0 14px;margin-bottom:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .prog{font:600 12px/1 ui-monospace,Menlo,monospace;color:var(--faint)}
+  button{background:linear-gradient(180deg,#e8c878,var(--gold));color:#1a1407;font-weight:800;border:none;border-radius:9px;padding:9px 15px;font-size:13px;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--dim);font-weight:600}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.12em;margin:26px 0 10px;font-weight:700}
+  h2 .c{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin:0 0 9px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:border-color .15s,opacity .15s}
+  .item:hover{border-color:#39414e}
+  .item.done{opacity:.45}
+  .item.done .t{text-decoration:line-through}
+  .box{flex:0 0 20px;height:20px;border:2px solid var(--faint);border-radius:6px;margin-top:1px;display:grid;place-items:center;font-size:13px;color:var(--good)}
+  .item.done .box{border-color:var(--good)}
+  .body{flex:1}
+  .t{font-weight:700;font-size:15px}
+  .why{color:var(--dim);font-size:13px;margin:3px 0 6px}
+  .ask{font-size:13px;color:var(--ink);background:rgba(255,255,255,.03);border-left:2px solid var(--gold);padding:6px 10px;border-radius:0 7px 7px 0}
+  .ask b{color:var(--gold)}
+  .foot{color:var(--faint);font-size:12px;margin-top:30px;border-top:1px solid var(--line);padding-top:12px}
+  textarea{position:fixed;left:-9999px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>UNBLOCK <span class="g">·</span> what Xen needs from you</h1>
+  <p class="sub">Everything asked this session that's blocked on a missing doc, decision, asset, or your hands. Tap to mark provided. Top blocker: the Lark persona/fleet doc.</p>
+  <div class="bar">
+    <span class="prog" id="prog">0 / 0 cleared</span>
+    <button onclick="compile()">Compile open → email East</button>
+    <button class="ghost" onclick="reset()">reset</button>
+  </div>
+
+  <h2><span class="c" style="background:var(--doc)"></span>Missing docs / sources (couldn't find)</h2>
+  <div id="docs"></div>
+  <h2><span class="c" style="background:var(--dec)"></span>Decisions needed</h2>
+  <div id="decisions"></div>
+  <h2><span class="c" style="background:var(--asset)"></span>Assets / files to forward</h2>
+  <div id="assets"></div>
+  <h2><span class="c" style="background:var(--act)"></span>Actions only you can do (with me)</h2>
+  <div id="actions"></div>
+
+  <div class="foot">Real open items only — no placeholders. State saved to this device. Cross-ref: /life · scope-router-index.</div>
+</div>
+<script>
+const ITEMS = {
+  docs: [
+    {id:'persona-doc', t:'Full persona-breakdown doc', why:'Not on-disk, not in bastra (vault empty), M4 find times out. Protocol list pins it to your Lark (Windows-side); no Lark MCP wired.', ask:'Paste it, drop the path/link, or let me wire a Lark MCP → I merge the complete roster.'},
+    {id:'x9', t:'X9 — definition', why:'New persona named for 999 Ops (XLRD999 + X9); no source exists anywhere reachable.', ask:'Tell me what X9 is (role / voice / scope) → I scope it into OPS-999.'},
+    {id:'fleet-spec', t:'Full auto-fleet spec', why:'The same Lark doc holds the complete capability-fleet spec the AUTO_AGENT_PROTOCOL_LIST was rebuilt from on-disk pieces to approximate.', ask:'Same Lark source → I reconcile + fill the 37 partial/gap skills.'},
+  ],
+  decisions: [
+    {id:'outlook', t:'Outlook control — which mailbox', why:'No Outlook integration is connected yet (C).', ask:'Which mailbox + path: <b>M365 connector</b> (one OAuth click) or <b>IMAP/SMTP</b> — selfexec@outlook.com? xlrd.org? M365?'},
+    {id:'seats', t:'3 Max-seat token location', why:'For autologin seat-rotation so you never manually re-login when usage caps (B).', ask:'Where the 3 Claude Max seats’ auth/tokens live (config dir per seat) → I wire silent rotation.'},
+    {id:'l7s-sla', t:'L7S answers — 3 SLA numbers + pricing', why:'/l7s/answers is live but the turnaround promise + prices are flagged "decision needed".', ask:'(1) onboarding window (2) first-deliverable window (3) response SLA; show $ or tier-names; send to Luckie directly?'},
+    {id:'anthony-export', t:'Anthony export — confirm surface', why:'Fixed the master console; if a SUBSCRIBER saw all leads it’s a Supabase RLS misconfig instead.', ask:'Confirm his complaint is the master console (admin.html) — or I check buyers.role / RLS.'},
+    {id:'shadcn-deploy', t:'shadcn elite stack — deploy target', why:'Built + tsc-clean at E:\\hitthe.link-next (/showcase); build runs on C:/CI (E: readlink quirk only).', ask:'Own repo + Pages, or /elite subpath?'},
+    {id:'p6-preorder', t:'P6.5 pre-order — price + link', why:'/p6 is live as a notify-capture; real pre-order needs a payment target.', ask:'Pre-order price + Cash App / checkout link → I swap the notify form for live pre-orders.'},
+  ],
+  assets: [
+    {id:'tt-files', t:'Tracking Together — 3 missing lead sources', why:'520 leads consolidated on M4; these named lists have no reachable file.', ask:'Forward: <b>LA County Fair 2-26</b> sheet · <b>Acme</b> auto-industry vendor list · <b>Culligan</b> list (+ any emailed leads) to east@xlrd.org.'},
+    {id:'dcz-opt2', t:'DCZ /dcz/opt2 — diamond logo', why:'opt1 (gold) is live; opt2 needs the DS logo in hyper-realistic diamond. grok asset is a bare gem, not the logo.', ask:'Send a diamond DS-logo render, or say "generate it" and I produce it.'},
+    {id:'suno', t:'Suno music catalog — access', why:'To store/organize/tag/metadata/playlist + schedule auto-releases (999 music ops).', ask:'How do I reach your Suno catalog — login path, export, or API? Point me in.'},
+  ],
+  actions: [
+    {id:'fasttwin', t:'Apply the fast-twin heartbeat', why:'Staged + verified low-risk (kills the voice silent-gap). Touches live omnimind.', ask:'Voice up → run proposed-fasttwin-decouple/apply.sh (or say go and I walk it).'},
+    {id:'localai', t:'LocalAI-on-Nitro — one-time host prep', why:'$0 image-gen kit staged at E:\\localai-kit (8 files).', ask:'Run the WSL2 + NVIDIA + Docker steps in run.md on the Nitro → then I wire it as a tool.'},
+    {id:'omni-runtime', t:'@xen omni / Stable-Ops runtime', why:'Registry + spec done; the tag-detect + universal connector live in omnimind (medical-grade voice stack).', ask:'A voice-up session to build the omnimind ingress surgically (trace→stage→verify).'},
+  ],
+};
+const K='unblock-done-v1';
+let DONE = {}; try{ DONE = JSON.parse(localStorage.getItem(K)||'{}'); }catch(_){}
+function render(){
+  let total=0, done=0;
+  for(const grp in ITEMS){
+    const el=document.getElementById(grp);
+    el.innerHTML = ITEMS[grp].map(function(i){
+      total++; const d=!!DONE[i.id]; if(d)done++;
+      return '<div class="item'+(d?' done':'')+'" data-id="'+i.id+'"><div class="box">'+(d?'✓':'')+'</div>'+
+        '<div class="body"><div class="t">'+i.t+'</div><div class="why">'+i.why+'</div>'+
+        '<div class="ask">'+i.ask+'</div></div></div>';
+    }).join('');
+  }
+  document.getElementById('prog').textContent = done+' / '+total+' cleared';
+}
+document.body.addEventListener('click',function(e){
+  const it=e.target.closest('.item'); if(!it)return;
+  const id=it.getAttribute('data-id'); DONE[id]=!DONE[id];
+  localStorage.setItem(K,JSON.stringify(DONE)); render();
+});
+function compile(){
+  let lines=['UNBLOCK — open items for Xen:',''];
+  for(const grp in ITEMS) ITEMS[grp].forEach(function(i){ if(!DONE[i.id]) lines.push('• '+i.t+' — '+i.ask.replace(/<[^>]+>/g,'')); });
+  const txt=lines.join('\n');
+  const subj=encodeURIComponent('UNBLOCK — my answers');
+  window.location.href='mailto:east@xlrd.org?subject='+subj+'&body='+encodeURIComponent(txt+'\n\n[my answers below]\n');
+}
+function reset(){ DONE={}; localStorage.setItem(K,'{}'); render(); }
+render();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

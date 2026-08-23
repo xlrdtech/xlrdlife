@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FL Studio Ultimate Cheatsheet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1c20;
+            color: #d4d4d8;
+        }
+
+        /* FL Studio Inspired Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #27272a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #52525b; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #71717a; 
+        }
+
+        /* Glassmorphism & Cards */
+        .fl-card {
+            background: rgba(40, 40, 43, 0.95);
+            border: 1px solid #3f3f46;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Keycap Styling */
+        .keycap {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(180deg, #4a4a50 0%, #3f3f46 100%);
+            border-top: 1px solid #606068;
+            border-bottom: 2px solid #27272a;
+            box-shadow: 0 2px 0 #18181b;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            color: #ffffff;
+            display: inline-block;
+            margin: 0 2px;
+            white-space: nowrap;
+        }
+
+        /* FL Studio Accents */
+        .accent-orange { color: #FF9900; }
+        .bg-accent-orange { background-color: #FF9900; }
+        .border-accent-orange { border-color: #FF9900; }
+        
+        .accent-green { color: #99CC33; }
+        .bg-accent-green { background-color: #99CC33; }
+
+        .tab-active {
+            background-color: #3f3f46;
+            color: #FF9900;
+            border-bottom: 2px solid #FF9900;
+        }
+
+        .tab-inactive {
+            color: #a1a1aa;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-inactive:hover {
+            color: #e4e4e7;
+            background-color: #27272a;
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #99CC33;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #99CC33;
+        }
+        
+        .anim-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-[#2d2d31] border-b border-[#3f3f46] p-4 shadow-lg z-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <!-- Logo area -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded bg-gradient-to-br from-[#FF9900] to-[#cb7a00] flex items-center justify-center text-white font-bold shadow-lg">
+                    FL
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-tight">FL Shortcuts</h1>
+                    <p class="text-xs text-gray-400">Interactive Cheatsheet</p>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative w-full md:w-96 group">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-gray-500 group-focus-within:text-[#FF9900] transition-colors"></i>
+                </div>
+                <input type="text" id="searchInput" 
+                    class="block w-full pl-10 pr-3 py-2 border border-[#3f3f46] rounded-md leading-5 bg-[#18181b] text-gray-300 placeholder-gray-500 focus:outline-none focus:border-[#FF9900] focus:ring-1 focus:ring-[#FF9900] sm:text-sm transition-all" 
+                    placeholder="Search action or keys (e.g. 'Record', 'Ctrl+Z')...">
+            </div>
+
+            <!-- Platform Toggle -->
+            <div class="flex items-center gap-3 bg-[#18181b] px-3 py-1.5 rounded-lg border border-[#3f3f46]">
+                <span id="winLabel" class="text-xs font-bold text-white">WIN</span>
+                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" name="toggle" id="platformToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                    <label for="platformToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-600 cursor-pointer"></label>
+                </div>
+                <span id="macLabel" class="text-xs font-bold text-gray-500">MAC</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-[#242428] border-b border-[#3f3f46] overflow-x-auto no-scrollbar">
+        <div class="max-w-7xl mx-auto flex" id="categoryTabs">
+            <!-- Tabs injected by JS -->
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-[#1a1c20] p-4 md:p-6 relative">
+        <div class="max-w-7xl mx-auto">
+            
+            <!-- Context Header -->
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="currentCategoryTitle" class="text-2xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-layer-group text-[#FF9900]"></i> <span>All Shortcuts</span>
+                </h2>
+                <span class="text-xs text-gray-500 bg-[#27272a] px-2 py-1 rounded border border-[#3f3f46]">
+                    <span id="countDisplay">0</span> commands
+                </span>
+            </div>
+
+            <!-- Shortcuts Grid -->
+            <div id="shortcutsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Cards injected by JS -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-gray-500">
+                <i class="fas fa-ghost text-4xl mb-3 opacity-50"></i>
+                <p>No shortcuts found for your search.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#18181b] border-t border-[#3f3f46] py-3 text-center text-xs text-gray-500">
+        Based on official Image-Line documentation. "FL Studio" is a registered trademark of Image-Line Software.
+    </footer>
+
+    <script>
+        // --- DATASET ---
+        // Normalized from the user prompt
+        const shortcutsData = [
+            {
+                category: "Global",
+                icon: "fa-globe",
+                items: [
+                    { keys: "Ctrl/Cmd+Z", action: "Undo / Redo last edit" },
+                    { keys: "Ctrl/Cmd+Alt/Opt+Z", action: "Undo step-by-step" },
+                    { keys: "Ctrl/Cmd+O", action: "Open file" },
+                    { keys: "Ctrl/Cmd+S", action: "Save file" },
+                    { keys: "Ctrl/Cmd+N", action: "Save new version" },
+                    { keys: "Ctrl/Cmd+Shift+S", action: "Save As..." },
+                    { keys: "Ctrl/Cmd+R", action: "Export wave file" },
+                    { keys: "Ctrl/Cmd+Shift+R", action: "Export mp3 file" },
+                    { keys: "Ctrl/Cmd+Shift+M", action: "Export MIDI file" },
+                    { keys: "Alt/Opt+0..9", action: "Open recent files" },
+                    { keys: "Ctrl/Cmd+Shift+H", action: "(Re)arrange windows" },
+                    { keys: "F1", action: "Help" },
+                    { keys: "F5", action: "Toggle Playlist" },
+                    { keys: "F6", action: "Toggle Step Sequencer" },
+                    { keys: "F7", action: "Toggle Piano roll" },
+                    { keys: "Alt/Opt+F8", action: "Show/hide Sample Browser" },
+                    { keys: "F9", action: "Show/hide Mixer" },
+                    { keys: "F10", action: "Show/hide MIDI settings" },
+                    { keys: "F11", action: "Show/hide song info" },
+                    { keys: "F12", action: "Close all windows" },
+                    { keys: "Tab", action: "Cycle nested windows" },
+                    { keys: "F8", action: "Open Plugin Picker" },
+                    { keys: "Enter", action: "Toggle Max/Min Playlist" },
+                    { keys: "Esc", action: "Closes a window" }
+                ]
+            },
+            {
+                category: "Transport",
+                icon: "fa-play-circle",
+                items: [
+                    { keys: "Backspace", action: "Toggle Line/None Snap" },
+                    { keys: "Space", action: "Start/Stop Playback" },
+                    { keys: "Ctrl/Cmd+Space", action: "Start/Pause Playback" },
+                    { keys: "L", action: "Switch Pattern/Song mode" },
+                    { keys: "R", action: "Switch On/Off recording" },
+                    { keys: "NumPad 0", action: "Fast forward" },
+                    { keys: "NumPad /", action: "Previous bar" },
+                    { keys: "NumPad *", action: "Next bar" },
+                    { keys: "Ctrl/Cmd+E", action: "Toggle Step Edit mode" },
+                    { keys: "Ctrl/Cmd+H", action: "Stop sound (panic)" },
+                    { keys: "Ctrl/Cmd+T", action: "Toggle typing keypad to piano" },
+                    { keys: "Ctrl/Cmd+B", action: "Toggle blend notes" },
+                    { keys: "Ctrl/Cmd+M", action: "Toggle metronome" },
+                    { keys: "Ctrl/Cmd+P", action: "Toggle recording precount" },
+                    { keys: "Ctrl/Cmd+I", action: "Toggle wait for input" }
+                ]
+            },
+            {
+                category: "Pattern Selector",
+                icon: "fa-th",
+                items: [
+                    { keys: "Numpad 1..9", action: "Select patterns 1..9" },
+                    { keys: "+", action: "Next pattern" },
+                    { keys: "-", action: "Previous pattern" },
+                    { keys: "F2", action: "Open name editor. Repeat for color." },
+                    { keys: "F4", action: "Next empty pattern with name dialog" },
+                    { keys: "Ctrl/Cmd+F4", action: "Next empty pattern" }
+                ]
+            },
+            {
+                category: "Channel Rack",
+                icon: "fa-sliders-h",
+                items: [
+                    { keys: "1..9, 0", action: "Mute/Unmute first 10 Channels" },
+                    { keys: "Ctrl/Cmd+1..9,0", action: "Solo/UnSolo first 10 Channels" },
+                    { keys: "Up-Arrow", action: "Select Channel above" },
+                    { keys: "Down-Arrow", action: "Select Channel below" },
+                    { keys: "Page Up", action: "Select next Channel Group" },
+                    { keys: "Page Down", action: "Select previous Channel Group" },
+                    { keys: "Alt/Opt+Del", action: "Delete selected Channel/s" },
+                    { keys: "Alt/Opt+Down", action: "Move selected Channel/s down" },
+                    { keys: "Alt/Opt+Up", action: "Move selected Channel/s up" },
+                    { keys: "Alt/Opt+C", action: "Clone selected Channels" },
+                    { keys: "Alt/Opt+G", action: "Group selected Channels" },
+                    { keys: "Alt/Opt+M", action: "Toggle Mixer Track Selectors" },
+                    { keys: "Alt/Opt+U", action: "Unzip selected Channel/s" },
+                    { keys: "Alt/Opt+Z", action: "Zip selected Channel/s" },
+                    { keys: "Ctrl/Cmd+Alt/Opt+R", action: "Force restretch all Audio Clips" },
+                    { keys: "Ctrl/Cmd+Enter", action: "Focus Playlist" },
+                    { keys: "Ctrl/Cmd+C", action: "Copy Channel Steps/Score" },
+                    { keys: "Ctrl/Cmd+L", action: "Route to free mixer track" },
+                    { keys: "Ctrl/Cmd+V", action: "Paste Channel Steps/Score" },
+                    { keys: "Ctrl/Cmd+X", action: "Cut Channel Steps/Score" },
+                    { keys: "Shift+Mouse-wheel", action: "Move Selected Channel Up/Down" },
+                    { keys: "Shift+Ctrl/Cmd+Left", action: "Shift Steps Left" },
+                    { keys: "Shift+Ctrl/Cmd+Right", action: "Shift Steps Right" }
+                ]
+            },
+            {
+                category: "Mixer",
+                icon: "fa-sliders",
+                items: [
+                    { keys: "Alt/Opt+Left/Right", action: "Move selected track Left/Right" },
+                    { keys: "Alt/Opt+L", action: "Select Channels Linked to track" },
+                    { keys: "Alt/Opt+W", action: "Toggle Peak-meter 'Wave' view" },
+                    { keys: "Ctrl+Enter", action: "Show/hide track properties" },
+                    { keys: "Ctrl/Cmd+A", action: "Select all mixer tracks" },
+                    { keys: "Ctrl/Cmd+L", action: "Link Channels to selected track" },
+                    { keys: "Shift+Ctrl/Cmd+L", action: "Link Channels STARTING From track" },
+                    { keys: "Ctrl/Cmd+Shift+Click", action: "Select multiple tracks" },
+                    { keys: "Ctrl/Cmd+Shift+S", action: "Save Mixer track state" },
+                    { keys: "F2", action: "Rename selected track" },
+                    { keys: "S", action: "Solo Current track" },
+                    { keys: "Alt/Opt+S", action: "Alt Solo (Include routed)" },
+                    { keys: "Alt/Opt+R", action: "Render Armed tracks to .wav" }
+                ]
+            },
+            {
+                category: "Playlist",
+                icon: "fa-align-left",
+                items: [
+                    { keys: "B", action: "Paint tool" },
+                    { keys: "C", action: "Slice tool" },
+                    { keys: "D", action: "Delete tool" },
+                    { keys: "E", action: "Select tool" },
+                    { keys: "P", action: "Draw tool (pencil)" },
+                    { keys: "S", action: "Slip edit tool" },
+                    { keys: "T", action: "Mute tool" },
+                    { keys: "Y", action: "Playback tool" },
+                    { keys: "Z", action: "Zoom tool" },
+                    { keys: "Alt", action: "Bypass snap" },
+                    { keys: "Alt/Opt+G", action: "Ungroup selection" },
+                    { keys: "Alt/Opt+M", action: "Mute selection" },
+                    { keys: "Alt/Opt+P", action: "Open Picker Panel" },
+                    { keys: "Alt/Opt+T", action: "Add Time marker" },
+                    { keys: "Alt/Opt+Right-Click", action: "Audition selected clip" },
+                    { keys: "Ctrl/Cmd+A", action: "Select All" },
+                    { keys: "Ctrl/Cmd+B", action: "Duplicate selection right" },
+                    { keys: "Ctrl/Cmd+C", action: "Copy selection" },
+                    { keys: "Ctrl/Cmd+D", action: "Deselect selection" },
+                    { keys: "Ctrl/Cmd+P", action: "Toggle Performance Mode" },
+                    { keys: "Ctrl/Cmd+T", action: "Add Time Marker" },
+                    { keys: "Ctrl/Cmd+V", action: "Paste selection" },
+                    { keys: "Ctrl/Cmd+X", action: "Cut selection" },
+                    { keys: "Ctrl/Cmd+Alt/Opt+C", action: "Consolidate to audio" },
+                    { keys: "Ctrl/Cmd+Alt/Opt+G", action: "Grid Color" },
+                    { keys: "Del", action: "Delete selected clip" },
+                    { keys: "Shift+G", action: "Group selected Clips" },
+                    { keys: "Shift+M", action: "Switch stretch mode" }
+                ]
+            },
+            {
+                category: "Piano Roll",
+                icon: "fa-music",
+                items: [
+                    { keys: "B", action: "Paint tool" },
+                    { keys: "C", action: "Slice tool" },
+                    { keys: "D", action: "Delete tool" },
+                    { keys: "E", action: "Select tool" },
+                    { keys: "G", action: "Select Channel above" },
+                    { keys: "J", action: "Select Channel below" },
+                    { keys: "M", action: "Keyboard view mode" },
+                    { keys: "O", action: "Toggle Portamento" },
+                    { keys: "P", action: "Draw tool" },
+                    { keys: "S", action: "Toggle Slide note" },
+                    { keys: "T", action: "Mute tool" },
+                    { keys: "Y", action: "Playback tool" },
+                    { keys: "Alt/Opt+A", action: "Arpeggiator" },
+                    { keys: "Alt/Opt+E", action: "Riff machine" },
+                    { keys: "Alt/Opt+L", action: "Articulate tool" },
+                    { keys: "Alt/Opt+Q", action: "Quantize" },
+                    { keys: "Alt/Opt+R", action: "Randomize" },
+                    { keys: "Alt/Opt+S", action: "Strum tool" },
+                    { keys: "Alt/Opt+X", action: "Scale Levels tool" },
+                    { keys: "Alt/Opt+V", action: "Ghost Channels (Toggle)" },
+                    { keys: "Ctrl/Cmd+A", action: "Select All" },
+                    { keys: "Ctrl/Cmd+B", action: "Duplicate selection" },
+                    { keys: "Ctrl/Cmd+G", action: "Glue notes" },
+                    { keys: "Ctrl/Cmd+L", action: "Quick legato" },
+                    { keys: "Ctrl/Cmd+Q", action: "Quick Quantize" },
+                    { keys: "Ctrl/Cmd+U", action: "Quick Chop" },
+                    { keys: "Ctrl/Cmd+Up/Down", action: "Transpose 1 Octave" },
+                    { keys: "Shift+D", action: "Discard note lengths" },
+                    { keys: "Shift+Up/Down", action: "Move selection Up/Down" }
+                ]
+            }
+        ];
+
+        // --- STATE ---
+        let currentPlatform = 'win'; // 'win' or 'mac'
+        let currentCategory = 'All';
+        let searchQuery = '';
+
+        // --- DOM ELEMENTS ---
+        const platformToggle = document.getElementById('platformToggle');
+        const winLabel = document.getElementById('winLabel');
+        const macLabel = document.getElementById('macLabel');
+        const shortcutsGrid = document.getElementById('shortcutsGrid');
+        const categoryTabs = document.getElementById('categoryTabs');
+        const searchInput = document.getElementById('searchInput');
+        const emptyState = document.getElementById('emptyState');
+        const currentCategoryTitle = document.getElementById('currentCategoryTitle');
+        const countDisplay = document.getElementById('countDisplay');
+
+        // --- INITIALIZATION ---
+        function init() {
+            renderTabs();
+            renderGrid();
+            
+            // Event Listeners
+            platformToggle.addEventListener('change', (e) => {
+                currentPlatform = e.target.checked ? 'mac' : 'win';
+                updatePlatformLabels();
+                renderGrid();
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderGrid();
+            });
+        }
+
+        function updatePlatformLabels() {
+            if (currentPlatform === 'mac') {
+                macLabel.classList.remove('text-gray-500');
+                macLabel.classList.add('text-white');
+                winLabel.classList.add('text-gray-500');
+                winLabel.classList.remove('text-white');
+            } else {
+                winLabel.classList.remove('text-gray-500');
+                winLabel.classList.add('text-white');
+                macLabel.classList.add('text-gray-500');
+                macLabel.classList.remove('text-white');
+            }
+        }
+
+        // --- FORMATTING LOGIC ---
+        function formatKeyString(keyString) {
+            let formatted = keyString;
+
+            if (currentPlatform === 'mac') {
+                // Replace Ctrl/Cmd with Cmd
+                formatted = formatted.replace(/Ctrl\/Cmd/g, 'Cmd');
+                // Replace Alt/Opt with Opt
+                formatted = formatted.replace(/Alt\/Opt/g, 'Opt');
+                // Replace standalone Ctrl or Alt if implied
+                formatted = formatted.replace(/\bCtrl\b/g, 'Cmd');
+                formatted = formatted.replace(/\bAlt\b/g, 'Opt');
+                formatted = formatted.replace(/Backspace/g, 'Delete');
+                formatted = formatted.replace(/Insert/g, 'Fn+Return');
+            } else {
+                // Windows Defaults
+                formatted = formatted.replace(/Ctrl\/Cmd/g, 'Ctrl');
+                formatted = formatted.replace(/Alt\/Opt/g, 'Alt');
+                // Ensure Win specific
+                formatted = formatted.replace(/\bCmd\b/g, 'Ctrl');
+                formatted = formatted.replace(/\bOpt\b/g, 'Alt');
+            }
+
+            // Clean up visual separators
+            // Split by + but keep the delimiter to reconstruct logic if needed, 
+            // though standard split is easier for keycap generation.
+            const parts = formatted.split('+');
+            
+            return parts.map(part => `<span class="keycap">${part.trim()}</span>`).join('<span class="text-gray-500 text-xs mx-1">+</span>');
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderTabs() {
+            const categories = ['All', ...shortcutsData.map(d => d.category)];
+            
+            categoryTabs.innerHTML = categories.map(cat => {
+                const isActive = cat === currentCategory;
+                const activeClass = isActive ? 'tab-active' : 'tab-inactive';
+                
+                // Find icon for category
+                let iconClass = 'fa-layer-group';
+                if(cat !== 'All') {
+                    const dataObj = shortcutsData.find(d => d.category === cat);
+                    if(dataObj) iconClass = dataObj.icon;
+                }
+
+                return `
+                    <button onclick="setCategory('${cat}')" 
+                        class="px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${activeClass}">
+                        <i class="fas ${iconClass}"></i>
+                        ${cat}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        window.setCategory = function(cat) {
+            currentCategory = cat;
+            renderTabs();
+            renderGrid();
+        }
+
+        function renderGrid() {
+            shortcutsGrid.innerHTML = '';
+            let count = 0;
+            let flattenedItems = [];
+
+            // 1. Filter by Category
+            if (currentCategory === 'All') {
+                shortcutsData.forEach(cat => {
+                    cat.items.forEach(item => flattenedItems.push({...item, originCategory: cat.category}));
+                });
+                currentCategoryTitle.innerHTML = `<i class="fas fa-layer-group text-[#FF9900]"></i> <span>All Shortcuts</span>`;
+            } else {
+                const catData = shortcutsData.find(d => d.category === currentCategory);
+                if (catData) {
+                    flattenedItems = catData.items.map(item => ({...item, originCategory: catData.category}));
+                    currentCategoryTitle.innerHTML = `<i class="fas ${catData.icon} text-[#FF9900]"></i> <span>${catData.category}</span>`;
+                }
+            }
+
+            // 2. Filter by Search
+            const filteredItems = flattenedItems.filter(item => {
+                const matchAction = item.action.toLowerCase().includes(searchQuery);
+                const matchKeys = item.keys.toLowerCase().includes(searchQuery);
+                return matchAction || matchKeys;
+            });
+
+            count = filteredItems.length;
+            countDisplay.innerText = count;
+
+            // 3. Render
+            if (count === 0) {
+                shortcutsGrid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } else {
+                shortcutsGrid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+
+                shortcutsGrid.innerHTML = filteredItems.map((item, index) => {
+                    const keyHTML = formatKeyString(item.keys);
+                    const categoryLabel = currentCategory === 'All' 
+                        ? `<span class="absolute top-2 right-2 text-[10px] uppercase font-bold text-gray-500 bg-[#18181b] px-1.5 py-0.5 rounded border border-[#3f3f46]">${item.originCategory}</span>` 
+                        : '';
+
+                    return `
+                        <div class="fl-card p-4 rounded-lg shadow-sm relative group hover:border-[#FF9900] transition-colors anim-fade-in" style="animation-delay: ${index * 10}ms">
+                            ${categoryLabel}
+                            <div class="mb-3">
+                                ${keyHTML}
+                            </div>
+                            <div class="text-sm text-gray-300 font-medium leading-tight">
+                                ${item.action}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Run
+        init();
+
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

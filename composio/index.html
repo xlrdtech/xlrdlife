@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Composio Toolkit Roster — xlrdtech Connect Console</title>
+<style>
+  :root{
+    --bg:#0a0c10; --panel:#11151c; --panel-2:#161b24; --line:#222a36;
+    --ink:#e8edf5; --ink-dim:#9aa6b8; --ink-faint:#5e6b7e;
+    --gold:#c8a04a; --gold-soft:#e6c87a;
+    --ok:#34d399; --ok-bg:rgba(52,211,153,.12); --ok-line:rgba(52,211,153,.4);
+    --warn:#fbbf24; --warn-bg:rgba(251,191,36,.12); --warn-line:rgba(251,191,36,.4);
+    --bad:#f87171; --bad-bg:rgba(248,113,113,.12); --bad-line:rgba(248,113,113,.4);
+    --pend:#7c8aa0; --pend-bg:rgba(124,138,160,.12); --pend-line:rgba(124,138,160,.35);
+    --radius:14px; --shadow:0 1px 0 rgba(255,255,255,.03), 0 8px 30px rgba(0,0,0,.45);
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+  body{padding:0 0 80px;line-height:1.5}
+  a{color:inherit;text-decoration:none}
+
+  /* ---------- Header ---------- */
+  header.topbar{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg,rgba(10,12,16,.96),rgba(10,12,16,.88));
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+    padding:22px clamp(16px,4vw,48px) 18px;
+  }
+  .brandrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .logo{
+    width:38px;height:38px;border-radius:10px;flex:0 0 auto;
+    background:radial-gradient(120% 120% at 30% 20%,var(--gold-soft),var(--gold) 55%,#7a5e1f);
+    display:grid;place-items:center;font-weight:800;color:#1a1305;font-size:18px;
+    box-shadow:0 4px 18px rgba(200,160,74,.35);
+  }
+  .brandtxt h1{font-size:clamp(18px,2.4vw,24px);font-weight:700;letter-spacing:-.01em}
+  .brandtxt h1 .accent{color:var(--gold-soft)}
+  .brandtxt p{color:var(--ink-dim);font-size:13px;margin-top:2px}
+  .wsmeta{
+    margin-left:auto;display:flex;gap:18px;flex-wrap:wrap;align-items:center;
+    font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);
+  }
+  .wsmeta b{color:var(--ink-dim);font-weight:600}
+
+  /* ---------- Stat strip ---------- */
+  .stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;padding:20px clamp(16px,4vw,48px) 4px;
+  }
+  .stat{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px;position:relative;overflow:hidden;
+  }
+  .stat .num{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .stat .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);margin-top:8px}
+  .stat .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .stat.total .bar{background:var(--gold)} .stat.total .num{color:var(--gold-soft)}
+  .stat.ok .bar{background:var(--ok)} .stat.ok .num{color:var(--ok)}
+  .stat.bad .bar{background:var(--bad)} .stat.bad .num{color:var(--bad)}
+  .stat.pend .bar{background:var(--pend)} .stat.pend .num{color:var(--ink)}
+
+  /* ---------- Priority banner ---------- */
+  .priority{
+    margin:18px clamp(16px,4vw,48px) 4px;
+    background:linear-gradient(90deg,rgba(248,113,113,.10),rgba(248,113,113,.02));
+    border:1px solid var(--bad-line);border-radius:var(--radius);
+    padding:16px 20px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;
+  }
+  .priority .picon{font-size:18px;line-height:1.2}
+  .priority .ptxt{flex:1;min-width:240px}
+  .priority .ptxt h3{font-size:14px;color:var(--bad);font-weight:700;letter-spacing:.01em}
+  .priority .ptxt p{font-size:13px;color:var(--ink-dim);margin-top:4px}
+  .priority .ptxt code{font-family:var(--mono);font-size:12px;color:var(--gold-soft)}
+  .priority .pchips{display:flex;gap:8px;flex-wrap:wrap}
+  .pchip{
+    font-family:var(--mono);font-size:11.5px;padding:5px 10px;border-radius:8px;
+    background:var(--bad-bg);border:1px solid var(--bad-line);color:var(--bad);font-weight:600;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    padding:20px clamp(16px,4vw,48px) 6px;
+  }
+  .search{
+    flex:1;min-width:200px;display:flex;align-items:center;gap:8px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:0 12px;
+  }
+  .search input{
+    flex:1;background:none;border:none;outline:none;color:var(--ink);
+    font-family:var(--font);font-size:14px;padding:11px 0;
+  }
+  .search .ico{color:var(--ink-faint);font-size:14px}
+  .filterbtns{display:flex;gap:6px;flex-wrap:wrap}
+  .fbtn{
+    cursor:pointer;user-select:none;font-size:12.5px;font-weight:600;
+    padding:9px 14px;border-radius:9px;border:1px solid var(--line);
+    background:var(--panel-2);color:var(--ink-dim);transition:.15s;
+  }
+  .fbtn:hover{border-color:#33405285;color:var(--ink)}
+  .fbtn.active{background:var(--gold);color:#1a1305;border-color:var(--gold)}
+  .fbtn .c{opacity:.7;font-weight:700;margin-left:4px}
+
+  /* ---------- Groups & grid ---------- */
+  main{padding:0 clamp(16px,4vw,48px)}
+  .group{margin-top:30px}
+  .group-h{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .group-h h2{font-size:15px;font-weight:700;letter-spacing:.02em;color:var(--ink)}
+  .group-h .gicon{font-size:16px}
+  .group-h .gcount{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);margin-left:auto}
+
+  .grid{
+    display:grid;gap:14px;
+    grid-template-columns:repeat(auto-fill,minmax(248px,1fr));
+  }
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 16px 14px;display:flex;flex-direction:column;gap:12px;
+    box-shadow:var(--shadow);transition:.16s;position:relative;overflow:hidden;
+  }
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--line);opacity:.0;transition:.16s}
+  .card:hover{transform:translateY(-2px);border-color:#33405290}
+  .card:hover::before{opacity:1}
+  .card[data-status="connected"]::before{background:var(--ok)}
+  .card[data-status="broken"]::before{background:var(--bad)}
+  .card[data-status="pending"]::before{background:var(--pend)}
+
+  .card .top{display:flex;align-items:center;gap:11px}
+  .avatar{
+    width:34px;height:34px;border-radius:9px;flex:0 0 auto;display:grid;place-items:center;
+    font-weight:800;font-size:14px;color:#0c0e12;letter-spacing:-.02em;
+  }
+  .card .names{min-width:0}
+  .card .nm{font-size:14.5px;font-weight:650;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .slug{font-family:var(--mono);font-size:11px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .chip{
+    align-self:flex-start;display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:5px 10px;border-radius:999px;border:1px solid;
+  }
+  .chip .dot{width:7px;height:7px;border-radius:50%}
+  .chip.connected{color:var(--ok);background:var(--ok-bg);border-color:var(--ok-line)}
+  .chip.connected .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .chip.broken{color:var(--bad);background:var(--bad-bg);border-color:var(--bad-line)}
+  .chip.broken .dot{background:var(--bad);box-shadow:0 0 8px var(--bad)}
+  .chip.pending{color:var(--pend);background:var(--pend-bg);border-color:var(--pend-line)}
+  .chip.pending .dot{background:var(--pend)}
+
+  .substate{font-size:11.5px;color:var(--ink-dim);font-family:var(--mono)}
+  .substate b{color:var(--bad)}
+
+  .cta{
+    margin-top:auto;display:flex;align-items:center;justify-content:center;gap:7px;
+    font-size:12.5px;font-weight:650;padding:9px 12px;border-radius:9px;cursor:pointer;
+    border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim);transition:.15s;
+  }
+  .cta:hover{border-color:var(--gold);color:var(--gold-soft)}
+  .cta.fix{background:linear-gradient(90deg,rgba(248,113,113,.18),rgba(248,113,113,.06));border-color:var(--bad-line);color:#ffb4b4}
+  .cta.fix:hover{border-color:var(--bad);color:#fff}
+  .cta.connect{background:linear-gradient(90deg,rgba(200,160,74,.16),rgba(200,160,74,.04));border-color:rgba(200,160,74,.4);color:var(--gold-soft)}
+  .cta.connect:hover{border-color:var(--gold);color:#fff}
+  .cta.live{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok);cursor:default}
+  .cta.live:hover{color:var(--ok)}
+
+  .empty{padding:60px 20px;text-align:center;color:var(--ink-faint);font-size:14px;display:none}
+
+  footer{
+    margin-top:50px;padding:26px clamp(16px,4vw,48px);border-top:1px solid var(--line);
+    color:var(--ink-faint);font-size:12px;font-family:var(--mono);
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  }
+  footer a.link{color:var(--gold-soft)}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brandrow">
+    <div class="logo">X</div>
+    <div class="brandtxt">
+      <h1>Composio <span class="accent">Toolkit Roster</span> — Connect Console</h1>
+      <p>qi's unified SaaS surface · org <b style="color:var(--ink-dim)">xlrdtech</b> · project <b style="color:var(--ink-dim)">default</b></p>
+    </div>
+    <div class="wsmeta">
+      <span><b>workspace</b> dashboard.composio.dev/xlrdtech/default/toolkits</span>
+      <span><b>userId</b> user_lrd2re</span>
+      <span><b>router</b> ✓ connected</span>
+    </div>
+  </div>
+</header>
+
+<section class="stats">
+  <div class="stat total"><div class="bar"></div><div class="num" id="s-total">0</div><div class="lbl">Toolkits Desired</div></div>
+  <div class="stat ok"><div class="bar"></div><div class="num" id="s-ok">0</div><div class="lbl">Connected · Live</div></div>
+  <div class="stat bad"><div class="bar"></div><div class="num" id="s-bad">0</div><div class="lbl">Broken · Needs Fix</div></div>
+  <div class="stat pend"><div class="bar"></div><div class="num" id="s-pend">0</div><div class="lbl">Pending OAuth Click</div></div>
+</section>
+
+<div class="priority">
+  <div class="picon">🔴</div>
+  <div class="ptxt">
+    <h3>Connect gap — fix these 3 FIRST</h3>
+    <p>~75 desired vs only 3 ever attempted, and all 3 are broken. Repair the auth path on these, then scale the identical one-click OAuth-consent flow to every pending toolkit. OAuth completion is always qi — the agent cannot enter credentials. Reconnect URLs are generated by BPGS <code>w9t0gsc77</code>.</p>
+  </div>
+  <div class="pchips">
+    <span class="pchip">github — INITIATED</span>
+    <span class="pchip">gmail — EXPIRED</span>
+    <span class="pchip">notion — REVOKED</span>
+  </div>
+</div>
+
+<div class="controls">
+  <label class="search">
+    <span class="ico">⌕</span>
+    <input id="q" type="text" placeholder="Search toolkits, slugs, groups…" autocomplete="off">
+  </label>
+  <div class="filterbtns" id="filters">
+    <span class="fbtn active" data-f="all">All <span class="c" id="f-all">0</span></span>
+    <span class="fbtn" data-f="broken">Broken <span class="c" id="f-broken">0</span></span>
+    <span class="fbtn" data-f="connected">Connected <span class="c" id="f-connected">0</span></span>
+    <span class="fbtn" data-f="pending">Pending <span class="c" id="f-pending">0</span></span>
+  </div>
+</div>
+
+<main id="board"></main>
+<div class="empty" id="empty">No toolkits match your filter.</div>
+
+<footer>
+  <span>Composio tool-router · ak_… key in ~/.config/composio/env (M4)</span>
+  <span>Hosted browser path → Browserbase (90% reliability) · Anchor · Firecrawl · Apify — scale beyond local. Local logged-in → <a class="link" href="#">Chrome DevTools MCP</a>.</span>
+  <span>Built from memory · composio-toolkit-roster.md</span>
+</footer>
+
+<script>
+/* ---------- DATA: grounded in composio-toolkit-roster.md ---------- */
+const BASE = "https://dashboard.composio.dev/xlrdtech/default/toolkits/";
+/* status: connected | broken | pending ; sub = broken substate */
+const GROUPS = [
+  { id:"comms", icon:"💬", name:"Comms", color:"#5b8def", items:[
+    "slack","slackbot","discord","discordbot","whatsapp","telegram",
+    "microsoft_teams","google_chat","dialpad",
+    {slug:"gmail",status:"broken",sub:"EXPIRED"},"outlook"
+  ]},
+  { id:"prod", icon:"📁", name:"Google / MS Productivity", color:"#3fb98b", items:[
+    "googledrive","googledocs","googlesheets","googleslides","googlecalendar",
+    "googletasks","googlecontacts","googlephotos","google_analytics","one_drive","excel"
+  ]},
+  { id:"pm", icon:"🗂️", name:"PM / Docs / Automation", color:"#c084fc", items:[
+    {slug:"notion",status:"broken",sub:"REVOKED"},"asana","todoist","docusign","make"
+  ]},
+  { id:"dev", icon:"⚙️", name:"Dev / Infra", color:"#f59e0b", items:[
+    {slug:"github",status:"broken",sub:"INITIATED"},"supabase","cloudflare","vercel",
+    "docker_hub","digital_ocean","elasticsearch","context7_mcp"
+  ]},
+  { id:"crm", icon:"💳", name:"CRM / Payments", color:"#34d399", items:[
+    "hubspot","highlevel","stripe","square","paypal","ko_fi","linkedin"
+  ]},
+  { id:"ai", icon:"✨", name:"AI / Content / Media", color:"#e879a6", items:[
+    "perplexityai","gemini","heygen","elevenreader","canva","figma",
+    "mobbin_mcp","youtube","tiktok","twitter","facebook","spotify"
+  ]},
+  { id:"browser", icon:"🌐", name:"Browser / Scrape Automation", color:"#38bdf8", items:[
+    "browserbase_tool","anchor_browser","cloudflare_browser_rendering",
+    "browserless","firecrawl","apify_mcp","screenshot_fyi"
+  ]},
+  { id:"sched", icon:"📅", name:"Scheduling / Meetings", color:"#fbbf24", items:[
+    "cal","etermin","zoom","googlemeet","granola_mcp"
+  ]},
+  { id:"meta", icon:"🧩", name:"Composio Meta", color:"#c8a04a", items:[
+    "composio","composio_search","anthropic_administrator"
+  ]}
+];
+
+/* prettify slug → label */
+function label(slug){
+  const map = {
+    slackbot:"Slack Bot", discordbot:"Discord Bot", microsoft_teams:"Microsoft Teams",
+    google_chat:"Google Chat", googledrive:"Google Drive", googledocs:"Google Docs",
+    googlesheets:"Google Sheets", googleslides:"Google Slides", googlecalendar:"Google Calendar",
+    googletasks:"Google Tasks", googlecontacts:"Google Contacts", googlephotos:"Google Photos",
+    google_analytics:"Google Analytics", one_drive:"OneDrive", docker_hub:"Docker Hub",
+    digital_ocean:"DigitalOcean", context7_mcp:"Context7 MCP", perplexityai:"Perplexity AI",
+    elevenreader:"ElevenReader", mobbin_mcp:"Mobbin MCP", ko_fi:"Ko-fi",
+    browserbase_tool:"Browserbase", anchor_browser:"Anchor Browser",
+    cloudflare_browser_rendering:"Cloudflare Browser Rendering", apify_mcp:"Apify MCP",
+    screenshot_fyi:"Screenshot.fyi", googlemeet:"Google Meet", granola_mcp:"Granola MCP",
+    composio_search:"Composio Search", anthropic_administrator:"Anthropic Administrator",
+    highlevel:"HighLevel"
+  };
+  if(map[slug]) return map[slug];
+  return slug.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+}
+
+/* deterministic avatar color from slug */
+function tint(slug){
+  let h=0; for(let i=0;i<slug.length;i++) h=(h*31+slug.charCodeAt(i))>>>0;
+  const hue=h%360;
+  return `linear-gradient(135deg,hsl(${hue} 65% 62%),hsl(${(hue+40)%360} 70% 50%))`;
+}
+
+/* normalize every item to an object */
+const TOOLKITS=[];
+GROUPS.forEach(g=>{
+  g.items=g.items.map(it=>{
+    const o = (typeof it==="string") ? {slug:it,status:"pending"} : it;
+    o.group=g.id; o.groupName=g.name; o.label=label(o.slug);
+    o.url=BASE+o.slug;
+    TOOLKITS.push(o);
+    return o;
+  });
+});
+
+/* ---------- counts ---------- */
+const counts = {all:TOOLKITS.length, connected:0, broken:0, pending:0};
+TOOLKITS.forEach(t=>counts[t.status]++);
+document.getElementById("s-total").textContent=counts.all;
+document.getElementById("s-ok").textContent=counts.connected;
+document.getElementById("s-bad").textContent=counts.broken;
+document.getElementById("s-pend").textContent=counts.pending;
+document.getElementById("f-all").textContent=counts.all;
+document.getElementById("f-connected").textContent=counts.connected;
+document.getElementById("f-broken").textContent=counts.broken;
+document.getElementById("f-pending").textContent=counts.pending;
+
+/* ---------- render ---------- */
+const board=document.getElementById("board");
+function ctaFor(t){
+  if(t.status==="connected")
+    return `<a class="cta live" href="${t.url}" target="_blank" rel="noopener">● Live · Manage</a>`;
+  if(t.status==="broken")
+    return `<a class="cta fix" href="${t.url}" target="_blank" rel="noopener">⟳ Reconnect (qi OAuth)</a>`;
+  return `<a class="cta connect" href="${t.url}" target="_blank" rel="noopener">+ Authorize (1-click)</a>`;
+}
+function statusChip(t){
+  const txt = t.status==="connected" ? "Connected"
+            : t.status==="broken" ? "Broken" : "Pending";
+  return `<span class="chip ${t.status}"><span class="dot"></span>${txt}</span>`;
+}
+function cardHTML(t){
+  const initials = t.label.replace(/[^A-Za-z0-9 ]/g,"").trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+  const sub = t.status==="broken"
+      ? `<div class="substate">state: <b>${t.sub}</b></div>`
+      : t.status==="pending"
+      ? `<div class="substate">awaiting OAuth consent</div>`
+      : `<div class="substate">authorized · token live</div>`;
+  return `<article class="card" data-status="${t.status}"
+            data-slug="${t.slug}" data-name="${t.label.toLowerCase()}" data-group="${t.group}">
+    <div class="top">
+      <div class="avatar" style="background:${tint(t.slug)}">${initials}</div>
+      <div class="names">
+        <div class="nm">${t.label}</div>
+        <div class="slug">${t.slug}</div>
+      </div>
+    </div>
+    ${statusChip(t)}
+    ${sub}
+    ${ctaFor(t)}
+  </article>`;
+}
+function render(){
+  board.innerHTML = GROUPS.map(g=>{
+    const cards = g.items.map(cardHTML).join("");
+    return `<section class="group" data-group="${g.id}">
+      <div class="group-h">
+        <span class="gicon">${g.icon}</span>
+        <h2>${g.name}</h2>
+        <span class="gcount">${g.items.length} toolkits</span>
+      </div>
+      <div class="grid">${cards}</div>
+    </section>`;
+  }).join("");
+}
+render();
+
+/* ---------- filter + search ---------- */
+let activeFilter="all";
+const q=document.getElementById("q");
+const empty=document.getElementById("empty");
+function applyFilter(){
+  const term=q.value.trim().toLowerCase();
+  let anyVisible=false;
+  document.querySelectorAll(".group").forEach(grp=>{
+    let groupVisible=false;
+    grp.querySelectorAll(".card").forEach(c=>{
+      const okStatus = activeFilter==="all" || c.dataset.status===activeFilter;
+      const okTerm = !term || c.dataset.slug.includes(term)
+                    || c.dataset.name.includes(term) || c.dataset.group.includes(term);
+      const show = okStatus && okTerm;
+      c.classList.toggle("hidden",!show);
+      if(show){groupVisible=true;anyVisible=true;}
+    });
+    grp.classList.toggle("hidden",!groupVisible);
+  });
+  empty.style.display = anyVisible ? "none" : "block";
+}
+document.getElementById("filters").addEventListener("click",e=>{
+  const b=e.target.closest(".fbtn"); if(!b)return;
+  document.querySelectorAll(".fbtn").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); activeFilter=b.dataset.f; applyFilter();
+});
+q.addEventListener("input",applyFilter);
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

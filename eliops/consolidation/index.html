@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Tracking Together — Lead Consolidation &amp; Gap Map</title>
+<meta name="description" content="Consolidated status of every Tracking Together / EliOS lead source: one 520-lead corpus, the 300 NotebookLM image sheets, exact coverage, gaps, and the unblock list. Real numbers only.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f14;--bg2:#0e141d;--card:#111824;--card2:#0f1620;
+  --ink:#eef2f7;--bone:#aeb8c6;--mute:#6c7787;
+  --cyan:#34d8c6;--cyan-deep:#159e90;--cyan-glow:rgba(52,216,198,.45);
+  --blue:#4d8df0;--amber:#e8b54a;--green:#39d98a;--red:#f0606a;
+  --line:rgba(120,200,210,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:radial-gradient(ellipse 1100px 560px at 50% -6%,rgba(52,216,198,.12),transparent 60%),radial-gradient(ellipse 700px 380px at 85% 92%,rgba(77,141,240,.06),transparent 70%),var(--bg);min-height:100vh;line-height:1.55;padding-bottom:90px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+
+header.hero{padding:54px 0 22px;text-align:center}
+.kick{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--cyan);margin-bottom:16px}
+.hero h1{font-weight:800;font-size:clamp(30px,6.5vw,52px);line-height:1.04;letter-spacing:-.015em;background:linear-gradient(180deg,#fff,var(--cyan) 130%);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:14px}
+.hero p{font-size:clamp(15px,2.2vw,18px);color:var(--bone);max-width:680px;margin:0 auto}
+.stamp{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--mute);margin-top:14px}
+
+.stats{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin:30px 0 8px}
+.stat{flex:1 1 200px;max-width:240px;background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:14px;padding:18px 16px;text-align:center}
+.stat .n{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:clamp(24px,4vw,34px);color:var(--cyan);letter-spacing:-.01em;line-height:1}
+.stat .n.amber{color:var(--amber)}.stat .n.blue{color:var(--blue)}.stat .n.green{color:var(--green)}
+.stat .l{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-top:9px}
+
+section.block{margin:40px 0 0}
+.sec-h{display:flex;align-items:baseline;gap:11px;margin-bottom:5px;flex-wrap:wrap}
+.sec-n{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:13px;color:var(--cyan);letter-spacing:.06em}
+.sec-h h2{font-weight:700;font-size:clamp(19px,3vw,25px);color:var(--ink);letter-spacing:-.01em}
+.sec-sub{color:var(--mute);font-size:13.5px;margin:2px 0 18px;max-width:760px}
+
+.grid{display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
+.grid .tile{flex:1 1 300px;max-width:330px}
+
+.tile{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:14px;padding:18px 17px;display:flex;flex-direction:column;gap:8px;transition:border-color .18s,transform .18s}
+.tile:hover{border-color:rgba(52,216,198,.4);transform:translateY(-2px)}
+.tile .tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;align-self:flex-start;border-radius:5px;padding:3px 8px}
+.tag.live{color:var(--green);border:1px solid rgba(57,217,138,.4);background:rgba(57,217,138,.06)}
+.tag.link{color:var(--cyan);border:1px solid rgba(52,216,198,.4);background:rgba(52,216,198,.05)}
+.tag.file{color:var(--blue);border:1px solid rgba(77,141,240,.4);background:rgba(77,141,240,.06)}
+.tag.pending{color:var(--amber);border:1px solid rgba(232,181,74,.4);background:rgba(232,181,74,.06)}
+.tag.blocked{color:var(--red);border:1px solid rgba(240,96,106,.4);background:rgba(240,96,106,.06)}
+.tag.none{color:var(--mute);border:1px solid var(--line);background:rgba(120,200,210,.04)}
+.tile h3{font-weight:600;font-size:15.5px;color:var(--ink);letter-spacing:-.01em;word-break:break-word}
+.tile p{font-size:13px;color:var(--bone);line-height:1.5}
+.tile .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mute);word-break:break-word}
+
+/* coverage bars */
+.bars{display:flex;flex-direction:column;gap:14px;background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:14px;padding:22px 20px}
+.bar .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.bar .lab{font-size:14px;color:var(--ink);font-weight:500}
+.bar .val{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--bone)}
+.track{height:9px;border-radius:6px;background:rgba(120,200,210,.08);overflow:hidden}
+.fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--cyan-deep),var(--cyan))}
+.fill.amber{background:linear-gradient(90deg,#9a7416,var(--amber))}
+.fill.red{background:linear-gradient(90deg,#9a2730,var(--red))}
+.fill.blue{background:linear-gradient(90deg,#2c5fb0,var(--blue))}
+
+/* event breakdown table */
+.evgrid{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.ev{flex:1 1 200px;max-width:240px;display:flex;justify-content:space-between;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+.ev .name{font-size:13px;color:var(--bone)}
+.ev .ct{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--cyan);font-weight:500}
+
+/* unblock list */
+.unblock{display:flex;flex-direction:column;gap:12px}
+.ub{display:flex;gap:14px;align-items:flex-start;background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-left:3px solid var(--red);border-radius:12px;padding:16px 18px}
+.ub.amberL{border-left-color:var(--amber)}
+.ub .num{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--mute);min-width:22px;padding-top:2px}
+.ub .body h4{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.ub .body p{font-size:13px;color:var(--bone);line-height:1.5}
+.ub .body .fix{font-size:12.5px;color:var(--green);margin-top:6px;font-family:'JetBrains Mono',monospace}
+
+footer{text-align:center;margin:54px 0 0;padding-top:26px;border-top:1px solid var(--line)}
+footer p{font-size:12.5px;color:var(--mute);font-family:'JetBrains Mono',monospace}
+footer .links{margin-top:10px;display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="kick">EliOS · Tracking Together</div>
+    <h1>Lead Consolidation &amp; Gap Map</h1>
+    <p>Every Tracking Together / EliOS lead source in one place: the single canonical 520-lead corpus, the 295
+       image lead-sheets in NotebookLM, exact coverage, the real gaps, and the unblock list. Real numbers only —
+       nothing fabricated.</p>
+    <div class="stamp">Built 2026-06-18 · corpus md5 b89b108a verified repo = M4 = Supabase</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n">520</div><div class="l">Canonical Leads</div></div>
+    <div class="stat"><div class="n green">520</div><div class="l">With Name + Phone</div></div>
+    <div class="stat"><div class="n amber">0 / 520</div><div class="l">Street Address</div></div>
+    <div class="stat"><div class="n blue">0 / 295</div><div class="l">Image Sheets OCR'd to Rows</div></div>
+  </div>
+
+  <!-- ONE CORPUS -->
+  <section class="block">
+    <div class="sec-h"><span class="sec-n">01</span><h2>One corpus, fully consolidated</h2></div>
+    <p class="sec-sub">The 520-lead dataset is byte-identical across the repo, the M4 copy, and the Supabase
+       table (md5 <code>b89b108a…</code> matched both sides this run). No merge was needed — there is exactly
+       one true lead corpus.</p>
+    <div class="grid">
+      <div class="tile"><span class="tag live">Live · Canonical</span>
+        <h3>leads.json (520)</h3>
+        <p>Served behind the secured /elios portal. Fields: name, phone, service, event, status, rep, added, notes.</p>
+        <div class="meta">E:\hitthe.link\eliops\leads.json = data/source-leads/leads.master.json</div></div>
+      <div class="tile"><span class="tag live">DB · RLS</span>
+        <h3>Supabase public.leads</h3>
+        <p>520 rows mirrored, row-level-security scoped per login. ref jftakowpjkbcqpvtgwgq.</p>
+        <div class="meta">masters see all 520 · subscribers see only assigned</div></div>
+      <div class="tile"><span class="tag file">Source · Merged</span>
+        <h3>Eli Ops workbook + CSV</h3>
+        <p>Origin "Leads Master" sheet digitized 2026-06-04. CSV maps 126 rows to 64 Gerald-List images.</p>
+        <div class="meta">data/source-leads/ — Eli Ops.xlsx + Leads Master.csv</div></div>
+    </div>
+  </section>
+
+  <!-- COVERAGE -->
+  <section class="block">
+    <div class="sec-h"><span class="sec-n">02</span><h2>Field coverage of the 520</h2></div>
+    <p class="sec-sub">Computed directly from leads.json this run. Name and phone are complete; the address
+       column does not exist in the corpus — that is the single largest data gap.</p>
+    <div class="bars">
+      <div class="bar"><div class="top"><span class="lab">Name</span><span class="val">520 / 520 · 100%</span></div>
+        <div class="track"><div class="fill" style="width:100%"></div></div></div>
+      <div class="bar"><div class="top"><span class="lab">Phone</span><span class="val">520 / 520 · 100%</span></div>
+        <div class="track"><div class="fill" style="width:100%"></div></div></div>
+      <div class="bar"><div class="top"><span class="lab">Event (named, non-"Unknown")</span><span class="val">496 / 520 · 95%</span></div>
+        <div class="track"><div class="fill" style="width:95.4%"></div></div></div>
+      <div class="bar"><div class="top"><span class="lab">Service (named)</span><span class="val">424 / 520 · 82%</span></div>
+        <div class="track"><div class="fill blue" style="width:81.5%"></div></div></div>
+      <div class="bar"><div class="top"><span class="lab">Street address</span><span class="val">0 / 520 · 0%</span></div>
+        <div class="track"><div class="fill red" style="width:1%"></div></div></div>
+    </div>
+  </section>
+
+  <!-- IMAGE OCR COVERAGE -->
+  <section class="block">
+    <div class="sec-h"><span class="sec-n">03</span><h2>NotebookLM image OCR — coverage</h2></div>
+    <p class="sec-sub">"Eli Leads" notebook (05bf801e) holds 300 sources — 297 images (295 lead-sheets +
+       2 image_picker) + 2 web pages + 1 markdown — all Google-OCR'd to status=ready. But the reachable CLI
+       path returns only event/service context, NOT the contact rows. 0 sheets were OCR'd to mergeable rows
+       this run.</p>
+    <div class="bars">
+      <div class="bar"><div class="top"><span class="lab">Sources in notebook (status=ready)</span><span class="val">300 / 300 · 100%</span></div>
+        <div class="track"><div class="fill" style="width:100%"></div></div></div>
+      <div class="bar"><div class="top"><span class="lab">Lead-sheet images present</span><span class="val">295 sheets · ~167 unique</span></div>
+        <div class="track"><div class="fill blue" style="width:100%"></div></div></div>
+      <div class="bar"><div class="top"><span class="lab">Sheets readable for EVENT + SERVICE (via guide)</span><span class="val">~295 · best-effort</span></div>
+        <div class="track"><div class="fill amber" style="width:100%"></div></div></div>
+      <div class="bar"><div class="top"><span class="lab">Sheets OCR'd to contact ROWS (name/phone/address)</span><span class="val">0 / 295 · 0%</span></div>
+        <div class="track"><div class="fill red" style="width:1%"></div></div></div>
+      <div class="bar"><div class="top"><span class="lab">Vision-readable locally (real rows possible)</span><span class="val">~32 of ~167 unique</span></div>
+        <div class="track"><div class="fill amber" style="width:19%"></div></div></div>
+    </div>
+  </section>
+
+  <!-- EVENTS -->
+  <section class="block">
+    <div class="sec-h"><span class="sec-n">04</span><h2>Top capture events (44 distinct)</h2></div>
+    <p class="sec-sub">Where the 520 leads were captured — Anthony's live event sheets. Counts are exact from the corpus.</p>
+    <div class="evgrid">
+      <div class="ev"><span class="name">Corporate</span><span class="ct">128</span></div>
+      <div class="ev"><span class="name">Pasadena</span><span class="ct">48</span></div>
+      <div class="ev"><span class="name">San Diego Home Show '24</span><span class="ct">38</span></div>
+      <div class="ev"><span class="name">Phone</span><span class="ct">34</span></div>
+      <div class="ev"><span class="name">Anaheim Convention</span><span class="ct">31</span></div>
+      <div class="ev"><span class="name">Del Mar Fair</span><span class="ct">31</span></div>
+      <div class="ev"><span class="name">Website</span><span class="ct">30</span></div>
+      <div class="ev"><span class="name">Unknown</span><span class="ct">24</span></div>
+      <div class="ev"><span class="name">LA County Fair (all)</span><span class="ct">21</span></div>
+      <div class="ev"><span class="name">Costa Mesa Tiny Home</span><span class="ct">19</span></div>
+      <div class="ev"><span class="name">Black History Fest Anaheim</span><span class="ct">14</span></div>
+      <div class="ev"><span class="name">Encinitas St. Festival</span><span class="ct">14</span></div>
+    </div>
+  </section>
+
+  <!-- STATUS -->
+  <section class="block">
+    <div class="sec-h"><span class="sec-n">05</span><h2>Pipeline status mix</h2></div>
+    <p class="sec-sub">Exact status distribution across the 520. STOP (18) is suppressed in the portal UI by default.</p>
+    <div class="evgrid">
+      <div class="ev"><span class="name">New</span><span class="ct">269</span></div>
+      <div class="ev"><span class="name">Booked</span><span class="ct">156</span></div>
+      <div class="ev"><span class="name">Not Interested</span><span class="ct">40</span></div>
+      <div class="ev"><span class="name">Attempted</span><span class="ct">22</span></div>
+      <div class="ev"><span class="name">STOP</span><span class="ct">18</span></div>
+      <div class="ev"><span class="name">Follow Up</span><span class="ct">13</span></div>
+      <div class="ev"><span class="name">Interested</span><span class="ct">2</span></div>
+    </div>
+  </section>
+
+  <!-- GAPS -->
+  <section class="block">
+    <div class="sec-h"><span class="sec-n">06</span><h2>The exact gaps</h2></div>
+    <p class="sec-sub">What is not yet merged, how big it is, and whether it is reachable.</p>
+    <div class="grid">
+      <div class="tile"><span class="tag pending">Gap · 0/520</span>
+        <h3>Street address</h3>
+        <p>No address column in the corpus. Reachable only by vision-reading the original lead sheets, not via any CLI path.</p>
+        <div class="meta">~32 sheets vision-readable locally · best-effort</div></div>
+      <div class="tile"><span class="tag pending">Gap · ~167</span>
+        <h3>New leads in image sheets</h3>
+        <p>~167 unique NotebookLM lead-sheets are a separate capture stream from the 520. Contact rows not reachable via CLI.</p>
+        <div class="meta">guide → event/service only · rows → vision-read</div></div>
+      <div class="tile"><span class="tag blocked">Blocked · ~135</span>
+        <h3>Non-local notebook images</h3>
+        <p>~135 unique sheets exist only as NotebookLM images. Warm-download fails (lh3 URL returns HTTP 400 even delayed).</p>
+        <div class="meta">EVENT/SERVICE via guide only</div></div>
+      <div class="tile"><span class="tag pending">Gap · 12</span>
+        <h3>Culligan Water List</h3>
+        <p>12 sheets found locally (a named-but-"absent" list from MAP.md). Vision-readable, not yet digitized.</p>
+        <div class="meta">/MHP Protocols/Culligan Water List 2026 - NN.jpg</div></div>
+      <div class="tile"><span class="tag none">Missing</span>
+        <h3>LA County Fair 2-26 sheet</h3>
+        <p>Folder exists, no file. Paper or another-device sheet. Forward to digitize and merge.</p>
+        <div class="meta">.../newttleads/La County Fair 2-26/ (empty)</div></div>
+      <div class="tile"><span class="tag none">None found</span>
+        <h3>Email / iMessage stragglers</h3>
+        <p>No lead files reachable in Beeper or M4. BlueBubbles REST not yet wired to pull Anthony's iMessage thread.</p>
+        <div class="meta">forward to east@xlrd.org</div></div>
+    </div>
+  </section>
+
+  <!-- UNBLOCK LIST -->
+  <section class="block">
+    <div class="sec-h"><span class="sec-n">07</span><h2>Still blocked — the unblock list</h2></div>
+    <p class="sec-sub">What is genuinely blocked right now and the exact action that clears each one.</p>
+    <div class="unblock">
+      <div class="ub"><span class="num">01</span><div class="body">
+        <h4>NotebookLM image contact rows</h4>
+        <p>Verified this run on image e016e7ef: <code>source guide</code> returns a prose summary (event = LA County Fair, service = Solar) but abstracts name/phone/address away and takes no prompt arg; <code>fulltext</code> returns only the 224-char lh3 URL; <code>ask</code> returns empty. Contact rows are reachable ONLY by vision-reading the image bytes.</p>
+        <p class="fix">UNBLOCK → vision-read the ~32 local sheets next pass, or export the full image set from NotebookLM to disk then vision-read.</p>
+      </div></div>
+      <div class="ub"><span class="num">02</span><div class="body">
+        <h4>gxdcult / god.galleryllc — unauthenticated</h4>
+        <p>Referenced source surface(s) with no valid session. Cannot fetch any lead data without auth.</p>
+        <p class="fix">UNBLOCK → an authenticated session / credentials for that surface.</p>
+      </div></div>
+      <div class="ub amberL"><span class="num">03</span><div class="body">
+        <h4>LA County Fair 2-26 capture sheet</h4>
+        <p>The newttleads folder exists but holds no lead file (.DS_Store only). The capture is on paper or another device.</p>
+        <p class="fix">UNBLOCK → Anthony forwards the sheet/photo for digitization → merge into leads.json.</p>
+      </div></div>
+      <div class="ub amberL"><span class="num">04</span><div class="body">
+        <h4>Email / iMessage lead stragglers</h4>
+        <p>Nothing lead-bearing is reachable from Beeper or M4; Anthony's iMessage is on BlueBubbles, whose REST API is not yet wired.</p>
+        <p class="fix">UNBLOCK → wire BlueBubbles REST, or forward any lead email to east@xlrd.org.</p>
+      </div></div>
+      <div class="ub amberL"><span class="num">05</span><div class="body">
+        <h4>Supabase service_role key</h4>
+        <p>Master unblock for any re-provisioning / migration (per-account export fix, lead→Calendar, color disposition). Not in repo by design.</p>
+        <p class="fix">UNBLOCK → paste from Supabase → Settings → API → service_role when running a migration.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Real artifacts only · no placeholders · nothing fabricated · image OCR for contact rows = PENDING (reason above)</p>
+    <div class="links">
+      <a href="/elios/index.html">EliOS portal</a>
+      <a href="/eliops/leads-map/">Source map</a>
+    </div>
+  </footer>
+
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

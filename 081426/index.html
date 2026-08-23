@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>43 Seconds — where a turn actually goes</title>
+<meta name="description" content="Measured 2026-08-14: the latency was never the model. It was process spawns." />
+<style>
+  :root{
+    --bg:#06090b; --bg2:#0b1014; --ink:#e8f0f4; --dim:#8fa3ad; --line:rgba(255,255,255,.09);
+    --hot:#ff5f57; --warm:#febc2e; --cool:#5ad6c0; --ice:#9fd8ff;
+    --grad:linear-gradient(120deg,#9fd8ff 0%,#5ad6c0 38%,#c9b8ff 70%,#ffd6a5 100%);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font:16px/1.62 ui-sans-serif,-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(900px 520px at 12% -8%,rgba(90,214,192,.13),transparent 60%),
+      radial-gradient(760px 480px at 92% 6%,rgba(159,216,255,.11),transparent 62%),
+      radial-gradient(700px 600px at 50% 108%,rgba(201,184,255,.08),transparent 60%)}
+  .wrap{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:0 22px 96px}
+  header{padding:76px 0 12px;text-align:center}
+  .kicker{font:600 11px/1 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--dim)}
+  h1{margin:18px 0 10px;font-size:clamp(38px,8vw,76px);line-height:.98;letter-spacing:-.03em;
+    font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;
+    color:transparent}
+  .sub{margin:0 auto;max-width:640px;color:var(--dim);font-size:clamp(15px,2.4vw,19px)}
+  .sub b{color:var(--ink);font-weight:600}
+  .rule{height:1px;background:linear-gradient(90deg,transparent,var(--line) 18%,var(--line) 82%,transparent);
+    margin:54px 0}
+  h2{font-size:clamp(21px,3.4vw,27px);letter-spacing:-.015em;margin:0 0 6px;font-weight:700}
+  h2 .n{font:600 12px/1 ui-monospace,Menlo,monospace;color:var(--cool);letter-spacing:.16em;
+    display:block;margin-bottom:9px;text-transform:uppercase}
+  .lede{color:var(--dim);margin:0 0 22px;max-width:70ch}
+  .grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:24px 0}
+  .stat{flex:1 1 190px;max-width:260px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
+    border:1px solid var(--line);border-radius:15px;padding:18px 16px;text-align:center}
+  .stat .v{font:800 clamp(25px,5.2vw,36px)/1 ui-monospace,Menlo,monospace;letter-spacing:-.02em}
+  .stat .l{margin-top:7px;font-size:12.5px;color:var(--dim);line-height:1.45}
+  .v.hot{color:var(--hot)} .v.warm{color:var(--warm)} .v.cool{color:var(--cool)} .v.ice{color:var(--ice)}
+  .tbl{width:100%;border-collapse:collapse;margin:18px 0;font-size:14.5px;
+    display:block;overflow-x:auto;white-space:nowrap}
+  .tbl th,.tbl td{padding:11px 14px;border-bottom:1px solid var(--line);text-align:left}
+  .tbl th{font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--dim)}
+  .tbl td.num{font-family:ui-monospace,Menlo,monospace;text-align:right}
+  .tbl tr:last-child td{border-bottom:0}
+  .tbl .em{color:var(--warm);font-weight:700}
+  code,kbd{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.9em;
+    background:rgba(255,255,255,.055);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+  pre{background:rgba(0,0,0,.42);border:1px solid var(--line);border-left:2px solid var(--cool);
+    border-radius:11px;padding:15px 17px;overflow-x:auto;font-size:13px;line-height:1.6;margin:18px 0}
+  pre code{background:none;border:0;padding:0}
+  .call{border:1px solid var(--line);border-left:2px solid var(--hot);border-radius:11px;
+    background:rgba(255,95,87,.045);padding:16px 18px;margin:20px 0}
+  .call.good{border-left-color:var(--cool);background:rgba(90,214,192,.05)}
+  .call h3{margin:0 0 7px;font-size:15px;letter-spacing:.01em}
+  .call p{margin:0;color:var(--dim);font-size:14.5px}
+  .call p+p{margin-top:9px}
+  ul{padding-left:20px;color:var(--dim)} li{margin:8px 0} li b{color:var(--ink);font-weight:600}
+  .plists{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:18px 0}
+  .pill{font:600 12.5px/1 ui-monospace,Menlo,monospace;padding:8px 13px;border-radius:999px;
+    border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--dim)}
+  .pill.key{color:var(--warm);border-color:rgba(254,188,46,.36);background:rgba(254,188,46,.08)}
+  footer{margin-top:70px;padding-top:26px;border-top:1px solid var(--line);
+    text-align:center;color:var(--dim);font-size:13px}
+  @media (prefers-reduced-motion:no-preference){
+    .rv{opacity:0;transform:translateY(15px);transition:opacity .7s ease,transform .7s ease}
+    .rv.in{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="rv">
+    <div class="kicker">Measured · 14 August 2026</div>
+    <h1>43 seconds</h1>
+    <p class="sub">The operator said <b>&ldquo;it takes a very long time for you to start.&rdquo;</b>
+    It was never the model. It was <b>process spawns</b> — and nearly half of them were
+    a Python interpreter booting up to do nothing at all.</p>
+  </header>
+
+  <div class="grid rv">
+    <div class="stat"><div class="v hot">105<span style="font-size:.5em"> ms</span></div>
+      <div class="l">cold <code>python3</code> boot, this machine</div></div>
+    <div class="stat"><div class="v warm">2.880<span style="font-size:.5em"> s</span></div>
+      <div class="l">13 hooks, every single Bash call</div></div>
+    <div class="stat"><div class="v warm">1.636<span style="font-size:.5em"> s</span></div>
+      <div class="l">9 more hooks at the end of every turn</div></div>
+    <div class="stat"><div class="v cool">0.243<span style="font-size:.5em"> s</span></div>
+      <div class="l">start-up sweep, down from 2.113 s</div></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <section class="rv">
+    <h2><span class="n">01 · The budget</span>Where a turn actually goes</h2>
+    <p class="lede">Hooks run as separate OS processes. Each one is a fresh interpreter —
+    import machinery, site-packages scan, module compile — before a single line of its own
+    logic executes. Matchers were checked, so these counts are only what genuinely fires.</p>
+
+    <table class="tbl">
+      <thead><tr><th>Event</th><th>Hooks</th><th class="num">Cost</th><th>Fires</th></tr></thead>
+      <tbody>
+        <tr><td>PreToolUse + PostToolUse</td><td>13</td><td class="num em">2.880 s</td><td>every Bash call</td></tr>
+        <tr><td>PreToolUse + PostToolUse</td><td>11</td><td class="num">2.712 s</td><td>every edit / write</td></tr>
+        <tr><td>PreToolUse + PostToolUse</td><td>9</td><td class="num">2.302 s</td><td>every read</td></tr>
+        <tr><td>Stop</td><td>9</td><td class="num em">&ge; 1.636 s</td><td>end of every turn</td></tr>
+        <tr><td>UserPromptSubmit</td><td>2</td><td class="num">1.175 s</td><td>every message in</td></tr>
+        <tr><td>SessionStart</td><td>3</td><td class="num">0.69&ndash;1.70 s</td><td>once <span style="color:var(--cool)">(was 3.66&ndash;4.73 s)</span></td></tr>
+      </tbody>
+    </table>
+
+    <p class="lede">A fourteen-tool-call turn: <code>1.175 + (14 &times; 2.880) + 1.636 &asymp; <b style="color:var(--warm)">43 s</b></code>
+    of overhead before any thinking happens. About <b>48%</b> of the per-call figure is interpreter
+    boot — pure startup cost, no work done.</p>
+  </section>
+
+  <div class="rule"></div>
+
+  <section class="rv">
+    <h2><span class="n">02 · The fix</span>68 subprocesses became one</h2>
+    <p class="lede">The session-start hook blocks the first token. Inside it, a helper spawned
+    one <code>plutil</code> per LaunchAgent plist to decide which daemons to reload — 68 serial
+    subprocess spawns, about 55% of the whole hook.</p>
+
+<pre><code># before — one subprocess per plist, 68 times, serial
+dump="$(plutil -p "$plist")" || return 1
+grep -qE '"(KeepAlive|StartInterval)" =&gt;' &lt;&lt;&lt;"$dump"
+
+# after — one python process, plistlib, zero subprocesses on the fast path
+with open(path,"rb") as fh: d = plistlib.load(fh)
+persistent = any(k in d for k in PERSISTENT_KEYS)</code></pre>
+
+    <div class="grid">
+      <div class="stat"><div class="v hot">2.113 s</div><div class="l">68 <code>plutil</code> spawns</div></div>
+      <div class="stat"><div class="v cool">0.243 s</div><div class="l">one Python pass</div></div>
+      <div class="stat"><div class="v ice">217 / 217</div><div class="l">plists classified identically</div></div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section class="rv">
+    <h2><span class="n">03 · The trap</span>A 19&times; speedup that would have broken six daemons</h2>
+    <p class="lede"><code>plutil</code> is a lenient plist parser. Python&rsquo;s <code>plistlib</code>
+    is strict XML. Six of the 217 LaunchAgents contain a raw <code>&amp;&amp;</code> inside a
+    <code>&lt;string&gt;</code> — invalid XML, since <code>&amp;</code> must be escaped. launchd and
+    <code>plutil</code> accept them. <code>plistlib</code> refuses them.</p>
+
+    <div class="plists">
+      <span class="pill key">universal-mcp-hub</span>
+      <span class="pill">omniroute-gateway</span>
+      <span class="pill">session-resume-watchdog</span>
+      <span class="pill">daily-reply-catchup</span>
+      <span class="pill">bin-script-check</span>
+      <span class="pill">voice-id</span>
+    </div>
+
+    <div class="call">
+      <h3>Why the naive refactor is worse than the slow code</h3>
+      <p>A plistlib-only rewrite silently reclassifies all six from <em>persistent daemon</em> to
+      <em>one-shot</em>. The start-up wire then stops reloading them when they die — including the
+      MCP hub — and <b>nothing logs the decision</b>. The speedup is real and the regression is invisible.</p>
+      <p>The shipped version tries <code>plistlib</code> first and falls back to <code>plutil</code>
+      per file on any parse error: 211 fast paths, 6 slow ones, identical answers. A correctness gate
+      comparing both classifiers over one frozen snapshot is what caught it — never swap a parser without one.</p>
+    </div>
+
+    <div class="call good">
+      <h3>The control that mattered most was the quiet one</h3>
+      <p>Four failure modes were forced: classifier deleted, classifier printing garbage, classifier
+      exiting non-zero with empty output, and classifier intact. The third is the dangerous one — an
+      empty result parses as &ldquo;nothing to do.&rdquo; Had the wire treated that as
+      <em>no dead daemons</em>, it would have logged <em>all daemons appear running</em> and stopped
+      reloading anything, forever, while reporting perfect health.</p>
+      <p>So the assertion is not <code>DEAD &gt; 0</code>. It is <b>never claim all-healthy while the
+      list is empty</b>. The bug is not an empty list — it is an empty list wearing a green checkmark.</p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section class="rv">
+    <h2><span class="n">04 · The unrelated find</span>A daemon listening to a microphone that does not exist</h2>
+    <p class="lede">Verifying something else surfaced this. The machine is a Mac mini — a model with
+    no built-in microphone. Every input device enumerated by CoreAudio is virtual, and all seven
+    return pure digital silence.</p>
+
+    <table class="tbl">
+      <thead><tr><th>Input device</th><th class="num">max</th><th class="num">rms</th><th class="num">zero</th></tr></thead>
+      <tbody>
+        <tr><td>BlackHole 2ch</td><td class="num">0.000000</td><td class="num">0.000000</td><td class="num em">100%</td></tr>
+        <tr><td>Phound Audio Device</td><td class="num">0.000000</td><td class="num">0.000000</td><td class="num em">100%</td></tr>
+        <tr><td>Jump Desktop Microphone</td><td class="num">0.000000</td><td class="num">0.000000</td><td class="num em">100%</td></tr>
+        <tr><td>Jump Desktop Audio</td><td class="num">0.000000</td><td class="num">0.000000</td><td class="num em">100%</td></tr>
+        <tr><td><b>in</b> &nbsp;<span style="color:var(--dim)">(system default)</span></td><td class="num">0.000000</td><td class="num">0.000000</td><td class="num em">100%</td></tr>
+        <tr><td>out &nbsp;<span style="color:var(--dim)">(yes, listed as an input)</span></td><td class="num">0.000000</td><td class="num">0.000000</td><td class="num em">100%</td></tr>
+        <tr><td>ZoomAudioDevice</td><td class="num">0.000000</td><td class="num">0.000000</td><td class="num em">100%</td></tr>
+      </tbody>
+    </table>
+
+    <p class="lede">A voice-identification agent records one second from the default input every
+    300 seconds. That is <b style="color:var(--hot)">288 failures a day</b>, each throwing
+    <code>divide by zero</code> inside the embedding library, and
+    <b>12,075,767 bytes</b> of accumulated error log. The remedy its own error message suggests —
+    pin a device by name — cannot work, because no live device exists to pin to.</p>
+
+    <p class="lede" style="color:var(--dim)">One caveat against that table: those readings are a
+    single moment with no call active. &ldquo;Nothing routed in right now&rdquo; is not
+    &ldquo;dead.&rdquo;</p>
+  </section>
+
+  <div class="rule"></div>
+
+  <section class="rv">
+    <h2><span class="n">05 · The method</span>An instant is not a state</h2>
+    <p class="lede">Four errors in one session, all the same mistake wearing different clothes.</p>
+    <ul>
+      <li><b>A stale log read as silence.</b> The speech log is written <em>after</em> playback
+      finishes, so a tail that has not moved looks exactly like nothing was ever said. An outage
+      was reported that never happened.</li>
+      <li><b>A cold run quoted as the number.</b> First measurement 9.199 s; steady state
+      3.66&ndash;4.73 s. Take three before quoting a latency.</li>
+      <li><b>An A/B where the first run changed the second run&rsquo;s world.</b> The new code
+      reloaded 52 dead daemons, so the old code — running seconds later — observed a different
+      machine and appeared to disagree. Stateful comparisons need one frozen snapshot and zero
+      side effects.</li>
+      <li><b><code>state = running</code> on a job that runs one second in every three hundred.</b>
+      Sampled twice, nine minutes apart, opposite answers, both meaningless. For an interval job
+      the honest probe is whether its <em>output artifact</em> is fresher than its interval — never
+      the process table.</li>
+    </ul>
+    <div class="call good">
+      <h3>The through-line</h3>
+      <p>Every one of these asked <em>&ldquo;what is it doing right now?&rdquo;</em> about something
+      whose answer only means anything <em>over an interval</em>. A level and an instant are
+      different measurements, and a green checkmark hides the difference perfectly.</p>
+    </div>
+  </section>
+
+  <footer class="rv">
+    <div>hitthe.link / 081426 &nbsp;·&nbsp; all figures measured on-machine, 2026-08-14</div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var els=[].slice.call(document.querySelectorAll('.rv'));
+  if(!('IntersectionObserver'in window)||matchMedia('(prefers-reduced-motion:reduce)').matches){
+    els.forEach(function(e){e.classList.add('in')});return;
+  }
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}})
+  },{rootMargin:'0px 0px -8% 0px',threshold:.06});
+  els.forEach(function(e){io.observe(e)});
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

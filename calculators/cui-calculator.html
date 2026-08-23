@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credit Hero · CUI % Calculator</title>
+<meta name="description" content="Credit Utilization Index calculator — per-card and overall utilization, score-impact band, and your exact pay-down target.">
+<style>
+  :root{--gold:#c8a24a;--gold2:#e6c870;--ink:#0d0f14;--panel:#161a22;--line:#262c38;--muted:#8b93a3;--good:#39c07a;--ok:#e6c870;--warn:#ff9d3c;--bad:#ff5f5f}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:radial-gradient(1200px 600px at 50% -10%,#1b2030,#0d0f14);color:#eef1f6;min-height:100vh;padding:32px 16px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
+  h1 .b{background:linear-gradient(90deg,var(--gold),var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);margin:6px 0 24px;font-size:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+  .card-row{display:grid;grid-template-columns:1fr 110px 110px 90px 36px;gap:10px;align-items:center;margin-bottom:10px}
+  .card-row.head{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+  input{width:100%;background:var(--ink);border:1px solid var(--line);color:#fff;border-radius:9px;padding:10px;font-size:15px}
+  input:focus{outline:none;border-color:var(--gold)}
+  .util{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  .x{cursor:pointer;color:var(--muted);text-align:center;font-size:20px;user-select:none}
+  .x:hover{color:var(--bad)}
+  button.add{background:none;border:1px dashed var(--line);color:var(--gold2);border-radius:9px;padding:10px;width:100%;cursor:pointer;font-size:14px}
+  button.add:hover{border-color:var(--gold)}
+  .result{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:560px){.result{grid-template-columns:1fr}.card-row{grid-template-columns:1fr 1fr}.card-row.head{display:none}}
+  .big{font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .band{font-weight:700;margin-top:6px}
+  .meter{height:12px;border-radius:99px;background:var(--ink);overflow:hidden;margin:14px 0 6px}
+  .meter i{display:block;height:100%;border-radius:99px;transition:width .35s ease}
+  .ticks{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
+  .advice{font-size:14px;color:#cfd5e2;margin-top:4px}
+  .paydown{font-weight:700;color:var(--gold2)}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="b">Credit Hero</span> · CUI % Calculator</h1>
+  <p class="sub">Your <b>Credit Utilization Index</b> drives ~30% of your FICO score. Enter each card's balance and limit — see your real number and exactly what to pay down.</p>
+
+  <div class="panel">
+    <div class="card-row head"><span>Card / account</span><span>Balance</span><span>Limit</span><span style="text-align:right">Util</span><span></span></div>
+    <div id="rows"></div>
+    <button class="add" id="add">+ Add another card</button>
+  </div>
+
+  <div class="panel">
+    <div class="result">
+      <div>
+        <div style="color:var(--muted);font-size:13px">OVERALL CUI</div>
+        <div class="big" id="cui">0%</div>
+        <div class="band" id="band">&mdash;</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:13px">TOTALS</div>
+        <div id="totals" style="margin-top:8px;font-size:14px;line-height:1.9"></div>
+      </div>
+    </div>
+    <div class="meter"><i id="bar" style="width:0%;background:var(--good)"></i></div>
+    <div class="ticks"><span>0%</span><span>10%</span><span>30%</span><span>50%</span><span>100%</span></div>
+    <p class="advice" id="advice"></p>
+  </div>
+
+  <p class="foot">Credit Hero by L7S &mdash; utilization is a snapshot, not history. Pay below 10% before your statement cuts for the biggest score lift.</p>
+</div>
+
+<script>
+var fmt = function(n){ return '$'+Math.round(n).toLocaleString('en-US'); };
+var rows = document.getElementById('rows');
+
+function band(p){
+  if(p<=9.99) return {label:'Excellent',color:'var(--good)',msg:'You are in the top tier. Lenders see you as low-risk — keep every card under 10%.'};
+  if(p<=29.99) return {label:'Good',color:'var(--ok)',msg:'Solid, but the score lift sits below 10%. Pushing under that line is the single fastest move.'};
+  if(p<=49.99) return {label:'Fair — costing you points',color:'var(--warn)',msg:'You are leaving real points on the table. This range visibly suppresses your score.'};
+  return {label:'High Risk — major drag',color:'var(--bad)',msg:'This is one of the biggest things holding your score down. Paying this down is priority #1.'};
+}
+
+function addRow(name, bal, lim){
+  var r = document.createElement('div');
+  r.className='card-row';
+  r.innerHTML =
+    '<input class="nm" placeholder="e.g. Visa &bull;&bull;1234" value="'+(name||'')+'">'+
+    '<input class="bal" type="number" min="0" placeholder="0" value="'+(bal||'')+'">'+
+    '<input class="lim" type="number" min="0" placeholder="0" value="'+(lim||'')+'">'+
+    '<span class="util">&mdash;</span>'+
+    '<span class="x" title="remove">&times;</span>';
+  r.querySelector('.x').onclick = function(){ r.remove(); calc(); };
+  r.querySelectorAll('input').forEach(function(i){ i.addEventListener('input',calc); });
+  rows.appendChild(r);
+}
+
+function calc(){
+  var tb=0, tl=0;
+  rows.querySelectorAll('.card-row').forEach(function(r){
+    var b=parseFloat(r.querySelector('.bal').value)||0;
+    var l=parseFloat(r.querySelector('.lim').value)||0;
+    tb+=b; tl+=l;
+    var u = l>0 ? (b/l*100) : 0;
+    var cell=r.querySelector('.util');
+    cell.textContent = l>0 ? u.toFixed(0)+'%' : '—';
+    cell.style.color = l>0 ? band(u).color : 'var(--muted)';
+  });
+  var cui = tl>0 ? (tb/tl*100) : 0;
+  var bd = band(cui);
+  document.getElementById('cui').textContent = cui.toFixed(1)+'%';
+  document.getElementById('cui').style.color = bd.color;
+  document.getElementById('band').textContent = bd.label;
+  document.getElementById('band').style.color = bd.color;
+  document.getElementById('bar').style.width = Math.min(cui,100)+'%';
+  document.getElementById('bar').style.background = bd.color;
+  document.getElementById('totals').innerHTML =
+    'Total balances: <b>'+fmt(tb)+'</b><br>Total limits: <b>'+fmt(tl)+'</b><br>Available: <b>'+fmt(Math.max(tl-tb,0))+'</b>';
+  var target = tl*0.099;
+  var paydown = tb - target;
+  var adv = bd.msg;
+  if(tl>0 && paydown>0){
+    adv += ' <span class="paydown">Pay down '+fmt(paydown)+' to drop under 10%.</span>';
+  } else if(tl>0){
+    adv += ' <span class="paydown">You are already under 10% — hold here.</span>';
+  }
+  document.getElementById('advice').innerHTML = adv;
+}
+
+document.getElementById('add').onclick = function(){ addRow(); };
+addRow('Card 1');
+addRow('Card 2');
+calc();
+</script>
+</body>
+</html>

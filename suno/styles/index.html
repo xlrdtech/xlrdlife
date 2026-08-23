@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suno Style Masher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        suno: {
+                            dark: '#0f0f0f',
+                            card: '#1a1a1a',
+                            accent: '#8b5cf6', // Violet
+                            accentHover: '#7c3aed',
+                            text: '#e5e5e5',
+                            muted: '#a3a3a3'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-short': 'bounce 0.5s 1'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: #e5e5e5;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #404040; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #525252; 
+        }
+        .glass-panel {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .artist-card {
+            transition: all 0.2s ease;
+        }
+        .artist-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+            border-color: #8b5cf6;
+        }
+        .animate-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <!-- Header -->
+    <header class="w-full max-w-5xl mb-8 flex justify-between items-center animate-in">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-lg flex items-center justify-center shadow-lg shadow-violet-500/20">
+                <i class="fa-solid fa-music text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Suno Style Masher</h1>
+                <p class="text-xs text-suno-muted">Blend artist styles into the perfect prompt</p>
+            </div>
+        </div>
+        <a href="#" onclick="resetApp()" class="text-xs text-suno-muted hover:text-white transition-colors"><i class="fa-solid fa-rotate-right mr-1"></i> Reset</a>
+    </header>
+
+    <main class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Search & Library -->
+        <div class="lg:col-span-5 flex flex-col gap-4 animate-in" style="animation-delay: 0.1s;">
+            
+            <!-- Controls: Search & Genre -->
+            <div class="flex flex-col gap-3">
+                <div class="relative group w-full">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-search text-gray-500 group-focus-within:text-violet-400 transition-colors"></i>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Search artists..." 
+                        class="w-full pl-10 pr-4 py-3 bg-suno-card border border-gray-800 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all text-sm placeholder-gray-600 shadow-lg">
+                </div>
+                
+                <select id="genreSelect" onchange="applyFilters()" 
+                    class="w-full px-4 py-3 bg-suno-card border border-gray-800 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all text-sm text-gray-300 shadow-lg cursor-pointer">
+                    <option value="All">All Genres</option>
+                    <!-- Genres populated by JS -->
+                </select>
+            </div>
+
+            <!-- Artist List -->
+            <div class="glass-panel rounded-xl flex-1 flex flex-col h-[500px] overflow-hidden shadow-xl">
+                <div class="p-3 border-b border-gray-800 flex justify-between items-center bg-black/20">
+                    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Available Artists</span>
+                    <span id="artistCount" class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">0</span>
+                </div>
+                <div id="artistList" class="overflow-y-auto p-2 space-y-2 flex-1 relative">
+                    <!-- Artists injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Mixer & Output -->
+        <div class="lg:col-span-7 flex flex-col gap-6 animate-in" style="animation-delay: 0.2s;">
+            
+            <!-- Mixing Bowl -->
+            <div class="glass-panel rounded-xl p-6 min-h-[200px] border-t-4 border-t-violet-500 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                    <i class="fa-solid fa-blender text-6xl"></i>
+                </div>
+
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-white">Style Ingredients</h2>
+                        <p class="text-sm text-gray-500">Selected artists' styles will be merged.</p>
+                    </div>
+                    <div class="bg-violet-500/10 px-3 py-1 rounded-full border border-violet-500/20">
+                        <span id="selectedCount" class="text-violet-400 font-bold text-sm">0</span> <span class="text-violet-400/70 text-xs">selected</span>
+                    </div>
+                </div>
+
+                <!-- Selected Tags Area -->
+                <div id="selectedContainer" class="flex flex-wrap gap-2 mb-6 min-h-[60px]">
+                    <div id="emptyState" class="w-full h-24 border-2 border-dashed border-gray-800 rounded-lg flex items-center justify-center text-gray-600 text-sm">
+                        Select artists from the list to start mixing
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="mode" value="song" class="peer sr-only" checked onchange="updatePrompt()">
+                        <div class="p-3 bg-gray-900/50 border border-gray-700 rounded-lg text-center peer-checked:bg-violet-600 peer-checked:border-violet-500 peer-checked:text-white hover:bg-gray-800 transition-all">
+                            <i class="fa-solid fa-music mb-1 block text-lg"></i>
+                            <span class="text-xs font-medium">Song</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="mode" value="instrumental" class="peer sr-only" onchange="updatePrompt()">
+                        <div class="p-3 bg-gray-900/50 border border-gray-700 rounded-lg text-center peer-checked:bg-cyan-600 peer-checked:border-cyan-500 peer-checked:text-white hover:bg-gray-800 transition-all">
+                            <i class="fa-solid fa-guitar mb-1 block text-lg"></i>
+                            <span class="text-xs font-medium">Instrumental</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="mode" value="vocals" class="peer sr-only" onchange="updatePrompt()">
+                        <div class="p-3 bg-gray-900/50 border border-gray-700 rounded-lg text-center peer-checked:bg-pink-600 peer-checked:border-pink-500 peer-checked:text-white hover:bg-gray-800 transition-all">
+                            <i class="fa-solid fa-microphone mb-1 block text-lg"></i>
+                            <span class="text-xs font-medium">Vocals Only</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Output Area -->
+            <div class="glass-panel rounded-xl p-1 shadow-lg bg-gradient-to-br from-gray-900 to-black">
+                <div class="relative">
+                    <textarea id="outputPrompt" readonly 
+                        class="w-full h-32 bg-transparent text-white p-4 resize-none focus:outline-none text-sm leading-relaxed"
+                        placeholder="Your generated prompt will appear here..."></textarea>
+                    
+                    <div class="absolute bottom-2 right-2 flex gap-2">
+                        <span id="copyFeedback" class="text-green-400 text-xs py-2 px-3 opacity-0 transition-opacity">Copied!</span>
+                        <button onclick="copyToClipboard()" class="bg-white text-black hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-semibold shadow-lg transform active:scale-95 transition-all flex items-center gap-2">
+                            <i class="fa-regular fa-copy"></i> Copy Prompt
+                        </button>
+                    </div>
+                </div>
+                <!-- Word Cloud Visual (Decorative) -->
+                <div class="px-4 pb-2 border-t border-gray-800/50">
+                    <div class="flex items-center gap-2 py-2 overflow-hidden whitespace-nowrap opacity-50">
+                        <div class="text-[10px] text-gray-500 font-mono" id="stylePreview">
+                            WAITING FOR INPUT...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="mt-12 text-gray-600 text-xs">
+        Data based on research by Travis Nicholson (2026)
+    </footer>
+
+    <script>
+        // --- Data ---
+        // Parsed from the user provided text
+        const rawArtistData = [
+            { name: "Drake", style: "Hip-hop, trap, laid-back male vocals, ambient beats" },
+            { name: "Bruno Mars", style: "Funk-pop blend, groovy rhythms, male vocals, danceable" },
+            { name: "Fleetwood Mac", style: "Classic rock, mellow harmonies, emotional, 70s vibe" },
+            { name: "Ed Sheeran", style: "Folk-pop, acoustic guitar loops, male vocals, mellow tone" },
+            { name: "Tim McGraw", style: "Country Americana, steady rhythm, male vocals, heartfelt" },
+            { name: "Elton John", style: "Piano-driven glam rock, theatrical male vocals, vibrant 70s flair" },
+            { name: "Dolly Parton", style: "Country storytelling, twangy melodies, female vocals" },
+            { name: "Red Hot Chili Peppers", style: "Funk rock, slap bass, male vocals, energetic" },
+            { name: "Coldplay", style: "Atmospheric alt-rock, ambient, male vocals, emotional piano" },
+            { name: "Taylor Swift", style: "Pop, Alternative Folk, Emotional, female vocals" },
+            { name: "Elvis Presley", style: "50s Rock, Hero Theme, male vocals" },
+            { name: "Adele", style: "Soul, Emotional, Torch-Lounge, female vocals" },
+            { name: "Ariana Grande", style: "Pop, Dance Pop, Ethereal, female vocals" },
+            { name: "Billie Eilish", style: "Pop, Dark, Minimal, female vocals" },
+            { name: "The Weeknd", style: "RnB, Dark, Cinematic, male vocals" },
+            { name: "Beyoncé", style: "RnB, Anthemic, Danceable, female vocals" },
+            { name: "Kendrick Lamar", style: "HipHop, Lyrical, Storytelling, male vocals" },
+            { name: "Lady Gaga", style: "Pop, Theatrical, Dance, female vocals" },
+            { name: "Jay-Z", style: "HipHop, Aggressive, Storytelling, male vocals" },
+            { name: "Rihanna", style: "RnB, Dance Pop, Festive, female vocals" },
+            { name: "Kanye West", style: "HipHop, Progressive, Eclectic, male vocals" },
+            { name: "Justin Bieber", style: "Pop, Danceable, Chillwave, male vocals" },
+            { name: "Katy Perry", style: "Pop, Glitter, Festive, female vocals" },
+            { name: "Metallica", style: "Thrash metal, aggressive riffs, pounding drums, male vocals" },
+            { name: "AC/DC", style: "Hard rock, crunchy guitar riffs, raspy male vocals, driving rhythm" },
+            { name: "Madonna", style: "Dance Pop, High-NRG, female vocals" },
+            { name: "David Bowie", style: "70s British Rock, Art, Eclectic, male vocals" },
+            { name: "Bob Dylan", style: "Folk, Storytelling, Acoustic Guitar, male vocals" },
+            { name: "Post Malone", style: "Rap, Ethereal, Ambient, male vocals" },
+            { name: "Maroon 5", style: "Pop Rock, Danceable, male vocals" },
+            { name: "Shakira", style: "Latin, Dance Pop, Festive, female vocals" },
+            { name: "Dua Lipa", style: "Disco, Dance Pop, Groovy, female vocals" },
+            { name: "Michael Jackson", style: "80s Pop, Dance, Iconic, male vocals" },
+            { name: "Prince", style: "Funk, Eclectic, Glam, male vocals" },
+            { name: "Miley Cyrus", style: "Pop, Rock, Party, female vocals" },
+            { name: "Imagine Dragons", style: "2010s Rock, Anthemic, Emotion" },
+            { name: "Camila Cabello", style: "Pop, Latin Jazz, Festive, female vocals" },
+            { name: "Harry Styles", style: "Pop, Rock, Groovy, male vocals" },
+            { name: "Sam Smith", style: "Soul, Emotional, Lounge, male vocals" },
+            { name: "Lizzo", style: "Pop, Funk, Empowering, female vocals" },
+            { name: "Gorillaz", style: "Alternative Rock, Electronic, Unusual" },
+            { name: "The Beatles", style: "60s British Pop, Classic, Rock" },
+            { name: "Queen", style: "Rock, Operatic, Theatrical, Male Vocals" },
+            { name: "Led Zeppelin", style: "Hard Rock, Blues Rock, Epic" },
+            { name: "Pink Floyd", style: "80s Rock, Progressive, Atmospheric" },
+            { name: "The Rolling Stones", style: "Rock, Blues Rock, Classic" },
+            { name: "Bob Marley", style: "Reggae, Peaceful, Soulful, male vocals" },
+            { name: "Frank Sinatra", style: "1940s big band, Lounge Singer, male vocals" },
+            { name: "Aretha Franklin", style: "Soul, Gospel, Powerful, female vocals" },
+            { name: "Whitney Houston", style: "Pop, RnB, Emotional, female vocals" },
+            { name: "Stevie Wonder", style: "Soul, Funk, Joyful, male vocals" },
+            { name: "The Chainsmokers", style: "EDM-pop, bright synths, party energy, pulsing beats" },
+            { name: "Nicki Minaj", style: "Rap-pop, bold female vocals, playful attitude, rhythmic flow" },
+            { name: "Green Day", style: "Punk rock, fast guitars, youthful rebellion, raw energy" },
+            { name: "Nirvana", style: "90s grunge, dark male vocals, distorted guitars, raw angst" },
+            { name: "Amy Winehouse", style: "Soul-jazz, smoky female vocals, retro horns, intimate" },
+            { name: "Linkin Park", style: "Nu-metal, emotional male vocals, rap-rock fusion, heavy riffs" },
+            { name: "Aerosmith", style: "Classic hard rock, raspy male vocals, bluesy guitars, swagger" },
+            { name: "Bon Jovi", style: "Arena rock, clean male vocals, big choruses, anthemic guitars" },
+            { name: "Billy Joel", style: "Piano rock, male vocals, pop sensibility, melodic hooks, heartfelt" },
+            { name: "Phil Collins", style: "80s pop-rock, emotional male, cinematic drums, soft synths" },
+            { name: "Genesis", style: "Progressive rock, layered textures, male vocals, synth-driven" },
+            { name: "The Eagles", style: "Country rock, harmony vocals, smooth guitars, laid-back" },
+            { name: "Janis Joplin", style: "Blues-rock, female vocals, raw emotion, soulful, classic 60s" },
+            { name: "Jimi Hendrix", style: "Psychedelic rock, guitar virtuoso, wild solos, male vocals" },
+            { name: "The Who", style: "Hard rock, theatrical male vocals, explosive guitars, dramatic" },
+            { name: "Iron Maiden", style: "Heavy metal, epic storytelling, galloping riffs, theatrical" },
+            { name: "Judas Priest", style: "Heavy metal, soaring male vocals, fast riffs, powerful sound" },
+            { name: "Slayer", style: "Thrash metal, dark aggression, rapid-fire guitars, male vocals" },
+            { name: "Ozzy Osbourne", style: "Heavy metal, dark theatrics, male vocals, dramatic riffs" },
+            { name: "Skrillex", style: "Dubstep, Electronic, Intense, male vocals" },
+            { name: "Calvin Harris", style: "EDM, Dance, Festive, male vocals" },
+            { name: "Arctic Monkeys", style: "Indie Rock, Garage, Cool" },
+            { name: "Tame Impala", style: "Psychedelic Rock, Dreamy, Mellifluous" },
+            { name: "The Strokes", style: "Indie Rock, Cool, Raw" },
+            { name: "Vampire Weekend", style: "Indie Rock, Eclectic, Upbeat" },
+            { name: "Kings of Leon", style: "Rock, Emotional, Raw" },
+            { name: "The Killers", style: "Rock, Synthpop, Anthemic, male vocals" },
+            { name: "System of a Down", style: "Metal, Political, Eccentric" },
+            { name: "Radiohead", style: "Alternative Rock, Experimental, Atmospheric" },
+            { name: "Foo Fighters", style: "Rock, Alternative, Energetic" },
+            { name: "Muse", style: "Rock, Progressive, Theatrical" },
+            { name: "Rage Against the Machine", style: "Rap Metal, Political, Aggressive" },
+            { name: "Pearl Jam", style: "Grunge, Rock, Emotional" },
+            { name: "Soundgarden", style: "90s Grunge, Heavy, Dark" },
+            { name: "Alice in Chains", style: "Grunge, Dark, Melodic" },
+            { name: "Sigur Rós", style: "Post-Rock, Ethereal, Atmospheric, Icelandic" },
+            { name: "Björk", style: "Alternative, Experimental, Unusual, female vocals" },
+            { name: "Marshmello", style: "EDM, Dance, Happy" },
+            { name: "Lana Del Rey", style: "Pop, Sadcore, Cinematic, female vocals" },
+            { name: "Kacey Musgraves", style: "Country, Pop, Mellifluous, female vocals" },
+            { name: "St. Vincent", style: "Art Rock, Eclectic, Unusual, female vocals" },
+            { name: "Childish Gambino", style: "HipHop, Funk, Thoughtful, male vocals" },
+            { name: "SZA", style: "RnB, Neo Soul, Emotional, female vocals" },
+            { name: "Frank Ocean", style: "RnB, Soulful, Introspective, male vocals" },
+            { name: "Tyler, The Creator", style: "HipHop, Eclectic, Unusual, male vocals" },
+            { name: "Solange", style: "RnB, Soul, Artistic, female vocals" },
+            { name: "Brockhampton", style: "HipHop, Alternative, Collective" },
+            { name: "Mac DeMarco", style: "Indie Pop, Slacker Rock, Chill, male vocals" },
+            { name: "Rufus Du Sol", style: "Electronic, Dance, Atmospheric" },
+            { name: "Bon Iver", style: "Indie Folk, Ethereal, Intimate, male vocals" },
+            { name: "Florence + The Machine", style: "Indie Rock, Dramatic, Ethereal" },
+            { name: "Jack White", style: "Rock, Blues, Raw, male vocals" },
+            { name: "Gary Clark Jr.", style: "Blues Rock, Soulful, Gritty, male vocals" },
+            { name: "Leon Bridges", style: "Soul, RnB, Retro, male vocals" },
+            { name: "Brittany Howard", style: "Rock, Soul, Powerful, female vocals" },
+            { name: "Alabama Shakes", style: "Rock, Blues Rock, Soulful" },
+            { name: "Glass Animals", style: "Psychedelic Pop, Groovy, Eclectic" },
+            { name: "Portugal, The Man", style: "Alternative Rock, Psychedelic, Catchy" },
+            { name: "FKA Twigs", style: "RnB, Electronic, Avant-Garde, female vocals" },
+            { name: "The National", style: "Indie Rock, Melancholy, Introspective" },
+            { name: "MGMT", style: "Psychedelic Pop, Electronic, Playful" },
+            { name: "Empire of the Sun", style: "Electronic, Pop, Theatrical" },
+            { name: "Grimes", style: "Art Pop, Electronic, Experimental, female vocals" },
+            { name: "James Blake", style: "Electronic, Soul, Minimalist, male vocals" },
+            { name: "The War on Drugs", style: "Indie Rock, Heartland Rock, Melodic" },
+            { name: "Sufjan Stevens", style: "Indie Folk, Baroque Pop, Intimate, male vocals" },
+            { name: "Nicolas Jaar", style: "Electronic, Experimental, Atmospheric, male vocals" },
+            { name: "Flying Lotus", style: "Electronic, Experimental HipHop, Fusion, male vocals" },
+            { name: "Thundercat", style: "Funk, Jazz, Experimental, male vocals" },
+            { name: "Kamasi Washington", style: "Jazz, Fusion, Epic, male vocals" },
+            { name: "Massive Attack", style: "Trip Hop, Dark, Atmospheric" },
+            { name: "Portishead", style: "Trip Hop, Dark, Cinematic" },
+            { name: "Aphex Twin", style: "IDM, Electronic, Experimental, male vocals" },
+            { name: "Boards of Canada", style: "IDM, Downtempo, Nostalgic" },
+            { name: "J Dilla", style: "HipHop, Soulful, Experimental, male vocals" },
+            { name: "MF DOOM", style: "HipHop, Abstract, Lyrical, male vocals" },
+            { name: "Blink-182", style: "emo pop rock, fast-paced, exciting, male vocals" },
+            { name: "Phoebe Bridgers", style: "Bedroom, grungegaze, catchy, psychedelic, acoustic tape recording, female vocals" }
+        ];
+
+        // --- Categorization Logic ---
+        function getGenre(style) {
+            const s = style.toLowerCase();
+            if (s.includes('country') || s.includes('folk') || s.includes('americana')) return 'Country & Folk';
+            if (s.includes('metal') || s.includes('punk') || s.includes('grunge')) return 'Rock & Metal';
+            if (s.includes('rock') || s.includes('classic rock')) return 'Rock & Metal';
+            if (s.includes('rap') || s.includes('hip-hop') || s.includes('hiphop') || s.includes('trap')) return 'Hip-Hop & Rap';
+            if (s.includes('electronic') || s.includes('edm') || s.includes('dubstep') || s.includes('house') || s.includes('techno') || s.includes('chillwave')) return 'Electronic';
+            if (s.includes('rnb') || s.includes('soul') || s.includes('jazz') || s.includes('blues') || s.includes('funk') || s.includes('gospel')) return 'R&B & Soul';
+            if (s.includes('pop') || s.includes('disco') || s.includes('dance')) return 'Pop';
+            if (s.includes('indie') || s.includes('alternative')) return 'Alternative';
+            return 'Other';
+        }
+
+        // Process data to include category
+        const artists = rawArtistData.map(a => ({
+            ...a, 
+            category: getGenre(a.style)
+        })).sort((a, b) => a.name.localeCompare(b.name));
+
+        let selectedArtists = [];
+
+        // --- DOM Elements ---
+        const artistListEl = document.getElementById('artistList');
+        const selectedContainerEl = document.getElementById('selectedContainer');
+        const searchInput = document.getElementById('searchInput');
+        const genreSelect = document.getElementById('genreSelect');
+        const emptyState = document.getElementById('emptyState');
+        const outputPrompt = document.getElementById('outputPrompt');
+        const artistCountEl = document.getElementById('artistCount');
+        const selectedCountEl = document.getElementById('selectedCount');
+        const stylePreviewEl = document.getElementById('stylePreview');
+        const copyFeedbackEl = document.getElementById('copyFeedback');
+
+        // --- Initialization ---
+        function init() {
+            populateGenreDropdown();
+            applyFilters();
+            
+            searchInput.addEventListener('input', applyFilters);
+        }
+
+        function populateGenreDropdown() {
+            const categories = ['All Genres', ...new Set(artists.map(a => a.category))].sort();
+            
+            // Remove "Other" and add it to end if exists
+            if(categories.includes('Other')) {
+                const idx = categories.indexOf('Other');
+                categories.splice(idx, 1);
+                categories.push('Other');
+            }
+
+            // Populate select
+            genreSelect.innerHTML = categories.map(cat => 
+                `<option value="${cat}">${cat}</option>`
+            ).join('');
+            
+            // Set All Genres as first
+            genreSelect.value = "All Genres";
+        }
+
+        function resetApp() {
+            selectedArtists = [];
+            searchInput.value = '';
+            genreSelect.value = 'All Genres';
+            applyFilters();
+            updateSelectionView();
+        }
+
+        function applyFilters() {
+            const query = searchInput.value.toLowerCase();
+            const genre = genreSelect.value;
+            
+            const filtered = artists.filter(a => {
+                const matchesSearch = a.name.toLowerCase().includes(query) || a.style.toLowerCase().includes(query);
+                const matchesGenre = genre === 'All Genres' || a.category === genre;
+                return matchesSearch && matchesGenre;
+            });
+
+            renderArtistList(filtered);
+            artistCountEl.innerText = filtered.length;
+        }
+
+        // --- Rendering ---
+        function renderArtistList(list) {
+            artistListEl.innerHTML = '';
+            
+            if(list.length === 0) {
+                artistListEl.innerHTML = `<div class="text-center text-gray-500 text-sm mt-8">No artists found</div>`;
+                return;
+            }
+
+            list.forEach(artist => {
+                // Check if already selected
+                const isSelected = selectedArtists.find(a => a.name === artist.name);
+                
+                const div = document.createElement('div');
+                div.className = `artist-card p-3 rounded-lg border border-gray-800 bg-gray-900/50 cursor-pointer flex justify-between items-center group ${isSelected ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-800'}`;
+                
+                // Add category pill
+                const catColor = getCategoryColor(artist.category);
+                
+                div.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-2">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="font-semibold text-sm text-gray-200 truncate">${artist.name}</span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded border ${catColor} bg-opacity-10 opacity-70 whitespace-nowrap">${artist.category}</span>
+                        </div>
+                        <div class="text-[10px] text-gray-500 truncate">${artist.style}</div>
+                    </div>
+                    <div class="w-6 h-6 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400 group-hover:bg-violet-600 group-hover:border-violet-500 group-hover:text-white transition-colors shrink-0">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                    </div>
+                `;
+                
+                div.onclick = () => selectArtist(artist);
+                artistListEl.appendChild(div);
+            });
+        }
+        
+        function getCategoryColor(cat) {
+            switch(cat) {
+                case 'Rock & Metal': return 'border-red-500 text-red-400';
+                case 'Hip-Hop & Rap': return 'border-amber-500 text-amber-400';
+                case 'Pop': return 'border-pink-500 text-pink-400';
+                case 'Electronic': return 'border-cyan-500 text-cyan-400';
+                case 'Country & Folk': return 'border-green-500 text-green-400';
+                case 'R&B & Soul': return 'border-purple-500 text-purple-400';
+                default: return 'border-gray-500 text-gray-400';
+            }
+        }
+
+        function renderSelected() {
+            selectedContainerEl.innerHTML = '';
+            
+            if (selectedArtists.length === 0) {
+                selectedContainerEl.appendChild(emptyState);
+                selectedCountEl.innerText = "0";
+                return;
+            }
+
+            selectedCountEl.innerText = selectedArtists.length;
+
+            selectedArtists.forEach((artist, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'animate-in bg-violet-900/40 border border-violet-500/30 text-violet-100 px-3 py-2 rounded-lg flex items-center gap-2 text-sm shadow-sm hover:bg-violet-900/60 transition-colors';
+                tag.style.animationDelay = `${index * 0.05}s`;
+                
+                tag.innerHTML = `
+                    <span>${artist.name}</span>
+                    <button class="w-5 h-5 rounded-full bg-violet-500/20 hover:bg-red-500/80 hover:text-white flex items-center justify-center transition-all" onclick="removeArtist('${artist.name}')">
+                        <i class="fa-solid fa-times text-[10px]"></i>
+                    </button>
+                `;
+                selectedContainerEl.appendChild(tag);
+            });
+        }
+
+        // --- Logic ---
+        function selectArtist(artist) {
+            if (!selectedArtists.find(a => a.name === artist.name)) {
+                selectedArtists.push(artist);
+                updateSelectionView();
+                
+                // Add simple haptic feedback visual by re-rendering to show "selected" state
+                applyFilters();
+            }
+        }
+
+        function removeArtist(name) {
+            selectedArtists = selectedArtists.filter(a => a.name !== name);
+            updateSelectionView();
+            applyFilters(); // Re-render list to re-enable item
+        }
+
+        function updateSelectionView() {
+            renderSelected();
+            updatePrompt();
+        }
+
+        function updatePrompt() {
+            if (selectedArtists.length === 0) {
+                outputPrompt.value = '';
+                stylePreviewEl.innerText = 'WAITING FOR INPUT...';
+                return;
+            }
+
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            let styleSegments = [];
+            
+            selectedArtists.forEach(artist => {
+                // Split styles by comma, trim whitespace
+                const parts = artist.style.split(',').map(s => s.trim());
+                styleSegments = [...styleSegments, ...parts];
+            });
+
+            // Remove duplicates
+            let uniqueStyles = [...new Set(styleSegments)];
+
+            // Logic based on Mode
+            if (mode === 'instrumental') {
+                // Filter out vocal related words
+                uniqueStyles = uniqueStyles.filter(s => {
+                    const lower = s.toLowerCase();
+                    return !lower.includes('vocals') && 
+                           !lower.includes('singer') && 
+                           !lower.includes('lyrics') &&
+                           !lower.includes('storytelling');
+                });
+                // Add Instrumental tag at start
+                uniqueStyles.unshift('Instrumental');
+            } else if (mode === 'vocals') {
+                // Filter out some instrument specific words (Optional, but "Vocals Only" implies acapella)
+                uniqueStyles = uniqueStyles.filter(s => {
+                     const lower = s.toLowerCase();
+                     return lower.includes('vocals') || lower.includes('emotional') || lower.includes('choir') || lower.includes('lyrical') || lower.includes('soul');
+                });
+                uniqueStyles.unshift('Acapella', 'Vocals Only');
+                uniqueStyles.push('no instruments');
+            }
+
+            // Create final string
+            const finalPrompt = uniqueStyles.join(', ');
+            outputPrompt.value = finalPrompt;
+
+            // Update word cloud preview
+            stylePreviewEl.innerText = uniqueStyles.join(' • ').toUpperCase();
+        }
+
+        function copyToClipboard() {
+            if (!outputPrompt.value) return;
+            
+            outputPrompt.select();
+            document.execCommand('copy');
+            
+            // Visual feedback
+            copyFeedbackEl.classList.remove('opacity-0');
+            setTimeout(() => {
+                copyFeedbackEl.classList.add('opacity-0');
+            }, 2000);
+        }
+
+        // Run
+        init();
+
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

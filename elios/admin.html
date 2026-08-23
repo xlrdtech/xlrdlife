@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tracking Together &mdash; Master Console</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Tracking Together master console. Full lead pool, subscriber roster, and lead assignment for masters.">
+<meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0f14" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/elios/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/elios/icon-192.png">
+<link rel="apple-touch-icon" href="/elios/apple-touch-icon.png">
+<link rel="manifest" href="/elios/site.webmanifest">
+<script src="/elios/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/elios/brand.css">
+<style>
+  .grid.cols4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .metric{padding:18px 20px}
+  .metric .big.is-money{font-size:30px;color:var(--gold1)}
+  .metric .big{font-family:"Fraunces",Georgia,serif;font-size:38px;font-weight:600;line-height:1;color:var(--ink)}
+  .metric .lbl{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mut);margin-top:8px}
+
+  .roster-row{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+  .roster-row:first-child{border-top:none}
+  .roster-name{font-weight:650;color:var(--ink);font-size:15px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .roster-meta{font-size:12.5px;color:var(--mut);margin-top:3px}
+  .roster-quota{text-align:right;min-width:120px}
+  .roster-quota .nums{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;color:var(--ink)}
+  .roster-quota .nums b{color:var(--gold1)}
+  .roster-value{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:12px;color:var(--gold1);margin-top:5px}
+  .roster-value b{color:var(--ink)}
+  .assign-quick{flex-shrink:0;display:flex;gap:8px;align-items:center}
+
+  .lead-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
+  .lead-row:first-child{border-top:none}
+  .lead-pick{width:19px;height:19px;margin-top:2px;accent-color:var(--gold);cursor:pointer}
+  .lead-name{font-weight:650;color:var(--ink);font-size:14.5px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .lead-meta{font-size:12px;color:var(--mut);margin-top:4px;line-height:1.5;word-break:break-word}
+  .lead-meta b{color:var(--ink);font-weight:600}
+  .lstat{font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:6px;border:1px solid;white-space:nowrap;text-transform:uppercase}
+  .lstat.New{color:#7c3aed;border-color:rgba(124,58,237,.4);background:rgba(124,58,237,.1)}
+  .lstat.default{color:var(--steel1);border-color:var(--line);background:rgba(15,23,42,.05)}
+  .alert-flag{font-size:10px;font-weight:700;color:var(--err);border:1px solid rgba(220,38,38,.35);background:rgba(220,38,38,.07);border-radius:6px;padding:3px 7px}
+  .empty{text-align:center;padding:42px 20px;color:var(--mut);font-size:13px}
+  .lead-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;align-self:center}
+  .blockval{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:15px;font-weight:600;color:var(--gold1);white-space:nowrap}
+  .blockval.zero{color:var(--mut);font-weight:400}
+  /* STOP — strong red treatment carried all the way through the row */
+  .lstat.STOP{color:#fff;border-color:#b91c1c;background:linear-gradient(135deg,#f87171,#dc2626);box-shadow:0 1px 6px -1px rgba(220,38,38,.5)}
+  .lead-row.stop-row{background:rgba(220,38,38,.08);border-left:4px solid #dc2626;padding-left:12px;margin-left:-16px;border-radius:0 10px 10px 0}
+  .lead-row.stop-row .lead-name{color:#b91c1c}
+  /* disposition — Anthony's traffic-light "touch" (sold=GREEN, visit=BLUE, stop=RED) */
+  .disp{font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 8px 3px 7px;border-radius:6px;border:1px solid;white-space:nowrap;text-transform:uppercase;display:inline-flex;align-items:center;gap:5px}
+  .disp::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+  .disp.sold{color:#15803d;border-color:rgba(22,163,74,.45);background:rgba(22,163,74,.12)}
+  .disp.visit{color:#1d4ed8;border-color:rgba(37,99,235,.45);background:rgba(37,99,235,.12)}
+  .disp.stop{color:#dc2626;border-color:rgba(220,38,38,.5);background:rgba(220,38,38,.14)}
+
+  .assign-bar{display:grid;grid-template-columns:1.5fr auto auto;gap:12px;align-items:end}
+  @media(max-width:680px){.assign-bar{grid-template-columns:1fr}.roster-row{grid-template-columns:1fr;gap:8px}.roster-quota{text-align:left}}
+  .field select{
+    width:100%;padding:12px 14px;border-radius:11px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);font-size:14.5px;transition:.18s ease;
+    -webkit-appearance:none;appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--steel1) 50%),linear-gradient(135deg,var(--steel1) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 19px,calc(100% - 13px) 19px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  }
+  .field select:focus{outline:none;border-color:rgba(216,180,106,.6);box-shadow:0 0 0 3px rgba(216,180,106,.15)}
+  .sel-count{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:13px;color:var(--gold1);white-space:nowrap;align-self:center}
+  .selectall{font-size:12px;color:var(--gold1);cursor:pointer;text-decoration:none;white-space:nowrap}
+  .master-pill .dot{background:var(--gold1)}
+  .toolbar{display:flex;gap:10px;align-items:center;margin:16px 0 8px;flex-wrap:wrap}
+  .search{flex:1;min-width:160px;padding:10px 13px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:13.5px}
+  .search:focus{outline:none;border-color:rgba(216,180,106,.6)}
+  .lead-edit{margin-top:6px;font-size:11.5px;padding:5px 11px}
+  /* edit/add modal */
+  .scrim{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+  .scrim.on{display:flex}
+  .modal{background:var(--glass);border:1px solid var(--line);border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow:auto;box-shadow:0 24px 70px -24px rgba(0,0,0,.45)}
+  .mhead{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line)}
+  .mhead h3{font-family:"Fraunces",Georgia,serif;font-size:20px;font-weight:600}
+  .iconbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font-size:15px;line-height:1}
+  .mbody{padding:18px 22px;display:grid;gap:13px}
+  .mrow2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mbody label{display:block;font-size:12px;color:var(--mut);margin-bottom:5px;letter-spacing:.02em}
+  .mbody input,.mbody select,.mbody textarea{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:14.5px;font-family:inherit}
+  .mbody input:focus,.mbody select:focus,.mbody textarea:focus{outline:none;border-color:rgba(216,180,106,.6);box-shadow:0 0 0 3px rgba(216,180,106,.13)}
+  .mbody textarea{resize:vertical;min-height:62px}
+  .mfoot{display:flex;gap:10px;align-items:center;padding:16px 22px;border-top:1px solid var(--line)}
+  .mfoot .spacer{flex:1}
+  .image-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .image-list .img-card{width:74px;height:74px;border-radius:8px;border:1px solid var(--line);
+    background:var(--surface);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .image-list .img-card img{width:100%;height:100%;object-fit:cover}
+  .image-list .img-card .kind-badge{position:absolute;bottom:0;left:0;right:0;font-size:9px;letter-spacing:.03em;
+    text-transform:uppercase;text-align:center;background:rgba(0,0,0,.55);color:#fff;padding:2px 0}
+  .image-list .img-card.pdf{font-size:11px;color:var(--mut);flex-direction:column;gap:4px}
+  #imagesSaveFirst{display:none}
+  .btn.danger{border-color:rgba(220,38,38,.4);color:var(--err);background:transparent}
+  .btn.danger:hover{background:rgba(220,38,38,.08)}
+  @media(max-width:520px){.mrow2{grid-template-columns:1fr}}
+
+  /* --- animated gradient background toggle (ported from /eliops/) --- */
+  body.elios-bg::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:linear-gradient(125deg,rgba(216,180,106,.16),rgba(37,99,235,.10),rgba(216,180,106,.13),rgba(124,58,237,.10));
+    background-size:320% 320%;
+    animation:eliosBgShift 26s ease infinite;
+    opacity:.55;
+  }
+  @media(prefers-color-scheme:dark){body.elios-bg::before{opacity:.4}}
+  @keyframes eliosBgShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  @media(prefers-reduced-motion:reduce){body.elios-bg::before{animation:none}}
+  .hdr-icon{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font-size:15px;line-height:1;display:inline-grid;place-items:center}
+  .hdr-icon:hover{border-color:rgba(216,180,106,.6)}
+  .hdr-icon.on{border-color:rgba(216,180,106,.7);color:var(--gold1);background:rgba(216,180,106,.1)}
+
+  /* --- guided tour coachmarks (pure CSS/JS, no libs) --- */
+  .tour-scrim{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:80;display:none}
+  .tour-scrim.on{display:block}
+  .tour-spot{position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(15,23,42,.55),0 0 0 3px var(--gold);transition:.2s ease;pointer-events:none}
+  .tour-pop{position:absolute;z-index:81;max-width:300px;background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 20px 60px -20px rgba(0,0,0,.5)}
+  .tour-pop h4{font-family:"Fraunces",Georgia,serif;font-size:16px;font-weight:600;margin:0 0 6px;color:var(--ink)}
+  .tour-pop p{font-size:13px;line-height:1.55;color:var(--mut);margin:0}
+  .tour-foot{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .tour-foot .step{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+  .tour-foot .spacer{flex:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="brand" href="/elios/admin.html" style="text-decoration:none;color:inherit">
+      <img class="tt-logo" src="/elios/tt-logo.png" alt="Tracking Together">
+      <span style="font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut);border-left:1px solid var(--line);padding-left:11px;font-weight:600">Master Console</span>
+    </a>
+    <div class="navbtns">
+      <a class="btn sm ghost" href="/elios/dashboard.html">My dashboard</a>
+      <button class="btn sm ghost" id="refreshBtn">Refresh</button>
+      <button class="hdr-icon" id="exportBtn" title="Export filtered leads to CSV" aria-label="Export CSV">&#8675;</button>
+      <button class="hdr-icon" id="tourBtn" title="Guided tour" aria-label="Guided tour">?</button>
+      <button class="hdr-icon" id="bgBtn" title="Toggle animated background" aria-label="Toggle animated background">&#9673;</button>
+      <button class="btn sm ghost" id="signOutBtn">Sign out</button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light / dark" aria-label="Toggle theme"><span class="moon">&#127769;</span><span class="sun">&#9728;&#65039;</span></button>
+    </div>
+  </div>
+
+  <div id="loadingPane" class="center-pane"><div class="loader"></div></div>
+
+  <div id="app" class="hidden">
+    <div id="errBanner" class="note err hidden"></div>
+
+    <div class="spread">
+      <div>
+        <div class="kick" id="welcomeKick">Master console</div>
+        <h1 class="display" id="masterName">Lead command</h1>
+        <p class="sub">All leads, the full subscriber roster, and one-tap assignment. Subscribers see only the leads you grant them, enforced server-side.</p>
+      </div>
+      <span class="pill gold master-pill"><span class="dot"></span><span>master</span></span>
+    </div>
+
+    <div class="grid cols4" style="margin-top:24px">
+      <div class="card metric">
+        <div class="big" id="mTotal">0</div>
+        <div class="lbl">Total leads</div>
+      </div>
+      <div class="card metric">
+        <div class="big" id="mAssigned">0</div>
+        <div class="lbl">Assigned to subscribers</div>
+      </div>
+      <div class="card metric">
+        <div class="big is-money" id="mValue">$0</div>
+        <div class="lbl">Total block value</div>
+      </div>
+      <div class="card metric">
+        <div class="big" id="mSubs">0</div>
+        <div class="lbl">Subscribers</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="spread" style="margin-bottom:6px">
+        <h2>Subscriber roster</h2>
+        <span class="mono muted" style="font-size:12px" id="rosterCountTag"></span>
+      </div>
+      <div id="rosterList"></div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="spread" style="margin-bottom:8px">
+        <h2>Lead pool</h2>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="mono muted" style="font-size:12px" id="poolCountTag"></span>
+          <button class="btn sm gold" id="newLeadBtn">+ New lead</button>
+        </div>
+      </div>
+
+      <div class="assign-bar">
+        <div class="field" style="margin-bottom:0">
+          <label for="assignBuyer">Assign selected leads to</label>
+          <select id="assignBuyer"></select>
+        </div>
+        <span class="sel-count" id="selCount">0 selected</span>
+        <button id="assignBtn" class="btn gold">Assign</button>
+      </div>
+      <div id="assignMsg" class="note hidden"></div>
+
+      <div class="chips" id="chips"></div>
+      <div class="filters">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="q" type="search" placeholder="Search name, phone, service, notes...">
+        </div>
+        <select id="f-event"><option value="">All Events</option></select>
+        <select id="f-rep"><option value="">All Reps</option></select>
+        <select id="f-assigned"><option value="">All Subscribers</option></select>
+        <button class="clearf" id="f-clear">Clear</button>
+      </div>
+      <div id="filter-banner"><span id="filter-banner-text"></span><button id="filter-banner-clear">Show all leads</button></div>
+      <div class="count" id="count"></div>
+      <div class="toolbar"><a class="selectall" id="selectAll" href="#">Select all shown</a></div>
+      <div id="poolList"></div>
+    </div>
+  </div>
+
+  <footer>Tracking Together &middot; master console &middot; assignment + per-account scoping enforced by row-level security &middot; trackingtogether.com</footer>
+</div>
+
+<div class="scrim" id="editScrim">
+  <div class="modal">
+    <div class="mhead">
+      <h3 id="editTitle">Edit lead</h3>
+      <button class="iconbtn" id="editClose" type="button" aria-label="Close">&#10005;</button>
+    </div>
+    <form class="mbody" id="leadForm" autocomplete="off">
+      <input type="hidden" id="e-id">
+      <div><label for="e-name">Name</label><input id="e-name" required></div>
+      <div class="mrow2">
+        <div><label for="e-phone">Phone</label><input id="e-phone" inputmode="tel"></div>
+        <div><label for="e-project">Service</label><input id="e-project" placeholder="Kitchen, Roofing, Solar..."></div>
+      </div>
+      <div><label for="e-address">Address</label><input id="e-address" placeholder="Street, City, State ZIP"></div>
+      <div class="mrow2">
+        <div><label for="e-stage">Status</label><select id="e-stage"></select></div>
+        <div><label for="e-rep">Rep</label><input id="e-rep"></div>
+      </div>
+      <div><label for="e-event">Event</label><input id="e-event" placeholder="Where the lead was captured"></div>
+      <div class="mrow2">
+        <div><label for="e-blockval">Block value ($)</label><input id="e-blockval" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+        <div><label for="e-basis">Value basis</label><input id="e-basis" placeholder="e.g. quoted, estimate"></div>
+      </div>
+      <div><label for="e-disp">Disposition (touch) &middot; sold = green, visit = blue, stop = red</label>
+        <select id="e-disp">
+          <option value="">— none —</option>
+          <option value="sold">Sold (green)</option>
+          <option value="visit">Visit (blue)</option>
+          <option value="stop">Stop (red)</option>
+        </select>
+      </div>
+      <div><label for="e-notes">Notes</label><textarea id="e-notes" rows="3"></textarea></div>
+      <div id="imagesSection">
+        <label>Images (invoices, logos &middot; permanent)</label>
+        <div id="imageList" class="image-list"></div>
+        <input type="file" id="imageFile" accept="image/png,image/jpeg,image/webp,application/pdf" style="display:none">
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <select id="imageKind" style="width:auto;flex:none">
+            <option value="invoice">Invoice</option>
+            <option value="logo">Logo</option>
+            <option value="other">Other</option>
+          </select>
+          <button class="btn ghost" id="imageUploadBtn" type="button">Upload image</button>
+          <span id="imageUploadMsg" class="note hidden" style="margin:0"></span>
+        </div>
+        <p class="note" id="imagesSaveFirst" style="margin-top:6px">Save this lead first to attach images.</p>
+      </div>
+    </form>
+    <div id="editMsg" class="note hidden" style="margin:6px 22px 0"></div>
+    <div class="mfoot">
+      <button class="btn danger" id="editRemove" type="button">Remove from pool</button>
+      <span class="spacer"></span>
+      <button class="btn ghost" id="editCancel" type="button">Cancel</button>
+      <button class="btn gold" id="editSave" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="tour-scrim" id="tourScrim">
+  <div class="tour-spot" id="tourSpot"></div>
+  <div class="tour-pop" id="tourPop">
+    <h4 id="tourTitle"></h4>
+    <p id="tourText"></p>
+    <div class="tour-foot">
+      <span class="step" id="tourStepLbl"></span>
+      <span class="spacer"></span>
+      <button class="btn sm ghost" id="tourSkip" type="button">Skip</button>
+      <button class="btn sm gold" id="tourNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/elios/config.js"></script>
+<script>
+(function(){
+  var cfg = window.ELIOS_CONFIG;
+  var $ = function(s){ return document.querySelector(s); };
+  var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
+  var numVal = function(v){ var n = Number(v); return isFinite(n) ? n : 0; };
+  var money = function(v){ return '$' + numVal(v).toLocaleString('en-US', { maximumFractionDigits: 0 }); };
+
+  var sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  function toLogin(){ window.location.href = cfg.ROUTES.login; }
+  function roleOf(user){ return (user && user.user_metadata && user.user_metadata.role) || 'subscriber'; }
+  function nameOf(user){
+    var m = user && user.user_metadata;
+    return (m && (m.full_name || m.name)) || (user && user.email ? user.email.split('@')[0] : null);
+  }
+
+  var ROSTER = [];            // [{ id (uuid), full_name, email }]
+  var ALL_LEADS = [];         // rows from all_leads view
+  var SELECTED = new Set();   // lead uuids
+  // Full filter state (ported from the original eliops tool). status -> pipeline_stage.
+  var FILT = { chip:'all', q:'', event:'', rep:'', assigned:'' };
+  function isStop(l){ return (l.pipeline_stage || '') === 'STOP'; }
+  // Anthony's traffic-light touch state: sold=GREEN, visit=BLUE, stop=RED.
+  var DISP_LABEL = { sold:'SOLD', visit:'VISIT', stop:'STOP' };
+  function dispBadge(d){
+    if(!d || !DISP_LABEL[d]) return '';
+    return ' <span class="disp ' + d + '" title="Touch: ' + DISP_LABEL[d] + '">' + DISP_LABEL[d] + '</span>';
+  }
+
+  $('#signOutBtn').addEventListener('click', async function(){ try{ await sb.auth.signOut(); }catch(e){} toLogin(); });
+  $('#refreshBtn').addEventListener('click', function(){ SELECTED.clear(); load(); });
+
+  function showErr(text){ var b = $('#errBanner'); b.textContent = text; b.classList.remove('hidden'); }
+  function showAssignMsg(text, kind){
+    var m = $('#assignMsg');
+    m.className = 'note' + (kind ? ' ' + kind : '');
+    m.innerHTML = text;
+    m.classList.remove('hidden');
+  }
+
+  // Per-subscriber granted count + portfolio value, derived from all_leads.
+  function rosterStats(){
+    var byId = {};
+    ROSTER.forEach(function(r){ byId[r.id] = { granted: 0, value: 0 }; });
+    ALL_LEADS.forEach(function(l){
+      if(l.assigned_buyer_id && byId[l.assigned_buyer_id]){
+        byId[l.assigned_buyer_id].granted += 1;
+        byId[l.assigned_buyer_id].value += numVal(l.block_value);
+      }
+    });
+    return byId;
+  }
+
+  function isRetired(l){ return (l.status || '') === 'retired'; }
+  function renderMetrics(){
+    var stats = rosterStats();
+    var active = ALL_LEADS.filter(function(l){ return !isRetired(l); });
+    var total = active.length;
+    var assignedCount = active.filter(function(l){ return !!l.assigned_buyer_id; }).length;
+    var value = active.reduce(function(s, l){ return s + numVal(l.block_value); }, 0);
+    $('#mTotal').textContent = total;
+    $('#mAssigned').textContent = assignedCount;
+    $('#mValue').textContent = money(value);
+    $('#mSubs').textContent = ROSTER.length;
+    window.__ELIOS_STATS = stats;
+  }
+
+  function renderRoster(){
+    var stats = window.__ELIOS_STATS || rosterStats();
+    var list = $('#rosterList');
+    list.innerHTML = '';
+    $('#rosterCountTag').textContent = ROSTER.length + ' subscriber' + (ROSTER.length===1?'':'s');
+    if(!ROSTER.length){ list.innerHTML = '<div class="empty">No subscribers on the roster.</div>'; return; }
+    var frag = document.createDocumentFragment();
+    ROSTER.forEach(function(r){
+      var st = stats[r.id] || { granted: 0, value: 0 };
+      var handle = r.email ? r.email.split('@')[0] : r.id;
+      var dispName = r.full_name || handle;
+      var row = document.createElement('div');
+      row.className = 'roster-row';
+      row.innerHTML =
+        '<div>' +
+          '<div class="roster-name">' + esc(dispName) + '</div>' +
+          '<div class="roster-meta">@' + esc(handle) + '</div>' +
+          '<div class="roster-value">Portfolio value <b>' + money(st.value) + '</b></div>' +
+        '</div>' +
+        '<div class="roster-quota">' +
+          '<div class="nums"><b>' + st.granted + '</b> leads assigned</div>' +
+        '</div>' +
+        '<div class="assign-quick">' +
+          '<button class="btn sm ghost" data-export="' + esc(r.id) + '" data-name="' + esc(dispName) + '"' +
+            (st.granted ? '' : ' disabled') +
+            ' title="Export only this user\'s assigned leads">Export</button>' +
+          '<button class="btn sm" data-pick="' + esc(r.id) + '" data-name="' + esc(dispName) + '">Pick</button>' +
+        '</div>';
+      frag.appendChild(row);
+    });
+    list.appendChild(frag);
+    // "Pick" targets a subscriber AND scopes the pool/export to that subscriber's
+    // assigned leads (sets the "Assigned to" filter), so the header Export now
+    // also yields just this user's leads.
+    Array.prototype.forEach.call(list.querySelectorAll('[data-pick]'), function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-pick');
+        var name = btn.getAttribute('data-name');
+        $('#assignBuyer').value = id;
+        if($('#f-assigned') && name){ FILT.assigned = name; $('#f-assigned').value = name; applyFilters(); }
+        $('#assignBuyer').scrollIntoView({ behavior:'smooth', block:'center' });
+      });
+    });
+    // Per-row Export: download exactly this subscriber's assigned leads.
+    Array.prototype.forEach.call(list.querySelectorAll('[data-export]'), function(btn){
+      btn.addEventListener('click', function(){
+        exportSubscriberLeads(btn.getAttribute('data-export'), btn.getAttribute('data-name'));
+      });
+    });
+  }
+
+  function renderBuyerSelect(){
+    var stats = window.__ELIOS_STATS || rosterStats();
+    var sel = $('#assignBuyer');
+    var prev = sel.value;
+    sel.innerHTML = '';
+    if(!ROSTER.length){ sel.innerHTML = '<option value="">No subscribers</option>'; return; }
+    ROSTER.forEach(function(r){
+      var st = stats[r.id] || { granted: 0 };
+      var handle = r.email ? r.email.split('@')[0] : r.id;
+      var opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = (r.full_name || handle) + '  (' + st.granted + ' assigned)';
+      sel.appendChild(opt);
+    });
+    if(prev){ sel.value = prev; }
+  }
+
+  function updateSelCount(){ $('#selCount').textContent = SELECTED.size + ' selected'; }
+
+  // ---- status chips (live counts, derived from the loaded pool) ----
+  function stageCounts(){
+    var c = { all: 0, New:0, Booked:0, 'Follow Up':0, Attempted:0, STOP:0 };
+    ALL_LEADS.forEach(function(l){
+      if(isRetired(l)) return;            // retired leads are archived, not in the pool
+      c.all++;
+      if(isStop(l)){ c.STOP++; return; }
+      var s = l.pipeline_stage;
+      if(s in c) c[s]++;
+    });
+    return c;
+  }
+  function renderChips(){
+    var c = stageCounts(), box = $('#chips'); box.innerHTML = '';
+    var defs = [['all','All'],['New','New'],['Booked','Booked'],['Follow Up','Follow Up'],['Attempted','Attempted'],['STOP','STOP']];
+    defs.forEach(function(d){
+      var k = d[0];
+      var b = document.createElement('button');
+      b.className = 'chip' + (k==='STOP'?' stop':'') + (FILT.chip===k?' on':'');
+      b.innerHTML = '<span class="n">' + (k==='all'?c.all:(c[k]||0)) + '</span> ' + d[1];
+      b.addEventListener('click', function(){ FILT.chip = k; applyFilters(); });
+      box.appendChild(b);
+    });
+  }
+
+  // ---- event / rep dropdowns (distinct values from the pool) ----
+  function fillSelect(sel, values, allLabel){
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">' + allLabel + '</option>';
+    values.forEach(function(v){ var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+    if(prev && values.indexOf(prev) !== -1) sel.value = prev;
+  }
+  function populateFilterDropdowns(){
+    var events = {}, reps = {}, assignees = {};
+    ALL_LEADS.forEach(function(l){ if(isRetired(l)) return; if(l.event) events[l.event]=1; if(l.rep) reps[l.rep]=1; if(l.assigned_buyer_name) assignees[l.assigned_buyer_name]=1; });
+    fillSelect($('#f-event'), Object.keys(events).sort(), 'All Events');
+    fillSelect($('#f-rep'), Object.keys(reps).sort(), 'All Reps');
+    // "Assigned to" filter so a master can view/export just one subscriber's leads.
+    var aSel = $('#f-assigned');
+    if(aSel){
+      var prev = aSel.value;
+      aSel.innerHTML = '<option value="">All Subscribers</option><option value="__UNASSIGNED__">Unassigned (pool)</option>';
+      Object.keys(assignees).sort().forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; aSel.appendChild(o); });
+      if(prev) aSel.value = prev;
+    }
+  }
+
+  // ---- the filter engine (chip + event + rep + search, STOP suppressed) ----
+  function visibleLeads(){
+    return ALL_LEADS.filter(function(l){
+      if(isRetired(l)) return false;                                // archived leads hidden from the pool
+      if(FILT.chip === 'STOP') return isStop(l);
+      if(isStop(l)) return false;                                  // STOPs hidden unless STOP chip active
+      if(FILT.chip !== 'all' && (l.pipeline_stage||'') !== FILT.chip) return false;
+      if(FILT.event && l.event !== FILT.event) return false;
+      if(FILT.rep && l.rep !== FILT.rep) return false;
+      if(FILT.assigned === '__UNASSIGNED__'){ if(l.assigned_buyer_id) return false; }
+      else if(FILT.assigned && l.assigned_buyer_name !== FILT.assigned) return false;
+      if(FILT.q){
+        var q = FILT.q.toLowerCase();
+        var hay = [l.name,l.phone,l.address,l.project_type,l.notes,l.event,l.rep].map(function(x){return x||'';}).join(' ').toLowerCase();
+        if(hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderFilterBanner(){
+    var b = $('#filter-banner');
+    var active = FILT.chip !== 'all' || FILT.q || FILT.event || FILT.rep || FILT.assigned;
+    if(!active){ b.classList.remove('on'); return; }
+    var parts = [];
+    if(FILT.chip !== 'all') parts.push('status <b>' + esc(FILT.chip) + '</b>');
+    if(FILT.event) parts.push('event <b>' + esc(FILT.event) + '</b>');
+    if(FILT.rep) parts.push('rep <b>' + esc(FILT.rep) + '</b>');
+    if(FILT.assigned) parts.push('assigned to <b>' + esc(FILT.assigned === '__UNASSIGNED__' ? 'Unassigned' : FILT.assigned) + '</b>');
+    if(FILT.q) parts.push('matching <b>"' + esc(FILT.q) + '"</b>');
+    $('#filter-banner-text').innerHTML = 'Filtering by ' + parts.join(' &middot; ');
+    b.classList.add('on');
+  }
+  function clearFilters(){
+    FILT = { chip:'all', q:'', event:'', rep:'', assigned:'' };
+    if($('#f-assigned')) $('#f-assigned').value = '';
+    if($('#q')) $('#q').value = '';
+    if($('#f-event')) $('#f-event').value = '';
+    if($('#f-rep')) $('#f-rep').value = '';
+    applyFilters();
+  }
+  function applyFilters(){ renderChips(); renderFilterBanner(); renderPool(); }
+
+  function renderPool(){
+    var list = $('#poolList');
+    var shown = visibleLeads();
+    $('#poolCountTag').innerHTML = shown.length + ' shown &middot; ' + ALL_LEADS.length + ' total';
+    $('#count').textContent = shown.length + ' of ' + ALL_LEADS.length + ' leads shown';
+    list.innerHTML = '';
+    if(!shown.length){ list.innerHTML = '<div class="empty">No leads match this filter.</div>'; return; }
+    var frag = document.createDocumentFragment();
+    // cap DOM render for very large pools; filter narrows it
+    var cap = 300;
+    shown.slice(0, cap).forEach(function(l){
+      var bv = numVal(l.block_value);
+      var valHtml = '<span class="blockval' + (bv > 0 ? '' : ' zero') + '">' + (bv > 0 ? money(bv) : 'no value') + '</span>';
+      var assignedHtml = l.assigned_buyer_name
+        ? (' <span class="alert-flag" style="color:var(--gold1);border-color:rgba(216,180,106,.35);background:rgba(216,180,106,.08)">assigned ' + esc(l.assigned_buyer_name) + '</span>')
+        : '';
+      var stage = l.pipeline_stage || 'New';
+      var stopped = isStop(l);
+      var row = document.createElement('div');
+      row.className = 'lead-row' + (stopped ? ' stop-row' : '');
+      var stClass = (stage === 'New') ? 'New' : (stage === 'STOP' ? 'STOP' : 'default');
+      var dispHtml = dispBadge(l.disposition);
+      var disabled = !!l.assigned_buyer_id;  // already granted leads cannot be re-assigned
+      row.innerHTML =
+        '<input type="checkbox" class="lead-pick" ' + (SELECTED.has(l.id) ? 'checked ' : '') + (disabled ? 'disabled ' : '') + 'data-id="' + esc(l.id) + '" aria-label="Select lead">' +
+        '<div>' +
+          '<div class="lead-name">' + esc(l.name || 'Unnamed lead') +
+            ' <span class="lstat ' + stClass + '">' + esc(stage) + '</span>' + dispHtml + assignedHtml +
+          '</div>' +
+          '<div class="lead-meta">' +
+            (l.phone ? ('Phone <b>' + esc(l.phone) + '</b> &middot; ') : '') +
+            'Service <b>' + esc(l.project_type || 'General') + '</b>' +
+            (l.event ? (' &middot; ' + esc(l.event)) : '') +
+            (l.rep ? (' &middot; Rep ' + esc(l.rep)) : '') +
+            (l.address ? ('<br>&#128205; ' + esc(l.address)) : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="lead-right">' + valHtml +
+          '<button class="btn ghost lead-edit" data-edit="' + esc(l.id) + '">Edit</button>' +
+        '</div>';
+      frag.appendChild(row);
+    });
+    list.appendChild(frag);
+    if(shown.length > cap){
+      var more = document.createElement('div');
+      more.className = 'empty';
+      more.textContent = 'Showing first ' + cap + ' of ' + shown.length + '. Use the filter to narrow.';
+      list.appendChild(more);
+    }
+    Array.prototype.forEach.call(list.querySelectorAll('.lead-pick'), function(cb){
+      cb.addEventListener('change', function(){
+        var id = cb.getAttribute('data-id');
+        if(cb.checked){ SELECTED.add(id); } else { SELECTED.delete(id); }
+        updateSelCount();
+      });
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('.lead-edit'), function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-edit');
+        var l = ALL_LEADS.filter(function(x){ return x.id === id; })[0];
+        if(l) openEdit(l);
+      });
+    });
+    updateSelCount();
+  }
+
+  $('#q').addEventListener('input', function(){ FILT.q = this.value.trim(); renderFilterBanner(); renderPool(); });
+  $('#f-event').addEventListener('change', function(){ FILT.event = this.value; applyFilters(); });
+  $('#f-rep').addEventListener('change', function(){ FILT.rep = this.value; applyFilters(); });
+  $('#f-assigned').addEventListener('change', function(){ FILT.assigned = this.value; applyFilters(); });
+  $('#f-clear').addEventListener('click', clearFilters);
+  $('#filter-banner-clear').addEventListener('click', clearFilters);
+
+  $('#selectAll').addEventListener('click', function(e){
+    e.preventDefault();
+    var shown = visibleLeads().filter(function(l){ return !l.assigned_buyer_id; });
+    var allOn = shown.length && shown.every(function(l){ return SELECTED.has(l.id); });
+    if(allOn){ shown.forEach(function(l){ SELECTED.delete(l.id); }); }
+    else { shown.forEach(function(l){ SELECTED.add(l.id); }); }
+    renderPool();
+  });
+
+  $('#assignBtn').addEventListener('click', async function(){
+    var subscriber = $('#assignBuyer').value;   // subscriber uuid
+    var ids = Array.from(SELECTED);
+    if(!subscriber){ showAssignMsg('Pick a subscriber to assign to.', 'err'); return; }
+    if(!ids.length){ showAssignMsg('Tick one or more leads in the pool first.', 'err'); return; }
+    var opt = $('#assignBuyer').selectedOptions[0];
+    var label = opt ? opt.textContent.split('  (')[0] : subscriber;
+
+    this.disabled = true;
+    var orig = this.textContent;
+    this.textContent = 'Assigning...';
+    try{
+      var res = await sb.rpc('assign_leads', { p_subscriber: subscriber, p_lead_ids: ids });
+      if(res.error){
+        showAssignMsg('Assign failed: ' + esc(res.error.message || 'unknown error'), 'err');
+        return;
+      }
+      var assigned = (res.data && res.data.length) || 0;
+      var skipped = ids.length - assigned;
+      showAssignMsg('Assigned <b>' + assigned + '</b> of ' + ids.length + ' to <b>' + esc(label) + '</b>' +
+        (skipped ? ' &middot; ' + skipped + ' skipped (already assigned or unavailable).' : '.'),
+        skipped ? 'warn' : 'ok');
+      SELECTED.clear();
+      await load();
+      $('#assignBuyer').value = subscriber;
+    } catch(err){
+      showAssignMsg('Assign error: ' + esc((err && err.message) || String(err)), 'err');
+    } finally {
+      this.disabled = false;
+      this.textContent = orig;
+    }
+  });
+
+  // ---------- edit / add lead modal (master writes directly; RLS leads_*_master) ----------
+  var STAGES = ['New','Attempted','Follow Up','Interested','Booked','Not Interested','STOP'];
+  var removeArmed = false;
+  function fillStageSelect(current){
+    var sel = $('#e-stage'); sel.innerHTML = '';
+    var opts = STAGES.slice();
+    if(current && opts.indexOf(current) === -1) opts.unshift(current);
+    opts.forEach(function(s){ var o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+    sel.value = current || 'New';
+  }
+  function showEditMsg(t,k){ var m=$('#editMsg'); m.className='note'+(k?' '+k:''); m.textContent=t; m.classList.remove('hidden'); }
+  function resetRemove(){ removeArmed=false; var b=$('#editRemove'); b.textContent='Remove from pool'; b.disabled=false; }
+  function openModal(){ $('#editScrim').classList.add('on'); }
+  function closeEditModal(){ $('#editScrim').classList.remove('on'); $('#editMsg').classList.add('hidden'); resetRemove(); }
+  function setImagesUIEnabled(enabled){
+    $('#imageUploadBtn').disabled = !enabled;
+    $('#imageKind').disabled = !enabled;
+    $('#imagesSaveFirst').style.display = enabled ? 'none' : '';
+  }
+  async function loadImages(leadId){
+    var list = $('#imageList'); list.innerHTML = '';
+    if(!leadId) return;
+    var res = await sb.from('lead_images').select('id, storage_path, kind, file_name, content_type').eq('lead_id', leadId).order('created_at', {ascending:false});
+    if(res.error){ return; }
+    for(var i=0;i<(res.data||[]).length;i++){
+      var img = res.data[i];
+      var card = document.createElement('div'); card.className = 'img-card';
+      if((img.content_type||'').indexOf('pdf') !== -1){
+        card.classList.add('pdf'); card.textContent = 'PDF';
+      } else {
+        var signed = await sb.storage.from('lead-images').createSignedUrl(img.storage_path, 3600);
+        var el = document.createElement('img');
+        el.src = (signed.data && signed.data.signedUrl) || '';
+        el.alt = img.file_name || img.kind;
+        card.appendChild(el);
+      }
+      var badge = document.createElement('div'); badge.className='kind-badge'; badge.textContent = img.kind;
+      card.appendChild(badge);
+      list.appendChild(card);
+    }
+  }
+  function showImageUploadMsg(t,k){ var m=$('#imageUploadMsg'); m.className='note'+(k?' '+k:''); m.textContent=t; m.classList.remove('hidden'); }
+  $('#imageUploadBtn').addEventListener('click', function(){ $('#imageFile').click(); });
+  $('#imageFile').addEventListener('change', async function(){
+    var file = this.files && this.files[0]; this.value = '';
+    if(!file) return;
+    var leadId = $('#e-id').value; if(!leadId) return;
+    var kind = $('#imageKind').value;
+    var btn = $('#imageUploadBtn'); btn.disabled = true; var orig = btn.textContent; btn.textContent = 'Uploading...';
+    try{
+      var path = leadId + '/' + crypto.randomUUID() + '-' + file.name;
+      var up = await sb.storage.from('lead-images').upload(path, file, { contentType: file.type });
+      if(up.error){ showImageUploadMsg('Upload failed: ' + esc(up.error.message||'error'), 'err'); return; }
+      var reg = await sb.rpc('add_lead_image', {
+        p_lead_id: leadId, p_storage_path: path, p_kind: kind,
+        p_file_name: file.name, p_content_type: file.type, p_size_bytes: file.size
+      });
+      if(reg.error){ showImageUploadMsg('Registration failed: ' + esc(reg.error.message||'error'), 'err'); return; }
+      showImageUploadMsg('Uploaded.', 'ok');
+      await loadImages(leadId);
+    } catch(err){ showImageUploadMsg('Upload error: ' + esc((err&&err.message)||String(err)), 'err'); }
+    finally{ btn.disabled = false; btn.textContent = orig; }
+  });
+  function openEdit(l){
+    $('#editTitle').textContent='Edit lead';
+    $('#e-id').value=l.id;
+    $('#e-name').value=l.name||''; $('#e-phone').value=l.phone||''; $('#e-project').value=l.project_type||'';
+    $('#e-address').value=l.address||''; fillStageSelect(l.pipeline_stage||'New'); $('#e-rep').value=l.rep||'';
+    $('#e-event').value=l.event||''; $('#e-notes').value=l.notes||'';
+    $('#e-blockval').value=(l.block_value!=null?l.block_value:''); $('#e-basis').value=l.value_basis||'';
+    $('#e-disp').value=l.disposition||'';
+    $('#editRemove').style.display=''; $('#editMsg').classList.add('hidden'); resetRemove(); openModal();
+    setImagesUIEnabled(true); $('#imageUploadMsg').classList.add('hidden'); loadImages(l.id);
+  }
+  function openNew(){
+    $('#editTitle').textContent='New lead'; $('#e-id').value='';
+    ['e-name','e-phone','e-project','e-address','e-rep','e-event','e-blockval','e-basis','e-disp','e-notes'].forEach(function(id){ $('#'+id).value=''; });
+    fillStageSelect('New'); $('#editRemove').style.display='none'; $('#editMsg').classList.add('hidden'); resetRemove(); openModal();
+    setImagesUIEnabled(false); $('#imageList').innerHTML=''; $('#imageUploadMsg').classList.add('hidden');
+  }
+  function leadFromForm(){
+    var bvRaw = $('#e-blockval').value.trim();
+    var bv = bvRaw === '' ? null : Math.max(0, Number(bvRaw));
+    if(bv !== null && !isFinite(bv)) bv = null;
+    return {
+      name: $('#e-name').value.trim(),
+      phone: $('#e-phone').value.trim() || null,
+      project_type: $('#e-project').value.trim() || null,
+      address: $('#e-address').value.trim() || null,
+      pipeline_stage: $('#e-stage').value,
+      rep: $('#e-rep').value.trim() || null,
+      event: $('#e-event').value.trim() || null,
+      block_value: bv,
+      value_basis: $('#e-basis').value.trim() || null,
+      disposition: $('#e-disp').value || null,
+      notes: $('#e-notes').value.trim() || null
+    };
+  }
+  $('#newLeadBtn').addEventListener('click', openNew);
+  $('#editClose').addEventListener('click', closeEditModal);
+  $('#editCancel').addEventListener('click', closeEditModal);
+  $('#editScrim').addEventListener('click', function(e){ if(e.target === this) closeEditModal(); });
+  $('#editSave').addEventListener('click', async function(){
+    var id = $('#e-id').value, data = leadFromForm();
+    if(!data.name){ showEditMsg('Name is required.', 'err'); return; }
+    this.disabled=true; var orig=this.textContent; this.textContent='Saving...';
+    try{
+      var res;
+      if(id){ res = await sb.from('leads').update(data).eq('id', id); }
+      else { data.status='available'; res = await sb.from('leads').insert(data); }
+      if(res.error){ showEditMsg('Save failed: ' + esc(res.error.message||'error'), 'err'); return; }
+      closeEditModal(); await load();
+    } catch(err){ showEditMsg('Save error: ' + esc((err&&err.message)||String(err)), 'err'); }
+    finally{ this.disabled=false; this.textContent=orig; }
+  });
+  $('#editRemove').addEventListener('click', async function(){
+    var id = $('#e-id').value; if(!id){ closeEditModal(); return; }
+    if(!removeArmed){ removeArmed=true; this.textContent='Confirm remove'; showEditMsg('Archives this lead (status retired): hidden from the pool but recoverable, never deleted. Click "Confirm remove" again.', 'warn'); return; }
+    this.disabled=true;
+    try{
+      var res = await sb.from('leads').update({ status:'retired' }).eq('id', id);
+      if(res.error){ showEditMsg('Remove failed: ' + esc(res.error.message||'error'), 'err'); resetRemove(); return; }
+      // also pull back any grant so the lead truly leaves the subscriber's view (master has lead_grants delete policy)
+      try{ await sb.from('lead_grants').delete().eq('lead_id', id); }catch(e){}
+      SELECTED.delete(id); closeEditModal(); await load();
+    } catch(err){ showEditMsg('Remove error: ' + esc((err&&err.message)||String(err)), 'err'); resetRemove(); }
+  });
+
+  async function load(){
+    var rRes = await sb.from('buyers').select('id, full_name, email, role').eq('role', 'subscriber');
+    if(rRes.error){ throw rRes.error; }
+    ROSTER = (rRes.data || []).sort(function(a, b){
+      return String(a.full_name || a.email || '').localeCompare(String(b.full_name || b.email || ''));
+    });
+
+    var lRes = await sb.from('all_leads').select();
+    if(lRes.error){ throw lRes.error; }
+    ALL_LEADS = lRes.data || [];
+
+    renderMetrics();
+    renderRoster();
+    renderBuyerSelect();
+    populateFilterDropdowns();
+    applyFilters();   // renders chips + banner + pool
+  }
+
+  async function boot(){
+    var sessRes = await sb.auth.getSession();
+    var session = sessRes && sessRes.data && sessRes.data.session;
+    if(!session || !session.user){ toLogin(); return; }
+    var user = session.user;
+
+    // Non-masters belong on the subscriber dashboard.
+    if(roleOf(user) !== 'master'){ window.location.href = cfg.ROUTES.dashboard; return; }
+    $('#masterName').textContent = nameOf(user) || 'Master';
+
+    $('#loadingPane').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    try{
+      await load();
+    } catch(err){
+      showErr('Could not load master data: ' + ((err && err.message) || err) + '.');
+    }
+  }
+
+  // ---------- animated background toggle (persisted in localStorage 'elios.bg') ----------
+  function applyBg(on){
+    document.body.classList.toggle('elios-bg', !!on);
+    var b = $('#bgBtn'); if(b){ b.classList.toggle('on', !!on); }
+  }
+  (function initBg(){
+    var on = false;
+    try{ on = localStorage.getItem('elios.bg') === '1'; }catch(e){}
+    applyBg(on);
+    var b = $('#bgBtn');
+    if(b) b.addEventListener('click', function(){
+      var next = !document.body.classList.contains('elios-bg');
+      applyBg(next);
+      try{ localStorage.setItem('elios.bg', next ? '1' : '0'); }catch(e){}
+    });
+  })();
+
+  // ---------- CSV export (currently filtered all_leads rows) ----------
+  function csvCell(v){
+    var s = (v == null) ? '' : String(v);
+    if(/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function slugName(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+  // Write a CSV download. rows = the exact lead set to write; whoLabel = an
+  // optional name segment for the filename (e.g. the subscriber it is scoped to).
+  function downloadLeadsCsv(rows, whoLabel){
+    var cols = ['name','phone','address','project_type','event','rep','pipeline_stage','disposition','block_value','notes'];
+    var lines = [cols.join(',')];
+    rows.forEach(function(l){
+      lines.push(cols.map(function(c){ return csvCell(l[c]); }).join(','));
+    });
+    var d = new Date();
+    var stamp = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+    var who = whoLabel ? ('-' + slugName(whoLabel)) : '';
+    var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'tracking-together-leads' + who + '-' + stamp + '.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
+  }
+  // Header button: export whatever is on screen (respects the active filter,
+  // including the "Assigned to" subscriber filter). With no filter a master
+  // gets the full pool by design.
+  function exportCsv(){
+    var rows = (typeof visibleLeads === 'function') ? visibleLeads() : ALL_LEADS;
+    var who = FILT.assigned ? (FILT.assigned === '__UNASSIGNED__' ? 'unassigned' : FILT.assigned) : '';
+    downloadLeadsCsv(rows, who);
+  }
+  $('#exportBtn').addEventListener('click', exportCsv);
+
+  // Per-subscriber export: exactly the leads currently assigned to ONE
+  // subscriber (by their buyer id), regardless of the on-screen filter. This
+  // is the "export only THAT username's leads under their account" path.
+  function exportSubscriberLeads(buyerId, buyerName){
+    var rows = ALL_LEADS.filter(function(l){ return !isRetired(l) && l.assigned_buyer_id === buyerId; });
+    downloadLeadsCsv(rows, buyerName || buyerId);
+  }
+
+  // ---------- guided tour (coachmarks; auto-runs once via 'elios.tour.done') ----------
+  var TOUR = [
+    { sel:'#chips', title:'Status filters', text:'Tap these chips to filter the lead pool by pipeline stage. The STOP chip surfaces leads marked stop.' },
+    { sel:'.filters', title:'Search and refine', text:'Search by name, phone, service, or notes, and narrow by event or rep.' },
+    { sel:'.assign-bar', title:'Assign leads', text:'Tick leads below, pick a subscriber here, and assign. Server-side row-level security enforces who sees what.' },
+    { sel:'#exportBtn', title:'Export to CSV', text:'Download the currently filtered leads as a spreadsheet at any time.' }
+  ];
+  var tourIdx = 0;
+  function positionTour(){
+    var st = TOUR[tourIdx];
+    var el = document.querySelector(st.sel);
+    var spot = $('#tourSpot'), pop = $('#tourPop');
+    if(!el){ nextTour(); return; }
+    el.scrollIntoView({ block:'center' });
+    var r = el.getBoundingClientRect();
+    var pad = 6;
+    spot.style.left = (r.left - pad) + 'px';
+    spot.style.top = (r.top - pad) + 'px';
+    spot.style.width = (r.width + pad*2) + 'px';
+    spot.style.height = (r.height + pad*2) + 'px';
+    $('#tourTitle').textContent = st.title;
+    $('#tourText').textContent = st.text;
+    $('#tourStepLbl').textContent = 'Step ' + (tourIdx+1) + ' of ' + TOUR.length;
+    $('#tourNext').textContent = (tourIdx === TOUR.length-1) ? 'Done' : 'Next';
+    var popTop = r.bottom + 14;
+    if(popTop + 200 > window.innerHeight) popTop = r.top - 200;
+    popTop = Math.min(Math.max(14, popTop), window.innerHeight - 200);
+    var popLeft = Math.min(Math.max(14, r.left), window.innerWidth - 320);
+    pop.style.top = popTop + 'px';
+    pop.style.left = popLeft + 'px';
+  }
+  function startTour(){ tourIdx = 0; $('#tourScrim').classList.add('on'); positionTour(); }
+  function endTour(){
+    $('#tourScrim').classList.remove('on');
+    try{ localStorage.setItem('elios.tour.done', '1'); }catch(e){}
+  }
+  function nextTour(){ if(tourIdx >= TOUR.length-1){ endTour(); return; } tourIdx++; positionTour(); }
+  $('#tourBtn').addEventListener('click', startTour);
+  $('#tourNext').addEventListener('click', nextTour);
+  $('#tourSkip').addEventListener('click', endTour);
+  $('#tourScrim').addEventListener('click', function(e){ if(e.target === this) endTour(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && $('#tourScrim').classList.contains('on')) endTour(); });
+  window.addEventListener('resize', function(){ if($('#tourScrim').classList.contains('on')) positionTour(); });
+  // On-demand only (the ? button). Auto-launch was removed: it could overlay the
+  // page before content positioned, leaving everything looking unclickable.
+  function maybeAutoTour(){ /* no auto-launch */ }
+
+  boot().then(maybeAutoTour);
+})();
+</script>
+</body>
+</html>

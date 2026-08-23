@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L7S HERO SOS - Client Portal</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body { font-family: 'Roboto', sans-serif; background-color: #f3f4f6; color: #111827; }
+        h1, h2, h3, h4, .brand-font { font-family: 'Montserrat', sans-serif; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .glass-panel {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        
+        .score-circle {
+            background: conic-gradient(#16a34a 75%, #e5e7eb 0);
+            border-radius: 50%;
+        }
+
+        .funnel-step.active { border-color: #DC2626; color: #DC2626; font-weight: 700; }
+        .funnel-step.completed { border-color: #16a34a; color: #16a34a; }
+        .funnel-step { border-bottom: 3px solid #e5e7eb; color: #9ca3af; padding-bottom: 4px; transition: all 0.3s; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // --- CLIENT-FACING DATA ---
+        
+        // The "Helpers" - Tools for the client
+        const CLIENT_HEROES = [
+            { id: 1, name: 'Credit Coach', role: 'Education', icon: 'fa-graduation-cap', color: 'bg-blue-600', desc: 'Learn how to boost your score.' },
+            { id: 2, name: 'Dispute Tracker', role: 'Status Updates', icon: 'fa-search', color: 'bg-red-600', desc: 'See real-time progress of letters.' },
+            { id: 3, name: 'Doc Uploader', role: 'Secure Vault', icon: 'fa-cloud-upload-alt', color: 'bg-purple-600', desc: 'Upload ID & Utility Bills securely.' },
+            { id: 4, name: 'Score Sim', role: 'Future Planning', icon: 'fa-magic', color: 'bg-green-600', desc: 'Simulate score changes.' },
+            { id: 5, name: 'Budget Buddy', role: 'Financial Health', icon: 'fa-wallet', color: 'bg-yellow-500', desc: 'Track spending & savings.' },
+            { id: 6, name: 'Support SOS', role: 'Live Help', icon: 'fa-headset', color: 'bg-black', desc: 'Chat with a live credit expert.' },
+        ];
+
+        // The "Funnel" / Journey Steps
+        const JOURNEY_STEPS = [
+            { id: 1, label: 'Onboarding', status: 'completed' },
+            { id: 2, label: 'Analysis', status: 'completed' },
+            { id: 3, label: 'Round 1', status: 'active' }, // Current Step
+            { id: 4, label: 'Results', status: 'pending' },
+            { id: 5, label: 'Review', status: 'pending' }
+        ];
+
+        // Mock Disputes for Client View
+        const MY_DISPUTES = [
+            { id: 1, creditor: 'Chase Bank', bureau: 'Experian', status: 'In Dispute', date: 'Jan 2, 2026' },
+            { id: 2, creditor: 'Midland Funding', bureau: 'TransUnion', status: 'Deleted', date: 'Dec 15, 2025', isDeleted: true },
+            { id: 3, creditor: 'Capital One', bureau: 'Equifax', status: 'Processing', date: 'Jan 4, 2026' },
+        ];
+
+        // --- COMPONENTS ---
+
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button 
+                onClick={onClick}
+                className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all ${active ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-gray-900'}`}
+            >
+                <i className={`fas ${icon} text-xl mb-1`}></i>
+                <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+            </button>
+        );
+
+        const HeroCard = ({ bot }) => (
+            <div className="glass-panel p-4 rounded-2xl hover:shadow-lg hover:border-red-200 transition-all cursor-pointer group relative overflow-hidden">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white mb-3 shadow-md ${bot.color} group-hover:scale-110 transition-transform`}>
+                    <i className={`fas ${bot.icon} text-xl`}></i>
+                </div>
+                <h3 className="font-bold text-gray-900 text-sm brand-font">{bot.name}</h3>
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">{bot.role}</p>
+                <p className="text-xs text-gray-500 leading-snug">{bot.desc}</p>
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="bg-black text-white w-6 h-6 rounded-full flex items-center justify-center shadow-lg">
+                        <i className="fas fa-chevron-right text-[10px]"></i>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const ScoreWidget = () => (
+            <div className="glass-panel p-6 rounded-2xl flex items-center justify-between mb-6 relative overflow-hidden">
+                <div className="relative z-10">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Current FICO® Score</p>
+                    <h2 className="text-5xl font-black text-gray-900 brand-font tracking-tighter">642</h2>
+                    <p className="text-green-600 text-xs font-bold mt-2 flex items-center gap-1">
+                        <i className="fas fa-arrow-up"></i> +42 points (Last 30 days)
+                    </p>
+                </div>
+                {/* Visual Circle Representation */}
+                <div className="w-24 h-24 score-circle flex items-center justify-center relative shadow-inner">
+                     <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-gray-400">Good</span>
+                     </div>
+                </div>
+            </div>
+        );
+
+        const FunnelTracker = () => (
+            <div className="mb-6">
+                <div className="flex justify-between items-center mb-2 px-1">
+                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">My Journey</h3>
+                    <span className="text-[10px] text-red-600 font-bold bg-red-50 px-2 py-1 rounded-full animate-pulse">Action Required</span>
+                </div>
+                <div className="glass-panel p-4 rounded-xl">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                        {JOURNEY_STEPS.map((step) => (
+                            <div key={step.id} className={`funnel-step flex-1 text-center ${step.status}`}>
+                                {step.label}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100 flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                            <i className="fas fa-envelope"></i>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-gray-900">Step 3: Round 1 Disputes</p>
+                            <p className="text-[10px] text-gray-500 mt-1">We have sent letters to all 3 bureaus. Expected response date: <span className="font-bold text-gray-800">Feb 12, 2026</span>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('home');
+
+            return (
+                <div className="max-w-md mx-auto bg-gray-50 h-screen overflow-hidden flex flex-col shadow-2xl relative border-x border-gray-200">
+                    
+                    {/* Header */}
+                    <header className="p-6 pb-2 bg-white border-b border-gray-100 sticky top-0 z-20">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-red-600 rounded flex items-center justify-center font-black text-xl text-white shadow-lg shadow-red-100">L7</div>
+                                <div>
+                                    <h1 className="font-black text-lg leading-none brand-font tracking-wide text-gray-900">HERO SOS</h1>
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em]">Client Portal</p>
+                                </div>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold text-xs shadow-md">
+                                LG
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Scrollable Content */}
+                    <main className="flex-1 overflow-y-auto px-6 pb-24 hide-scrollbar pt-6">
+                        
+                        {activeTab === 'home' && (
+                            <div className="animate-in fade-in zoom-in duration-300">
+                                <ScoreWidget />
+                                <FunnelTracker />
+
+                                {/* My Helpers Grid */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider brand-font">My Heroes</h3>
+                                        <span className="text-[10px] text-gray-400">Powered by L7S AI</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {CLIENT_HEROES.map(bot => (
+                                            <HeroCard key={bot.id} bot={bot} />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'disputes' && (
+                            <div className="space-y-4 animate-in slide-in-from-right duration-300">
+                                <h2 className="text-xl font-black text-gray-900 mb-2 brand-font">Dispute Center</h2>
+                                <p className="text-xs text-gray-500 mb-6">Track the status of your active challenges.</p>
+                                
+                                {MY_DISPUTES.map(item => (
+                                    <div key={item.id} className="glass-panel p-4 rounded-2xl flex items-center justify-between group">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs ${item.isDeleted ? 'bg-green-500' : 'bg-gray-800'}`}>
+                                                <i className={`fas ${item.isDeleted ? 'fa-check' : 'fa-file-alt'}`}></i>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 text-sm">{item.creditor}</h4>
+                                                <p className="text-[10px] text-gray-500 uppercase font-bold">{item.bureau} • {item.date}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${item.isDeleted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                {item.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                <div className="mt-8 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                    <h4 className="text-blue-800 font-bold text-xs uppercase mb-2"><i className="fas fa-lightbulb mr-1"></i> Pro Tip</h4>
+                                    <p className="text-xs text-blue-900/70 leading-relaxed">
+                                        Did you receive a letter from a bureau? Use the <span className="font-bold">Doc Uploader</span> Hero to send it to us immediately!
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'billing' && (
+                            <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                                <h2 className="text-xl font-black text-gray-900 brand-font">Invoices & Results</h2>
+                                
+                                {/* Results First Philosophy Card */}
+                                <div className="bg-black text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <h3 className="text-lg font-black mb-2 brand-font text-red-500">The L7S Guarantee</h3>
+                                        <p className="text-xs text-gray-300 leading-relaxed mb-4">
+                                            We operate on a 100% compliant, results-based model. You are only invoiced for items that have been successfully deleted or repaired.
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <i className="fas fa-check-circle text-green-500"></i>
+                                            <span className="text-xs font-bold uppercase tracking-wider">No Upfront Fees</span>
+                                        </div>
+                                    </div>
+                                    <i className="fas fa-file-invoice-dollar absolute -bottom-6 -right-6 text-8xl text-gray-800 opacity-30 rotate-12"></i>
+                                </div>
+
+                                <div className="glass-panel p-4 rounded-xl">
+                                    <h3 className="text-sm font-bold text-gray-900 mb-4 flex justify-between items-center">
+                                        <span>Recent Successes</span>
+                                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Paid</span>
+                                    </h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
+                                            <div>
+                                                <p className="font-bold text-gray-900">Midland Funding</p>
+                                                <p className="text-[10px] text-gray-500">Deletion • TransUnion</p>
+                                            </div>
+                                            <span className="text-green-600 font-bold">$50.00</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
+                                            <div>
+                                                <p className="font-bold text-gray-900">Inquiry Removal (x3)</p>
+                                                <p className="text-[10px] text-gray-500">Correction • Experian</p>
+                                            </div>
+                                            <span className="text-green-600 font-bold">$75.00</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 pt-2 flex justify-between items-center">
+                                        <span className="text-xs font-bold text-gray-500 uppercase">Total Value</span>
+                                        <span className="text-lg font-black text-gray-900">$125.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
+
+                    {/* Bottom Navigation */}
+                    <nav className="absolute bottom-0 w-full bg-white/90 backdrop-blur-xl border-t border-gray-200 px-6 py-4 flex justify-between items-center z-50">
+                        <NavButton icon="fa-home" label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                        <NavButton icon="fa-history" label="Disputes" active={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} />
+                        <NavButton icon="fa-receipt" label="Invoices" active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
+                        <NavButton icon="fa-user" label="Profile" active={activeTab === 'profile'} onClick={() => setActiveTab('home')} />
+                    </nav>
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

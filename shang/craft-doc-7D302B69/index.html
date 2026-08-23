@@ -1,0 +1,262 @@
+<!DOCTYPE html><html lang="en" style="overflow: hidden; overscroll-behavior: none; width: 100%; height: 100%"><!--
+    Backend dynamically modifies this HTML file before sending it to the client.
+    Related backend modification code is here:
+    https://github.com/lukilabs/Luki.Serverless/blob/master/app/luki-web-share/src/services/editor_renderer.ts#L43
+  --><head>
+    <style>
+      @layer dnd-kit, base, components, utilities;
+    </style>
+    <!--
+      Stamp data-theme / data-accent on <html> before any CSS evaluates so the
+      first paint already matches the user's choice. Without this, ThemeProvider
+      only stamps the attributes after React mounts, producing a light/blue
+      flash on every cold load (and on every spare-tab adoption).
+      Mirrors the resolution logic in src/theme/theme-store.ts.
+    -->
+    <script>
+      (function () {
+        try {
+          var html = document.documentElement;
+          var params = new URLSearchParams(window.location.search);
+          var queryOverride = params.has("dark")
+            ? "dark"
+            : params.has("light")
+            ? "light"
+            : params.has("system")
+            ? "system"
+            : null;
+
+          var theme = queryOverride;
+          if (!theme) {
+            var raw = localStorage.getItem("forcedDarkOrLightMode");
+            if (raw) {
+              try {
+                var parsed = JSON.parse(raw);
+                if (parsed === "dark" || parsed === "light") theme = parsed;
+              } catch (_) {}
+            }
+          }
+          if (!theme || theme === "system") {
+            theme =
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          }
+          html.dataset.theme = theme;
+
+          var accent = "blue";
+          var accentRaw = localStorage.getItem("accentColor");
+          if (accentRaw) {
+            try {
+              var p = JSON.parse(accentRaw);
+              if (
+                p === "blue" ||
+                p === "pink" ||
+                p === "green" ||
+                p === "purple" ||
+                p === "yellow" ||
+                p === "gray"
+              ) {
+                accent = p;
+              }
+            } catch (_) {}
+          }
+          html.dataset.accent = accent;
+        } catch (e) {}
+      })();
+    </script>
+    <meta name="robots" content="noindex">
+    <meta charset="utf-8">
+
+    <link rel="manifest" href="/static/site.webmanifest">
+
+    <!-- Favicons Dark -->
+    <link media="(prefers-color-scheme: dark)" rel="icon" type="image/png" sizes="256x256" href="/static/favicon-256x256-dark.png">
+    <link media="(prefers-color-scheme: dark)" rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192x192-dark.png">
+    <link media="(prefers-color-scheme: dark)" rel="icon" type="image/png" sizes="64x64" href="/static/favicon-64x64-dark.png">
+    <link media="(prefers-color-scheme: dark)" rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32-dark.png">
+    <link media="(prefers-color-scheme: dark)" rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16-dark.png">
+    <link media="(prefers-color-scheme: dark)" rel="icon" type="image/x-icon" href="/static/favicon-dark.ico">
+    <link media="(prefers-color-scheme: dark)" rel="mask-icon" href="/static/safari-pinned-tab.svg" color="#ffffff">
+
+    <!-- Favicons Light -->
+    <link media="(prefers-color-scheme: light)" rel="icon" type="image/png" sizes="256x256" href="/static/favicon-256x256-light.png">
+    <link media="(prefers-color-scheme: light)" rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192x192-light.png">
+    <link media="(prefers-color-scheme: light)" rel="icon" type="image/png" sizes="64x64" href="/static/favicon-64x64-light.png">
+    <link media="(prefers-color-scheme: light)" rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32-light.png">
+    <link media="(prefers-color-scheme: light)" rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16-light.png">
+    <link media="(prefers-color-scheme: light)" rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link media="(prefers-color-scheme: light)" rel="mask-icon" href="/static/safari-pinned-tab.svg" color="#120652">
+
+    <!-- Apple Config -->
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="apple-touch-startup-image" href="/static/splash-screen.png">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0, interactive-widget=resizes-content">
+
+    <title>Web TUI</title>
+    <meta name="description" content="Make the chat full screen and this the official web tui interface &lt;html class=&quot;optimisticai_d4925249-module__omuUYW__variable optimistic...">
+    <meta property="og:description" content="Make the chat full screen and this the official web tui interface &lt;html class=&quot;optimisticai_d4925249-module__omuUYW__variable optimistic...">
+    <!--
+      We set the absolute path for og:image because it is required by the standard.
+      See: https://ogp.me/#url
+      We will be able to change the domain depending on the environment
+      after we implement templating as a part of Contentful Social Previews project.
+    -->
+    <meta property="og:image" content="https://docs.craft.do/api/render/editor/preview/shared/TnEu1pEFMADMWKBoNgUmDXiojAgn7CGTvEgiT8sMUKs6/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96.png">
+    <meta property="og:image:alt" content="Craft">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@craftdocs">
+    <meta name="twitter:title" content="Web TUI">
+    <meta name="twitter:image" content="https://docs.craft.do/api/render/editor/preview/shared/TnEu1pEFMADMWKBoNgUmDXiojAgn7CGTvEgiT8sMUKs6/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96.png">
+
+    <!-- <link href="/static/fonts/robotomono/fontdef.r-5-gac7e437.css" rel="stylesheet" />
+    <link href="/static/fonts/avenirnextroundedw01/fontdef.r-10-g3d1c7ca.css" rel="stylesheet" />
+    <link href="/static/fonts/sourceserif/fontdef.r-24-g083f5a5.css" rel="stylesheet" />
+    <link href="/static/fonts/r-26-g2c7618b/inter/fontdef.css" rel="stylesheet" />
+    <link href="/static/fonts/r-38-gd3da7fc/untitledserif/fontdef.css" rel="stylesheet" /> -->
+
+    <link href="/static/fonts/robotomono/fontdef.r-5-gac7e437.css" rel="stylesheet" media="print" onload="this.media=&apos;all&apos;">
+    <link href="/static/fonts/avenirnextroundedw01/fontdef.r-10-g3d1c7ca.css" rel="stylesheet" media="print" onload="this.media=&apos;all&apos;">
+    <link href="/static/fonts/sourceserif/fontdef.r-24-g083f5a5.css" rel="stylesheet" media="print" onload="this.media=&apos;all&apos;">
+    <link href="/static/fonts/r-26-g2c7618b/inter/fontdef.css" rel="stylesheet" media="print" onload="this.media=&apos;all&apos;">
+    <link href="/static/fonts/r-38-gd3da7fc/untitledserif/fontdef.css" rel="stylesheet" media="print" onload="this.media=&apos;all&apos;">
+
+    <!--  for fonts.com fonts -->
+    <script type="text/javascript" defer>
+      if (window.location.hostname.endsWith("craft.do")) {
+        var MTIProjectId = "a3d3f738-d2f0-4742-a66a-c317be8eed82";
+        (function () {
+          var mtiTracking = document.createElement("script");
+          mtiTracking.type = "text/javascript";
+          mtiTracking.async = "true";
+          mtiTracking.src = "/static/fonts/mtiFontTrackingCode.js";
+          (document.getElementsByTagName("head")[0] || document.getElementsByTagName("body")[0]).appendChild(
+            mtiTracking
+          );
+        })();
+      }
+    </script>
+
+    <script type="text/javascript" src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"></script>
+
+    <meta name="google-signin-client_id" content="799816694939-k3kq98keqd3cv53o87debvigiugrmn01.apps.googleusercontent.com">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <meta name="luki:app-version" content="3.5.5">
+
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+
+    <!-- <meta name="luki:ga-id" content="UA-154809035-6" /> -->
+    <!-- Inject analytics tag - done via script to handle sandbox/prod difference -->
+    <!-- path part of data-domain for Plausible -->
+    <meta name="luki:pl-domain-path" content>
+    <script type="module" crossorigin src="/static/js/index-1DDbq6FD.js"></script>
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-react-Cmcf3in6.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-NpYu0DMS.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-core-utils-DcuMo1h6.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-code-editor-LBkrRXD2.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-chrono-Bk4Kw_1J.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-formulas-C68eBlDf.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-slate-BwXIJ3os.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-ds-CMSOtiMl.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-processing-lXU-6s4I.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-tanstack-DXjrWyR3.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-markdown-it-CCqNOF6v.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-excalidraw-BzsLyjMM.js">
+    <link rel="modulepreload" crossorigin href="/static/js/vendor-azure-msal-D2Ehm_hq.js">
+    <link rel="stylesheet" crossorigin href="/static/css/vendor-code-editor.css.DkZwelau.css">
+    <link rel="stylesheet" crossorigin href="/static/css/vendor-excalidraw.css.tkYuNB5W.css">
+    <link rel="stylesheet" crossorigin href="/static/css/index.css.D0efJTwn.css">
+    <link rel="modulepreload" href="/static/js/vendor-core-utils-DcuMo1h6.js">
+  <link rel="modulepreload" href="/static/js/vendor-ds-CMSOtiMl.js">
+  <link rel="modulepreload" href="/static/js/vendor-react-Cmcf3in6.js">
+  <link rel="modulepreload" href="/static/js/vendor-react-virtuoso-lQJWcvpk.js">
+<meta property="og:title" content="Web TUI"><meta name="twitter:description" content="Make the chat full screen and this the official web tui interface &lt;html class=&quot;optimisticai_d4925249-module__omuUYW__variable optimistic..."></head>
+  <body style="position: relative; margin: 0px; height: 100%; overflow: auto">
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root" style="height: 100%; container-type: size"></div>
+  
+
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-06-12T08:30:05Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-06-15T08:30:05Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-06-16T08:30:05Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-06-17T08:30:05Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-06-18T08:30:00Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-06-21T08:30:05Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-07-06T08:30:11Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-07-07T08:30:05Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-07-10T08:30:17Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-07-24T08:30:05Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-07-25T08:32:01Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-07-26T08:30:05Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-08-19T08:30:07Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-08-20T08:30:08Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-08-21T08:33:20Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+<!-- xen-shang-tsung provenance banner -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;color:#d4af37;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;text-align:center;border-top:2px solid #cc1f2c">
+  Absorbed from <a href="https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96" style="color:#d4af37;text-decoration:underline" target="_blank">https://docs.craft.do/editor/d/2af312b0-dc9a-e380-4ef1-db6093e702b8/7D302B69-4EBD-4CBD-AFD6-692FD094EA96</a> · 2026-08-22T08:30:13Z · hosted live for qi repurposing · <a href="manifest.json" style="color:#d4af37">manifest</a>
+</div>
+</body></html>

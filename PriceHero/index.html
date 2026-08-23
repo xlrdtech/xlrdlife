@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PriceHero · L7S Hero deliverables pricing calculator</title>
+<meta name="description" content="Interactive pricing calculator for L7S Hero deliverables. Angel-number tier ladder. Add deliverables, see live total.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream:#F5EFE0; --cream-2:#EDE4D0; --cream-deep:#E0D5BD;
+  --gold:#D2AC47; --gold-deep:#A8842F; --gold-bright:#E8C97A;
+  --emerald:#0E5B43; --emerald-bright:#10B981; --emerald-pale:#A5F3CC;
+  --ink:#1A1410; --ink-2:#2C231C; --ink-3:#3A2F26;
+  --paper-line:rgba(168,132,47,.22);
+  --red:#DC2626;
+}
+* { box-sizing: border-box; margin:0; padding:0; }
+html, body { background:#0A0A0A; color:var(--ink); font-family:'Poppins',sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
+.page { min-height:100vh; padding:48px 24px 80px; background:radial-gradient(ellipse 1000px 480px at 50% 0%, rgba(210,172,71,.12), transparent 60%), #0A0A0A; }
+.wrap { max-width:1100px; margin:0 auto; }
+.calc {
+  background:linear-gradient(155deg,var(--cream),var(--cream-2));
+  border-radius:22px; padding:14px;
+  box-shadow:0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(210,172,71,.3), inset 0 1px 0 rgba(255,255,255,.4);
+  position:relative;
+}
+.calc::before {
+  content:""; position:absolute; inset:0;
+  background:radial-gradient(circle at 15% 8%, rgba(210,172,71,.15) 0%, transparent 45%);
+  pointer-events:none; border-radius:22px;
+}
+.frame {
+  position:relative; padding:36px 44px 32px;
+  border:1px solid var(--paper-line); border-radius:16px;
+  background:linear-gradient(155deg,rgba(255,255,255,.4),transparent);
+}
+.head { text-align:center; margin-bottom:36px; padding-bottom:24px; border-bottom:1px solid var(--paper-line); }
+.eyebrow { font-family:'Inter',sans-serif; font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--gold-deep); font-weight:700; margin-bottom:12px; }
+h1 { font-family:'Poppins',sans-serif; font-size:clamp(40px,5vw,56px); font-weight:900; letter-spacing:-.025em; line-height:1; color:var(--ink); }
+h1 .price { color:var(--gold-deep); }
+h1 .hero { color:var(--emerald); }
+.tagline { font-family:'Inter',sans-serif; font-style:italic; font-size:15px; color:var(--gold-deep); margin-top:10px; }
+
+.layout { display:grid; grid-template-columns:1.7fr 1fr; gap:28px; }
+
+/* Catalog */
+.catalog h2 { font-family:'Poppins',sans-serif; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold-deep); font-weight:700; margin:0 0 14px; padding-bottom:8px; border-bottom:1px solid var(--paper-line); }
+.cat-section { margin-bottom:22px; }
+.row {
+  display:grid; grid-template-columns:40px 1fr auto auto; gap:14px; align-items:center;
+  padding:14px 16px; background:rgba(255,255,255,.4);
+  border:1px solid var(--paper-line); border-radius:10px;
+  margin-bottom:8px; transition:background .12s, border-color .12s;
+}
+.row:hover { background:rgba(255,255,255,.6); border-color:rgba(168,132,47,.4); }
+.row.active { background:linear-gradient(155deg,rgba(14,91,67,.08),rgba(14,91,67,.02)); border-color:var(--emerald); }
+.row .toggle {
+  width:24px; height:24px; border-radius:6px;
+  border:1.5px solid var(--gold-deep); background:transparent;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:background .12s, border-color .12s;
+}
+.row.active .toggle { background:var(--emerald); border-color:var(--emerald); }
+.row .toggle::after { content:"✓"; color:var(--cream); font-weight:800; font-size:14px; opacity:0; transition:opacity .12s; }
+.row.active .toggle::after { opacity:1; }
+.row .info .name { font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; color:var(--ink); margin-bottom:2px; }
+.row .info .desc { font-family:'Inter',sans-serif; font-size:12.5px; color:var(--ink-3); line-height:1.4; }
+.row .qty {
+  display:flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,.5); border:1px solid var(--paper-line); border-radius:50px;
+  padding:2px;
+}
+.row .qty button {
+  width:26px; height:26px; border-radius:50%; border:0; background:transparent;
+  font-family:'Poppins',sans-serif; font-weight:800; font-size:15px; color:var(--gold-deep);
+  cursor:pointer; transition:background .12s;
+}
+.row .qty button:hover { background:rgba(210,172,71,.15); }
+.row .qty .n { font-family:'JetBrains Mono',monospace; font-weight:600; min-width:24px; text-align:center; color:var(--ink); font-size:13px; }
+.row .price-cell { font-family:'Poppins',sans-serif; font-weight:800; color:var(--gold-deep); font-size:16px; min-width:80px; text-align:right; font-variant-numeric:tabular-nums; }
+.row .price-cell small { display:block; font-family:'Inter',sans-serif; font-weight:500; font-size:10px; color:var(--gold-deep); opacity:.7; letter-spacing:.04em; }
+
+/* Cart panel */
+.cart {
+  background:linear-gradient(155deg,var(--ink),var(--ink-2));
+  color:var(--cream); border-radius:14px; padding:28px 26px;
+  position:sticky; top:24px; align-self:start;
+  box-shadow:0 12px 32px rgba(0,0,0,.45);
+}
+.cart h2 { font-family:'Inter',sans-serif; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold-bright); font-weight:700; margin-bottom:18px; }
+.cart-list {
+  max-height:220px; overflow-y:auto; padding-right:6px; margin-bottom:18px;
+  scrollbar-width:thin; scrollbar-color:var(--gold) transparent;
+}
+.cart-list::-webkit-scrollbar { width:6px; }
+.cart-list::-webkit-scrollbar-thumb { background:var(--gold); border-radius:3px; }
+.cart-item {
+  display:grid; grid-template-columns:1fr auto; gap:8px;
+  padding:10px 0; border-bottom:1px dotted rgba(245,239,224,.12);
+  font-size:13px;
+}
+.cart-item .n { color:var(--cream); font-weight:500; }
+.cart-item .x { color:var(--gold-bright); font-family:'JetBrains Mono',monospace; font-size:11px; opacity:.6; }
+.cart-item .p { color:var(--gold-bright); font-family:'Poppins',sans-serif; font-weight:700; font-variant-numeric:tabular-nums; text-align:right; }
+.cart-empty { color:rgba(245,239,224,.5); font-style:italic; font-size:13px; padding:14px 0 18px; text-align:center; border-bottom:1px dotted rgba(245,239,224,.12); margin-bottom:18px; }
+.totals { font-family:'JetBrains Mono',monospace; font-size:13px; margin-bottom:18px; }
+.totals .line { display:flex; justify-content:space-between; padding:6px 0; color:rgba(245,239,224,.7); }
+.totals .line.grand { padding-top:14px; margin-top:8px; border-top:1px solid rgba(232,201,122,.3); color:var(--gold-bright); font-family:'Poppins',sans-serif; font-weight:800; font-size:20px; }
+.totals .v { font-variant-numeric:tabular-nums; }
+.angel-note { background:rgba(232,201,122,.08); border-left:2px solid var(--gold-bright); padding:10px 14px; border-radius:0 6px 6px 0; font-size:11.5px; color:rgba(245,239,224,.85); margin-bottom:18px; line-height:1.5; }
+.angel-note strong { color:var(--gold-bright); }
+.cta {
+  display:block; text-align:center;
+  background:linear-gradient(155deg,var(--emerald-bright),var(--emerald));
+  color:var(--cream); padding:14px 22px; border-radius:50px;
+  font-family:'Poppins',sans-serif; font-weight:700; font-size:13px;
+  letter-spacing:.06em; text-transform:uppercase;
+  text-decoration:none;
+  box-shadow:0 8px 20px rgba(16,185,129,.35);
+}
+
+/* Footer */
+.foot { text-align:center; color:rgba(245,239,224,.4); font-family:'Inter',sans-serif; font-size:11px; letter-spacing:.1em; text-transform:uppercase; margin-top:40px; }
+.foot a { color:var(--gold-bright); text-decoration:none; border-bottom:1px dotted rgba(232,201,122,.4); }
+
+@media (max-width:780px) {
+  .layout { grid-template-columns:1fr; }
+  .cart { position:relative; top:0; }
+  .frame { padding:24px 20px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="wrap">
+
+<div class="calc"><div class="frame">
+
+  <div class="head">
+    <div class="eyebrow">L7S Hero · deliverables</div>
+    <h1><span class="price">Price</span><span class="hero">Hero</span></h1>
+    <div class="tagline">Angel-number ladder · pick deliverables · totals lock to the nearest angel above</div>
+  </div>
+
+  <div class="layout">
+
+    <div class="catalog">
+
+      <div class="cat-section">
+        <h2>Hero Cards</h2>
+        <div class="row" data-price="111" data-name="FOODIES S.O.S. Hero Card">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">FOODIES S.O.S. Hero Card</div><div class="desc">Strategic Partnerships tier · F.O.O.D.I.E.S.™ expansion · cream/gold/emerald palette</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$111<small>per card</small></div>
+        </div>
+        <div class="row" data-price="111" data-name="CIS-KYB Hero Card">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">CIS → KYB Hero Card</div><div class="desc">Credit Hero #1 · Prof. L.L.C. ABCS Architect · 5-C qualification gate</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$111<small>per card</small></div>
+        </div>
+        <div class="row" data-price="111" data-name="Custom Hero Card (single tier)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Custom Hero Card</div><div class="desc">Any audience tier · MAPS / STARS / SOS / HERO mapping · per spec</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$111<small>per card</small></div>
+        </div>
+      </div>
+
+      <div class="cat-section">
+        <h2>Persona Clones</h2>
+        <div class="row" data-price="222" data-name="Identity Card (DEFINE stage)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Identity Card (DEFINE)</div><div class="desc">Persona canon page · scope · voice signature · handoff layer · public surface</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$222<small>per persona</small></div>
+        </div>
+        <div class="row" data-price="222" data-name="System Prompt (SPEC stage)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">System Prompt (SPEC)</div><div class="desc">300-500 word locking prompt · few-shot examples · escalation triggers</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$222<small>per persona</small></div>
+        </div>
+        <div class="row" data-price="333" data-name="A2A Bind (BIND stage)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">A2A Bind (BIND)</div><div class="desc">Handshake protocol envelope · channel routing · escalation map per persona</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$333<small>per persona</small></div>
+        </div>
+        <div class="row" data-price="777" data-name="Full Persona Clone (DEFINE+SPEC+BIND+DEPLOY)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Full Persona Clone</div><div class="desc">All 4 stages bundled · DEFINE → SPEC → TRAIN → BIND → DEPLOY → ITERATE</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$777<small>per persona</small></div>
+        </div>
+        <div class="row" data-price="4444" data-name="7-Persona Clone Pack">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">7-Persona Clone Pack</div><div class="desc">Lobo · Luckie Links · Prof. L.L.C. · Systems Superhero · Captain 7C's · Commissioner Goggins · Pastor 7 · all 4 stages each</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$4,444<small>full pack</small></div>
+        </div>
+      </div>
+
+      <div class="cat-section">
+        <h2>Sites &amp; Surfaces</h2>
+        <div class="row" data-price="333" data-name="Single inline-HTML page (XLRD/L7S design)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Single inline-HTML page</div><div class="desc">XLRD or L7S Hero design system · self-contained · self-hosted on client domain</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$333<small>per page</small></div>
+        </div>
+        <div class="row" data-price="777" data-name="Multi-page site (up to 5)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Multi-page site (up to 5)</div><div class="desc">Cross-linked navigation · shared tokens · brand-coherent · GH-Pages hosted</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$777<small>per build</small></div>
+        </div>
+        <div class="row" data-price="1111" data-name="SelfOwn_ instance">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">SelfOwn_ instance (initial setup)</div><div class="desc">For-profit XOS spin-up · brand drop · 1 persona · Beside SMS leg · self-hosted source</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$1,111<small>setup</small></div>
+        </div>
+        <div class="row" data-price="2222" data-name="Pricing Menu / catalog page">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Pricing Menu page</div><div class="desc">3-tier featured-middle layout · iridescent / brand palette · live calculator (like this one)</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$2,222<small>per build</small></div>
+        </div>
+      </div>
+
+      <div class="cat-section">
+        <h2>Frameworks &amp; Acronyms</h2>
+        <div class="row" data-price="222" data-name="Custom acronym build (Prof. L.L.C.)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Custom acronym build</div><div class="desc">Prof. L.L.C. ABCS Architect-quality definition + framework anchor + Hero Card mock</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$222<small>per acronym</small></div>
+        </div>
+        <div class="row" data-price="555" data-name="Framework derivation pack (5 acronyms)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Framework derivation pack</div><div class="desc">5 inter-locked acronyms + cross-reference table + canon file + Hero Card mocks</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$555<small>5-pack</small></div>
+        </div>
+      </div>
+
+      <div class="cat-section">
+        <h2>Subscriptions (monthly)</h2>
+        <div class="row" data-price="111" data-name="Solo Founder (1 SelfOwn_ · 1 persona)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Solo Founder</div><div class="desc">1 SelfOwn_ · 1 persona clone · Beside SMS · full source export anytime</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$111<small>per month</small></div>
+        </div>
+        <div class="row" data-price="222" data-name="Operator (3 personas · A2A active)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Operator</div><div class="desc">Up to 3 personas · A2A handshake active · Shang Tsung PGS extracts included</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$222<small>per month</small></div>
+        </div>
+        <div class="row" data-price="333" data-name="Authority (7-persona pack · custom builds)">
+          <div class="toggle"></div>
+          <div class="info"><div class="name">Authority</div><div class="desc">All 7 persona clones · custom persona builds · priority extraction queue</div></div>
+          <div class="qty"><button data-act="-">−</button><span class="n">1</span><button data-act="+">+</button></div>
+          <div class="price-cell">$333<small>per month</small></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="cart">
+      <h2>★ your tier</h2>
+      <div id="cart-list" class="cart-list">
+        <div id="cart-empty" class="cart-empty">No deliverables selected yet — toggle any row.</div>
+      </div>
+      <div class="totals">
+        <div class="line"><span>raw subtotal</span><span class="v" id="raw">$0</span></div>
+        <div class="line"><span>angel snap-up</span><span class="v" id="snap">$0</span></div>
+        <div class="line grand"><span>locked tier</span><span class="v" id="grand">$0</span></div>
+      </div>
+      <div class="angel-note"><strong>Angel-snap rule:</strong> Totals round UP to the nearest angel number ($111 / $222 / $333 / $444 ... $999 / $1,111 / $2,222 / $3,333 ...). qi pricing is never $98 or $115 — only angel.</div>
+      <a href="https://hitthe.link/selfown/" class="cta">Lock the tier</a>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    PriceHero · L7S Hero deliverables · <a href="/selfown/">SelfOwn_</a> · <a href="/xos/">XOS</a> · <a href="/die-list/">D.I.E.</a> · <a href="/pgs/">PGS</a> · <a href="/beside-proxy/">Beside Proxy</a>
+  </div>
+
+</div></div>
+
+</div>
+</div>
+
+<script>
+(function(){
+  const ANGELS = [111,222,333,444,555,666,777,888,999,1111,2222,3333,4444,5555,6666,7777,8888,9999,11111];
+  function snapUp(n){
+    if (n <= 0) return 0;
+    for (const a of ANGELS) if (a >= n) return a;
+    // Beyond 11111, snap to next 1111 multiple
+    return Math.ceil(n/1111)*1111;
+  }
+  function fmt(n){ return '$' + n.toLocaleString(); }
+  const rows = document.querySelectorAll('.row');
+  const cartList = document.getElementById('cart-list');
+  const cartEmpty = document.getElementById('cart-empty');
+  const rawEl = document.getElementById('raw');
+  const snapEl = document.getElementById('snap');
+  const grandEl = document.getElementById('grand');
+
+  function recompute(){
+    let raw = 0;
+    const items = [];
+    rows.forEach(row => {
+      if (!row.classList.contains('active')) return;
+      const price = +row.dataset.price;
+      const qty = +row.querySelector('.qty .n').textContent;
+      const name = row.dataset.name;
+      const line = price * qty;
+      raw += line;
+      items.push({ name, qty, line });
+    });
+    // Render cart
+    cartList.innerHTML = '';
+    if (items.length === 0) {
+      cartEmpty.style.display = 'block';
+      cartList.appendChild(cartEmpty);
+    } else {
+      items.forEach(it => {
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = '<span class="n">' + it.name + ' <span class="x">×' + it.qty + '</span></span><span class="p">' + fmt(it.line) + '</span>';
+        cartList.appendChild(div);
+      });
+    }
+    const snap = snapUp(raw);
+    rawEl.textContent = fmt(raw);
+    snapEl.textContent = (raw === 0) ? '$0' : ('+' + fmt(snap - raw));
+    grandEl.textContent = fmt(snap);
+  }
+
+  rows.forEach(row => {
+    const toggle = row.querySelector('.toggle');
+    const minus = row.querySelector('button[data-act="-"]');
+    const plus = row.querySelector('button[data-act="+"]');
+    const n = row.querySelector('.n');
+    toggle.addEventListener('click', () => {
+      row.classList.toggle('active');
+      recompute();
+    });
+    row.querySelector('.info').addEventListener('click', () => {
+      row.classList.toggle('active');
+      recompute();
+    });
+    minus.addEventListener('click', e => {
+      e.stopPropagation();
+      const c = Math.max(1, (+n.textContent) - 1);
+      n.textContent = c;
+      if (row.classList.contains('active')) recompute();
+    });
+    plus.addEventListener('click', e => {
+      e.stopPropagation();
+      const c = (+n.textContent) + 1;
+      n.textContent = c;
+      if (row.classList.contains('active')) recompute();
+    });
+  });
+  recompute();
+})();
+</script>
+<script src="/_shared/ava-play.js" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

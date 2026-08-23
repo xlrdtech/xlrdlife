@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>M4 Taxonomy Mirror</title>
+<style>
+  :root{
+    --bg:#0a0b0d; --panel:#121317; --line:#23252c; --ink:#e8e6df;
+    --dim:#8b8d96; --gold:#cdb06a; --gold2:#e7d49a; --accent:#6ea8fe;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:22px}
+  h1{margin:0 0 6px;font-size:20px;letter-spacing:.3px;
+    background:linear-gradient(90deg,var(--gold),var(--gold2));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:13px;margin:2px 0}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 8px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:7px;padding:7px 13px;cursor:pointer;font:inherit;font-size:13px}
+  button:hover{border-color:var(--gold)}
+  .tree{margin-top:10px}
+  details{margin:0 0 1px}
+  summary{list-style:none;cursor:pointer;padding:3px 8px;border-radius:6px;
+    display:flex;align-items:center;gap:8px;user-select:none}
+  summary::-webkit-details-marker{display:none}
+  summary:hover{background:#16181d}
+  .tw{display:inline-block;width:12px;color:var(--dim);transition:transform .12s}
+  details[open]>summary .tw{transform:rotate(90deg)}
+  .name{color:var(--gold2)}
+  .leaf .name{color:var(--ink)}
+  .role{color:var(--dim);font-size:12px;font-style:italic;margin-left:6px}
+  .count{color:var(--dim);font-size:11px;margin-left:6px}
+  .kids{margin-left:18px;border-left:1px solid var(--line);padding-left:10px}
+  .leafrow{padding:3px 8px 3px 26px;color:var(--ink)}
+  .leafrow::before{content:"\2022";color:var(--dim);margin-right:8px}
+  .legend{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);
+    color:var(--dim);font-size:12px}
+  .pill{display:inline-block;border:1px solid var(--line);border-radius:20px;
+    padding:2px 10px;margin:2px 4px 2px 0;color:var(--gold2)}
+  code{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>M4 Taxonomy Mirror</h1>
+    <div class="sub">Verbatim folder map of <code>/Volumes/M4/sync_</code> &mdash; the canon scopes mirror.</div>
+    <div class="sub">Captured 2026-06-17 via SELmcp from qi's M4 drive. Real directories only; <code>.git</code>/sync metadata filtered.</div>
+  </header>
+
+  <div class="bar">
+    <button id="exp">Expand all</button>
+    <button id="col">Collapse all</button>
+    <span class="pill">brain_ = the canon</span>
+    <span class="pill">4 roots</span>
+  </div>
+
+  <div class="tree" id="tree"></div>
+
+  <div class="legend">
+    Roots:
+    <span class="pill">brain_</span> curated knowledge/ops taxonomy &mdash; the structure to mirror verbatim.
+    <span class="pill">exedus</span> runtime + dev (the hands).
+    <span class="pill">notes_</span> threads, logs, media.
+    <span class="pill">inbox_</span> flat unsorted intake dump (top-level only; not a deliberate hierarchy).
+    <br>Machine-readable source: <code>m4-tree.json</code>.
+  </div>
+</div>
+
+<script>
+const URL="m4-tree.json";
+const root=document.getElementById("tree");
+
+function countDesc(node){
+  const c=node.children||{}; let n=0;
+  for(const k in c){ if(k.startsWith("_"))continue; n+=1+countDesc(c[k]); }
+  return n;
+}
+function render(name,node,depth){
+  const children=node.children||{};
+  const keys=Object.keys(children).filter(k=>!k.startsWith("_"));
+  const role=node._role;
+  if(keys.length===0){
+    const div=document.createElement("div");
+    div.className="leafrow";
+    div.innerHTML='<span class="name">'+esc(name)+'</span>'+(role?'<span class="role">'+esc(role)+'</span>':'');
+    return div;
+  }
+  const d=document.createElement("details");
+  if(depth<1) d.open=true;
+  const s=document.createElement("summary");
+  s.innerHTML='<span class="tw">&#9656;</span><span class="name">'+esc(name)+'/</span>'
+    +(role?'<span class="role">'+esc(role)+'</span>':'')
+    +'<span class="count">'+countDesc(node)+'</span>';
+  d.appendChild(s);
+  const kids=document.createElement("div");
+  kids.className="kids";
+  for(const k of keys) kids.appendChild(render(k,children[k],depth+1));
+  d.appendChild(kids);
+  return d;
+}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+fetch(URL).then(r=>r.json()).then(data=>{
+  const t=data.tree||{};
+  for(const k of Object.keys(t)) root.appendChild(render(k,t[k],0));
+}).catch(e=>{
+  root.innerHTML='<div class="leafrow">Could not load m4-tree.json ('+esc(e.message)+'). Serve this page over HTTP.</div>';
+});
+
+document.getElementById("exp").onclick=()=>root.querySelectorAll("details").forEach(d=>d.open=true);
+document.getElementById("col").onclick=()=>root.querySelectorAll("details").forEach(d=>d.open=false);
+</script>
+</body>
+</html>

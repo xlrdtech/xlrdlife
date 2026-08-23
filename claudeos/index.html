@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A1F12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ClaudeOS — Live Swarm</title>
+<meta name="description" content="Live visibility into every goal swarm. Who's working, what's happening, in real time.">
+<style>
+:root{
+  /* VEI canon v2 (2026-05-27 14:08 PT) — hyperrealistic 3D, deeper contrast,
+     blurred glassmorphism, touch-responsive. Per qi:
+     'more 3d hyperrealistic and more contrast / darker blurred background
+     touch responsive'. */
+  --bg:#050C08;--bg-deep:#020604;--bg-glow:rgba(11,166,96,.06);
+  --ink:#FFFFFF;--ink-soft:#F0EAD6;--mute:#6B8B72;
+  --gold:#0BA660;--gold-soft:#3FCB85;--gold-glow:rgba(11,166,96,.55);
+  --line:rgba(176, 255, 200, .14);
+  --line-glow:rgba(63,203,133,.35);
+  --card:rgba(8, 24, 14, .55);--card-hi:rgba(11, 36, 22, .75);
+  --shadow-3d:0 8px 32px -8px rgba(0,0,0,.6), 0 2px 0 rgba(255,255,255,.04) inset;
+  --shadow-3d-hi:0 16px 48px -12px rgba(0,0,0,.7), 0 0 0 1px var(--line-glow) inset, 0 2px 0 rgba(255,255,255,.06) inset;
+  --green:#0BA660;--yellow:#F5C842;--red:#FF6B5A;--blue:#7AC8FF;--violet:#c995ff;
+}
+body::before{
+  content:"";position:fixed;inset:-20vmax;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 30%, var(--bg-glow), transparent 70%),
+    radial-gradient(ellipse 70% 60% at 80% 80%, rgba(63,203,133,.04), transparent 70%),
+    var(--bg-deep);
+  filter:blur(20px) saturate(1.2);
+}
+body{position:relative}
+main{position:relative;z-index:1}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:'Inter','SF Pro Text',-apple-system,system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+/* Mobile-first base — per canon 2026-05-27 14:05 PT 'always optimize for mobile 1st'. */
+main{max-width:100%;margin:0 auto;padding:24px 16px max(48px,env(safe-area-inset-bottom))}
+header{text-align:center;margin-bottom:24px}
+@media(min-width:640px){main{max-width:1280px;padding:48px 24px 96px}header{margin-bottom:32px}}
+.brand{font-size:14px;letter-spacing:.4em;color:var(--gold);text-transform:uppercase;font-weight:600;margin-bottom:14px}
+h1{font-size:clamp(40px,7vw,72px);font-weight:800;letter-spacing:-.03em;line-height:1.05;background:linear-gradient(135deg,var(--ink) 0%,var(--gold-soft) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px}
+.sub{color:var(--mute);font-size:17px;max-width:680px;margin:0 auto}
+.status-strip{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:24px 0 32px}
+.status-pill{background:var(--card);border:1px solid var(--line);padding:8px 18px;border-radius:999px;font-size:12px;color:var(--mute);font-weight:500}
+.status-pill.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);margin-right:8px;vertical-align:middle;animation:pulse 1.6s ease-in-out infinite}
+.status-pill.stale::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--yellow);margin-right:8px;vertical-align:middle}
+.status-pill.dead::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:8px;vertical-align:middle}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+
+.totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:32px}
+.totals .t{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;backdrop-filter:blur(14px) saturate(1.1);-webkit-backdrop-filter:blur(14px) saturate(1.1);box-shadow:var(--shadow-3d);transition:transform .18s ease,box-shadow .25s ease}
+.totals .t:hover{box-shadow:var(--shadow-3d-hi);transform:translateY(-1px)}
+.totals .t .n{font-size:32px;font-weight:800;letter-spacing:-.02em;color:var(--gold)}
+.totals .t .l{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);font-weight:600;margin-top:4px}
+
+section{margin-bottom:40px}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;padding-left:4px}
+.section-title h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.section-title .meta{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:600}
+
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:640px){.grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}}
+.agent{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;min-height:120px;position:relative;overflow:hidden;backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);box-shadow:var(--shadow-3d);transition:transform .18s cubic-bezier(.2,.7,.2,1),box-shadow .25s ease,background .25s ease}
+.agent:hover{background:var(--card-hi);box-shadow:var(--shadow-3d-hi);transform:translateY(-2px)}
+.agent:active{transform:scale(.985);transition:transform .08s ease}
+.agent.persona-xen{border-color:var(--gold)}
+.agent.persona-lyn{border-color:var(--violet)}
+.agent.persona-eli{border-color:var(--blue)}
+.agent.persona-daemon{border-color:rgba(212,175,55,.10)}
+.agent::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--gold) 0%,transparent 100%);opacity:.5}
+.agent.persona-lyn::before{background:linear-gradient(90deg,var(--violet) 0%,transparent 100%)}
+.agent.persona-eli::before{background:linear-gradient(90deg,var(--blue) 0%,transparent 100%)}
+.agent.persona-daemon::before{opacity:.18}
+.agent-head{display:flex;justify-content:space-between;align-items:start;margin-bottom:10px}
+.agent-name{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.agent-tag{font-size:10px;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;font-weight:600;margin-top:2px}
+.agent.persona-lyn .agent-tag{color:var(--violet)}
+.agent.persona-eli .agent-tag{color:var(--blue)}
+.agent-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.agent-status .dot{width:7px;height:7px;border-radius:50%}
+.agent-status.working .dot{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.4s ease-in-out infinite}
+.agent-status.working{color:var(--green)}
+.agent-status.idle .dot{background:var(--mute)}
+.agent-status.idle{color:var(--mute)}
+.agent-status.blocked .dot{background:var(--red)}
+.agent-status.blocked{color:var(--red)}
+.agent-status.down .dot{background:var(--red);box-shadow:0 0 6px var(--red)}
+.agent-status.down{color:var(--red)}
+.agent-task{font-size:13px;color:var(--ink);flex:1;margin-bottom:12px;opacity:.92}
+.agent-task.empty{color:var(--mute);font-style:italic;opacity:.6}
+.agent-foot{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mute);border-top:1px dashed var(--line);padding-top:10px}
+.agent-foot .since{letter-spacing:.05em}
+.agent-foot .pid{font-family:'SF Mono',Menlo,monospace;font-size:10px}
+
+.empty{padding:48px 24px;text-align:center;color:var(--mute);background:var(--card);border:1px dashed var(--line);border-radius:14px}
+.empty strong{color:var(--gold);display:block;margin-bottom:6px;font-size:13px;letter-spacing:.2em;text-transform:uppercase}
+
+.timeline{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;max-height:380px;overflow-y:auto}
+.timeline .row{display:grid;grid-template-columns:90px 100px 1fr;gap:14px;align-items:baseline;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+.timeline .row:last-child{border-bottom:0}
+.timeline .ts{color:var(--mute);font-family:'SF Mono',Menlo,monospace;font-size:11px}
+.timeline .who{color:var(--gold);font-weight:600;letter-spacing:.05em}
+.timeline .what{color:var(--ink);opacity:.85}
+
+footer{text-align:center;margin-top:64px;padding-top:32px;border-top:1px solid var(--line);color:var(--mute);font-size:13px}
+footer a{color:var(--gold);text-decoration:none}
+/* Tablet/desktop refinements — base is mobile. */
+@media(min-width:640px){.timeline .row{grid-template-columns:90px 100px 1fr;gap:14px}.timeline .who{display:inline}}
+.timeline .row{grid-template-columns:80px 1fr;gap:8px}
+.timeline .who{display:none}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">XEN · LYN · ELI · DAEMONS</div>
+    <h1>ClaudeOS</h1>
+    <p class="sub">Live visibility into every goal swarm. Who's working, what's happening, with what process, since when. Polled every 5s from xen.xlrd.org/api/swarm.</p>
+  </header>
+
+  <div class="status-strip">
+    <div class="status-pill stale" id="conn-pill">— connecting</div>
+    <div class="status-pill" id="updated-pill">last update: —</div>
+    <div class="status-pill" id="source-pill">source: xen.xlrd.org/api</div>
+  </div>
+
+  <div class="totals" id="totals">
+    <div class="t"><div class="n" id="cnt-total">—</div><div class="l">Agents</div></div>
+    <div class="t"><div class="n" id="cnt-working">—</div><div class="l">Working</div></div>
+    <div class="t"><div class="n" id="cnt-idle">—</div><div class="l">Idle</div></div>
+    <div class="t"><div class="n" id="cnt-blocked">—</div><div class="l">Blocked</div></div>
+    <div class="t"><div class="n" id="cnt-down">—</div><div class="l">Down</div></div>
+  </div>
+
+  <section>
+    <div class="section-title"><h2>Goal Swarms</h2><div class="meta" id="swarm-meta">—</div></div>
+    <div class="grid" id="swarm-grid">
+      <div class="empty">
+        <strong>fetching…</strong>
+        Reading from <code>xen.xlrd.org/api/swarm</code>. If this stays empty, the swarm registry isn't wired up yet — falls back to /api/health daemon booleans.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>Daemons</h2><div class="meta" id="daemon-meta">—</div></div>
+    <div class="grid" id="daemon-grid"></div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>Recent activity</h2><div class="meta">last 50</div></div>
+    <div class="timeline" id="timeline">
+      <div class="empty"><strong>no activity yet</strong>Activity timeline will populate from omnimind events SSE once wired.</div>
+    </div>
+  </section>
+
+  <footer>
+    <div><a href="/">hitthe.link</a> · <a href="/asana/">asana</a> · <a href="/calculators/">calculators</a> · <a href="/commandments/">commandments</a> · <a href="/nblm/">nblm</a></div>
+    <div style="margin-top:8px;font-size:11px;opacity:.7">ClaudeOS · live every 5s · per qi 2026-05-27 13:52 PT</div>
+  </footer>
+</main>
+
+<script>
+const SWARM_ENDPOINTS = [
+  'https://xen.xlrd.org/api/swarm',
+  'https://api.xlrd.org/swarm',
+  'http://127.0.0.1:4441/api/swarm'
+];
+const HEALTH_ENDPOINTS = [
+  'https://xen.xlrd.org/api/health',
+  'http://127.0.0.1:4441/api/health'
+];
+const EVENTS_ENDPOINTS = [
+  'https://xen.xlrd.org/api/events?limit=50',
+  'http://127.0.0.1:4441/api/events?limit=50'
+];
+const POLL_MS = 5000;
+const PERSONA = {
+  xen:'xen', lyn:'lyn', eli:'eli',
+  default:'daemon'
+};
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function setConn(state, label) {
+  const p = $('conn-pill');
+  p.className = 'status-pill ' + state;
+  p.textContent = label;
+}
+
+function timeAgo(tsMs) {
+  if (!tsMs) return '—';
+  const diff = Date.now() - tsMs;
+  if (diff < 5000) return 'just now';
+  if (diff < 60000) return Math.floor(diff / 1000) + 's ago';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  return Math.floor(diff / 86400000) + 'd ago';
+}
+
+async function tryEndpoint(url) {
+  try {
+    const r = await fetch(url, { method:'GET', headers:{accept:'application/json'}, mode:'cors' });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (_) { return null; }
+}
+async function tryFirst(list) {
+  for (const u of list) { const d = await tryEndpoint(u); if (d) { return { data: d, source: new URL(u).host }; } }
+  return null;
+}
+
+function personaClass(name) {
+  const n = (name || '').toLowerCase();
+  if (n.startsWith('xen')) return 'persona-xen';
+  if (n.startsWith('lyn')) return 'persona-lyn';
+  if (n.startsWith('eli')) return 'persona-eli';
+  return 'persona-daemon';
+}
+
+function statusKey(s) {
+  const v = (s || '').toLowerCase();
+  if (v === 'working' || v === 'busy' || v === 'active') return 'working';
+  if (v === 'blocked' || v === 'stuck') return 'blocked';
+  if (v === 'down' || v === 'dead' || v === 'crashed' || v === 'unreachable' || s === false) return 'down';
+  return 'idle';
+}
+
+function renderAgent(a) {
+  const sKey = statusKey(a.status);
+  const persona = personaClass(a.name || a.label);
+  const tag = (a.persona || a.tag || '').toUpperCase();
+  return `<div class="agent ${persona}">
+    <div class="agent-head">
+      <div>
+        <div class="agent-name">${esc(a.name || a.label)}</div>
+        ${tag ? `<div class="agent-tag">${esc(tag)}</div>` : ''}
+      </div>
+      <span class="agent-status ${sKey}"><span class="dot"></span>${esc(sKey)}</span>
+    </div>
+    <div class="agent-task ${a.task ? '' : 'empty'}">${esc(a.task || a.current_goal || 'no active task')}</div>
+    <div class="agent-foot">
+      <span class="since">${esc(timeAgo(a.since_ts || a.last_activity_ts))}</span>
+      <span class="pid">${a.pid ? 'PID ' + esc(a.pid) : (a.kind || '')}</span>
+    </div>
+  </div>`;
+}
+
+function buildSwarmFromHealth(health) {
+  // Fallback: build agent cards from omnimind /api/health daemon booleans.
+  const checks = health.checks || {};
+  const sentinels = health.sentinels || {};
+  const swarm = [];
+  const daemons = [];
+  const promoteToSwarm = new Set(['xen_say_worker', 'apple_stt', 'beside_inbox_poller', 'beeper_at_xen_watcher', 'imessage_watcher']);
+  for (const [k, v] of Object.entries(checks)) {
+    const friendly = k.replace(/_/g,' ');
+    const node = {
+      name: friendly,
+      label: k,
+      status: v ? 'idle' : 'down',
+      task: v ? null : 'launchd not running — heal daemon should respawn',
+      kind: 'daemon',
+    };
+    if (promoteToSwarm.has(k)) swarm.push(node); else daemons.push(node);
+  }
+  return { swarm, daemons, fallback: true };
+}
+
+function update(swarmDoc, healthDoc) {
+  let swarm = [];
+  let daemons = [];
+  let timeline = [];
+  if (swarmDoc) {
+    swarm = swarmDoc.swarm || swarmDoc.agents || [];
+    daemons = swarmDoc.daemons || [];
+    timeline = swarmDoc.recent || [];
+  } else if (healthDoc) {
+    const built = buildSwarmFromHealth(healthDoc);
+    swarm = built.swarm;
+    daemons = built.daemons;
+  }
+  const all = [...swarm, ...daemons];
+  const counts = { total: all.length, working: 0, idle: 0, blocked: 0, down: 0 };
+  for (const a of all) counts[statusKey(a.status)] = (counts[statusKey(a.status)] || 0) + 1;
+  $('cnt-total').textContent = counts.total || 0;
+  $('cnt-working').textContent = counts.working || 0;
+  $('cnt-idle').textContent = counts.idle || 0;
+  $('cnt-blocked').textContent = counts.blocked || 0;
+  $('cnt-down').textContent = counts.down || 0;
+
+  $('swarm-meta').textContent = swarm.length + ' agents';
+  $('swarm-grid').innerHTML = swarm.length
+    ? swarm.map(renderAgent).join('')
+    : `<div class="empty"><strong>no swarm registry</strong>Wire <code>/api/swarm</code> on omnimind to surface live agents. Currently showing daemon booleans only.</div>`;
+
+  $('daemon-meta').textContent = daemons.length + ' daemons';
+  $('daemon-grid').innerHTML = daemons.length ? daemons.map(renderAgent).join('') : '';
+
+  if (timeline.length) {
+    $('timeline').innerHTML = timeline.map(e => `<div class="row">
+      <span class="ts">${esc(new Date(e.ts || e.timestamp).toLocaleTimeString())}</span>
+      <span class="who">${esc(e.agent || e.source || 'xen')}</span>
+      <span class="what">${esc(e.what || e.event || e.message || '')}</span>
+    </div>`).join('');
+  }
+}
+
+async function tick() {
+  const swarmRes = await tryFirst(SWARM_ENDPOINTS);
+  const healthRes = swarmRes ? null : await tryFirst(HEALTH_ENDPOINTS);
+  const eventsRes = await tryFirst(EVENTS_ENDPOINTS);
+  if (swarmRes || healthRes) {
+    setConn('live', '— live');
+    $('source-pill').textContent = 'source: ' + (swarmRes?.source || healthRes?.source);
+  } else {
+    setConn('dead', '— offline');
+  }
+  $('updated-pill').textContent = 'updated: ' + new Date().toLocaleTimeString();
+  const merged = swarmRes?.data || null;
+  if (eventsRes && merged) merged.recent = eventsRes.data.items || eventsRes.data.events || eventsRes.data;
+  update(merged, healthRes?.data || null);
+}
+
+tick();
+setInterval(tick, POLL_MS);
+window.addEventListener('online', tick);
+window.addEventListener('focus', tick);
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

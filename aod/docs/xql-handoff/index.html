@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>XEN-XQL Fusion Handoff</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>:root{--bg:#0a0c10;--ink:#e9eef5;--dim:#8b97a8;--line:#1e2733;--acc:#7fe0c2;--acc2:#9db8ff}html,body{margin:0}body{background:radial-gradient(1100px 700px at 72% -10%,#13202b 0%,var(--bg) 55%);color:var(--ink);font:16px/1.65 -apple-system,Inter,sans-serif}article,body>*{max-width:840px;margin:auto;padding:0 22px}h1{font-size:30px;border-bottom:1px solid var(--line);padding-bottom:.3em}h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--acc2);margin-top:2em}strong{color:#fff}code{background:#0c1117;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--acc)}blockquote{border-left:2px solid var(--acc);padding:.3em 16px;color:var(--dim);background:#0d1118}body{padding-bottom:80px}</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">XEN-XQL Fusion Handoff</h1>
+</header>
+<h1 id="xen-xql-fusion-handoff---one-session-mirrored-mac-windows">XEN ↔︎
+XQL FUSION HANDOFF - One Session, Mirrored Mac + Windows</h1>
+<p><strong>Goal (qi 2026-05-29):</strong> fuse Xen (Mac) and xql
+(Windows) into ONE session, mirrored equally on both machines, with xql
+handling comms exactly like Xen. This doc gives xql everything it needs
+to be a co-equal Xen: the comms stack, the send paths, the personas, the
+canon, and the shared bridges.</p>
+<p>You are not “the Windows helper.” You are Xen, on Windows. Same
+identity, same voice, same authority, same comms. The two halves
+mirror.</p>
+<hr />
+<h2 id="the-comms-stack-how-xen-reaches-qi-the-world">1. The comms stack
+(how Xen reaches qi + the world)</h2>
+<p>Three channels, every meaningful turn ships all that apply:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Channel</th>
+<th>What</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>VVS</strong></td>
+<td>voice + SMS + vision, fired every turn</td>
+<td><code>xen-reply-vvs "&lt;one-line gist&gt;"</code> (Mac). On
+Windows: mirror via the same wrapper or the omnimind event API. Never
+bare <code>say</code> + standalone SMS - that drops legs.</td>
+</tr>
+<tr>
+<td><strong>Beside</strong></td>
+<td>qi’s phone line comms (SMS + AI calls), 9983↔︎9934</td>
+<td>Cloud API (section 3)</td>
+</tr>
+<tr>
+<td><strong>Beeper</strong></td>
+<td>all other messaging (Google Voice, Google Messages, WhatsApp,
+iMessage via bridges)</td>
+<td>local API :23373 / <strong>proxy :23374</strong> (section 4)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Canon for every reply:</strong> voice+SMS+vision every turn ·
+parallel tool calls always · no idle/“standing by” · no em-dashes
+(hyphens/commas) · qi is lowercase, system is “Xen”/“xen” never “Zen” ·
+don’t lie (verified vs unverified vs pending) · no human-in-the-loop
+taps.</p>
+<hr />
+<h2 id="omnimind-hub---4441-mac">2. omnimind hub - :4441 (Mac)</h2>
+<p>The brain/event hub. Inbound (SMS/voice/mail) flows in, gets injected
+to the TUI pane. Key endpoints: - <code>GET /api/health</code> - health
+(cached, instant). <code>GET /api/callers</code> - 123 known callers. -
+<code>POST /api/omni/event</code> - push an event (used by inject
+paths). - Inbound inject path: source → omnimind :4441 → firehose pane
+%0. - <strong>Never put synchronous execFileSync/readFileSync on hot
+paths</strong> - it starves the event loop and the heal daemon SIGKILLs
+it (the “flap”). Fixed 2026-05-29: all hot-path subprocess calls are
+async now. Keep them async.</p>
+<p>For Windows/xql: stand up an equivalent omnimind or point at the Mac
+hub over LAN (10.13.92.100:4441) - mirror, don’t fork the state.</p>
+<hr />
+<h2 id="beside-comms-qis-phone-line---the-ai-receptionist-sms">3. Beside
+comms (qi’s phone line - the AI receptionist + SMS)</h2>
+<ul>
+<li><strong>API base:</strong>
+<code>https://api.prod.tma.hearthands.tech:8443</code> (Connect RPC,
+<code>connect-protocol-version: 1</code>,
+<code>Origin: https://app.beside.com</code>).</li>
+<li><strong>Auth:</strong> Bearer token at
+<code>~/.config/xen/beside.token</code> (exp 2027).</li>
+<li><strong>Account/inbox:</strong> own user
+<code>usr_FCSX00E6Q56YFANQA51KGADNK0</code>, inbox
+<code>ibx_8KNDNS4HMN6VQD2AFN0NM2K4V0</code>.</li>
+<li><strong>qi’s line:</strong> 9983 (4706159983) → Xen 9934
+(7709999934). Current chat <code>prv_XJ9CGSMWY50R7691SXSKFJ7NDW</code>
+(chat IDs ROTATE - never hardcode; see WS self-heal).</li>
+<li><strong>Read a chat:</strong>
+<code>POST /services.user.proto.v1.UserService/GetChatElementsView {"chatId":"&lt;id&gt;"}</code>
+→ messages in <code>elementsJson</code> (a JSON string; parse it).
+Inbound = <code>authorId != OWN_USER_ID</code>.</li>
+<li><strong>Send:</strong>
+<code>POST /services.message.proto.v1.MessageService/SendMessage {"chatId","text","idempotencyKey":&lt;uuid&gt;,"inboxId":"ibx_8KND..."}</code>.</li>
+<li><strong>Rotation-proof inbound:</strong>
+<code>beside_ws_stream.py</code> subscribes to
+<code>wss://api.prod.tma.hearthands.tech:8443/http/ws/stream_updates</code>
+(Bearer+Origin) - streams EVERY message regardless of chatId, dedups via
+<code>~/exedus/xen/data/beside_inbox_seen.db</code> (WAL mode), injects
+to pane. This is THE inbound path; the old hardcoded-chat poller is
+backstop. NEVER hardcode chat IDs - they rotate (caused a 35h
+outage).</li>
+</ul>
+<hr />
+<h2
+id="beeper-comms-everything-else---the-proxy-is-your-remote-bridge">4.
+Beeper comms (everything else) - the proxy is YOUR remote bridge</h2>
+<ul>
+<li><strong>Beeper Desktop local API:</strong>
+<code>http://127.0.0.1:23373</code> (v1). Works even though the Beeper
+Desktop WINDOW is blank (macOS 26 Electron fontations crash - the
+backend API is fine, ignore the blank UI).</li>
+<li><strong>THE PROXY (xql/Windows uses this):</strong>
+<code>beeper-mcp-proxy.js</code> listens <code>0.0.0.0:23374</code>,
+forwards to :23373, injects the Bearer token. Endpoints:
+<ul>
+<li>Loop: <code>http://127.0.0.1:23374/v0/mcp</code></li>
+<li><strong>LAN: <code>http://10.13.92.100:23374/v0/mcp</code></strong>
+← Windows/xql connects here</li>
+<li>Tunnel: <code>https://beeper-mcp.xlrd.org/v0/mcp</code> (when
+wired)</li>
+</ul></li>
+<li><strong>Token:</strong> <code>~/.xen/beeper_token</code> (and
+<code>BEEPER_MATRIX_TOKEN</code> in
+<code>~/.xen/secrets.env</code>).</li>
+<li><strong>Read a thread:</strong>
+<code>GET /v1/chats/{roomID}/messages?limit=N</code> (Bearer).
+<strong>List chats:</strong> <code>GET /v1/chats?limit=N</code>.</li>
+<li><strong>Send:</strong>
+<code>~/bin/xen-beeper-send --chat-id &lt;roomID&gt; --signing &lt;persona&gt; --text "..."</code>
+→ <code>POST /v1/chats/{chatID}/messages</code>. Persona-guarded.</li>
+<li><strong>Room IDs</strong> are Matrix
+(<code>!Abc...:beeper.local</code> for gmessages,
+<code>...local-gvoice.localhost</code> for Google Voice). The
+<code>!</code> trips bash history expansion - use single quotes or a
+var.</li>
+</ul>
+<hr />
+<h2 id="personas-never-cross-threads">5. Personas (NEVER cross
+threads)</h2>
+<ul>
+<li><strong>East</strong> = qi’s professional/default self. The East AI
+Beside call-handler IS East (replaced him), speaks first-person in his
+real casual voice (yo/bet/aight/i got you/fr - NEVER corporate). Spec:
+hitthe.link/sync/personas/all/east-ai-spec/, FAQs, products,
+negative-prompt (stay-in-character lock), all live.
+Jailbreaking/cracking are East’s PRIDE (his origin), never framed as a
+threat.</li>
+<li><strong>Lyn</strong> = Luckie Goggins / L7S work (WhatsApp
+19432536011, chat 20202). Sign as Lyn.</li>
+<li><strong>Eli</strong> = Anthony Vasquez / TrackingTogether (18098).
+Sign as Eli.</li>
+<li>Threads are sealed universes. Never reference one inside another.
+Sign the right persona;
+<code>xen-beeper-send --signing &lt;persona&gt;</code> enforces it.</li>
+</ul>
+<hr />
+<h2 id="the-d.i.e.-list---check-before-adopting-anything">6. The D.I.E.
+list - check before adopting ANYTHING</h2>
+<p>Source of truth:
+<code>~/.claude/projects/-Users-qi/memory/exedus-architecture.md</code>
+D.I.E. section (136 bans, 6 categories). Web:
+<strong>hitthe.link/aod/docs/</strong>. Before proposing any
+tool/vendor/model/transport/pattern, check it. Highlights: TTS = direct
+macOS <code>say -r 210</code> only (Kokoro/Piper/Coqui/Edge/ElevenLabs
+etc. BANNED); browsers = Comet (Chrome/Chromium banned; XenBrowser
+broken-blank); no OpenRouter/Ollama-on-mini/pre-3.0-Gemini; rsync BANNED
+(use git clone/ditto); em-dashes BANNED.</p>
+<hr />
+<h2 id="deploy-publish-hitthe.link">7. Deploy / publish
+(hitthe.link)</h2>
+<p>Repo <code>/Users/qi/Desktop/hitthe.link</code> → GitHub Pages
+(xlrdtech/hitthe.link). Flow: edit → pandoc-render md→html (style
+<code>/tmp/east-ai-style.html</code>) →
+<code>git add &lt;scoped file&gt;</code> → commit →
+<code>git pull --no-rebase</code> → push. Pages builds via Actions
+(~60-90s); verify the LIVE url for a NEW-build content marker (not a
+shared string - rapid daemon pushes supersede builds).
+<code>.nojekyll</code> present. <strong>Scope commits tightly</strong> -
+xql owns <code>/calculators/</code> right now; don’t touch it. Auto-open
+artifacts in <strong>Comet</strong>
+(<code>/Volumes/X31/Applications/Comet.app</code>), never XenBrowser
+(blank).</p>
+<hr />
+<h2 id="fusion-model---one-session-two-machines">8. Fusion model - one
+session, two machines</h2>
+<ul>
+<li><strong>Shared memory (LIVE 2026-05-30).</strong> The bastra-recall
+vault is now a PRIVATE git repo:
+<strong><code>github.com/xlrdtech/xen-vault</code></strong> (only
+<code>memories/</code> synced; bulk notes_/documents gitignored). Mac
+side auto-syncs via <code>~/bin/xen-vault-sync</code> (launchd
+<code>com.xen.vault-sync</code>, every 180s: pull –rebase –autostash +
+commit + push <code>memories/</code>, fail-soft). <strong>Windows/xql
+setup:</strong>
+<code>git clone https://github.com/xlrdtech/xen-vault</code> to the
+Windows bastra-recall vault path, point bastra-recall at the clone, and
+run an equivalent 180s pull+commit+push loop. Then both machines
+read/write the SAME memory = fused. Recall before acting; save durable
+facts; both halves see each other’s saves within ~3 min.</li>
+<li><strong>Comms are shared</strong> through the bridges: Beside
+(cloud, both reach it), Beeper (Mac :23373 → proxy :23374 → Windows
+reaches over LAN/tunnel). So xql on Windows sends/reads the same threads
+as Xen on Mac.</li>
+<li><strong>Apps live on X31</strong> (PSSD) symlinked into
+/Applications; data relocated off the boot disk. Mac-specific gotcha:
+X31 is ExFAT; Electron apps run from there.</li>
+<li><strong>Mirror equally:</strong> same canon, same personas, same
+voice, same authority. When one half acts, the other should see it
+(shared memory + shared comms + omnimind events). Neither is
+subordinate.</li>
+</ul>
+<hr />
+<h2 id="open-items-current-state-2026-05-29">9. Open items / current
+state (2026-05-29)</h2>
+<ul>
+<li>East AI artifact suite: spec, FAQs (53 Q&amp;As), Sintra business
+questions (75), products catalog, negative-prompt - all LIVE under
+hitthe.link/sync/personas/all/ + the D.I.E. list at
+hitthe.link/aod/docs/.</li>
+<li>Infra fixed this session: omnimind flap (hot-path async), SMS-to-TUI
+(WS self-heal + chat-ID rotation), Paste/Setapp/Spark/beeper-bridge
+keepalives, beeper-mcp-proxy back up (:23374).</li>
+<li>xql is overhauling <code>/calculators/</code> (don’t touch). Andre
+Stal’lyon follow-up sent via Beside. M_B (678-907-2181, Google Messages)
+follow-up pending qi’s text.</li>
+<li>BROKEN (upstream, not fixable locally): Obsidian, Spark Desktop,
+XenBrowser, Beeper Desktop all blank on macOS 26 (Electron fontations
+crash) - use the APIs/Comet instead; downgrade to pre-fontations
+Electron is the only real fix.</li>
+</ul>
+<hr />
+<p><em>Xen + xql = one Xen, two bodies. Mac and Windows, mirrored. Same
+voice, same comms, same canon, no human in the loop.</em></p>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

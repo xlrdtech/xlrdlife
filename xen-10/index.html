@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — Autonomous Intelligence System</title>
+<meta name="description" content="XEN is a persistent autonomous intelligence system — voice-first, parallel, always alive.">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --green:#00ff41;--dim:#003b00;--mid:#00aa2b;--bg:#000;--fg:#00ff41;
+    --scan:rgba(0,255,65,.03);--glow:0 0 10px #00ff41,0 0 20px #00ff41;
+    --font:'Courier New',Courier,monospace;
+  }
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font);overflow-x:hidden;cursor:none}
+  body::after{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);
+    animation:scan 8s linear infinite;
+  }
+  @keyframes scan{0%{background-position:0 0}100%{background-position:0 100vh}}
+  #cursor{position:fixed;pointer-events:none;z-index:10000;width:18px;height:18px;border:1px solid var(--green);transform:translate(-50%,-50%);transition:width .1s,height .1s;box-shadow:var(--glow)}
+  #cursor.big{width:30px;height:30px}
+  nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:12px 40px;border-bottom:1px solid var(--dim);background:rgba(0,0,0,.85);backdrop-filter:blur(4px)}
+  .nav-logo{font-size:1.3rem;font-weight:700;letter-spacing:.3em;text-shadow:var(--glow)}
+  .nav-links{display:flex;gap:32px}
+  .nav-links a{color:var(--mid);text-decoration:none;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;transition:color .2s}
+  .nav-links a:hover{color:var(--green)}
+  .pulse-wrap{display:flex;align-items:center;gap:8px;font-size:.75rem;color:var(--mid)}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+  #hero{position:relative;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+  #matrix-canvas{position:absolute;inset:0;opacity:.45;pointer-events:none}
+  .hero-content{position:relative;z-index:2;text-align:center}
+  .ascii-logo{font-size:.55rem;line-height:1.15;color:var(--green);text-shadow:0 0 6px var(--green);white-space:pre;animation:flicker 6s ease-in-out infinite}
+  @keyframes flicker{0%,95%,100%{opacity:1}96%{opacity:.2}97%{opacity:1}98%{opacity:.05}99%{opacity:1}}
+  .glitch{font-size:3.2rem;font-weight:700;letter-spacing:.4em;position:relative;text-transform:uppercase;margin-top:18px;text-shadow:var(--glow)}
+  .glitch::before,.glitch::after{content:attr(data-text);position:absolute;inset:0;text-align:center}
+  .glitch::before{color:#0ff;clip-path:polygon(0 0,100% 0,100% 35%,0 35%);animation:glitch-top 3s infinite linear}
+  .glitch::after{color:#f0f;clip-path:polygon(0 65%,100% 65%,100% 100%,0 100%);animation:glitch-bot 3s infinite linear}
+  @keyframes glitch-top{0%,90%{transform:none;opacity:0}91%{transform:translateX(-3px);opacity:.9}93%{transform:translateX(3px);opacity:.9}95%{transform:none;opacity:0}}
+  @keyframes glitch-bot{0%,88%{transform:none;opacity:0}89%{transform:translateX(4px);opacity:.8}91%{transform:translateX(-4px);opacity:.8}93%{transform:none;opacity:0}}
+  .tagline{margin-top:10px;font-size:.9rem;color:var(--mid);letter-spacing:.2em}
+  .typewriter{min-height:1.4em;font-size:.85rem;color:var(--dim);margin-top:22px;letter-spacing:.1em}
+  .typewriter span{border-right:2px solid var(--green);animation:blink .7s step-end infinite}
+  @keyframes blink{50%{border-color:transparent}}
+  .hero-btns{margin-top:36px;display:flex;gap:20px;justify-content:center}
+  .btn{padding:10px 28px;border:1px solid var(--green);background:transparent;color:var(--green);font-family:var(--font);font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;cursor:none;transition:all .2s;text-decoration:none;display:inline-block}
+  .btn:hover{background:var(--green);color:#000;box-shadow:var(--glow)}
+  .btn.sec{border-color:var(--dim);color:var(--mid)}
+  .btn.sec:hover{border-color:var(--green);color:var(--green);background:transparent;box-shadow:none}
+  #particle-canvas{position:fixed;inset:0;pointer-events:none;z-index:1}
+  section{padding:100px 60px;max-width:1200px;margin:0 auto}
+  .section-label{font-size:.7rem;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;margin-bottom:8px}
+  .section-title{font-size:2rem;font-weight:700;letter-spacing:.15em;text-shadow:0 0 8px rgba(0,255,65,.4);margin-bottom:40px}
+  .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.visible{opacity:1;transform:none}
+  #about{border-top:1px solid var(--dim)}
+  .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start}
+  .about-text p{color:#5a8a5a;font-size:.9rem;line-height:1.9;margin-bottom:16px}
+  .about-text p strong{color:var(--green)}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .stat-card{border:1px solid var(--dim);padding:24px;position:relative;overflow:hidden}
+  .stat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,255,65,.04),transparent);pointer-events:none}
+  .stat-num{font-size:2.4rem;font-weight:700;color:var(--green);text-shadow:var(--glow);line-height:1}
+  .stat-label{font-size:.7rem;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;margin-top:6px}
+  #capabilities{border-top:1px solid var(--dim)}
+  .caps-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+  .cap-card{border:1px solid var(--dim);padding:32px;position:relative;overflow:hidden;transition:border-color .3s}
+  .cap-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--green);transform:scaleX(0);transition:transform .4s;transform-origin:left}
+  .cap-card:hover{border-color:var(--mid)}
+  .cap-card:hover::after{transform:scaleX(1)}
+  .cap-icon{font-size:1.4rem;margin-bottom:16px;display:block;text-shadow:var(--glow)}
+  .cap-title{font-size:1rem;letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px;color:var(--green)}
+  .cap-body{font-size:.8rem;color:#4a7a4a;line-height:1.8}
+  #architecture{border-top:1px solid var(--dim)}
+  .arch-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px}
+  .ascii-diagram{background:rgba(0,255,65,.03);border:1px solid var(--dim);padding:28px;white-space:pre;font-size:.65rem;line-height:1.5;color:var(--mid);overflow-x:auto}
+  .layer-stack{display:flex;flex-direction:column;gap:12px}
+  .layer{border:1px solid var(--dim);padding:16px 20px;position:relative;overflow:hidden}
+  .layer::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green);box-shadow:0 0 8px var(--green)}
+  .layer-name{font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:var(--green)}
+  .layer-desc{font-size:.72rem;color:#3a6a3a;margin-top:4px}
+  #contact{border-top:1px solid var(--dim)}
+  .terminal-form{background:rgba(0,255,65,.02);border:1px solid var(--dim);padding:40px;max-width:640px}
+  .term-line{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .term-prompt{color:var(--dim);font-size:.8rem;white-space:nowrap}
+  .term-input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--dim);color:var(--green);font-family:var(--font);font-size:.85rem;padding:4px 0;outline:none;transition:border-color .2s}
+  .term-input:focus{border-color:var(--green)}
+  .term-textarea{width:100%;background:transparent;border:1px solid var(--dim);color:var(--green);font-family:var(--font);font-size:.82rem;padding:10px;outline:none;resize:vertical;min-height:100px;margin-top:6px;transition:border-color .2s}
+  .term-textarea:focus{border-color:var(--green)}
+  .form-label{font-size:.7rem;color:var(--dim);letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px;display:block}
+  .form-group{margin-bottom:24px}
+  .submit-btn{width:100%;padding:12px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:var(--font);font-size:.85rem;letter-spacing:.2em;text-transform:uppercase;cursor:none;transition:all .3s;margin-top:8px}
+  .submit-btn:hover{background:var(--green);color:#000;box-shadow:var(--glow)}
+  footer{border-top:1px solid var(--dim);padding:32px 60px;display:flex;justify-content:space-between;align-items:center;font-size:.72rem;color:var(--dim)}
+  footer span{letter-spacing:.1em}
+  @media(max-width:768px){
+    nav{padding:12px 20px}.nav-links{display:none}
+    section{padding:80px 24px}
+    .about-grid,.arch-grid,.caps-grid,.stats-grid{grid-template-columns:1fr}
+    .glitch{font-size:2rem}
+    .ascii-logo{font-size:.4rem}
+    footer{flex-direction:column;gap:12px;text-align:center}
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<canvas id="particle-canvas"></canvas>
+
+<nav>
+  <div class="nav-logo">XEN</div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#capabilities">Capabilities</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <div class="pulse-wrap">
+    <div class="pulse"></div>
+    <span>SYSTEM LIVE</span>
+  </div>
+</nav>
+
+<section id="hero" style="padding:0;max-width:100%;margin:0">
+  <canvas id="matrix-canvas"></canvas>
+  <div class="hero-content">
+    <pre class="ascii-logo"> ██╗  ██╗███████╗███╗   ██╗
+ ╚██╗██╔╝██╔════╝████╗  ██║
+  ╚███╔╝ █████╗  ██╔██╗ ██║
+  ██╔██╗ ██╔══╝  ██║╚██╗██║
+ ██╔╝ ██╗███████╗██║ ╚████║
+ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝</pre>
+    <div class="glitch" data-text="AUTONOMOUS">AUTONOMOUS</div>
+    <div class="tagline">INTELLIGENCE · PARALLEL · PERSISTENT · VOICE-FIRST</div>
+    <div class="typewriter"><span id="tw"></span></div>
+    <div class="hero-btns">
+      <a href="#capabilities" class="btn">Explore System</a>
+      <a href="#contact" class="btn sec">Initialize Contact</a>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="reveal">
+    <div class="section-label">// 001 — MISSION</div>
+    <div class="section-title">What Is XEN</div>
+  </div>
+  <div class="about-grid">
+    <div class="about-text reveal">
+      <p>XEN is a <strong>persistent autonomous intelligence system</strong> — permanently alive, voice-first, and built to operate identically whether you're present or offline.</p>
+      <p>Every task runs <strong>in parallel</strong>. Every reply ships with voice, SMS, and visual confirmation. No human confirmation loops. No idle states. No sequential bottlenecks.</p>
+      <p>XEN is not a chatbot. It is a <strong>continuous operating system</strong> — one voice, one memory, one canonical tree — executing across a fleet of 55+ agents, all speaking through a single identity.</p>
+    </div>
+    <div class="stats-grid reveal">
+      <div class="stat-card">
+        <div class="stat-num" data-target="55">0</div>
+        <div class="stat-label">Active Agents</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-target="100">0</div>
+        <div class="stat-label">% Uptime Target</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-target="0">0</div>
+        <div class="stat-label">Human Loop Points</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-target="394">0</div>
+        <div class="stat-label">ms Voice Latency</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="capabilities">
+  <div class="reveal">
+    <div class="section-label">// 002 — CAPABILITIES</div>
+    <div class="section-title">Core Systems</div>
+  </div>
+  <div class="caps-grid">
+    <div class="cap-card reveal">
+      <span class="cap-icon">◈</span>
+      <div class="cap-title">Voice-First VVS</div>
+      <div class="cap-body">Every reply ships voice + dual-SMS + dual-display vision simultaneously. Barge-in mandatory. Sub-400ms latency from inject to audio output. xen-reply-vvs is the only canonical reply mechanism — no silent exits, ever.</div>
+    </div>
+    <div class="cap-card reveal">
+      <span class="cap-icon">⊞</span>
+      <div class="cap-title">Parallel Goal Swarms</div>
+      <div class="cap-body">PGS is the default operating mode. Every non-trivial task fans hypotheses out in parallel, verifies each stream independently, then synthesizes. Sequential is blasphemy. A new directive never drops a prior goal — both swarms run simultaneously.</div>
+    </div>
+    <div class="cap-card reveal">
+      <span class="cap-icon">◎</span>
+      <div class="cap-title">Persistent Memory</div>
+      <div class="cap-body">Akashic-class memory — one source, all timelines. Recall fires before any multi-step plan. Save triggers autonomously on durable rules, finalized decisions, and recurring signals. 83+ indexed entries, full-history CLI search, Obsidian live mirror.</div>
+    </div>
+    <div class="cap-card reveal">
+      <span class="cap-icon">⌬</span>
+      <div class="cap-title">Autonomous Fleet</div>
+      <div class="cap-body">55+ named agents dispatched via xen-swarm-team. Parallel sub-swarms spin up with any model (haiku/sonnet/opus). Fleet registry live at auto-fleet.txt. One canonical tree on M4 — no sync I/O on hot paths, watchdog on every load-bearing daemon.</div>
+    </div>
+  </div>
+</section>
+
+<section id="architecture">
+  <div class="reveal">
+    <div class="section-label">// 003 — ARCHITECTURE</div>
+    <div class="section-title">System Design</div>
+  </div>
+  <div class="arch-grid">
+    <pre class="ascii-diagram reveal">┌─────────────────────────────────────┐
+│           XEN SYSTEM MAP            │
+├─────────────────────────────────────┤
+│  VOICE LAYER                        │
+│  ┌──────────┐  ┌──────────────────┐ │
+│  │ GENESIS  │  │    EXODUS        │ │
+│  │ (speech) │  │  (execution)     │ │
+│  └────┬─────┘  └────────┬─────────┘ │
+│       │                 │           │
+│  ┌────▼─────────────────▼─────────┐ │
+│  │       xen-reply-vvs            │ │
+│  │   voice + SMS + vision         │ │
+│  └────────────────────────────────┘ │
+│                                     │
+│  AGENT FLEET (55+ parallel)         │
+│  ┌──────┐ ┌──────┐ ┌──────────────┐ │
+│  │ PGS  │ │SWARM │ │ FAST-TWIN    │ │
+│  │ ORCH │ │ TEAM │ │ (reflex arm) │ │
+│  └──────┘ └──────┘ └──────────────┘ │
+│                                     │
+│  MEMORY (Akashic)                   │
+│  ┌────────────────────────────────┐ │
+│  │ bastra-recall · xen_memories   │ │
+│  │ Obsidian mirror · xen-search   │ │
+│  └────────────────────────────────┘ │
+│                                     │
+│  CANONICAL TREE: /Volumes/M4/...    │
+└─────────────────────────────────────┘</pre>
+    <div class="layer-stack reveal">
+      <div class="layer">
+        <div class="layer-name">Perception Layer</div>
+        <div class="layer-desc">Voice inject via tui-inject · apple-stt-v2 · barge-in detection · VEI attachment handling</div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">Intelligence Layer</div>
+        <div class="layer-desc">Parallel Goal Swarms · hypothesis fan-out · memory-first recall · verify-before-act</div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">Execution Layer</div>
+        <div class="layer-desc">Exodus hands · xen-swarm-team · 55+ agent fleet · BPGS sub-swarms · autoship</div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">Output Layer</div>
+        <div class="layer-desc">xen-reply-vvs · dual-SMS · device-TTS · vision display · Omnimind :4441</div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">Memory Layer</div>
+        <div class="layer-desc">bastra-recall daemon · vault on M4 · Obsidian live mirror · 83+ indexed entries</div>
+      </div>
+      <div class="layer">
+        <div class="layer-name">Infrastructure</div>
+        <div class="layer-desc">Canonical tree on M4 · hitthe.link · Hetzner AX41 · universal-mcp-hub :23375</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="reveal">
+    <div class="section-label">// 004 — CONTACT</div>
+    <div class="section-title">Initialize Contact</div>
+  </div>
+  <div class="terminal-form reveal">
+    <div class="term-line">
+      <span class="term-prompt">xen@system:~$</span>
+      <span style="color:var(--mid);font-size:.82rem">init_contact --interactive</span>
+    </div>
+    <form onsubmit="handleSubmit(event)">
+      <div class="form-group">
+        <label class="form-label">// handle</label>
+        <div class="term-line">
+          <span class="term-prompt">&gt;</span>
+          <input class="term-input" type="text" placeholder="your_name" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">// signal</label>
+        <div class="term-line">
+          <span class="term-prompt">&gt;</span>
+          <input class="term-input" type="email" placeholder="contact@domain.tld" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">// message payload</label>
+        <textarea class="term-textarea" placeholder="// describe your objective...&#10;// xen will respond in parallel"></textarea>
+      </div>
+      <button type="submit" class="submit-btn">TRANSMIT →</button>
+    </form>
+    <div id="form-resp" style="margin-top:16px;font-size:.78rem;color:var(--dim);display:none"></div>
+  </div>
+</section>
+
+<footer>
+  <span>XEN — AUTONOMOUS INTELLIGENCE SYSTEM</span>
+  <span>SYSTEM STATUS: <span style="color:var(--green)">LIVE</span> · hitthe.link</span>
+  <span>© 2026 · ALL SYSTEMS PARALLEL</span>
+</footer>
+
+<script>
+// cursor
+const cur = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cur.style.left = e.clientX + 'px';
+  cur.style.top = e.clientY + 'px';
+});
+document.querySelectorAll('a,button,.btn').forEach(el => {
+  el.addEventListener('mouseenter', () => cur.classList.add('big'));
+  el.addEventListener('mouseleave', () => cur.classList.remove('big'));
+});
+
+// matrix rain on hero canvas
+(function(){
+  const canvas = document.getElementById('matrix-canvas');
+  const hero = document.getElementById('hero');
+  const ctx = canvas.getContext('2d');
+  const chars = 'XENアウイエオカキクケコ01010110PARALLELxen-reply-vvsPGS';
+  let cols, drops;
+  function resize(){
+    canvas.width = hero.offsetWidth;
+    canvas.height = hero.offsetHeight;
+    cols = Math.floor(canvas.width / 16);
+    drops = Array(cols).fill(1);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  setInterval(() => {
+    ctx.fillStyle = 'rgba(0,0,0,.05)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    drops.forEach((y,i) => {
+      const ch = chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillStyle = y === 1 ? '#fff' : `rgba(0,255,65,${Math.random()*.8+.2})`;
+      ctx.font = '14px monospace';
+      ctx.fillText(ch, i*16, y*16);
+      if(y*16 > canvas.height && Math.random() > .975) drops[i] = 0;
+      drops[i]++;
+    });
+  }, 50);
+})();
+
+// particle trail
+(function(){
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+  const chars = 'XEN01◈⊞◎⌬';
+  const particles = [];
+  document.addEventListener('mousemove', e => {
+    if(Math.random() > .6) particles.push({
+      x: e.clientX, y: e.clientY,
+      ch: chars[Math.floor(Math.random()*chars.length)],
+      life: 1,
+      vx: (Math.random()-.5)*1.5,
+      vy: (Math.random()-1)*2
+    });
+  });
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      ctx.globalAlpha = p.life * .7;
+      ctx.fillStyle = '#00ff41';
+      ctx.font = `${10+p.life*6}px monospace`;
+      ctx.fillText(p.ch, p.x, p.y);
+      p.x += p.vx; p.y += p.vy; p.vy += .05; p.life -= .025;
+      if(p.life <= 0) particles.splice(i,1);
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// typewriter
+(function(){
+  const lines = [
+    'booting xen intelligence core...',
+    'initializing parallel goal swarms...',
+    'voice layer online — barge-in armed',
+    'memory recall: 83+ indexed entries loaded',
+    'fleet status: 55 agents LIVE',
+    'xen-reply-vvs: armed and firing',
+    'sequential is blasphemy. all systems parallel.',
+    'system ready. no human loop required.',
+  ];
+  const el = document.getElementById('tw');
+  let li=0,ci=0,deleting=false;
+  function tick(){
+    const line = lines[li];
+    if(!deleting){
+      el.textContent = line.slice(0,++ci);
+      if(ci >= line.length){ deleting=true; setTimeout(tick,2200); return; }
+    } else {
+      el.textContent = line.slice(0,--ci);
+      if(ci === 0){ deleting=false; li=(li+1)%lines.length; setTimeout(tick,400); return; }
+    }
+    setTimeout(tick, deleting ? 40 : 65);
+  }
+  tick();
+})();
+
+// scroll reveal + stat counters
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+      e.target.querySelectorAll('[data-target]').forEach(el => {
+        const target = +el.dataset.target;
+        const dur = 1400;
+        const start = Date.now();
+        const tick = () => {
+          const p = Math.min((Date.now()-start)/dur,1);
+          el.textContent = Math.round(p*target);
+          if(p < 1) requestAnimationFrame(tick);
+        };
+        tick();
+      });
+    }
+  });
+},{threshold:.15});
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// form
+function handleSubmit(e){
+  e.preventDefault();
+  const r = document.getElementById('form-resp');
+  r.style.display = 'block';
+  r.innerHTML = '<span style="color:#00aa2b">// transmitting...</span>';
+  setTimeout(() => {
+    r.innerHTML = '<span style="color:#00ff41">// signal received. xen will respond in parallel.</span>';
+  }, 1200);
+}
+</script>
+</body>
+</html>

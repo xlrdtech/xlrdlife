@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>ELSO · Executive Leverage Site Offers</title>
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="assets/el-emblem.png">
+<link rel="apple-touch-icon" href="assets/el-emblem.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#000000;
+    --panel:rgba(12,12,12,.62);--panel2:rgba(20,18,12,.72);
+    --line:rgba(255,255,255,.12);--line-gold:rgba(212,175,55,.32);
+    --ink:#ffffff;--dim:#a8a29a;--faint:#7c7565;
+    --accent:#d4af37;--green:#d4af37;--amber:#f4e3a1;
+    --gold:#d4af37;--gold-pale:#f4e3a1;--gold-deep:#9a7b2e;
+    --chrome:linear-gradient(135deg,#fbe9a8,#d4af37 42%,#fff6da 58%,#9a7b2e);
+    --blur:30px;
+  }
+  body{background:var(--bg);color:var(--dim);font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+  .glow{position:fixed;border-radius:50%;filter:blur(140px);opacity:.2;z-index:0;pointer-events:none;mix-blend-mode:screen;background:var(--gold)}
+  .g1{top:-20%;left:-20%;width:70vw;height:70vw}
+  .g2{bottom:-10%;right:-10%;width:60vw;height:60vw}
+  /* glassmorphism panels (execpage style) */
+  .lead,.offer{backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur))}
+  .wrap{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:clamp(1.5rem,4vw,3rem) clamp(.9rem,3vw,2rem) 5rem;text-align:center}
+  .emblem{margin-left:auto;margin-right:auto}
+  .bar,.filters{justify-content:center}
+  .lmeta{text-align:center}
+  .lname{white-space:normal}
+  .pdesc,.care,.script{text-align:center}
+  header{margin-bottom:1.6rem}
+  .emblem{display:block;width:88px;height:auto;margin-bottom:.9rem;filter:drop-shadow(0 6px 26px rgba(212,175,55,.35))}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--faint);margin-bottom:.7rem}
+  h1{font-size:clamp(1.8rem,5vw,2.7rem);font-weight:800;letter-spacing:-.03em;line-height:1.04;background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--dim);margin-top:.5rem;font-size:.97rem}
+  .bar{display:flex;flex-wrap:wrap;gap:.6rem;margin:1.3rem 0 .5rem;align-items:center}
+  .stat{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:.35rem .8rem}
+  .stat b{color:var(--accent)}
+  .filters{display:flex;gap:.5rem;margin:1rem 0 1.6rem;flex-wrap:wrap}
+  .fbtn{font:inherit;font-size:.82rem;font-weight:600;color:var(--dim);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:.45rem 1rem;cursor:pointer;transition:all .15s}
+  .fbtn.on{color:var(--bg);background:var(--accent);border-color:var(--accent)}
+  .sortpill{font:inherit;font-size:.82rem;font-weight:600;color:var(--gold-pale);background:var(--panel2);border:1px solid var(--line-gold);border-radius:999px;padding:.45rem 1rem;cursor:pointer;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+  .sortpill option{background:#111;color:#fff}
+  .flag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:.56rem;font-weight:700;letter-spacing:.06em;padding:.1rem .35rem;border-radius:4px;vertical-align:middle;margin-left:.35rem}
+  .flag.hot{background:linear-gradient(135deg,#f4e3a1,#d4af37);color:#1a1304}
+  .flag.night{background:rgba(212,175,55,.14);color:var(--gold-pale);border:1px solid var(--line-gold)}
+  .flag.mail{background:rgba(212,175,55,.1);color:var(--gold-deep)}
+  .flag.s-none{background:rgba(120,200,140,.14);color:#9fe0b4;border:1px solid rgba(120,200,140,.3)}
+  .flag.s-weak{background:rgba(247,232,176,.14);color:var(--gold-pale);border:1px solid var(--line-gold)}
+  .flag.s-real{background:rgba(168,132,47,.2);color:#e8c45a;border:1px solid var(--line-gold)}
+  .flag.open-now{background:rgba(120,200,140,.18);color:#9fe0b4;border:1px solid rgba(120,200,140,.4)}
+  .flag.closed-now{background:rgba(180,80,80,.16);color:#e7a3a3;border:1px solid rgba(180,80,80,.32)}
+  .flag[data-sort]{cursor:pointer;transition:filter .15s,transform .15s}
+  .flag[data-sort]:hover{filter:brightness(1.28);transform:translateY(-1px)}
+  .lead{background:var(--panel);border:1px solid var(--line);border-radius:16px;margin-bottom:1rem;overflow:hidden}
+  .lhead{display:flex;align-items:center;gap:.9rem;padding:1rem 1.1rem}
+  .tag{flex:none;font-family:"JetBrains Mono",monospace;font-size:.6rem;letter-spacing:.1em;font-weight:600;padding:.25rem .5rem;border-radius:5px;text-transform:uppercase}
+  .tag-padre{background:rgba(212,175,55,.16);color:var(--gold);border:1px solid var(--line-gold)}
+  .tag-egbo{background:rgba(244,227,161,.12);color:var(--gold-pale);border:1px solid var(--line-gold)}
+  .tag-xgbo{background:rgba(154,123,46,.18);color:var(--gold-deep);border:1px solid var(--line-gold)}
+  .lmeta{flex:1;min-width:0}
+  .lname{font-weight:700;font-size:1.02rem;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lcat{color:var(--faint);font-size:.8rem;font-family:"JetBrains Mono",monospace}
+  .expand{flex:none;font:inherit;font-size:.78rem;font-weight:600;color:var(--dim);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:.45rem .7rem;cursor:pointer;white-space:nowrap}
+  .expand:hover{border-color:var(--accent);color:var(--accent)}
+  .frame{position:relative;border-top:1px solid var(--line);background:#fff;height:200px;overflow:hidden;transition:height .25s ease}
+  .lead.open .frame{height:660px;overflow:auto}
+  .frame iframe{width:100%;height:1200px;border:0;display:block}
+  .lead.open .frame iframe{height:1400px}
+  .frame .scrim{position:absolute;inset:0;cursor:pointer;background:linear-gradient(180deg,transparent 60%,rgba(5,7,13,.04))}
+  .lead.open .frame .scrim{display:none}
+  .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:.6rem;padding:.9rem 1.1rem}
+  .act{display:flex;align-items:center;justify-content:center;gap:.45rem;font:inherit;font-weight:700;font-size:.92rem;text-decoration:none;padding:.8rem;border-radius:10px;border:1px solid var(--line);transition:transform .12s,box-shadow .12s}
+  .act:hover{transform:translateY(-1px)}
+  .call{background:linear-gradient(135deg,#f4e3a1,#d4af37 55%,#9a7b2e);color:#1a1304;border-color:transparent;box-shadow:0 5px 20px rgba(212,175,55,.35)}
+  .text{background:transparent;color:var(--gold-pale);border-color:var(--line-gold)}
+  .text:hover{background:rgba(212,175,55,.1);border-color:var(--gold)}
+  .email{background:transparent;color:var(--gold-pale);border-color:var(--line-gold)}
+  .email:hover{background:rgba(212,175,55,.1);border-color:var(--gold)}
+  .open{background:transparent;color:var(--dim)}
+  .open:hover{color:var(--gold);border-color:var(--gold)}
+  .phone{display:block;text-align:center;font-family:"JetBrains Mono",monospace;font-size:.74rem;color:var(--faint);padding:0 1.1rem 1rem}
+  /* OFFER / CLOSE PANEL */
+  .offer{background:var(--panel2);border:1px solid var(--line-gold);border-radius:18px;padding:1.3rem 1.3rem 1.1rem;margin-bottom:1.6rem;box-shadow:0 10px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
+  .offer-h{font-weight:800;font-size:1.05rem;letter-spacing:-.01em;background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:1rem}
+  .paths{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
+  @media(max-width:620px){.paths{grid-template-columns:1fr}}
+  .path{background:rgba(0,0,0,.45);border:1px solid var(--line);border-radius:12px;padding:.95rem 1rem;position:relative}
+  .path.best{border-color:var(--gold);box-shadow:0 0 0 1px rgba(212,175,55,.25),0 8px 26px rgba(212,175,55,.12)}
+  .ptag{font-family:"JetBrains Mono",monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:.5rem}
+  .path.best .ptag{color:var(--gold)}
+  .pname{font-weight:700;font-size:.95rem;color:var(--ink);margin-bottom:.2rem}
+  .pamt{font-weight:800;font-size:1.7rem;background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1}
+  .pamt span{font-size:.85rem;color:var(--faint);-webkit-text-fill-color:var(--faint);font-weight:600}
+  .pdesc{color:var(--dim);font-size:.82rem;margin-top:.45rem;line-height:1.45}
+  .care{margin-top:1rem;padding:.85rem 1rem;border:1px dashed var(--line-gold);border-radius:10px;font-size:.86rem;color:var(--dim)}
+  .care b{color:var(--gold-pale)}
+  .script{margin-top:.8rem;font-size:.8rem;color:var(--faint);font-family:"JetBrains Mono",monospace;line-height:1.6}
+  .script b{color:var(--gold)}
+  .menu-link{display:inline-block;margin-top:.9rem;font-size:.84rem;font-weight:700;color:var(--gold);text-decoration:none;border:1px solid var(--line-gold);border-radius:8px;padding:.55rem .9rem;transition:all .15s}
+  .menu-link:hover{background:rgba(212,175,55,.1);border-color:var(--gold)}
+  footer{margin-top:2.5rem;padding-top:1.3rem;border-top:1px solid var(--line);color:var(--faint);font-size:.78rem;font-family:"JetBrains Mono",monospace}
+  @media(max-width:520px){.actions{grid-template-columns:1fr 1fr}.open{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div>
+<div class="wrap">
+  <header>
+    <img class="emblem" src="assets/el-emblem.png" alt="Executive Leverage" width="96" height="96">
+    <div class="kicker">Executive Leverage · Self Exec</div>
+    <h1>Site Offers · Closing Board</h1>
+    <p class="sub">Every lead, live. Tap a card to expand the real site, then <b>Call</b> or <b>Text</b> straight from the working number to validate and pitch. Built for fast closes.</p>
+    <div class="bar">
+      <span class="stat"><b id="cTotal">0</b> leads live</span>
+      <span class="stat"><b id="cPadre">0</b> Padre</span>
+      <span class="stat"><b id="cEgbo">0</b> East</span>
+      <span class="stat">🟢 <b id="cNone">0</b> siteless</span>
+      <span class="stat">🟡 <b id="cWeak">0</b> builder</span>
+      <span class="stat">🟤 <b id="cReal">0</b> has site</span>
+      <span class="stat">$2,000 build · 50% deposit to start</span>
+    </div>
+    <div class="filters">
+      <button class="fbtn on" data-f="all">All</button>
+      <button class="fbtn" data-f="padre">Padre</button>
+      <button class="fbtn" data-f="egbo">East</button>
+      <select id="sortSel" class="sortpill" aria-label="Sort leads">
+        <optgroup label="Likelihood">
+          <option value="today">⚡ Most likely to pay today</option>
+          <option value="email">✉ Has email first</option>
+          <option value="night">🌙 After-hours reachable</option>
+        </optgroup>
+        <optgroup label="Hours — call who's open">
+          <option value="open">🟢 Open right now</option>
+          <option value="late">🌃 Open latest (close time)</option>
+        </optgroup>
+        <optgroup label="Site status — the pitch">
+          <option value="none">🟢 Siteless first · first-site pitch</option>
+          <option value="weak">🟡 Weak builder page · upgrade pitch</option>
+          <option value="real">🟤 Has real site · redesign pitch</option>
+        </optgroup>
+        <optgroup label="Organize">
+          <option value="type">▦ Source · Padre then East</option>
+          <option value="cat">🏷 Category A–Z</option>
+          <option value="city">📍 City A–Z</option>
+          <option value="name">🔤 Name A–Z</option>
+        </optgroup>
+      </select>
+    </div>
+  </header>
+
+  <section class="offer">
+    <div class="offer-h">The Close · $2,000 custom site — 3 ways to say yes</div>
+    <div class="paths">
+      <div class="path best">
+        <div class="ptag">★ Preferred</div>
+        <div class="pname">Paid in full</div>
+        <div class="pamt">$2,000</div>
+        <div class="pdesc">One payment, site's yours outright. Cleanest close — leads the pitch.</div>
+      </div>
+      <div class="path">
+        <div class="ptag">Standard</div>
+        <div class="pname">50% deposit</div>
+        <div class="pamt">$1,000 <span>now</span></div>
+        <div class="pdesc">$1,000 up front to start, $1,000 on completion.</div>
+      </div>
+      <div class="path">
+        <div class="ptag">BNPL · ensure the sale</div>
+        <div class="pname">Start now, pay monthly</div>
+        <div class="pamt">$222<span>/mo</span></div>
+        <div class="pdesc">Site goes live today. $222/month until the $2,222 balance clears (~10 mo). Last-resort close so they never walk.</div>
+      </div>
+    </div>
+    <div class="care">
+      <b>＋ Care Plan — $333/mo</b> (optional): 3 edits/month + priority support &amp; quick turnarounds. Saves $111/mo vs per-edit. On the monthly plan, edits &amp; support stay active as long as payments are on time.
+    </div>
+    <div class="script">Pitch order: <b>Full $2,000</b> → if not, <b>$1,000 deposit</b> → if still hesitating, <b>$222/mo BNPL</b> so they start today. Always offer the <b>$333 Care Plan</b> on top.</div>
+    <a class="menu-link" href="/menu/" target="_blank" rel="noopener">＋ Add-on units · $111 each → XLRD TECH Service Menu (62 units, add to cart)</a>
+  </section>
+
+  <div id="list"></div>
+
+  <footer>ELSO · Executive Leverage Site Offers · noindex · client contact data — internal use only</footer>
+</div>
+
+<script>
+// Site-status (w) and current site (u) verified by web search 2026-06-07.
+// w: 'none' siteless · 'weak' free builder page (Wix/Square/GBP/Weebly/etc) · 'real' own-domain site
+const LEADS = [
+  // PADRE — base /padre/<slug>/
+  {t:'padre',n:"Andy & Leo Auto Repair",s:"padre/andy-leo-auto-repair-jonesboro",p:"+14046444470",c:"Auto Repair · Jonesboro GA",w:'none'},
+  {t:'padre',n:"Bridges Fencing",s:"padre/bridges-fencing-locust-grove",p:"+17709607300",e:"Bridgesfencing@yahoo.com",c:"Fencing · Locust Grove GA",w:'real',u:"bridgesfencing.com"},
+  {t:'padre',n:"Elite Electric Solutions",s:"padre/elite-electric-solutions-conyers",p:"+17707607777",c:"Electrical · Conyers GA",w:'real',u:"eliteelectricsolutions.com"},
+  {t:'padre',n:"Griffins Automotive",s:"padre/griffins-automotive-jonesboro",p:"+17704779800",c:"Auto · Jonesboro GA",w:'weak',u:"griffinsautomotive.business.site"},
+  {t:'padre',n:"Hampton Family Dental",s:"padre/hampton-family-dental",p:"+17708676543",e:"info@hamptonfamilydental.com",c:"Dental · Hampton GA",w:'real',u:"hamptoncosmeticdental.com"},
+  {t:'padre',n:"KDC Electrical Services",s:"padre/kdc-electrical-services-stockbridge",p:"+14048676527",e:"kdcelectricalservice@gmail.com",c:"Electrical · Stockbridge GA",w:'none'},
+  {t:'padre',n:"Lott's Lawn Care Service",s:"padre/lotts-lawn-care-service-jonesboro",p:"+16784684952",c:"Lawn Care · Jonesboro GA",w:'weak',u:"lotts-lawn-care-service.business.site"},
+  {t:'padre',n:"Lyfe Lawn Care",s:"padre/lyfe-lawn-care-jonesboro",p:"+14043909963",c:"Lawn Care · Jonesboro GA",w:'none'},
+  {t:'padre',n:"Norwood Pressure Washing",s:"padre/norwood-pressure-washing-stockbridge",p:"+17705726435",c:"Pressure Wash + Detail · Stockbridge GA",w:'none'},
+  {t:'padre',n:"One Stop Car Care Center",s:"padre/one-stop-car-care-center-hampton",p:"+17707072646",c:"Auto · Hampton GA",w:'weak',u:"1stopcarcare.com"},
+  {t:'padre',n:"Perfect Touch Painting",s:"padre/perfect-touch-painting-locust-grove",p:"+16786151202",c:"Painting · Locust Grove GA",w:'weak',u:"perfecttouchpainting.godaddysites.com"},
+  {t:'padre',n:"Russel's Automotive, Inc.",s:"padre/russels-automotive-hampton",p:"+17709464848",c:"Auto · Hampton GA",w:'none'},
+  {t:'padre',n:"Star Towing",s:"padre/star-towing-riverdale",p:"+14707769345",c:"Towing · Riverdale GA",w:'weak',u:"startowing.weebly.com"},
+  {t:'padre',n:"T & G Plumbing",s:"padre/t-and-g-plumbing-locust-grove",p:"+16787825514",c:"Plumbing · Locust Grove GA",w:'weak',u:"t-g-plumbing.placeid.site"},
+  // EGBO — base /egbops/local/<slug>/
+  {t:'egbo',n:"Chaeis Tax Associates, LLC",s:"egbops/local/chaeis-tax-associates-riverdale",p:"+14048383591",c:"Tax · Riverdale GA",w:'none'},
+  {t:'egbo',n:"Charlie's Angels Hair Salon",s:"egbops/local/charlies-angels-hair-salon-college-park",p:"+14045148719",c:"Salon · College Park GA",w:'weak',u:"charlies-angels-hair-salon.ueniweb.com"},
+  {t:'egbo',n:"Cranford Homes & Realty Co.",s:"egbops/local/cranford-homes-realty-hapeville",p:"+14047666223",e:"info@cranfordhomesrealty.com",c:"Realty · Hapeville GA",w:'real',u:"cranfordhomesrealty.com"},
+  {t:'egbo',n:"DLS Income Tax",s:"egbops/local/dls-income-tax-riverdale",p:"+16785453853",c:"Tax · Riverdale GA",w:'none'},
+  {t:'egbo',n:"Fortitude Ed. & Cultural Center",s:"egbops/local/fortitude-educational-cultural-development-center-red-oak",p:"+14045782532",e:"info@fecdc.com",c:"Education · Red Oak GA",w:'real',u:"fecdc.org"},
+  {t:'egbo',n:"Q's Restaurant",s:"egbops/local/qs-restaurant-east-point",p:"+14047679894",e:"hello@qsrestaurant-eastpoint.com",c:"Restaurant · East Point GA",w:'none',hr:{o:10.5,c:15,d:[1,2,3,4,5]}},
+  {t:'egbo',n:"Queendom Ascensions Luxury Salon",s:"egbops/local/queendom-ascensions-luxury-salon-college-park",p:"+14708831573",c:"Salon · College Park GA",w:'weak',u:"queendom-ascensions-luxury-salon.square.site"},
+  {t:'egbo',n:"RL Ingram Construction",s:"egbops/local/rl-ingram-construction-atlanta",p:"+14042723603",c:"Construction · Atlanta GA",w:'real',u:"rlingramconstruction.com"},
+  {t:'egbo',n:"South Fulton Event Hall",s:"egbops/local/south-fulton-event-hall-south-fulton",p:"+14046174288",c:"Events · South Fulton GA",w:'weak',u:"southfultonevents1.wixsite.com/website"},
+  {t:'egbo',n:"The Barber Shop Lounge",s:"egbops/local/the-barber-shop-lounge-college-park",p:"+17063528339",c:"Barber · College Park GA",w:'none'},
+  {t:'egbo',n:"Undeniable Healthcare",s:"egbops/local/undeniable-healthcare-fairburn",p:"+16782500323",c:"Healthcare · Fairburn GA",w:'real',u:"undeniablehealthcare.com"},
+];
+function fmt(p){var m=p.replace(/^\+1/,'').match(/(\d{3})(\d{3})(\d{4})/);return m?'('+m[1]+') '+m[2]+'-'+m[3]:p;}
+// derive "pay-today" score + after-hours reachability from category text
+function payScore(l){var c=l.c.toLowerCase();var s=0;
+  if(/towing|plumb/.test(c))s=3.5;            // 24/7 owner-op, urgent cash
+  else if(/lawn|auto|pressure|paint|fenc|electric/.test(c))s=3; // owner-op trades, cash
+  else if(/salon|barber|construction|realty/.test(c))s=2.2;
+  else if(/restaurant|event|tax/.test(c))s=1.8;
+  else if(/dental|medical|healthcare|education/.test(c))s=1; // gatekept front desk
+  if(l.e)s+=0.6;  // reachable by email = warmer
+  return s;}
+function afterHours(l){return /towing|plumb|restaurant|salon|barber|event|realty/.test(l.c.toLowerCase());}
+const SITE_LABEL={none:'Siteless',weak:'Builder page',real:'Has site'};
+function cityOf(l){return (l.c.split('·').pop()||'').trim();}
+function catOf(l){return (l.c.split('·')[0]||'').trim();}
+// open/closed (Eastern time). o/c = decimal hours, d = open weekdays [0=Sun..6=Sat]. Category defaults; l.hr overrides.
+const CAT_HOURS=[
+  [/tow|plumb/,{o:0,c:24,d:[0,1,2,3,4,5,6]}],
+  [/lawn|pressure/,{o:7,c:18,d:[1,2,3,4,5,6]}],
+  [/auto|car/,{o:8,c:18,d:[1,2,3,4,5,6]}],
+  [/electric|fenc|paint/,{o:8,c:17,d:[1,2,3,4,5]}],
+  [/salon|barber/,{o:9,c:19,d:[1,2,3,4,5,6]}],
+  [/restaurant/,{o:11,c:21,d:[1,2,3,4,5,6]}],
+  [/event|realty/,{o:9,c:20,d:[1,2,3,4,5,6]}],
+  [/tax/,{o:9,c:18,d:[1,2,3,4,5]}],
+  [/dental|education/,{o:8,c:17,d:[1,2,3,4,5]}],
+  [/healthcare/,{o:8,c:20,d:[0,1,2,3,4,5,6]}],
+];
+function hoursOf(l){ if(l.hr) return l.hr; const c=l.c.toLowerCase(); for(const[re,h]of CAT_HOURS) if(re.test(c)) return h; return {o:9,c:17,d:[1,2,3,4,5]}; }
+function nowET(){ const d=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})); return {day:d.getDay(), h:d.getHours()+d.getMinutes()/60}; }
+function isOpen(l){ const H=hoursOf(l),n=nowET(); return H.d.indexOf(n.day)>-1 && n.h>=H.o && n.h<H.c; }
+function closesAt(l){ return hoursOf(l).c; }
+function hrLabel(l){ const H=hoursOf(l); if(H.o===0&&H.c===24) return '24/7'; const f=x=>{const hr=Math.floor(x),m=Math.round((x-hr)*60);const ap=hr>=12?'p':'a';let h12=hr%12;if(h12===0)h12=12;return h12+(m?':'+String(m).padStart(2,'0'):'')+ap;}; return f(H.o)+'–'+f(H.c); }
+function sortLeads(arr,mode){
+  const a=[...arr];
+  if(mode==='today')a.sort((x,y)=>payScore(y)-payScore(x));
+  else if(mode==='email')a.sort((x,y)=>(!!y.e-!!x.e)||payScore(y)-payScore(x));
+  else if(mode==='night')a.sort((x,y)=>(afterHours(y)-afterHours(x))||payScore(y)-payScore(x));
+  else if(mode==='none'||mode==='weak'||mode==='real')
+    a.sort((x,y)=>((y.w===mode)-(x.w===mode))||payScore(y)-payScore(x));
+  else if(mode==='open')a.sort((x,y)=>(isOpen(y)-isOpen(x))||payScore(y)-payScore(x));
+  else if(mode==='late')a.sort((x,y)=>(closesAt(y)-closesAt(x))||(isOpen(y)-isOpen(x)));
+  else if(mode==='type')a.sort((x,y)=>(x.t>y.t?1:x.t<y.t?-1:0)||payScore(y)-payScore(x));
+  else if(mode==='cat')a.sort((x,y)=>catOf(x).localeCompare(catOf(y)));
+  else if(mode==='city')a.sort((x,y)=>cityOf(x).localeCompare(cityOf(y)));
+  else if(mode==='name')a.sort((x,y)=>x.n.localeCompare(y.n));
+  return a;}
+const list=document.getElementById('list');
+let curFilter='all', curSort='today';
+function render(){
+  list.innerHTML='';
+  let rows=LEADS.filter(l=>curFilter==='all'||l.t===curFilter);
+  rows=sortLeads(rows,curSort);
+  rows.forEach(l=>{
+    const el=document.createElement('div'); el.className='lead'; el.dataset.t=l.t;
+    const ah=afterHours(l), hot=payScore(l)>=3, op=isOpen(l);
+    const siteBadge={none:'🟢 SITELESS',weak:'🟡 BUILDER PAGE',real:'🟤 HAS SITE'}[l.w]||'';
+    el.innerHTML=`
+      <div class="lhead">
+        <span class="tag tag-${l.t}">${({padre:'Padre',egbo:'East'})[l.t]||l.t}</span>
+        <div class="lmeta"><div class="lname">${l.n} <span class="flag ${op?'open-now':'closed-now'}" data-sort="open" title="Sort: open now">${op?'OPEN':'CLOSED'}</span>${l.w?`<span class="flag s-${l.w}" data-sort="${l.w}" title="Sort: ${SITE_LABEL[l.w]} leads">${siteBadge}</span>`:''}${hot?'<span class="flag hot" data-sort="today" title="Sort: most likely to pay today">HOT</span>':''}${ah?'<span class="flag night" data-sort="night" title="Sort: after-hours reachable">🌙 after-hrs</span>':''}${l.e?'<span class="flag mail" data-sort="email" title="Sort: has email first">✉</span>':''}</div><div class="lcat">${l.c} · ${hrLabel(l)} ET</div></div>
+        <button class="expand">Expand ▾</button>
+      </div>
+      <div class="frame">
+        <iframe loading="lazy" src="/${l.s}/" title="${l.n}"></iframe>
+        <div class="scrim"></div>
+      </div>
+      <div class="actions">
+        <a class="act call" href="tel:${l.p}">📞 Call</a>
+        <a class="act text" href="sms:${l.p}">💬 Text</a>
+        ${l.e?`<a class="act email" href="mailto:${l.e}?subject=${encodeURIComponent('Your new website is live — '+l.n)}">✉ Email</a>`:''}
+        <a class="act open" href="/${l.s}/" target="_blank" rel="noopener">↗ Site</a>
+      </div>
+      <span class="phone">${fmt(l.p)}${l.e?' · '+l.e:''} · hitthe.link/${l.s}</span>`;
+    const toggle=()=>{el.classList.toggle('open');el.querySelector('.expand').textContent=el.classList.contains('open')?'Collapse ▴':'Expand ▾';};
+    el.querySelector('.expand').addEventListener('click',toggle);
+    el.querySelector('.scrim').addEventListener('click',toggle);
+    list.appendChild(el);
+  });
+}
+document.getElementById('cTotal').textContent=LEADS.length;
+document.getElementById('cPadre').textContent=LEADS.filter(l=>l.t==='padre').length;
+document.getElementById('cEgbo').textContent=LEADS.filter(l=>l.t==='egbo').length;
+document.getElementById('cNone').textContent=LEADS.filter(l=>l.w==='none').length;
+document.getElementById('cWeak').textContent=LEADS.filter(l=>l.w==='weak').length;
+document.getElementById('cReal').textContent=LEADS.filter(l=>l.w==='real').length;
+document.querySelectorAll('.fbtn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');curFilter=b.dataset.f;render();
+}));
+document.getElementById('sortSel').addEventListener('change',e=>{curSort=e.target.value;render();});
+// clickable pills → set matching sort
+list.addEventListener('click',e=>{
+  const fl=e.target.closest('.flag[data-sort]'); if(!fl) return;
+  e.stopPropagation(); // don't also toggle the lead
+  curSort=fl.dataset.sort;
+  const sel=document.getElementById('sortSel'); if(sel) sel.value=curSort;
+  render();
+});
+render();
+</script>
+
+<!-- ===== GRIND MODE · aggressive call-cadence bully ===== -->
+<style>
+  #grind{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(8,7,4,.92);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-top:1px solid var(--line-gold);box-shadow:0 -8px 30px rgba(0,0,0,.6);transform:translateY(calc(100% - 46px));transition:transform .3s ease}
+  #grind.up{transform:translateY(0)}
+  #grind.alarm{animation:gflash .7s steps(2) infinite}
+  @keyframes gflash{0%{background:rgba(40,8,4,.95)}100%{background:rgba(8,7,4,.92)}}
+  .g-tab{height:46px;display:flex;align-items:center;justify-content:center;gap:.6rem;cursor:pointer;font-family:"JetBrains Mono",monospace;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .g-tab b{color:var(--gold-pale)}
+  .g-body{max-width:920px;margin:0 auto;padding:.4rem 1.1rem 1.2rem;display:flex;flex-wrap:wrap;align-items:center;gap:1rem}
+  .g-clock{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:2rem;background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;min-width:120px}
+  .g-msg{flex:1;min-width:200px;font-weight:700;font-size:1.02rem;color:var(--ink);line-height:1.25}
+  .g-msg small{display:block;font-weight:500;font-size:.78rem;color:var(--faint);margin-top:.2rem;font-family:"JetBrains Mono",monospace}
+  .g-dialed{font:inherit;font-weight:800;font-size:1rem;color:#1a1304;background:linear-gradient(135deg,#f4e3a1,#d4af37 55%,#9a7b2e);border:none;border-radius:10px;padding:.85rem 1.4rem;cursor:pointer;box-shadow:0 5px 20px rgba(212,175,55,.35);white-space:nowrap}
+  .g-dialed:hover{transform:translateY(-1px)}
+  .g-count{font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--gold-pale);white-space:nowrap}
+  .g-set{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--faint);background:transparent;border:1px solid var(--line);border-radius:7px;padding:.4rem .6rem;cursor:pointer}
+  @media(max-width:560px){.g-clock{font-size:1.5rem}.g-msg{font-size:.9rem}}
+  body{padding-bottom:60px}
+</style>
+<div id="grind">
+  <div class="g-tab" id="gTab">🔥 GRIND MODE · <b id="gTabClock">04:00</b> to next dial · tap to open</div>
+  <div class="g-body">
+    <div class="g-clock" id="gClock">04:00</div>
+    <div class="g-msg" id="gMsg">Lock in. First dial now — top of the list is your hottest pay-today lead.<small id="gSub">Cadence: a dial every 4 min · you close at night, so work the 🌙 after-hours leads</small></div>
+    <button class="g-dialed" id="gDialed">DIALED ✓ NEXT</button>
+    <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
+      <span class="g-count" id="gCount">0 dials</span>
+      <button class="g-set" id="gSet">⏱ 4m</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const G=document.getElementById('grind'),tab=document.getElementById('gTab'),
+    clk=document.getElementById('gClock'),tclk=document.getElementById('gTabClock'),
+    msg=document.getElementById('gMsg'),sub=document.getElementById('gSub'),
+    dialed=document.getElementById('gDialed'),cnt=document.getElementById('gCount'),setb=document.getElementById('gSet');
+  const NAG=[
+    "Pick up the phone. The board's right there.",
+    "Nobody's closing for you. Dial the next one.",
+    "Stop reading. Start ringing. NEXT LEAD.",
+    "That hesitation costs money. Call.",
+    "You're a closer or you're not. Prove it — dial.",
+    "The deposit's on the other end of a call you haven't made.",
+    "Money doesn't move until you do. GO.",
+    "Eyes on the hottest lead. Thumb on Call. NOW."
+  ];
+  const HYPE=["That's one. Don't stop.","Next. Keep the rhythm.","Momentum. Again.","Good. The next one's warmer.","Stack 'em. Dial again."];
+  let mins=4, t=mins*60, dials=0, open=true, alarmed=false;
+  const intervals=[2,3,4,6]; let ii=2;
+  function paint(){
+    const m=String(Math.floor(t/60)).padStart(2,'0'),s=String(t%60).padStart(2,'0');
+    clk.textContent=tclk.textContent=m+':'+s;
+  }
+  function fire(){
+    alarmed=true;G.classList.add('alarm','up');open=true;
+    msg.firstChild.textContent=NAG[Math.floor(Date.now()/1000)%NAG.length]+' ';
+    try{navigator.vibrate&&navigator.vibrate([200,80,200]);}catch(e){}
+  }
+  function reset(){t=mins*60;alarmed=false;G.classList.remove('alarm');paint();}
+  setInterval(()=>{ if(t>0){t--;paint(); if(t===0)fire();} },1000);
+  dialed.addEventListener('click',()=>{dials++;cnt.textContent=dials+(dials===1?' dial':' dials');msg.firstChild.textContent=HYPE[dials%HYPE.length]+' ';reset();});
+  tab.addEventListener('click',()=>{open=!open;G.classList.toggle('up',open);});
+  setb.addEventListener('click',()=>{ii=(ii+1)%intervals.length;mins=intervals[ii];setb.textContent='⏱ '+mins+'m';sub.textContent='Cadence: a dial every '+mins+' min · you close at night, so work the 🌙 after-hours leads';reset();});
+  G.classList.add('up');paint();
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

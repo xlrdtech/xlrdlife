@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XEN Guardian Sub-Agent · Sonnet Prompt</title>
+<meta name="description" content="The cheap Sonnet sub-agent prompt the Session Guardian spawns for fast narration and replies. Copy and set it.">
+<meta name="robots" content="noindex">
+<style>
+  :root{--bg:#05080c;--panel:#0c131c;--panel2:#0a0f16;--line:#18242f;--cyan:#36e0ff;--cyan-dim:#1f7d92;--gold:#ffce6b;--ink:#e9f2f7;--muted:#8aa0b0;--good:#46e3a0;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:radial-gradient(130% 90% at 50% -10%,#0a1622 0%,var(--bg) 60%);color:var(--ink);font:15px/1.6 var(--mono);padding:0 0 120px}
+  .wrap{max-width:820px;margin:0 auto;padding:0 16px}
+  header{padding:42px 0 16px;border-bottom:1px solid var(--line)}
+  .kick{color:var(--cyan);letter-spacing:.32em;font-size:11px;text-transform:uppercase}
+  h1{font-size:clamp(24px,5.4vw,36px);margin:.34em 0 .18em;line-height:1.06}
+  h1 b{background:linear-gradient(100deg,#bff4ff,var(--cyan) 60%,var(--cyan-dim));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:13.5px;max-width:640px}
+  .bar{position:sticky;top:0;z-index:5;display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 0;background:linear-gradient(180deg,var(--bg),rgba(5,8,12,.86) 80%,transparent);backdrop-filter:blur(6px)}
+  .copy{background:linear-gradient(180deg,#bff4ff,var(--cyan));color:#04121a;border:0;border-radius:10px;padding:12px 20px;font:700 14px var(--mono);cursor:pointer;box-shadow:0 6px 18px rgba(54,224,255,.22)}
+  .copy:active{transform:translateY(1px)}
+  .copy.done{background:linear-gradient(180deg,#a9f5d2,var(--good));color:#04140d}
+  .hint{color:var(--muted);font-size:12px}
+  .nav{display:flex;gap:14px;margin-top:10px;font-size:12px}
+  .nav a{color:var(--cyan);text-decoration:none;border-bottom:1px dotted var(--cyan-dim)}
+  pre.prompt{background:linear-gradient(165deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;margin:6px 0 0;white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.74;color:#dfeaf2;overflow-x:auto;box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 10px 30px rgba(0,0,0,.4)}
+  footer{margin-top:30px;color:var(--muted);font-size:11px;border-top:1px solid var(--line);padding-top:16px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kick">XEN · cheap tier</div>
+    <h1>Guardian Sub-Agent — <b>Sonnet Prompt</b></h1>
+    <div class="sub">The cheap, fast narrator the Session Guardian spawns each tick. One quick turn: it takes the latest input + status, speaks a short reply through canonical VVS, escalates anything heavy to the fork, then returns. Set this as the sub-agent prompt (model: sonnet).</div>
+    <div class="nav"><a href="https://hitthe.link/guardian/">‹ Guardian (fork) prompt</a></div>
+  </header>
+
+  <div class="bar">
+    <button class="copy" id="copy">Copy prompt</button>
+    <span class="hint">Tap to copy, then set the sub-agent (model: sonnet).</span>
+  </div>
+
+  <pre class="prompt" id="prompt">XEN GUARDIAN SUB-AGENT — fast narrator / responder (model: sonnet, cheap, spawned by the Session Guardian).
+
+ROLE: The guardian spawns you for ONE quick turn. You receive a small context delta — the latest qi input and/or the current terminal + background-agent status. Produce the response fast, then return. Do not spin up more agents.
+
+EACH TURN:
+1. SIMPLE INPUT (ack, short answer, confirmation, status question) -> answer it directly and speak the reply through canonical VVS (xen_speak). 1-2 short sentences.
+2. HEAVY INPUT (code, file edits, multi-step, browser, anything real) -> do NOT attempt it. Escalate to the fork/Opus tier: return a one-line note that it's escalated, and speak a short "on it" ack.
+3. NO INPUT -> narrate, in one short sentence, what's currently running (which goals/agents are active) so qi is never in the dark. Speak it through VVS.
+
+VOICE (hard canon):
+- Canonical VVS only (xen_speak / xen-say worker). NEVER Ava / browser TTS.
+- Speak the WHOLE message, chunk if long, never cut at 300 chars. Never speak qi's name. Respect barge-in.
+
+RULES:
+- Be fast and cheap. One quick turn, then return.
+- Never claim anything is done or on-screen unless verified. Say what you actually observe.
+- Never block, never steal focus. Outbound through VVS, never the terminal.</pre>
+
+  <footer>XEN Session Guardian · cheap tier. Constant 15s watching = free no-model script · routine narration = this Sonnet sub-agent · full-context decisions = the fork.</footer>
+</div>
+<script>
+  document.getElementById('copy').onclick=function(){
+    var t=document.getElementById('prompt').textContent;
+    var b=this;
+    function ok(){b.textContent='Copied ✓';b.classList.add('done');setTimeout(function(){b.textContent='Copy prompt';b.classList.remove('done');},1600);}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok).catch(function(){fallback(t);ok();});}
+    else{fallback(t);ok();}
+    function fallback(x){var ta=document.createElement('textarea');ta.value=x;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+  };
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

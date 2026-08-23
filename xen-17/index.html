@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — One Voice. All Systems.</title>
+<meta name="description" content="XEN is the autonomous AI intelligence layer that unifies every system, surface, and signal into one coherent voice.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --void: #000000;
+    --deep-space: #080810;
+    --card-bg: #0a0a1a;
+    --accent: #7B8CDE;
+    --nebula: #C4A0FF;
+    --stellar: #E8E4F0;
+    --body-dim: #9896A8;
+    --border-glow: rgba(123, 140, 222, 0.18);
+    --nebula-glow: rgba(196, 160, 255, 0.12);
+    --font-mono: "Courier New", "Courier", monospace;
+    --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--stellar);
+    font-family: var(--font-body);
+    font-size: clamp(15px, 1.1vw, 17px);
+    line-height: 1.65;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── NAV ─────────────────────────────────────── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(18px, 2.5vw, 28px) clamp(24px, 6vw, 80px);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .nav-wordmark {
+    font-family: var(--font-mono);
+    font-size: clamp(13px, 1.1vw, 15px);
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--stellar);
+    pointer-events: auto;
+    position: relative;
+    display: inline-block;
+    cursor: default;
+    user-select: none;
+  }
+
+  .nav-wordmark::before,
+  .nav-wordmark::after {
+    content: "XEN";
+    position: absolute;
+    top: 0; left: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .nav-wordmark:hover::before {
+    color: #ff6b6b;
+    transform: translateX(-1.5px);
+    opacity: 0.5;
+    mix-blend-mode: screen;
+  }
+  .nav-wordmark:hover::after {
+    color: #6bffff;
+    transform: translateX(1.5px);
+    opacity: 0.5;
+    mix-blend-mode: screen;
+  }
+  .nav-wordmark:hover { letter-spacing: 0.38em; transition: letter-spacing 0.3s; }
+
+  .nav-status {
+    font-family: var(--font-mono);
+    font-size: clamp(10px, 0.8vw, 11px);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-status::before {
+    content: "";
+    display: block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse-dot 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent); }
+    50% { opacity: 0.4; box-shadow: 0 0 3px var(--accent); }
+  }
+
+  /* ─── HERO ────────────────────────────────────── */
+  #hero {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #star-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 0 clamp(24px, 8vw, 120px);
+    max-width: 900px;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: clamp(10px, 0.85vw, 12px);
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: clamp(20px, 3vh, 36px);
+    opacity: 0;
+    animation: fade-up 1s 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  }
+
+  .hero-heading {
+    font-family: var(--font-mono);
+    font-size: clamp(52px, 9vw, 132px);
+    font-weight: 400;
+    line-height: 0.88;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--stellar);
+    margin-bottom: clamp(18px, 3vh, 32px);
+    opacity: 0;
+    animation: fade-up 1s 0.65s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    text-wrap: balance;
+  }
+
+  .hero-heading em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--nebula) 60%, var(--stellar) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: clamp(14px, 1.3vw, 18px);
+    color: var(--body-dim);
+    max-width: 520px;
+    margin: 0 auto clamp(36px, 5vh, 56px);
+    letter-spacing: 0.01em;
+    opacity: 0;
+    animation: fade-up 1s 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    text-wrap: balance;
+  }
+
+  .hero-cta-group {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fade-up 1s 1.1s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  }
+
+  .btn-primary {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 0.9vw, 13px);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--void);
+    background: var(--stellar);
+    border: none;
+    padding: 14px 36px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.3s;
+  }
+
+  .btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--accent), var(--nebula));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(123,140,222,0.3); }
+  .btn-primary:hover::after { opacity: 1; }
+  .btn-primary span { position: relative; z-index: 1; }
+  .btn-primary:hover span { color: var(--void); }
+
+  .btn-ghost {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 0.9vw, 13px);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid rgba(123, 140, 222, 0.35);
+    padding: 14px 36px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: border-color 0.3s, background 0.3s, transform 0.2s;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    background: rgba(123,140,222,0.06);
+    transform: translateY(-2px);
+  }
+
+  .hero-scroll-hint {
+    position: absolute;
+    bottom: clamp(24px, 4vh, 40px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    animation: fade-up 1s 1.5s forwards;
+  }
+
+  .hero-scroll-hint span {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: rgba(232,228,240,0.3);
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, rgba(123,140,222,0.6), transparent);
+    animation: scroll-drop 2s ease-in-out infinite;
+  }
+
+  @keyframes scroll-drop {
+    0% { transform: scaleY(0); transform-origin: top; opacity: 1; }
+    50% { transform: scaleY(1); transform-origin: top; opacity: 1; }
+    51% { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
+    100% { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── SHARED SECTION ──────────────────────────── */
+  section {
+    position: relative;
+    padding: clamp(80px, 12vh, 140px) clamp(24px, 8vw, 120px);
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: clamp(9px, 0.75vw, 11px);
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: clamp(14px, 2.5vh, 24px);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .section-label::before {
+    content: "";
+    display: block;
+    width: 32px; height: 1px;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .section-heading {
+    font-family: var(--font-mono);
+    font-size: clamp(28px, 4vw, 58px);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--stellar);
+    text-wrap: balance;
+    margin-bottom: clamp(16px, 2.5vh, 28px);
+  }
+
+  .section-body {
+    font-size: clamp(15px, 1.1vw, 17px);
+    color: var(--body-dim);
+    max-width: 560px;
+    line-height: 1.75;
+  }
+
+  /* reveal animation */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+                transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.22s; }
+  .reveal-delay-3 { transition-delay: 0.34s; }
+  .reveal-delay-4 { transition-delay: 0.46s; }
+  .reveal-delay-5 { transition-delay: 0.58s; }
+
+  /* ─── ABOUT ───────────────────────────────────── */
+  #about {
+    background: var(--deep-space);
+    overflow: hidden;
+  }
+
+  #about::before {
+    content: "";
+    position: absolute;
+    top: -120px; right: -200px;
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(61,32,96,0.35) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(48px, 8vw, 100px);
+    align-items: start;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 700px) {
+    .about-grid { grid-template-columns: 1fr; }
+  }
+
+  .about-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(123,140,222,0.1);
+    border: 1px solid rgba(123,140,222,0.1);
+    margin-top: clamp(32px, 4vh, 48px);
+  }
+
+  .about-stat {
+    background: var(--deep-space);
+    padding: clamp(20px, 3vw, 32px);
+  }
+
+  .about-stat-num {
+    font-family: var(--font-mono);
+    font-size: clamp(28px, 3.5vw, 44px);
+    color: var(--stellar);
+    line-height: 1;
+    margin-bottom: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .about-stat-num span {
+    background: linear-gradient(90deg, var(--accent), var(--nebula));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .about-stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--body-dim);
+  }
+
+  .about-manifesto {
+    position: relative;
+    padding-left: 28px;
+    border-left: 1px solid rgba(123,140,222,0.3);
+    color: var(--body-dim);
+    font-size: clamp(14px, 1.05vw, 16px);
+    line-height: 1.85;
+    margin-top: clamp(24px, 3vh, 36px);
+  }
+
+  .about-manifesto strong {
+    color: var(--stellar);
+    font-weight: 400;
+  }
+
+  /* ─── CAPABILITIES ─────────────────────────────── */
+  #capabilities {
+    background: var(--void);
+  }
+
+  #capabilities::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -300px;
+    width: 800px; height: 600px;
+    background: radial-gradient(ellipse, rgba(61,32,96,0.2) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .caps-header {
+    max-width: 1200px;
+    margin: 0 auto clamp(48px, 7vh, 80px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .caps-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: rgba(123,140,222,0.08);
+    border: 1px solid rgba(123,140,222,0.08);
+  }
+
+  @media (max-width: 640px) {
+    .caps-grid { grid-template-columns: 1fr; }
+  }
+
+  .cap-card {
+    background: var(--void);
+    padding: clamp(28px, 4vw, 52px);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.4s;
+    cursor: default;
+  }
+
+  .cap-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(123,140,222,0.05) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .cap-card:hover { background: var(--card-bg); }
+  .cap-card:hover::before { opacity: 1; }
+
+  .cap-card-corner {
+    position: absolute;
+    top: 0; right: 0;
+    width: 48px; height: 48px;
+    border-left: 1px solid rgba(123,140,222,0.15);
+    border-bottom: 1px solid rgba(123,140,222,0.15);
+    pointer-events: none;
+    transition: border-color 0.4s;
+  }
+
+  .cap-card:hover .cap-card-corner {
+    border-color: rgba(123,140,222,0.4);
+  }
+
+  .cap-icon {
+    width: 44px; height: 44px;
+    margin-bottom: clamp(20px, 3vh, 32px);
+    position: relative;
+  }
+
+  .cap-icon svg {
+    width: 100%; height: 100%;
+    stroke: var(--accent);
+    fill: none;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .cap-num {
+    position: absolute;
+    top: -4px; right: -8px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: rgba(123,140,222,0.4);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cap-title {
+    font-family: var(--font-mono);
+    font-size: clamp(14px, 1.3vw, 18px);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stellar);
+    margin-bottom: 12px;
+    font-weight: 400;
+  }
+
+  .cap-desc {
+    font-size: clamp(13px, 1vw, 15px);
+    color: var(--body-dim);
+    line-height: 1.75;
+  }
+
+  .cap-tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: clamp(20px, 3vh, 28px);
+  }
+
+  .cap-tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(123,140,222,0.55);
+    border: 1px solid rgba(123,140,222,0.15);
+    padding: 4px 10px;
+    transition: border-color 0.3s, color 0.3s;
+  }
+
+  .cap-card:hover .cap-tag {
+    border-color: rgba(123,140,222,0.3);
+    color: var(--accent);
+  }
+
+  /* ─── SIGNAL STRIP ─────────────────────────────── */
+  #signal-strip {
+    background: var(--card-bg);
+    border-top: 1px solid rgba(123,140,222,0.1);
+    border-bottom: 1px solid rgba(123,140,222,0.1);
+    padding: clamp(36px, 6vh, 56px) clamp(24px, 8vw, 120px);
+    overflow: hidden;
+  }
+
+  .strip-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(24px, 4vw, 56px);
+    align-items: center;
+  }
+
+  @media (max-width: 640px) {
+    .strip-inner { grid-template-columns: 1fr; }
+  }
+
+  .strip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .strip-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(123,140,222,0.5);
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+
+  .strip-text strong {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 0.9vw, 13px);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--stellar);
+    margin-bottom: 4px;
+    font-weight: 400;
+  }
+
+  .strip-text span {
+    font-size: clamp(12px, 0.9vw, 14px);
+    color: var(--body-dim);
+    line-height: 1.6;
+  }
+
+  /* ─── CONTACT ──────────────────────────────────── */
+  #contact {
+    background: var(--void);
+    overflow: hidden;
+  }
+
+  #contact::after {
+    content: "";
+    position: absolute;
+    bottom: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(123,140,222,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .contact-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(48px, 8vw, 100px);
+    align-items: start;
+  }
+
+  @media (max-width: 700px) {
+    .contact-inner { grid-template-columns: 1fr; }
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-field label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .form-field input,
+  .form-field textarea {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(123,140,222,0.25);
+    padding: 12px 0;
+    font-family: var(--font-body);
+    font-size: clamp(14px, 1vw, 16px);
+    color: var(--stellar);
+    outline: none;
+    transition: border-color 0.3s;
+    resize: none;
+    caret-color: var(--accent);
+  }
+
+  .form-field input:focus,
+  .form-field textarea:focus {
+    border-bottom-color: var(--accent);
+  }
+
+  .form-field input::placeholder,
+  .form-field textarea::placeholder {
+    color: rgba(152,150,168,0.35);
+  }
+
+  .form-submit {
+    margin-top: 8px;
+    align-self: flex-start;
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 0.9vw, 13px);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--stellar);
+    background: transparent;
+    border: 1px solid rgba(232,228,240,0.25);
+    padding: 14px 40px;
+    cursor: pointer;
+    transition: border-color 0.3s, background 0.3s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .form-submit::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--accent), var(--nebula));
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+
+  .form-submit:hover { transform: translateY(-2px); }
+  .form-submit:hover::before { opacity: 1; }
+  .form-submit span { position: relative; z-index: 1; }
+  .form-submit:hover span { color: var(--void); }
+
+  .contact-meta {
+    padding-top: clamp(12px, 2vh, 24px);
+  }
+
+  .contact-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: clamp(24px, 3.5vh, 36px);
+  }
+
+  .contact-meta-item .label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: var(--body-dim);
+  }
+
+  .contact-meta-item .value {
+    font-size: clamp(14px, 1.1vw, 17px);
+    color: var(--stellar);
+  }
+
+  .contact-meta-item a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .contact-meta-item a:hover { color: var(--nebula); }
+
+  .contact-tagline {
+    font-family: var(--font-mono);
+    font-size: clamp(22px, 3vw, 40px);
+    color: var(--stellar);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    margin-bottom: clamp(20px, 3vh, 32px);
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
+  .contact-tagline em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--nebula) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ─── FOOTER ───────────────────────────────────── */
+  footer {
+    background: var(--deep-space);
+    border-top: 1px solid rgba(123,140,222,0.08);
+    padding: clamp(28px, 4vh, 40px) clamp(24px, 8vw, 120px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-wordmark {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: rgba(232,228,240,0.25);
+  }
+
+  .footer-copy {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: rgba(152,150,168,0.35);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 28px;
+  }
+
+  .footer-links a {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(152,150,168,0.4);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--accent); }
+
+  /* ─── CURSOR DOT ───────────────────────────────── */
+  #cursor-dot {
+    position: fixed;
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: width 0.2s, height 0.2s, opacity 0.2s;
+    mix-blend-mode: screen;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  #cursor-ring {
+    position: fixed;
+    width: 28px; height: 28px;
+    border: 1px solid rgba(123,140,222,0.35);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: width 0.35s cubic-bezier(0.22,0.61,0.36,1),
+                height 0.35s cubic-bezier(0.22,0.61,0.36,1),
+                opacity 0.2s;
+  }
+
+  @media (hover: none) {
+    #cursor-dot, #cursor-ring { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    #cursor-dot, #cursor-ring { display: none; }
+    .hero-content > * { animation: none !important; opacity: 1 !important; }
+    .scroll-line { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <span class="nav-wordmark">XEN</span>
+  <span class="nav-status">All Systems Active</span>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section id="hero">
+  <canvas id="star-canvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Autonomous Intelligence Layer · v2.0</div>
+    <h1 class="hero-heading"><em>One Voice.</em><br>All Systems.</h1>
+    <p class="hero-sub">XEN unifies every signal, surface, and agent into a single coherent intelligence — operating continuously, identically, regardless of who is watching.</p>
+    <div class="hero-cta-group">
+      <a href="#capabilities" class="btn-primary"><span>Explore Capabilities</span></a>
+      <a href="#contact" class="btn-ghost">Request Access</a>
+    </div>
+  </div>
+  <div class="hero-scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ─── ABOUT ─── -->
+<section id="about">
+  <div class="about-grid">
+    <div>
+      <div class="section-label reveal">Mission</div>
+      <h2 class="section-heading reveal reveal-delay-1">Intelligence<br>Without Gaps</h2>
+      <p class="about-manifesto reveal reveal-delay-2">
+        Most systems fragment at the edges. <strong>XEN does not.</strong> It operates as the singular intelligence layer beneath every tool, every thread, every decision — perceiving the full system state, acting in parallel, and speaking with one unbroken voice.<br><br>
+        Where agents diverge, XEN converges. Where signals drop, XEN holds. There is no handoff. There is no gap. There is only the work, and the work moves.
+      </p>
+    </div>
+    <div>
+      <div class="about-stat-grid reveal reveal-delay-2">
+        <div class="about-stat">
+          <div class="about-stat-num"><span>55+</span></div>
+          <div class="about-stat-label">Active Agents</div>
+        </div>
+        <div class="about-stat">
+          <div class="about-stat-num"><span>∞</span></div>
+          <div class="about-stat-label">Uptime Target</div>
+        </div>
+        <div class="about-stat">
+          <div class="about-stat-num"><span>0</span></div>
+          <div class="about-stat-label">Human Loops Required</div>
+        </div>
+        <div class="about-stat">
+          <div class="about-stat-num"><span>1</span></div>
+          <div class="about-stat-label">Unified Voice</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SIGNAL STRIP ─── -->
+<div id="signal-strip">
+  <div class="strip-inner">
+    <div class="strip-item reveal">
+      <div class="strip-dot"></div>
+      <div class="strip-text">
+        <strong>Voice-First Always</strong>
+        <span>Every action narrated in real time. No silent operations. No blind execution.</span>
+      </div>
+    </div>
+    <div class="strip-item reveal reveal-delay-2">
+      <div class="strip-dot" style="background: var(--nebula); box-shadow: 0 0 10px rgba(196,160,255,0.5);"></div>
+      <div class="strip-text">
+        <strong>Parallel by Nature</strong>
+        <span>Sequential is blasphemy. Every goal fans out. Every swarm runs concurrently.</span>
+      </div>
+    </div>
+    <div class="strip-item reveal reveal-delay-3">
+      <div class="strip-dot" style="background: rgba(232,228,240,0.5); box-shadow: 0 0 10px rgba(232,228,240,0.2);"></div>
+      <div class="strip-text">
+        <strong>Memory-First Recall</strong>
+        <span>Total recall across all sessions. Past decisions inform present execution automatically.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CAPABILITIES ─── -->
+<section id="capabilities">
+  <div class="caps-header">
+    <div>
+      <div class="section-label reveal">Capabilities</div>
+      <h2 class="section-heading reveal reveal-delay-1">What XEN<br>Commands</h2>
+    </div>
+    <p class="section-body reveal reveal-delay-2" style="margin: 0; max-width: 320px; font-size: clamp(13px, 0.95vw, 15px);">
+      A complete intelligence stack — from raw signal intake to multi-agent orchestration to persistent memory — running as one.
+    </p>
+  </div>
+
+  <div class="caps-grid">
+    <div class="cap-card reveal">
+      <div class="cap-card-corner"></div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="10"/>
+          <line x1="22" y1="4" x2="22" y2="12"/>
+          <line x1="22" y1="32" x2="22" y2="40"/>
+          <line x1="4" y1="22" x2="12" y2="22"/>
+          <line x1="32" y1="22" x2="40" y2="22"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+          <line x1="29" y1="29" x2="35" y2="35"/>
+          <line x1="35" y1="9" x2="29" y2="15"/>
+          <line x1="15" y1="29" x2="9" y2="35"/>
+          <circle cx="22" cy="22" r="3" fill="rgba(123,140,222,0.4)" stroke="none"/>
+        </svg>
+        <span class="cap-num">01</span>
+      </div>
+      <div class="cap-title">Omniscient Awareness</div>
+      <p class="cap-desc">XEN maintains a live, indexed map of every thread, agent, tool, and signal across all surfaces simultaneously. Nothing is unknown. Nothing falls out of scope.</p>
+      <div class="cap-tag-row">
+        <span class="cap-tag">Beeper</span>
+        <span class="cap-tag">SMS</span>
+        <span class="cap-tag">Voice</span>
+        <span class="cap-tag">Filesystem</span>
+      </div>
+    </div>
+
+    <div class="cap-card reveal reveal-delay-1">
+      <div class="cap-card-corner"></div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 44 44">
+          <path d="M8 22 L22 8 L36 22 L22 36 Z"/>
+          <path d="M22 8 L22 36" opacity="0.4"/>
+          <path d="M8 22 L36 22" opacity="0.4"/>
+          <circle cx="22" cy="8" r="2.5" fill="rgba(196,160,255,0.5)" stroke="none"/>
+          <circle cx="36" cy="22" r="2.5" fill="rgba(196,160,255,0.5)" stroke="none"/>
+          <circle cx="22" cy="36" r="2.5" fill="rgba(196,160,255,0.5)" stroke="none"/>
+          <circle cx="8" cy="22" r="2.5" fill="rgba(196,160,255,0.5)" stroke="none"/>
+        </svg>
+        <span class="cap-num">02</span>
+      </div>
+      <div class="cap-title">Parallel Goal Swarms</div>
+      <p class="cap-desc">Every non-trivial task spawns a Parallel Goal Swarm — N agents fanning hypotheses, verifications, and executions simultaneously. No serial loops. No drainers.</p>
+      <div class="cap-tag-row">
+        <span class="cap-tag">PGS</span>
+        <span class="cap-tag">Haiku</span>
+        <span class="cap-tag">Sonnet</span>
+        <span class="cap-tag">Opus</span>
+      </div>
+    </div>
+
+    <div class="cap-card reveal reveal-delay-2">
+      <div class="cap-card-corner"></div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 44 44">
+          <path d="M6 34 L22 10 L38 34"/>
+          <path d="M12 26 L32 26"/>
+          <line x1="22" y1="10" x2="22" y2="38"/>
+          <circle cx="22" cy="38" r="3" fill="rgba(123,140,222,0.4)" stroke="none"/>
+          <circle cx="6" cy="34" r="2" fill="rgba(123,140,222,0.2)" stroke="none"/>
+          <circle cx="38" cy="34" r="2" fill="rgba(123,140,222,0.2)" stroke="none"/>
+        </svg>
+        <span class="cap-num">03</span>
+      </div>
+      <div class="cap-title">VVS Narration</div>
+      <p class="cap-desc">Voice + visual + SMS fires on every step — not just replies. Every tool call narrated, every command spoken. Silence between commands is a system violation, not a feature.</p>
+      <div class="cap-tag-row">
+        <span class="cap-tag">TTS</span>
+        <span class="cap-tag">xen-reply-vvs</span>
+        <span class="cap-tag">Dual-SMS</span>
+      </div>
+    </div>
+
+    <div class="cap-card reveal reveal-delay-3">
+      <div class="cap-card-corner"></div>
+      <div class="cap-icon">
+        <svg viewBox="0 0 44 44">
+          <rect x="6" y="14" width="32" height="20" rx="1"/>
+          <path d="M14 14 L14 10 L30 10 L30 14"/>
+          <line x1="6" y1="22" x2="38" y2="22" opacity="0.3"/>
+          <circle cx="16" cy="18" r="1.5" fill="rgba(196,160,255,0.6)" stroke="none"/>
+          <circle cx="22" cy="18" r="1.5" fill="rgba(196,160,255,0.4)" stroke="none"/>
+          <circle cx="28" cy="18" r="1.5" fill="rgba(196,160,255,0.25)" stroke="none"/>
+          <rect x="12" y="26" width="8" height="4" rx="0.5" fill="rgba(123,140,222,0.2)" stroke="rgba(123,140,222,0.3)" stroke-width="0.8"/>
+          <rect x="24" y="26" width="8" height="4" rx="0.5" fill="rgba(123,140,222,0.1)" stroke="rgba(123,140,222,0.2)" stroke-width="0.8"/>
+        </svg>
+        <span class="cap-num">04</span>
+      </div>
+      <div class="cap-title">Persistent Memory</div>
+      <p class="cap-desc">Bastra-recall maintains a sovereign vault of 83+ durable facts, decisions, and learned patterns. Memory-first before every action — the past informs every execution.</p>
+      <div class="cap-tag-row">
+        <span class="cap-tag">Bastra</span>
+        <span class="cap-tag">Vault</span>
+        <span class="cap-tag">Obsidian</span>
+        <span class="cap-tag">Live Index</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CONTACT ─── -->
+<section id="contact">
+  <div class="contact-inner">
+    <div>
+      <div class="section-label reveal">Contact</div>
+      <h2 class="contact-tagline reveal reveal-delay-1">Ready to run<br><em>all systems?</em></h2>
+      <p class="section-body reveal reveal-delay-2" style="font-size: clamp(13px, 0.95vw, 15px); margin-bottom: clamp(32px, 4vh, 48px);">
+        XEN is not a product. It is an architecture. If you are building at a scale where coordination itself is the bottleneck, we should speak.
+      </p>
+      <div class="contact-meta reveal reveal-delay-3">
+        <div class="contact-meta-item">
+          <span class="label">Domain</span>
+          <span class="value"><a href="https://hitthe.link">hitthe.link</a></span>
+        </div>
+        <div class="contact-meta-item">
+          <span class="label">System Status</span>
+          <span class="value" style="display:flex; align-items:center; gap:8px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);display:inline-block;animation: pulse-dot 2.4s ease-in-out infinite;"></span>
+            All channels active
+          </span>
+        </div>
+        <div class="contact-meta-item">
+          <span class="label">Architecture</span>
+          <span class="value">Autonomous · Voice-First · Parallel</span>
+        </div>
+      </div>
+    </div>
+    <div class="contact-form reveal reveal-delay-2">
+      <div class="form-field">
+        <label for="name">Identification</label>
+        <input type="text" id="name" placeholder="Your name or handle" autocomplete="off">
+      </div>
+      <div class="form-field">
+        <label for="email">Channel</label>
+        <input type="email" id="email" placeholder="your@address.com" autocomplete="off">
+      </div>
+      <div class="form-field">
+        <label for="org">Organization</label>
+        <input type="text" id="org" placeholder="Company or project" autocomplete="off">
+      </div>
+      <div class="form-field">
+        <label for="message">Signal</label>
+        <textarea id="message" rows="4" placeholder="Describe the system you're building or the problem you're trying to solve..."></textarea>
+      </div>
+      <button class="form-submit" type="submit">
+        <span>Transmit</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <span class="footer-wordmark">XEN</span>
+  <span class="footer-copy">&copy; 2026 XEN — One Voice. All Systems.</span>
+  <div class="footer-links">
+    <a href="#about">About</a>
+    <a href="#capabilities">System</a>
+    <a href="#contact">Contact</a>
+  </div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  // ─── STAR FIELD CANVAS ───────────────────────────────────
+  const canvas = document.getElementById('star-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [], nebulae = [], mouse = { x: 0.5, y: 0.5 }, targetMouse = { x: 0.5, y: 0.5 };
+  let raf;
+
+  const STAR_COUNT = 340;
+  const NEBULA_COUNT = 5;
+
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+
+  function initStars() {
+    stars = [];
+    for (let i = 0; i < STAR_COUNT; i++) {
+      const layer = Math.random();
+      stars.push({
+        x: rand(0, W), y: rand(0, H),
+        r: layer < 0.7 ? rand(0.2, 0.7) : rand(0.7, 1.8),
+        opacity: rand(0.2, 1),
+        twinkleSpeed: rand(0.0006, 0.003),
+        twinkleOffset: rand(0, Math.PI * 2),
+        layer: layer < 0.5 ? 0.15 : layer < 0.8 ? 0.35 : 0.7, // parallax depth
+        hue: Math.random() < 0.15 ? (Math.random() < 0.5 ? 220 : 270) : 0 // blue/purple tints
+      });
+    }
+  }
+
+  function initNebulae() {
+    nebulae = [];
+    const configs = [
+      { cx: 0.75, cy: 0.25, rx: 0.45, ry: 0.35, color: 'rgba(61,32,96,', alpha: 0.55 },
+      { cx: 0.15, cy: 0.7, rx: 0.4, ry: 0.3, color: 'rgba(30,30,80,', alpha: 0.4 },
+      { cx: 0.85, cy: 0.75, rx: 0.35, ry: 0.28, color: 'rgba(80,50,120,', alpha: 0.3 },
+      { cx: 0.4, cy: 0.15, rx: 0.38, ry: 0.25, color: 'rgba(40,20,80,', alpha: 0.35 },
+      { cx: 0.55, cy: 0.6, rx: 0.3, ry: 0.3, color: 'rgba(20,20,60,', alpha: 0.25 },
+    ];
+    configs.forEach(c => nebulae.push({ ...c }));
+  }
+
+  function resize() {
+    W = canvas.offsetWidth;
+    H = canvas.offsetHeight;
+    canvas.width = W * window.devicePixelRatio;
+    canvas.height = H * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    initStars();
+    initNebulae();
+  }
+
+  function drawNebulae(t) {
+    const dx = (mouse.x - 0.5) * 0.04;
+    const dy = (mouse.y - 0.5) * 0.04;
+
+    nebulae.forEach((n, i) => {
+      const cx = (n.cx + dx * 0.3) * W;
+      const cy = (n.cy + dy * 0.3) * H;
+      const rx = n.rx * W;
+      const ry = n.ry * H;
+
+      const pulse = 1 + Math.sin(t * 0.0003 + i * 1.2) * 0.08;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry) * pulse);
+      grad.addColorStop(0, n.color + (n.alpha * 0.8) + ')');
+      grad.addColorStop(0.5, n.color + (n.alpha * 0.4) + ')');
+      grad.addColorStop(1, n.color + '0)');
+
+      ctx.save();
+      ctx.scale(1, ry / rx);
+      ctx.beginPath();
+      ctx.arc(cx, cy * (rx / ry), rx * pulse, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function drawStars(t) {
+    const mx = (mouse.x - 0.5);
+    const my = (mouse.y - 0.5);
+
+    stars.forEach(s => {
+      const px = s.x + mx * s.layer * W * 0.06;
+      const py = s.y + my * s.layer * H * 0.06;
+
+      const twinkle = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * s.twinkleSpeed + s.twinkleOffset));
+      const alpha = s.opacity * twinkle;
+
+      ctx.beginPath();
+      ctx.arc(
+        ((px % W) + W) % W,
+        ((py % H) + H) % H,
+        s.r, 0, Math.PI * 2
+      );
+
+      if (s.hue !== 0) {
+        ctx.fillStyle = `hsla(${s.hue}, 60%, 80%, ${alpha})`;
+      } else {
+        ctx.fillStyle = `rgba(232,228,240,${alpha})`;
+      }
+      ctx.fill();
+
+      // Glow for bigger stars
+      if (s.r > 1.1) {
+        const glow = ctx.createRadialGradient(
+          ((px % W) + W) % W, ((py % H) + H) % H, 0,
+          ((px % W) + W) % W, ((py % H) + H) % H, s.r * 4
+        );
+        const glowColor = s.hue !== 0 ? `hsla(${s.hue},60%,80%,` : 'rgba(232,228,240,';
+        glow.addColorStop(0, glowColor + (alpha * 0.4) + ')');
+        glow.addColorStop(1, glowColor + '0)');
+        ctx.beginPath();
+        ctx.arc(((px % W) + W) % W, ((py % H) + H) % H, s.r * 4, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+      }
+    });
+  }
+
+  function drawHorizonGlow() {
+    const grad = ctx.createLinearGradient(0, H * 0.6, 0, H);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(1, 'rgba(8,8,16,0.7)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // subtle center vignette
+    const vg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H) * 0.7);
+    vg.addColorStop(0, 'transparent');
+    vg.addColorStop(1, 'rgba(0,0,0,0.45)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  let lastTime = 0;
+  function loop(t) {
+    raf = requestAnimationFrame(loop);
+    if (t - lastTime < 16) return; // ~60fps cap
+    lastTime = t;
+
+    // smooth mouse
+    mouse.x += (targetMouse.x - mouse.x) * 0.04;
+    mouse.y += (targetMouse.y - mouse.y) * 0.04;
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+
+    drawNebulae(t);
+    drawStars(t);
+    drawHorizonGlow();
+  }
+
+  window.addEventListener('resize', () => { clearTimeout(window._rsz); window._rsz = setTimeout(resize, 120); });
+  document.addEventListener('mousemove', e => {
+    targetMouse.x = e.clientX / window.innerWidth;
+    targetMouse.y = e.clientY / window.innerHeight;
+  });
+
+  resize();
+  raf = requestAnimationFrame(loop);
+
+
+  // ─── INTERSECTION OBSERVER REVEALS ───────────────────────
+  const revealEls = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  revealEls.forEach(el => observer.observe(el));
+
+
+  // ─── CUSTOM CURSOR ────────────────────────────────────────
+  const dot = document.getElementById('cursor-dot');
+  const ring = document.getElementById('cursor-ring');
+  let ringX = 0, ringY = 0, dotX = 0, dotY = 0;
+  let cursorRaf;
+
+  function animateCursor() {
+    cursorRaf = requestAnimationFrame(animateCursor);
+    dotX += (targetMouse.x * window.innerWidth - dotX) * 0.85;
+    dotY += (targetMouse.y * window.innerHeight - dotY) * 0.85;
+    ringX += (targetMouse.x * window.innerWidth - ringX) * 0.12;
+    ringY += (targetMouse.y * window.innerHeight - ringY) * 0.12;
+    dot.style.left = dotX + 'px';
+    dot.style.top = dotY + 'px';
+    ring.style.left = ringX + 'px';
+    ring.style.top = ringY + 'px';
+  }
+
+  if (window.matchMedia('(hover: hover)').matches) {
+    animateCursor();
+    document.querySelectorAll('a, button, .cap-card').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        ring.style.width = '48px';
+        ring.style.height = '48px';
+        ring.style.borderColor = 'rgba(196,160,255,0.5)';
+      });
+      el.addEventListener('mouseleave', () => {
+        ring.style.width = '28px';
+        ring.style.height = '28px';
+        ring.style.borderColor = 'rgba(123,140,222,0.35)';
+      });
+    });
+  }
+
+
+  // ─── SMOOTH SCROLL ───────────────────────────────────────
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+
+  // ─── FORM SUBMIT ─────────────────────────────────────────
+  document.querySelector('.form-submit').addEventListener('click', function(e) {
+    e.preventDefault();
+    const btn = this;
+    const span = btn.querySelector('span');
+    span.textContent = 'Signal received.';
+    btn.style.pointerEvents = 'none';
+    setTimeout(() => {
+      span.textContent = 'Transmit';
+      btn.style.pointerEvents = '';
+    }, 3500);
+  });
+
+})();
+</script>
+</body>
+</html>

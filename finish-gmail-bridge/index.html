@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finish the Gmail Bridge</title>
+<style>
+  :root{--bg:#070a0f;--card:#121722;--ink:#e8edf4;--mut:#8a93a0;--ok:#1fb866;--blue:#2f7df6;--warn:#e0a13a;--err:#e0584a;--line:#1d2531}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.55;padding:0 0 70px}
+  header{padding:20px 18px;border-bottom:1px solid var(--line);background:#0b0f15;position:sticky;top:0;z-index:5}
+  h1{margin:0;font-size:19px;letter-spacing:.03em}
+  .sub{color:var(--mut);font:600 11px/1.4 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.1em;margin-top:5px}
+  main{max-width:860px;margin:0 auto;padding:18px}
+  h2{font-size:15px;margin:26px 0 8px;color:var(--blue);border-left:3px solid var(--blue);padding-left:9px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:13px 15px;margin:10px 0}
+  code{font-family:ui-monospace,Menlo,monospace;background:#0a0e14;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12.5px;color:#7fc7a6;word-break:break-all}
+  b{color:#fff}
+  ul{margin:6px 0;padding-left:20px} li{margin:5px 0}
+  .row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .n{color:var(--ok);font:700 12px/1.6 ui-monospace,monospace;min-width:22px}
+  .tag{display:inline-block;font:700 10px/1 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.08em;padding:4px 7px;border-radius:5px;margin-right:6px}
+  .t-bad{background:rgba(224,88,74,.13);color:var(--err);border:1px solid rgba(224,88,74,.3)}
+  .t-ok{background:rgba(31,184,102,.13);color:var(--ok);border:1px solid rgba(31,184,102,.3)}
+  .copybar{position:sticky;top:71px;z-index:4;background:#0b0f15ee;backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:11px 18px;display:flex;gap:10px;align-items:center}
+  button{font:700 13px/1 -apple-system,"Segoe UI",sans-serif;color:#fff;background:var(--blue);border:0;border-radius:9px;padding:11px 16px;cursor:pointer;letter-spacing:.02em}
+  button:active{transform:translateY(1px)}
+  #status{color:var(--mut);font:600 12px/1 ui-monospace,monospace}
+  pre{background:#0a0e14;border:1px solid var(--line);border-radius:11px;padding:14px;overflow:auto;font:500 12px/1.5 ui-monospace,Menlo,monospace;color:#c7d2dd;white-space:pre-wrap;word-break:break-word}
+  footer{max-width:860px;margin:26px auto 0;padding:0 18px;color:var(--mut);font:500 11px/1.5 ui-monospace,monospace}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Finish the Gmail Bridge</h1>
+  <div class="sub">selfexec.com@gmail.com · two-way email ↔ Matrix · handoff for the matrix setup session</div>
+</header>
+
+<div class="copybar">
+  <button id="copy">Copy prompt</button>
+  <span id="status">Tap to copy the full prompt, then paste into the matrix setup session.</span>
+</div>
+
+<main>
+
+<h2>One step from done</h2>
+<div class="card">
+  The bridge (<code>E:\bridges\email_twoway.py</code> on Nitro) is built and correct. It just can't authenticate because its OAuth token file was never completed and never landed on Nitro. Complete the mint, copy the token across, verify. That's it.
+</div>
+
+<h2>What's wrong <span class="tag t-bad">verified</span></h2>
+<div class="card">
+  <div class="row"><span class="n">1</span><div>The bridge reads creds from <code>E:\bridges\gmail_oauth.json</code> — <b>that file does not exist.</b> Sole reason it can't poll/send.</div></div>
+  <div class="row"><span class="n">2</span><div>The mint script <code>/Users/qi/.xen/gmail_oauth_mint.py</code> (on M4) writes its output to <code>/Users/qi/.xen/gmail_oauth.json</code> — a <b>different host/path</b> than the bridge reads. The cross-host copy to Nitro is the missing link.</div></div>
+  <div class="row"><span class="n">3</span><div>The exchange never completed: <code>/Users/qi/.xen/</code> has <code>gmail_oauth_pkce.json</code>, <code>_mint.py</code>, <code>_status.txt</code> (=DONE, misleading), <code>_url.txt</code>, <code>_mint.log</code> — but <b>no gmail_oauth.json</b>. The staged pkce state does not match the last logged consent URL, so a stale verifier would fail. Do a <b>fresh url→exchange pair in one go.</b></div></div>
+</div>
+
+<h2>No blockers <span class="tag t-ok">good</span></h2>
+<div class="card">
+  <ul>
+    <li>Mint scope is <code>https://mail.google.com/</code> — correct for IMAP + SMTP. <b>Drive scope not needed</b> for the bridge.</li>
+    <li><b>CLIENT_ID + CLIENT_SECRET are already hardcoded in the mint script</b> (Thunderbird public client) and get written into <code>gmail_oauth.json</code>, so the bridge's refresh-token call (which uses the secret) works once the file lands. Don't rotate or change them.</li>
+  </ul>
+</div>
+
+<h2>Steps</h2>
+<div class="card">
+  <div class="row"><span class="n">1</span><div>On M4: <code>python3 /Users/qi/.xen/gmail_oauth_mint.py url selfexec.com@gmail.com</code> → prints a Google consent URL.</div></div>
+  <div class="row"><span class="n">2</span><div>Open it in a browser <b>signed in as selfexec.com@gmail.com</b> (pick that account if multiple). Approve. The redirect to <code>http://127.0.0.1:47533/?code=…</code> will fail to load (no listener — expected). Copy the <b>entire</b> redirected URL from the address bar.</div></div>
+  <div class="row"><span class="n">3</span><div><code>python3 /Users/qi/.xen/gmail_oauth_mint.py exchange "&lt;paste full redirected URL&gt;"</code> → expect <code>OK refresh_token stored …</code>. On <code>NO_REFRESH_TOKEN</code>: redo from step 1. On <code>EXCHANGE_FAIL … invalid_grant</code>: code/verifier mismatched — redo 1→3 cleanly without re-running <code>url</code> in between.</div></div>
+  <div class="row"><span class="n">4</span><div><b>Land it on Nitro</b> (the missing link). From the Nitro session: <code>rclone copyto m4:.xen/gmail_oauth.json E:\bridges\gmail_oauth.json</code> (rclone <code>m4:</code> = /Users/qi over SMB, verified). Alt: scp M4→Nitro over Tailscale.</div></div>
+  <div class="row"><span class="n">5</span><div><b>Verify on Nitro:</b> <code>python E:\bridges\email_twoway.py once</code> → clean inbound+outbound pass, no "no gmail_oauth.json" error. Confirm <code>E:\bridges\gmail_token_cache.json</code> gets written (proves refresh works). Then reply to a test email in the Matrix room and confirm it lands in the Gmail thread.</div></div>
+</div>
+
+<h2>Also</h2>
+<div class="card">
+  Ensure room wiring exists on Nitro: <code>E:\bridges\email_matrix_room.txt</code> and <code>HS=matrix.xlrd.org</code>. <br><br>
+  <span class="tag t-ok">fyi</span> For sending <b>files/large attachments</b>, Composio has gmail + googledrive live on <b>xlrdtech@gmail.com</b> (<code>GOOGLEDRIVE_CREATE_PERMISSION</code> + <code>GMAIL_SEND_EMAIL</code>) — already used to ship a client deliverable. That's a separate path from this selfexec bridge; don't conflate them.
+</div>
+
+<h2>The prompt (copyable)</h2>
+<pre id="prompt">TASK: Finish the selfexec.com@gmail.com two-way email↔Matrix bridge. It's one step from done — the OAuth mint just needs to be completed and the token file landed on Nitro. Follow exactly.
+
+WHAT'S WRONG (verified):
+- The bridge E:\bridges\email_twoway.py (Nitro) reads creds from E:\bridges\gmail_oauth.json — that file DOES NOT EXIST. Sole reason it can't poll/send.
+- The mint /Users/qi/.xen/gmail_oauth_mint.py (M4) writes to /Users/qi/.xen/gmail_oauth.json — a DIFFERENT host/path than the bridge reads. The cross-host copy to Nitro is the missing link.
+- The exchange never completed: /Users/qi/.xen/ has gmail_oauth_pkce.json, _mint.py, _status.txt(=DONE, misleading), _url.txt, _mint.log — but NO gmail_oauth.json. Staged pkce state != last logged consent URL state, so a stale verifier would fail. Do a FRESH url->exchange pair in one go.
+
+NO BLOCKERS:
+- Scope is https://mail.google.com/ — correct for IMAP+SMTP. Drive scope NOT needed.
+- CLIENT_ID + CLIENT_SECRET are already hardcoded in the mint and written into gmail_oauth.json, so the bridge's refresh (uses the secret) works once the file lands. Don't rotate/change them.
+
+STEPS (M4 unless noted):
+1. python3 /Users/qi/.xen/gmail_oauth_mint.py url selfexec.com@gmail.com   -> prints consent URL.
+2. Open it in a browser SIGNED IN AS selfexec.com@gmail.com. Approve. The redirect to http://127.0.0.1:47533/?code=...&state=... will fail to load (no listener — expected). Copy the ENTIRE redirected URL from the address bar.
+3. python3 /Users/qi/.xen/gmail_oauth_mint.py exchange "<paste full redirected URL>"  -> expect "OK refresh_token stored ...".
+   NO_REFRESH_TOKEN -> redo from step 1.  EXCHANGE_FAIL ... invalid_grant -> code/verifier mismatched, redo 1->3 cleanly without re-running url in between.
+4. Land on Nitro (the missing link). From the NITRO session:
+     rclone copyto m4:.xen/gmail_oauth.json E:\bridges\gmail_oauth.json
+   (rclone m4: = /Users/qi over SMB, verified. Alt: scp M4->Nitro over Tailscale.)
+5. VERIFY on Nitro:
+     python E:\bridges\email_twoway.py once
+   Expect clean inbound+outbound pass, no "no gmail_oauth.json yet" error. Confirm E:\bridges\gmail_token_cache.json is written (proves refresh works). Then reply to a test email in the Matrix room and confirm it lands in the Gmail thread.
+
+ALSO: ensure E:\bridges\email_matrix_room.txt and HS=matrix.xlrd.org are set on Nitro.
+FYI (not the bridge): for files/large attachments, Composio has gmail+googledrive on xlrdtech@gmail.com (CREATE_PERMISSION + GMAIL_SEND_EMAIL) — separate path, don't conflate.
+
+When done: write back to LAST_KNOWN_STATE.md — bridge live, token at E:\bridges\gmail_oauth.json, verified send.</pre>
+
+</main>
+
+<footer>
+  XLRD · handoff doc · selfexec mail bridge · no secrets printed here (the client secret lives in the mint script on M4)
+</footer>
+
+<script>
+  document.getElementById('copy').addEventListener('click', async function(){
+    var txt = document.getElementById('prompt').textContent;
+    var s = document.getElementById('status');
+    try{ await navigator.clipboard.writeText(txt); s.textContent = 'Copied. Paste into the matrix setup session.'; s.style.color = '#1fb866'; }
+    catch(e){
+      var r = document.createRange(); r.selectNodeContents(document.getElementById('prompt'));
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      s.textContent = 'Selected — press copy (Cmd/Ctrl+C).'; s.style.color = '#e0a13a';
+    }
+  });
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

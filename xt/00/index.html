@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>XLRD — Executive Leverage Research Development</title>
+<meta name="description" content="Open-source automation, AI, and digital systems built for mission-driven organizations. Transparent architecture you own. A 501(c)(3) nonprofit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── tokens ─────────────────────────────────────────────────────────
+   Lifted from the Davies reference qi supplied (themesflat): Figtree,
+   near-black ground, one switchable accent, --black-64 muted text.
+   Accent is the green the saved variant actually ran (#07C42C), which
+   is also the green xlrd.org already uses — the two systems agree.  */
+:root{
+  --ink:#000; --ink-2:#0A0A0A; --ink-3:#111114;
+  --accent:#07C42C; --accent-dim:#07C42C29;
+  --w:#fff; --w-64:rgba(255,255,255,.64); --w-40:rgba(255,255,255,.40);
+  --w-16:rgba(255,255,255,.16); --w-08:rgba(255,255,255,.08);
+  --pad:clamp(20px,5vw,64px); --maxw:1240px;
+  --step:clamp(.72rem,.68rem + .2vw,.78rem);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--ink);color:var(--w);
+  font:400 16px/1.6 Figtree,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+img,svg{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+
+/* every band is centred; nothing full-bleed on mobile */
+.wrap{width:100%;max-width:var(--maxw);margin-inline:auto;padding-inline:var(--pad)}
+section{padding-block:clamp(64px,10vw,140px);position:relative}
+
+/* ── type scale ─────────────────────────────────────────────────── */
+.cap{ /* the reference's text-caption: tiny, upper, wide tracking */
+  font-size:var(--step);font-weight:500;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--w-64);
+}
+.display{
+  font-weight:600;line-height:.92;letter-spacing:-.035em;
+  font-size:clamp(2.6rem,9vw,6.5rem);margin:0;
+}
+h2.display{font-size:clamp(2.1rem,6.5vw,4.2rem)}
+.lede{font-size:clamp(1rem,.95rem + .5vw,1.3rem);color:var(--w-64);line-height:1.55;margin:0}
+.rule{height:1px;background:var(--w-08);border:0;margin:0}
+
+/* the reference's // list marker */
+.slash{list-style:none;margin:0;padding:0;display:grid;gap:.7rem}
+.slash li{color:var(--w-64);font-size:.97rem;letter-spacing:-.01em}
+.slash li::before{content:"//";color:var(--accent);margin-right:.6rem;font-weight:700}
+
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);
+  margin-right:.55rem;vertical-align:middle;box-shadow:0 0 0 0 var(--accent);
+  animation:ping 2.4s cubic-bezier(0,0,.2,1) infinite}
+@keyframes ping{70%,100%{box-shadow:0 0 0 9px transparent}}
+
+/* ── header ─────────────────────────────────────────────────────── */
+header{position:fixed;inset:0 0 auto;z-index:60;background:rgba(0,0,0,.72);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--w-08)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-height:68px}
+.mark{font-weight:800;letter-spacing:-.06em;font-size:1.28rem}
+.mark i{color:var(--accent);font-style:normal}
+nav.desk{display:none;gap:1.6rem}
+nav.desk a{font-size:var(--step);font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--w-64);transition:color .25s}
+nav.desk a span{color:var(--accent);margin-right:.3rem}
+nav.desk a:hover{color:var(--w)}
+.menu-btn{background:none;border:1px solid var(--w-16);color:var(--w);border-radius:999px;
+  padding:.5rem 1rem;font:inherit;font-size:var(--step);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+@media(min-width:900px){nav.desk{display:flex}.menu-btn{display:none}}
+
+/* mobile sheet */
+#sheet{position:fixed;inset:0;z-index:70;background:var(--ink);display:none;
+  flex-direction:column;justify-content:center;text-align:center;padding:var(--pad)}
+#sheet.open{display:flex}
+#sheet a{font-size:clamp(2rem,11vw,3rem);font-weight:600;letter-spacing:-.035em;padding:.4rem 0}
+#sheet a span{color:var(--accent);font-size:1rem;letter-spacing:.2em;vertical-align:super;margin-right:.5rem}
+#sheet .close{position:absolute;top:18px;right:var(--pad)}
+
+/* ── hero ───────────────────────────────────────────────────────── */
+.hero{padding-top:clamp(120px,20vw,190px);text-align:center}
+.hero .roles{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:0 0 1.6rem;padding:0;list-style:none}
+.hero .roles li{border:1px solid var(--w-16);border-radius:999px;padding:.34rem .85rem;
+  font-size:var(--step);letter-spacing:.14em;text-transform:uppercase;color:var(--w-64)}
+.hero .display i{color:var(--accent);font-style:normal}
+.hero .sub{max-width:56ch;margin:1.6rem auto 0}
+.status{display:inline-flex;align-items:center;font-size:var(--step);letter-spacing:.18em;
+  text-transform:uppercase;color:var(--w);border:1px solid var(--w-16);border-radius:999px;padding:.4rem 1rem;margin-bottom:1.4rem}
+.cta{display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center;margin-top:2.2rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:999px;padding:.85rem 1.6rem;
+  font-size:var(--step);font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  border:1px solid var(--w-16);color:var(--w);transition:.28s;cursor:pointer;background:none;font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.solid{background:var(--accent);border-color:var(--accent);color:#001b06}
+.btn.solid:hover{filter:brightness(1.12);color:#001b06}
+
+/* ── section header ─────────────────────────────────────────────── */
+.shead{display:grid;gap:.9rem;margin-bottom:clamp(2rem,5vw,3.4rem);text-align:center;justify-items:center}
+
+/* ── cards ──────────────────────────────────────────────────────── */
+.grid{display:grid;gap:1rem}
+@media(min-width:760px){.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--ink-2);border:1px solid var(--w-08);border-radius:20px;
+  padding:clamp(1.4rem,3vw,2rem);transition:.3s;position:relative;overflow:hidden}
+.card:hover{border-color:var(--w-16);background:var(--ink-3);transform:translateY(-3px)}
+.card h3{margin:.5rem 0 .6rem;font-size:1.3rem;font-weight:600;letter-spacing:-.02em}
+.card p{margin:0 0 1rem;color:var(--w-64);font-size:.97rem}
+.num{font-size:var(--step);letter-spacing:.2em;color:var(--accent);font-weight:700}
+
+/* work rows */
+.row{display:grid;gap:.4rem;padding:1.4rem 0;border-top:1px solid var(--w-08);
+  align-items:baseline;transition:.25s}
+.row:last-child{border-bottom:1px solid var(--w-08)}
+.row:hover{padding-inline:.6rem;background:var(--ink-2)}
+.row .t{font-size:clamp(1.35rem,4vw,2rem);font-weight:600;letter-spacing:-.03em}
+.row .d{color:var(--w-64);font-size:.95rem}
+.row .m{font-size:var(--step);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+@media(min-width:760px){.row{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) auto;gap:1.5rem;align-items:center}}
+
+/* tiers */
+.tier{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  border:1px solid var(--w-08);border-radius:14px;padding:1rem 1.2rem;transition:.25s;background:var(--ink-2)}
+.tier:hover{border-color:var(--accent);background:var(--ink-3)}
+.tier .n{font-weight:500;letter-spacing:-.01em}
+.tier .v{font-weight:700;font-size:1.15rem}
+.tier.feat{border-color:var(--accent);background:var(--accent-dim)}
+
+/* faq */
+details{border-top:1px solid var(--w-08)}
+details:last-of-type{border-bottom:1px solid var(--w-08)}
+summary{cursor:pointer;list-style:none;padding:1.15rem 0;display:flex;gap:1rem;align-items:flex-start;
+  font-weight:500;font-size:1.03rem;letter-spacing:-.01em}
+summary::-webkit-details-marker{display:none}
+summary .o{color:var(--accent);font-size:var(--step);font-weight:700;letter-spacing:.14em;padding-top:.28rem}
+summary .k{margin-left:auto;color:var(--accent);transition:.25s;font-size:1.3rem;line-height:1}
+details[open] summary .k{transform:rotate(45deg)}
+details p{margin:0 0 1.15rem;padding-left:2.5rem;color:var(--w-64);font-size:.97rem;max-width:70ch}
+
+/* footer */
+footer{border-top:1px solid var(--w-08);padding-block:clamp(2.4rem,6vw,4rem)}
+.fgrid{display:grid;gap:2rem;text-align:center}
+@media(min-width:760px){.fgrid{grid-template-columns:1.4fr 1fr 1fr;text-align:left}}
+.fgrid ul{list-style:none;margin:.8rem 0 0;padding:0;display:grid;gap:.55rem}
+.fgrid a{color:var(--w-64);transition:color .2s}.fgrid a:hover{color:var(--accent)}
+.fbot{display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center;align-items:center;
+  margin-top:2.4rem;padding-top:1.6rem;border-top:1px solid var(--w-08)}
+@media(min-width:760px){.fbot{justify-content:space-between}}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  .dot{animation:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a href="#top" class="mark">xlrd<i>.</i>org</a>
+    <nav class="desk">
+      <a href="#work"><span>01 /</span>WORK</a>
+      <a href="#services"><span>02 /</span>SERVICES</a>
+      <a href="#standard"><span>03 /</span>STANDARD</a>
+      <a href="#support"><span>04 /</span>SUPPORT</a>
+      <a href="#contact"><span>05 /</span>CONTACT</a>
+    </nav>
+    <button class="menu-btn" id="open">Menu</button>
+  </div>
+</header>
+
+<div id="sheet">
+  <button class="menu-btn close" id="close">Close</button>
+  <a href="#work"><span>01</span>Work</a>
+  <a href="#services"><span>02</span>Services</a>
+  <a href="#standard"><span>03</span>Standard</a>
+  <a href="#support"><span>04</span>Support</a>
+  <a href="#contact"><span>05</span>Contact</a>
+</div>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <p class="status rv"><span class="dot"></span>System online</p>
+      <ul class="roles rv">
+        <li>Workflow automation</li><li>Cognitive AI</li><li>Strategic technology</li>
+      </ul>
+      <h1 class="display rv">Executive Leverage<br>Research Development<i>.</i></h1>
+      <p class="lede sub rv">
+        Open-source automation architecture for mission-driven organizations.
+        Transparent code, no black boxes — you own everything we build.
+      </p>
+      <div class="cta rv">
+        <a class="btn solid" href="#support">Support the work</a>
+        <a class="btn" href="#services">What we build</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORK -->
+  <section id="work">
+    <div class="wrap">
+      <div class="shead rv">
+        <p class="cap">01 / Selected work</p>
+        <h2 class="display">Shipped and live</h2>
+      </div>
+      <div class="rv">
+        <div class="row">
+          <div class="t">hitthe.link</div>
+          <div class="d">Public delivery surface. Static, versioned, no auth wall — client one-pagers and product overviews ship here.</div>
+          <div class="m">Live</div>
+        </div>
+        <div class="row">
+          <div class="t">LifeNote</div>
+          <div class="d">Product overview built from the source specification and published to the open web.</div>
+          <div class="m">Live</div>
+        </div>
+        <div class="row">
+          <div class="t">Agent fleet</div>
+          <div class="d">Always-on background workers under process supervision — file intake, alerting, device control, scheduled tasks.</div>
+          <div class="m">Running</div>
+        </div>
+        <div class="row">
+          <div class="t">Voice &amp; messaging relay</div>
+          <div class="d">One canonical output path fanning a single message to speech, SMS and on-screen display in parallel.</div>
+          <div class="m">Running</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <div class="wrap">
+      <div class="shead rv">
+        <p class="cap">02 / Capabilities</p>
+        <h2 class="display">What we build</h2>
+      </div>
+      <div class="grid c3">
+        <div class="card rv">
+          <p class="num">01</p>
+          <h3>Workflow automation</h3>
+          <p>Orchestration architecture that replaces repetitive human process end to end.</p>
+          <ul class="slash">
+            <li>Event-driven pipelines</li><li>Scheduled + supervised jobs</li>
+            <li>Data intake and transform</li><li>Failure alerting that proves delivery</li>
+          </ul>
+        </div>
+        <div class="card rv">
+          <p class="num">02</p>
+          <h3>Cognitive AI</h3>
+          <p>Language-model agents grounded in your own organizational knowledge, not a generic index.</p>
+          <ul class="slash">
+            <li>Retrieval over your corpus</li><li>Tool-using agents</li>
+            <li>Durable memory</li><li>Human-readable audit trail</li>
+          </ul>
+        </div>
+        <div class="card rv">
+          <p class="num">03</p>
+          <h3>Strategic technology</h3>
+          <p>Architecture-level guidance that ties technical decisions to mission outcomes.</p>
+          <ul class="slash">
+            <li>Systems architecture</li><li>Build-versus-buy analysis</li>
+            <li>Migration planning</li><li>Handover and documentation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STANDARD -->
+  <section id="standard">
+    <div class="wrap">
+      <div class="shead rv">
+        <p class="cap">03 / Core values</p>
+        <h2 class="display">The Ophanim Standard</h2>
+      </div>
+      <div class="grid c2">
+        <div class="card rv">
+          <h3>All-seeing automation</h3>
+          <p>Systems that monitor, execute and report without a human in the loop — and that surface their own
+             failures instead of reporting success by default.</p>
+        </div>
+        <div class="card rv">
+          <h3>Open-source DNA</h3>
+          <p>Transparent code. No black boxes. The architecture is yours: you keep it, run it, and change it
+             without asking anyone's permission.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUPPORT -->
+  <section id="support">
+    <div class="wrap">
+      <div class="shead rv">
+        <p class="cap">04 / Contribute</p>
+        <h2 class="display">Fuel the engine</h2>
+        <p class="lede" style="max-width:52ch">
+          xlrd.org is a 501(c)(3) nonprofit. Contributions fund open-source development that stays free to use.
+        </p>
+      </div>
+      <div class="grid c3 rv">
+        <a class="tier" href="https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&amp;no_recurring=0&amp;currency_code=USD&amp;amount=111" target="_blank" rel="noopener">
+          <span class="n">Quick consult</span><span class="v">$111</span>
+        </a>
+        <a class="tier" href="https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&amp;no_recurring=0&amp;currency_code=USD&amp;amount=222" target="_blank" rel="noopener">
+          <span class="n">Starter build</span><span class="v">$222</span>
+        </a>
+        <a class="tier feat" href="https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&amp;no_recurring=0&amp;currency_code=USD&amp;amount=555" target="_blank" rel="noopener">
+          <span class="n">Full architecture</span><span class="v">$555</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section>
+    <div class="wrap" style="max-width:860px">
+      <div class="shead rv">
+        <p class="cap">05 / Questions</p>
+        <h2 class="display">Frequently asked</h2>
+      </div>
+      <div class="rv">
+        <details>
+          <summary><span class="o">01</span>Who owns what you build?<span class="k">+</span></summary>
+          <p>You do. Everything is delivered as open source with the architecture documented. There is no
+             proprietary runtime you have to keep paying for and no lock-in clause.</p>
+        </details>
+        <details>
+          <summary><span class="o">02</span>Is xlrd.org really a nonprofit?<span class="k">+</span></summary>
+          <p>Yes — a registered 501(c)(3). Contributions fund development that is released publicly rather than
+             sold as a private product.</p>
+        </details>
+        <details>
+          <summary><span class="o">03</span>Do you work with organizations outside the US?<span class="k">+</span></summary>
+          <p>Yes. The work is remote by default and coordinated through shared repositories and written
+             specifications, so time zone is not a constraint.</p>
+        </details>
+        <details>
+          <summary><span class="o">04</span>What does a contribution actually pay for?<span class="k">+</span></summary>
+          <p>Development time on open-source tooling, and the infrastructure that keeps the published work
+             online and free to access.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="wrap" style="text-align:center">
+      <p class="cap rv">06 / Contact</p>
+      <h2 class="display rv" style="margin:.8rem 0 1.4rem">Start a conversation</h2>
+      <p class="lede rv" style="max-width:48ch;margin-inline:auto">
+        For consulting, partnerships, or a question about the open-source work.
+      </p>
+      <div class="cta rv">
+        <a class="btn solid" href="mailto:info@xlrd.org">info@xlrd.org</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <p class="mark" style="margin:0">xlrd<i>.</i>org</p>
+        <p class="cap" style="margin:.7rem 0 0"><span class="dot"></span>Executive Leverage Research Development</p>
+      </div>
+      <div>
+        <p class="cap" style="margin:0">Sitemap</p>
+        <ul>
+          <li><a href="#work">Work</a></li><li><a href="#services">Services</a></li>
+          <li><a href="#standard">Standard</a></li><li><a href="#support">Support</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="cap" style="margin:0">Direct</p>
+        <ul>
+          <li><a href="mailto:info@xlrd.org">info@xlrd.org</a></li>
+          <li><a href="https://hitthe.link">hitthe.link</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="fbot">
+      <p class="cap" style="margin:0">© <span id="yr">2026</span> xlrd.org · 501(c)(3) nonprofit</p>
+      <a class="cap" href="#top" style="color:var(--accent)">Back to top ↑</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+/* mobile sheet */
+var sheet = document.getElementById('sheet');
+document.getElementById('open').onclick  = function(){ sheet.classList.add('open');  document.body.style.overflow='hidden'; };
+document.getElementById('close').onclick = function(){ sheet.classList.remove('open'); document.body.style.overflow=''; };
+sheet.addEventListener('click', function(e){
+  if (e.target.tagName === 'A'){ sheet.classList.remove('open'); document.body.style.overflow=''; }
+});
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && sheet.classList.contains('open')){
+    sheet.classList.remove('open'); document.body.style.overflow='';
+  }
+});
+
+/* reveal on scroll — degrade to visible if IO is unavailable */
+if ('IntersectionObserver' in window){
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if (en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, {rootMargin:'0px 0px -8% 0px', threshold:.05});
+  document.querySelectorAll('.rv').forEach(function(el){ io.observe(el); });
+} else {
+  document.querySelectorAll('.rv').forEach(function(el){ el.classList.add('in'); });
+}
+</script>
+</body>
+</html>

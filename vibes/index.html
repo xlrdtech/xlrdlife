@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vibes · @stylism_</title>
+<meta name="description" content="Universe cloud visual reference — swipe through the aesthetic at a glance">
+<meta name="theme-color" content="#050508">
+<style>
+:root{--glow:rgba(180,140,255,.18)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+
+/* Starfield */
+html{height:100%;background:#050508}
+body{
+  min-height:100vh;height:100vh;overflow:hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(80,40,160,.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(40,80,200,.1) 0%, transparent 55%),
+    #050508;
+  color:#f0eeff;
+  font-family:-apple-system,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+}
+body::before{
+  content:'';
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 42%, rgba(255,255,255,.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 38% 8%, rgba(255,255,255,.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 52% 28%, rgba(255,255,255,.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 67% 55%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 73% 18%, rgba(255,255,255,.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 72%, rgba(255,255,255,.38) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 35%, rgba(255,255,255,.52) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 68%, rgba(255,255,255,.42) 0%, transparent 100%),
+    radial-gradient(1px 1px at 17% 85%, rgba(255,255,255,.48) 0%, transparent 100%),
+    radial-gradient(1px 1px at 44% 78%, rgba(255,255,255,.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 92%, rgba(255,255,255,.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 78% 88%, rgba(255,255,255,.55) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 32% 62%, rgba(200,180,255,.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 88% 48%, rgba(180,220,255,.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 48% 95%, rgba(255,255,255,.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 14% 32%, rgba(255,255,255,.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 96% 12%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 3% 48%, rgba(255,255,255,.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 56% 5%, rgba(255,255,255,.42) 0%, transparent 100%);
+}
+
+/* Header bar */
+.bar{
+  position:fixed;top:0;left:0;right:0;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;
+  background:rgba(5,5,8,.7);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.bar-left{font-size:14px;font-weight:700;letter-spacing:-.01em;opacity:.9}
+.bar-left span{opacity:.35}
+.bar-btns{display:flex;gap:8px}
+.mode-btn{
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);cursor:pointer;
+  transition:all .15s;
+}
+.mode-btn.active,.mode-btn:hover{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
+
+/* SWIPE mode */
+#swipe-view{
+  position:fixed;inset:0;z-index:5;
+  display:flex;align-items:center;justify-content:center;
+  padding:64px 20px 100px;
+}
+#swipe-view.hidden{display:none}
+
+.card{
+  position:relative;
+  max-height:calc(100vh - 164px);
+  max-width:min(480px, 90vw);
+  width:100%;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 0 60px var(--glow), 0 20px 60px rgba(0,0,0,.6);
+  transition:box-shadow .4s ease;
+  animation:floatIn .35s cubic-bezier(.22,.68,0,1.2) forwards;
+}
+@keyframes floatIn{
+  from{opacity:0;transform:translateY(12px) scale(.97)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.card img{
+  width:100%;display:block;
+  max-height:calc(100vh - 220px);
+  object-fit:cover;
+}
+.card-overlay{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(to top, rgba(5,5,8,.9) 0%, transparent 100%);
+  padding:32px 16px 16px;
+}
+.vibe-label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.6;margin-bottom:6px}
+.palette{display:flex;gap:4px;height:20px}
+.swatch{flex:1;border-radius:4px;opacity:.9}
+
+/* Nav arrows */
+.nav-arrow{
+  position:fixed;top:50%;transform:translateY(-50%);
+  z-index:15;width:44px;height:44px;border-radius:50%;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;color:rgba(255,255,255,.6);font-size:18px;
+}
+.nav-arrow:hover{background:rgba(255,255,255,.14);color:#fff}
+#nav-prev{left:12px}
+#nav-next{right:12px}
+
+/* Progress dots */
+.dots{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  z-index:15;display:flex;gap:6px;align-items:center;
+}
+.dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .2s;cursor:pointer}
+.dot.active{background:#fff;width:18px;border-radius:3px}
+
+/* Counter */
+.counter{
+  position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:rgba(255,255,255,.3);letter-spacing:.08em;z-index:15;
+}
+
+/* CLOUD mode */
+#cloud-view{
+  position:fixed;inset:0;z-index:5;
+  padding:64px 12px 24px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+#cloud-view.hidden{display:none}
+.cloud-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:8px;
+  max-width:1200px;
+  margin:0 auto;
+  padding-bottom:24px;
+}
+@media(min-width:600px){.cloud-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
+.cloud-card{
+  border-radius:12px;overflow:hidden;cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+  background:#111118;
+}
+.cloud-card:hover{transform:scale(1.04);box-shadow:0 0 24px var(--glow)}
+.cloud-card img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover}
+.cloud-palette{display:flex;height:6px}
+.cloud-swatch{flex:1}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-left">Vibes <span>· @stylism_</span></div>
+  <div class="bar-btns">
+    <button class="mode-btn active" id="btn-swipe" onclick="setMode('swipe')">Swipe</button>
+    <button class="mode-btn" id="btn-cloud" onclick="setMode('cloud')">Cloud</button>
+  </div>
+</div>
+
+<!-- Swipe mode -->
+<div id="swipe-view">
+  <div class="card" id="card">
+    <img id="card-img" src="" alt="">
+    <div class="card-overlay">
+      <div class="vibe-label" id="vibe-label">—</div>
+      <div class="palette" id="palette"></div>
+    </div>
+  </div>
+</div>
+<button class="nav-arrow" id="nav-prev" onclick="go(-1)">&#8249;</button>
+<button class="nav-arrow" id="nav-next" onclick="go(1)">&#8250;</button>
+<div class="dots" id="dots"></div>
+<div class="counter" id="counter"></div>
+
+<!-- Cloud mode -->
+<div id="cloud-view" class="hidden">
+  <div class="cloud-grid" id="cloud-grid"></div>
+</div>
+
+<script>
+const IMAGES = Array.from({length:30}, (_,i) => `/stylism/samples/pin-${String(i+1).padStart(2,'0')}.jpg`);
+const palettes = new Array(IMAGES.length).fill(null);
+let idx = 0, mode = 'swipe', touchX = 0;
+
+// Color extraction via canvas
+function extractColors(img, n) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = 40; c.height = 40;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, 40, 40);
+    const d = ctx.getImageData(0,0,40,40).data;
+    const buckets = {};
+    for (let i = 0; i < d.length; i += 16) {
+      const r = Math.round(d[i]/28)*28;
+      const g = Math.round(d[i+1]/28)*28;
+      const b = Math.round(d[i+2]/28)*28;
+      const k = `${r},${g},${b}`;
+      buckets[k] = (buckets[k]||0) + 1;
+    }
+    return Object.entries(buckets).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([k])=>`rgb(${k})`);
+  } catch(e) {
+    return ['#222','#333','#444','#555','#666'];
+  }
+}
+
+function detectVibe(colors) {
+  if (!colors || !colors[0]) return 'Abstract';
+  const m = colors[0].match(/\d+/g);
+  if (!m) return 'Abstract';
+  const [r,g,b] = m.map(Number);
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  const sat = max === 0 ? 0 : (max-min)/max;
+  const bright = (r+g+b)/3;
+  if (sat < 0.12) return bright > 160 ? 'Chrome · Metallic' : 'Obsidian · Dark';
+  const hue = max===r ? (g-b)/(max-min) : max===g ? 2+(b-r)/(max-min) : 4+(r-g)/(max-min);
+  const h = ((hue*60)+360)%360;
+  if (h < 30 || h > 330) return 'Rouge · Red Energy';
+  if (h < 60) return 'Gold · Warm Luxury';
+  if (h < 150) return 'Iridescent · Green';
+  if (h < 200) return 'Aqua · Crystal';
+  if (h < 270) return 'Electric · Blue';
+  if (h < 310) return 'Iridescent · Violet';
+  return 'Deep Space · Purple';
+}
+
+function rgbToGlow(color) {
+  const m = color && color.match(/\d+/g);
+  if (!m) return 'rgba(180,140,255,.2)';
+  const [r,g,b] = m.map(Number);
+  return `rgba(${r},${g},${b},.22)`;
+}
+
+// Preload + extract palette for an image
+function loadPalette(i) {
+  if (palettes[i]) return Promise.resolve(palettes[i]);
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      palettes[i] = extractColors(img, 5);
+      resolve(palettes[i]);
+    };
+    img.onerror = () => { palettes[i] = ['#1a1a2e','#16213e','#0f3460','#533483','#e94560']; resolve(palettes[i]); };
+    img.src = IMAGES[i];
+  });
+}
+
+// Render swipe card
+async function renderCard(i) {
+  document.getElementById('card-img').src = IMAGES[i];
+  document.getElementById('counter').textContent = (i+1) + ' / ' + IMAGES.length;
+  document.getElementById('vibe-label').textContent = '···';
+  document.getElementById('palette').innerHTML = '';
+
+  // Update dots
+  document.querySelectorAll('.dot').forEach((d,j) => d.classList.toggle('active', j===i));
+
+  const colors = await loadPalette(i);
+  document.getElementById('vibe-label').textContent = detectVibe(colors);
+  document.getElementById('palette').innerHTML = colors.map(c=>`<div class="swatch" style="background:${c}"></div>`).join('');
+  document.getElementById('card').style.setProperty('--glow', rgbToGlow(colors[0]));
+
+  // Preload adjacent
+  if (i+1 < IMAGES.length) loadPalette(i+1);
+  if (i-1 >= 0) loadPalette(i-1);
+}
+
+function go(dir) {
+  idx = (idx + dir + IMAGES.length) % IMAGES.length;
+  renderCard(idx);
+}
+
+// Build dots
+const dotsEl = document.getElementById('dots');
+IMAGES.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i===0?' active':'');
+  d.onclick = () => { idx=i; renderCard(idx); };
+  dotsEl.appendChild(d);
+});
+
+// Build cloud grid
+const cloudGrid = document.getElementById('cloud-grid');
+IMAGES.forEach((src,i) => {
+  const card = document.createElement('div');
+  card.className = 'cloud-card';
+  card.onclick = () => { idx=i; setMode('swipe'); renderCard(idx); };
+  const img = document.createElement('img');
+  img.src = src; img.alt = ''; img.loading = 'lazy';
+  img.onload = async () => {
+    const colors = await loadPalette(i);
+    const strip = document.createElement('div');
+    strip.className = 'cloud-palette';
+    strip.innerHTML = colors.map(c=>`<div class="cloud-swatch" style="background:${c}"></div>`).join('');
+    card.appendChild(strip);
+  };
+  card.appendChild(img);
+  cloudGrid.appendChild(card);
+});
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('swipe-view').classList.toggle('hidden', m!=='swipe');
+  document.getElementById('cloud-view').classList.toggle('hidden', m!=='cloud');
+  document.getElementById('nav-prev').style.display = m==='swipe'?'':'none';
+  document.getElementById('nav-next').style.display = m==='swipe'?'':'none';
+  document.getElementById('dots').style.display = m==='swipe'?'':'none';
+  document.getElementById('counter').style.display = m==='swipe'?'':'none';
+  document.getElementById('btn-swipe').classList.toggle('active', m==='swipe');
+  document.getElementById('btn-cloud').classList.toggle('active', m==='cloud');
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (mode !== 'swipe') return;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') go(-1);
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+});
+
+// Touch swipe
+document.addEventListener('touchstart', e => { touchX = e.changedTouches[0].clientX; }, {passive:true});
+document.addEventListener('touchend', e => {
+  if (mode !== 'swipe') return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+}, {passive:true});
+
+// Init
+renderCard(0);
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

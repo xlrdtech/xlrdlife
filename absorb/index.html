@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ABSORB — Live Source Extractor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#00ff88;font-family:monospace;min-height:100vh;padding:20px}
+h1{font-size:1.6rem;letter-spacing:.2em;text-shadow:0 0 16px #00ff88;margin-bottom:6px}
+.sub{opacity:.4;font-size:.75rem;letter-spacing:.1em;margin-bottom:20px}
+.row{display:flex;gap:8px;margin-bottom:12px}
+input{flex:1;background:#0a0a0a;border:1px solid #00ff8840;color:#00ff88;font-family:monospace;font-size:.9rem;padding:10px 14px;outline:none;border-radius:3px}
+input:focus{border-color:#00ff88}
+button{background:transparent;border:1px solid #00ff88;color:#00ff88;font-family:monospace;font-size:.9rem;padding:10px 20px;cursor:pointer;border-radius:3px;white-space:nowrap;transition:background .15s}
+button:hover{background:#00ff8815}
+button:disabled{opacity:.3;cursor:default}
+#status{font-size:.75rem;margin-bottom:10px;min-height:18px}
+#status.ok{color:#00ff88}
+#status.err{color:#ff4444}
+#status.live{color:#ffcc00;animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+#live-bar{background:#0a0a0a;border:1px solid #00ff8820;padding:8px 12px;font-size:.7rem;opacity:.5;margin-bottom:12px;min-height:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tabs{display:flex;gap:4px;border-bottom:1px solid #00ff8820}
+.tab{padding:6px 16px;cursor:pointer;opacity:.4;font-size:.8rem;letter-spacing:.05em;border-bottom:2px solid transparent}
+.tab.active{opacity:1;border-bottom-color:#00ff88}
+.panel{display:none;background:#050505;border:1px solid #00ff8820;border-top:none;padding:16px;max-height:58vh;overflow:auto;position:relative}
+.panel.active{display:block}
+pre{font-size:.72rem;line-height:1.6;color:#b0ffcc;white-space:pre-wrap;word-break:break-all}
+.copy-btn{position:sticky;top:0;float:right;background:#000;border:1px solid #00ff8840;color:#00ff88;font-family:monospace;font-size:.7rem;padding:3px 10px;cursor:pointer;border-radius:2px;margin-bottom:8px}
+.copy-btn:hover{border-color:#00ff88}
+#size{font-size:.7rem;opacity:.3;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>☠ ABSORB</h1>
+<div class="sub">LIVE SOURCE EXTRACTOR — real-time broadcast to all viewers</div>
+<div class="row">
+  <input id="url" type="url" placeholder="https://target.com" autocomplete="off" spellcheck="false">
+  <button id="btn" onclick="absorb()">ABSORB</button>
+</div>
+<div id="status" class="ok">— SSE live —</div>
+<div id="live-bar">waiting for live extract...</div>
+<div id="tabs">
+  <div class="tab active" onclick="showTab('html')">HTML</div>
+  <div class="tab" onclick="showTab('scripts')">JS</div>
+  <div class="tab" onclick="showTab('styles')">CSS</div>
+  <div class="tab" onclick="showTab('raw')">RAW</div>
+</div>
+<div id="panels">
+  <div class="panel active" id="panel-html"><button class="copy-btn" onclick="copyPanel('html')">COPY</button><pre id="out-html">—</pre></div>
+  <div class="panel" id="panel-scripts"><button class="copy-btn" onclick="copyPanel('scripts')">COPY</button><pre id="out-scripts">—</pre></div>
+  <div class="panel" id="panel-styles"><button class="copy-btn" onclick="copyPanel('styles')">COPY</button><pre id="out-styles">—</pre></div>
+  <div class="panel" id="panel-raw"><button class="copy-btn" onclick="copyPanel('raw')">COPY ALL</button><pre id="out-raw">—</pre></div>
+</div>
+<div id="size"></div>
+
+<script>
+const XEN_SSE = 'https://xen.xlrd.org/events';
+const XEN_API = 'https://xen.xlrd.org';
+const CORS = 'https://api.allorigins.win/get?url=';
+let evtSource;
+
+// SSE — live listener for absorb:extract events broadcast by omnimind
+function startSSE() {
+  if (evtSource) evtSource.close();
+  evtSource = new EventSource(XEN_SSE);
+  evtSource.addEventListener('xen-out', e => {
+    try {
+      const d = JSON.parse(e.data);
+      if (d.event === 'absorb:extract' && d.payload) {
+        renderExtract(d.payload);
+        document.getElementById('live-bar').textContent = '⚡ LIVE — ' + (d.payload.url||'') + ' — ' + new Date().toLocaleTimeString();
+      }
+    } catch(_){}
+  });
+  evtSource.onerror = () => setTimeout(startSSE, 3000);
+}
+
+function renderExtract(p) {
+  document.getElementById('out-html').textContent = p.html || '—';
+  document.getElementById('out-scripts').textContent = (p.scripts||[]).join('\n\n/* --- */\n\n') || '—';
+  document.getElementById('out-styles').textContent = (p.styles||[]).join('\n\n/* --- */\n\n') || '—';
+  document.getElementById('out-raw').textContent = p.raw || '—';
+  document.getElementById('size').textContent = 'raw: ' + ((p.raw||'').length/1024).toFixed(1) + 'kb';
+  setStatus('ok', '✓ ' + (p.url||'unknown'));
+}
+
+async function absorb() {
+  const url = document.getElementById('url').value.trim();
+  if (!url) return;
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  setStatus('live', 'absorbing ' + url + '...');
+  document.getElementById('live-bar').textContent = '⏳ fetching ' + url + '...';
+
+  try {
+    // Fetch via CORS proxy
+    const resp = await fetch(CORS + encodeURIComponent(url));
+    const data = await resp.json();
+    const raw = data.contents || '';
+    if (!raw) throw new Error('empty response');
+
+    // Parse HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(raw, 'text/html');
+
+    // Extract
+    const scripts = [...doc.querySelectorAll('script')].map(s => s.src ? `// src: ${s.src}` : s.textContent).filter(Boolean);
+    const styles = [...doc.querySelectorAll('style')].map(s => s.textContent).filter(Boolean)
+      .concat([...(doc.querySelectorAll('link[rel="stylesheet"]')||[])].map(l => `/* href: ${l.href} */`));
+    const html = doc.body ? doc.body.innerHTML : raw.slice(0, 50000);
+
+    const payload = { url, html, scripts, styles, raw: raw.slice(0, 200000), ts: Date.now() };
+
+    // Render locally immediately
+    renderExtract(payload);
+
+    // Post to omnimind to broadcast via SSE to ALL viewers
+    fetch(XEN_API + '/emit', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ event: 'absorb:extract', payload, source: 'absorb-tool' })
+    }).catch(()=>{});
+
+    document.getElementById('live-bar').textContent = '⚡ BROADCAST — ' + url + ' — ' + new Date().toLocaleTimeString();
+  } catch(err) {
+    setStatus('err', '✗ ' + err.message);
+    document.getElementById('live-bar').textContent = 'error: ' + err.message;
+  }
+  btn.disabled = false;
+}
+
+function setStatus(cls, msg) {
+  const el = document.getElementById('status');
+  el.className = cls;
+  el.textContent = msg;
+}
+
+function showTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', ['html','scripts','styles','raw'][i]===t));
+  document.querySelectorAll('.panel').forEach((el,i) => el.classList.toggle('active', ['panel-html','panel-scripts','panel-styles','panel-raw'][i]==='panel-'+t));
+}
+
+function copyPanel(t) {
+  navigator.clipboard.writeText(document.getElementById('out-'+t).textContent).catch(()=>{});
+}
+
+document.getElementById('url').addEventListener('keydown', e => e.key==='Enter' && absorb());
+
+startSSE();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

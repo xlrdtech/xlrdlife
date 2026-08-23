@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hook Switchboard — Claude Code hooks, live inventory | CTO East</title>
+<meta name="description" content="Every registered Claude Code hook as a physical switchboard: which fire, on which event, in which order, and which files are inert backups.">
+<meta name="theme-color" content="#0a0c0f">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Figtree:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#e9eef5; --dim:#93a0b2; --faint:#5d6878;
+  --bg:#0a0c0f; --panel:#15191f; --panel2:#1b2027;
+  --led-on:#59f2a6; --led-off:#3a4351; --led-warn:#ffcc66;
+  --rule:rgba(255,255,255,.08);
+  --disp:"Cinzel",Georgia,serif; --body:"Figtree",-apple-system,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:350;
+     -webkit-font-smoothing:antialiased;line-height:1.6}
+.wrap{max-width:78rem;margin:0 auto;padding:0 1.1rem 5rem}
+header{text-align:center;padding:clamp(2.5rem,7vh,4.5rem) 0 1.5rem}
+.kicker{font-family:var(--disp);font-size:.74rem;letter-spacing:.36em;text-transform:uppercase;color:var(--dim)}
+.kicker b{color:var(--led-on);font-weight:600}
+h1{font-family:var(--disp);font-weight:600;font-size:clamp(1.7rem,1.2rem+2.2vw,2.7rem);
+   letter-spacing:-.01em;margin:1rem 0 .7rem;line-height:1.15}
+.sub{color:var(--dim);max-width:40rem;margin:0 auto;font-size:.98rem}
+
+/* readout strip */
+.readout{display:flex;flex-wrap:wrap;justify-content:center;gap:.6rem;margin:1.8rem auto 0;max-width:52rem}
+.stat{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--rule);
+      border-radius:.6rem;padding:.7rem 1rem;min-width:8.4rem;text-align:center;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 6px 18px rgba(0,0,0,.5)}
+.stat .n{font-family:var(--mono);font-size:1.5rem;font-weight:500;color:#fff;line-height:1.1}
+.stat .l{font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-top:.3rem}
+.stat.warn .n{color:var(--led-warn)}
+
+/* the panel */
+.rack{display:flex;flex-wrap:wrap;justify-content:center;gap:1.1rem;margin-top:2.6rem}
+.bay{flex:1 1 21rem;max-width:25rem;background:
+      linear-gradient(180deg,#1e242c 0%,#161b21 12%,#141920 88%,#0f141a 100%);
+     border:1px solid rgba(255,255,255,.09);border-radius:.9rem;padding:1.05rem 1.05rem 1.2rem;
+     box-shadow:inset 0 1px 0 rgba(255,255,255,.07),inset 0 -2px 6px rgba(0,0,0,.5),0 14px 34px rgba(0,0,0,.55);
+     position:relative}
+.bay::before{content:"";position:absolute;inset:0;border-radius:.9rem;pointer-events:none;
+     background:repeating-linear-gradient(90deg,rgba(255,255,255,.014) 0 1px,transparent 1px 3px)}
+.bay h2{font-family:var(--mono);font-size:.82rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;
+        margin:0 0 .2rem;color:#fff;display:flex;align-items:center;gap:.5rem}
+.bay .when{font-size:.72rem;color:var(--faint);margin:0 0 .9rem;letter-spacing:.02em}
+.screws{position:absolute;top:.55rem;right:.6rem;display:flex;gap:.35rem}
+.screw{width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#4a535f,#20262d);
+       box-shadow:inset 0 0 0 1px rgba(0,0,0,.5)}
+
+/* a switch row */
+.sw{display:flex;align-items:center;gap:.75rem;padding:.5rem .1rem;border-top:1px solid rgba(255,255,255,.05)}
+.sw:first-of-type{border-top:0}
+.toggle{flex:0 0 auto;width:34px;height:19px;border-radius:19px;position:relative;cursor:pointer;
+        background:#0c1015;border:1px solid rgba(255,255,255,.12);
+        box-shadow:inset 0 2px 5px rgba(0,0,0,.8);transition:background .18s}
+.toggle .knob{position:absolute;top:1px;left:1px;width:15px;height:15px;border-radius:50%;
+        background:linear-gradient(180deg,#dfe6ee,#9aa6b4);
+        box-shadow:0 1px 3px rgba(0,0,0,.6);transition:transform .18s}
+.sw.on .toggle{background:linear-gradient(180deg,#143b2a,#0e2a1e);border-color:rgba(89,242,166,.45)}
+.sw.on .toggle .knob{transform:translateX(15px)}
+.led{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:var(--led-off)}
+.sw.on .led{background:var(--led-on);box-shadow:0 0 8px 1px rgba(89,242,166,.55)}
+.meta{min-width:0;flex:1}
+.fname{font-family:var(--mono);font-size:.79rem;color:var(--ink);white-space:nowrap;overflow:hidden;
+       text-overflow:ellipsis;display:block}
+.fmeta{font-size:.68rem;color:var(--faint);font-family:var(--mono)}
+.sw.off .fname{color:var(--faint);text-decoration:line-through}
+
+/* inert backups */
+.inert{margin-top:2.6rem;background:linear-gradient(180deg,#15191f,#11151a);border:1px solid var(--rule);
+       border-radius:.9rem;padding:1.2rem 1.2rem 1.35rem}
+.inert h2{font-family:var(--mono);font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;margin:0 0 .35rem;color:var(--led-warn)}
+.inert p{margin:.2rem 0 0;color:var(--dim);font-size:.9rem;max-width:52rem}
+.inert code{font-family:var(--mono);font-size:.82rem;color:var(--ink);background:rgba(255,255,255,.05);padding:.1rem .35rem;border-radius:.25rem}
+
+/* patch output */
+.patch{margin-top:2.4rem;border:1px solid var(--rule);border-radius:.9rem;overflow:hidden;background:#0d1116}
+.patch .bar{padding:.6rem .95rem;background:linear-gradient(180deg,#1a1f26,#141920);border-bottom:1px solid var(--rule);
+      font-family:var(--mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
+      display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+.patch pre{margin:0;padding:.95rem;overflow-x:auto;font-family:var(--mono);font-size:.78rem;line-height:1.65;color:#cfe0d6;white-space:pre}
+button.copy{font-family:var(--body);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
+      background:#1d232b;color:var(--ink);border:1px solid var(--rule);border-radius:.4rem;
+      padding:.35rem .7rem;cursor:pointer}
+button.copy:hover{border-color:var(--led-on);color:var(--led-on)}
+footer{margin-top:3rem;padding-top:1.4rem;border-top:1px solid var(--rule);color:var(--faint);font-size:.82rem;text-align:center}
+footer .who{font-family:var(--disp);color:var(--dim);letter-spacing:.06em}
+@media (max-width:520px){ .bay{flex:1 1 100%;max-width:100%} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="kicker">CTO <b>EAST</b> · HOOK SWITCHBOARD</div>
+  <h1>Every hook that fires, and every file that only looks like one</h1>
+  <p class="sub">Read live from <code style="font-family:var(--mono);font-size:.86em">~/.claude/settings.json</code> and the hooks directory. Switch state reflects what is actually registered — not a mock.</p>
+  <div class="readout" id="readout"></div>
+</header>
+
+<div class="rack" id="rack"></div>
+
+<section class="inert">
+  <h2>Inert files — these do not run</h2>
+  <p id="inertText"></p>
+</section>
+
+<section class="patch">
+  <div class="bar"><span>settings.json patch — reflects the switches above</span>
+    <button class="copy" id="copyBtn">Copy patch</button></div>
+  <pre id="patchOut"></pre>
+</section>
+
+<footer>
+  Snapshot taken from disk at build time. Flipping a switch writes the patch below; applying it is a deliberate act.
+  <span class="who">EAST · CTO East</span>
+</footer>
+</div>
+
+<script>
+const DATA = {"events":{"PostToolUse":[{"name":"xen-posttool-canon.py","path":"/Users/qi/.claude/hooks/xen-posttool-canon.py","timeout":null,"exists":true,"bytes":10669},{"name":"xen-exodus-narrate-hook.py","path":"/Users/qi/.claude/hooks/xen-exodus-narrate-hook.py","timeout":null,"exists":true,"bytes":10003},{"name":"xen-hitthelink-autoship-beeper.py","path":"/Users/qi/.claude/hooks/xen-hitthelink-autoship-beeper.py","timeout":null,"exists":true,"bytes":2668},{"name":"xen-vvs-harden.py","path":"/Users/qi/.claude/hooks/xen-vvs-harden.py","timeout":null,"exists":true,"bytes":7992},{"name":"xen-truth-guard.py","path":"/Users/qi/.claude/hooks/xen-truth-guard.py","timeout":null,"exists":true,"bytes":13359},{"name":"xen-code-review.py","path":"/Users/qi/.claude/hooks/xen-code-review.py","timeout":null,"exists":true,"bytes":4822}],"Stop":[{"name":"xen-stop-inject-beside.sh","path":"/Users/qi/.xen/hooks/xen-stop-inject-beside.sh","timeout":15,"exists":true,"bytes":3472},{"name":"auto_manifest_gate.py","path":"/Users/qi/.claude/hooks/auto_manifest_gate.py","timeout":3,"exists":true,"bytes":3480},{"name":"xen-truth-guard.py","path":"/Users/qi/.claude/hooks/xen-truth-guard.py","timeout":3,"exists":true,"bytes":13359},{"name":"xen-autorecall.py","path":"/Users/qi/.claude/hooks/xen-autorecall.py","timeout":3,"exists":true,"bytes":7995},{"name":"xen-vvs-harden.py","path":"/Users/qi/.claude/hooks/xen-vvs-harden.py","timeout":10,"exists":true,"bytes":7992},{"name":"xen-stop-vvs-reply.py","path":"/Users/qi/.claude/hooks/xen-stop-vvs-reply.py","timeout":8,"exists":true,"bytes":7732},{"name":"no_unverified_claims.py","path":"/Users/qi/.claude/hooks/no_unverified_claims.py","timeout":5,"exists":true,"bytes":9440}],"PreToolUse":[{"name":"xen-bootdisk-write-block.py","path":"/Users/qi/.claude/hooks/xen-bootdisk-write-block.py","timeout":null,"exists":true,"bytes":3552},{"name":"xen-pretool-canon.py","path":"/Users/qi/.claude/hooks/xen-pretool-canon.py","timeout":null,"exists":true,"bytes":6412},{"name":"xen-role-guard.py","path":"/Users/qi/.claude/hooks/xen-role-guard.py","timeout":null,"exists":true,"bytes":1494},{"name":"xen-vvs-harden.py","path":"/Users/qi/.claude/hooks/xen-vvs-harden.py","timeout":null,"exists":true,"bytes":7992},{"name":"no_raw_say.py","path":"/Users/qi/.claude/hooks/no_raw_say.py","timeout":null,"exists":true,"bytes":2279},{"name":"xen-autobackground.py","path":"/Users/qi/.claude/hooks/xen-autobackground.py","timeout":null,"exists":true,"bytes":9129}],"SessionStart":[{"name":"/Users/qi/bin/xen-sessionstart-hook","path":null,"timeout":15,"exists":false,"bytes":null},{"name":"/Users/qi/bin/xen-startup-wire","path":null,"timeout":30,"exists":false,"bytes":null}],"PreCompact":[{"name":"xen-precompact-genesis-standin.py","path":"/Users/qi/.claude/hooks/xen-precompact-genesis-standin.py","timeout":null,"exists":true,"bytes":2164},{"name":"xen-autocompact-restart.py","path":"/Users/qi/.claude/hooks/xen-autocompact-restart.py","timeout":10,"exists":true,"bytes":6022}]},"meta":{"live_total":23,"runnable_files":30,"backup_files":32,"sc_backups":6}};
+const ORDER = ["SessionStart","UserPromptSubmit","PreToolUse","PostToolUse","PreCompact","Stop","SubagentStop","SessionEnd"];
+const WHEN = {
+  SessionStart:"fires once, when a session opens",
+  PreToolUse:"fires before every tool call — can refuse it",
+  PostToolUse:"fires after every tool result",
+  PreCompact:"fires when context is about to be compacted",
+  Stop:"fires when a turn ends — can force more work",
+  SessionEnd:"fires once, when a session closes",
+  UserPromptSubmit:"fires when a prompt is submitted",
+  SubagentStop:"fires when a subagent finishes"
+};
+const state = {};
+
+function readout(){
+  const m = DATA.meta;
+  const on = Object.values(state).filter(Boolean).length;
+  document.getElementById('readout').innerHTML = `
+    <div class="stat"><div class="n">${m.live_total}</div><div class="l">registered</div></div>
+    <div class="stat"><div class="n">${on}</div><div class="l">switched on</div></div>
+    <div class="stat"><div class="n">${Object.keys(DATA.events).length}</div><div class="l">events wired</div></div>
+    <div class="stat"><div class="n">${m.runnable_files}</div><div class="l">runnable files</div></div>
+    <div class="stat warn"><div class="n">${m.backup_files}</div><div class="l">inert backups</div></div>`;
+}
+
+function patch(){
+  const off = [];
+  for (const [ev, arr] of Object.entries(DATA.events))
+    arr.forEach((h,i)=>{ if(!state[ev+'#'+i]) off.push({event:ev, hook:h.name}); });
+  const out = off.length
+    ? "// remove these entries from ~/.claude/settings.json → hooks\n" +
+      off.map(o=>`${o.event.padEnd(16)} ${o.hook}`).join("\n")
+    : "// all " + DATA.meta.live_total + " registered hooks are ON — settings.json unchanged";
+  document.getElementById('patchOut').textContent = out;
+}
+
+function render(){
+  const rack = document.getElementById('rack');
+  rack.innerHTML = '';
+  const evs = Object.keys(DATA.events).sort((a,b)=>{
+    const ia=ORDER.indexOf(a), ib=ORDER.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  for (const ev of evs){
+    const arr = DATA.events[ev];
+    const bay = document.createElement('div');
+    bay.className = 'bay';
+    bay.innerHTML = `<div class="screws"><i class="screw"></i><i class="screw"></i></div>
+      <h2>${ev} <span style="color:var(--faint);font-weight:400">×${arr.length}</span></h2>
+      <p class="when">${WHEN[ev]||''}</p>`;
+    arr.forEach((h,i)=>{
+      const key = ev+'#'+i;
+      state[key] = true;
+      const row = document.createElement('div');
+      row.className = 'sw on';
+      row.innerHTML = `<span class="toggle"><span class="knob"></span></span>
+        <span class="led"></span>
+        <span class="meta"><span class="fname">${h.name}</span>
+        <span class="fmeta">order ${i+1}${h.timeout?' · timeout '+h.timeout+'s':' · no timeout'}${h.bytes?' · '+(h.bytes/1024).toFixed(1)+'kb':''}</span></span>`;
+      row.querySelector('.toggle').addEventListener('click', ()=>{
+        state[key] = !state[key];
+        row.classList.toggle('on', state[key]);
+        row.classList.toggle('off', !state[key]);
+        readout(); patch();
+      });
+      bay.appendChild(row);
+    });
+    rack.appendChild(bay);
+  }
+  document.getElementById('inertText').innerHTML =
+    `The hooks directory holds <code>${DATA.meta.backup_files}</code> backup copies alongside <code>${DATA.meta.runnable_files}</code> runnable files — ` +
+    `<code>${DATA.meta.sc_backups}</code> of those backups are old <code>study_commandments.py</code> versions. ` +
+    `Anything with <code>.bak</code> in the name is never executed: Claude Code only runs what <code>settings.json</code> names. ` +
+    `They are history, not behaviour — which is why a crowded directory does not mean a crowded hook chain.`;
+  readout(); patch();
+}
+document.getElementById('copyBtn').addEventListener('click', async e=>{
+  try{ await navigator.clipboard.writeText(document.getElementById('patchOut').textContent);
+       e.target.textContent='Copied'; setTimeout(()=>e.target.textContent='Copy patch',1400); }catch(_){}
+});
+render();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

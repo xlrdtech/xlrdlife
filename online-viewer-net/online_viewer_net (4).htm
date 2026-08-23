@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The State of Generative AI in Enterprise 2025 | Interactive Report</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chosen Palette: Warm Neutrals & Professional Stone -->
+    <!-- The app uses a base of Stone-50 for background to create a calm, paper-like feel. 
+         Primary text is Stone-800. Accents are Amber-600 and Stone-600 to maintain a professional, 
+         research-oriented aesthetic without being clinical. -->
+
+    <!-- Application Structure Plan: 
+         Structure: Dashboard-style Interactive Report.
+         Why: The source content (Enterprise AI) contains mixed data types: trends (time), categorical (departments), and qualitative (challenges). 
+         A linear document is hard to synthesize. A dashboard allows the user to:
+         1. See the "Big Picture" immediately (Hero Metrics).
+         2. Explore "Adoption" via interactive filtering (Region/Industry).
+         3. Analyze "Impact" via toggleable metrics (Productivity vs. Cost).
+         4. Dig into "Barriers" via an interactive matrix.
+         
+         Flow:
+         - Header: Global Context.
+         - Executive Summary: Key text insights.
+         - Section 1: The Trajectory (Line Chart) - Interaction: Scenario toggles.
+         - Section 2: Adoption Landscape (Bar Chart) - Interaction: Industry filtering.
+         - Section 3: Strategic Priorities (Donut Chart) - Interaction: Click slice to reveal details.
+         - Section 4: The Barrier Matrix (Interactive Grid) - Qualitative synthesis.
+    -->
+
+    <!-- Visualization & Content Choices: 
+         1. Market Growth (Quantitative) -> Line Chart (Chart.js) -> Goal: Change -> Users can toggle between "Conservative", "Base", and "Aggressive" forecast scenarios.
+         2. Industry Adoption (Quantitative) -> Horizontal Bar Chart (Chart.js) -> Goal: Compare -> Filterable by Region (NA, EU, APAC) to see different maturity levels.
+         3. Budget Allocation (Proportional) -> Donut Chart (Chart.js) -> Goal: Inform -> Clicking a segment updates a text description box with specific investment strategies.
+         4. Implementation Challenges (Qualitative) -> Interactive Cards (HTML/JS) -> Goal: Organize -> Categories (Technical, Ethical, Operational) act as tabs to declutter the view.
+         
+         Justification: Chart.js is used for all metrics for performance and responsiveness. HTML/Tailwind grid is used for qualitative data to ensure readability. 
+         
+         CONFIRMATION: NO SVG graphics used (except text icons). NO Mermaid JS used. 
+    -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fafaf9;
+            /* Stone-50 */
+            color: #292524;
+            /* Stone-800 */
+        }
+
+        /* Custom Scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #fafaf9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d6d3d1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a29e;
+        }
+
+        /* Chart Container Logic per Requirements */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            /* Default heights */
+            height: 300px;
+            max-height: 400px;
+        }
+
+        /* Responsive adjustments for charts */
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+
+        .active-tab {
+            border-bottom: 2px solid #d97706;
+            /* Amber-600 */
+            color: #d97706;
+            font-weight: 600;
+        }
+
+        .inactive-tab {
+            border-bottom: 2px solid transparent;
+            color: #78716c;
+            /* Stone-500 */
+        }
+
+        .inactive-tab:hover {
+            color: #44403c;
+            /* Stone-700 */
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Navigation / Header -->
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stone-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl font-bold text-stone-800 tracking-tight">AI<span class="text-amber-600">Report</span>2025</span>
+                </div>
+                <nav class="hidden md:flex space-x-8">
+                    <button onclick="scrollToSection('executive-summary')" class="text-sm font-medium text-stone-600 hover:text-amber-600 transition-colors">Summary</button>
+                    <button onclick="scrollToSection('market-velocity')" class="text-sm font-medium text-stone-600 hover:text-amber-600 transition-colors">Market Velocity</button>
+                    <button onclick="scrollToSection('adoption-landscape')" class="text-sm font-medium text-stone-600 hover:text-amber-600 transition-colors">Adoption</button>
+                    <button onclick="scrollToSection('strategic-barriers')" class="text-sm font-medium text-stone-600 hover:text-amber-600 transition-colors">Barriers</button>
+                </nav>
+                <div class="flex items-center">
+                    <span class="text-xs font-semibold bg-stone-100 text-stone-600 px-3 py-1 rounded-full border border-stone-200">Interactive Edition</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+
+        <!-- Hero Section -->
+        <div class="bg-white border-b border-stone-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+                <div class="max-w-3xl">
+                    <h1 class="text-4xl md:text-5xl font-extrabold text-stone-900 tracking-tight mb-6">
+                        The State of Generative AI in Enterprise <span class="text-amber-600">2025</span>
+                    </h1>
+                    <p class="text-xl text-stone-600 leading-relaxed mb-8">
+                        Beyond the hype: A comprehensive analysis of how global enterprises are moving from pilot programs to production-scale AI systems, based on data from 5,000 CIOs and Technology Leaders.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="bg-stone-50 border border-stone-200 rounded-lg p-4 flex-1 min-w-[140px]">
+                            <p class="text-sm text-stone-500 font-medium uppercase tracking-wide">Adoption Rate</p>
+                            <p class="text-3xl font-bold text-stone-800 mt-1">68%</p>
+                            <p class="text-xs text-amber-600 mt-1">↑ 24% YoY</p>
+                        </div>
+                        <div class="bg-stone-50 border border-stone-200 rounded-lg p-4 flex-1 min-w-[140px]">
+                            <p class="text-sm text-stone-500 font-medium uppercase tracking-wide">Avg Investment</p>
+                            <p class="text-3xl font-bold text-stone-800 mt-1">$4.2M</p>
+                            <p class="text-xs text-stone-500 mt-1">Per Enterprise</p>
+                        </div>
+                        <div class="bg-stone-50 border border-stone-200 rounded-lg p-4 flex-1 min-w-[140px]">
+                            <p class="text-sm text-stone-500 font-medium uppercase tracking-wide">Time-to-Value</p>
+                            <p class="text-3xl font-bold text-stone-800 mt-1">8.5 Mo</p>
+                            <p class="text-xs text-amber-600 mt-1">↓ 15% YoY</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1: Market Velocity (Time-Series Interactive) -->
+        <section id="market-velocity" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-3 gap-12">
+                <!-- Context -->
+                <div class="lg:col-span-1">
+                    <h2 class="text-2xl font-bold text-stone-900 mb-4">Market Velocity & Forecast</h2>
+                    <p class="text-stone-600 mb-6 leading-relaxed">
+                        The adoption curve for Generative AI is outpacing all previous technology cycles, including Mobile and Cloud Computing.
+                    </p>
+                    <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                        <h3 class="font-semibold text-stone-800 mb-3">Interactive Forecast</h3>
+                        <p class="text-sm text-stone-500 mb-4">
+                            Adjust the projection model based on different economic adoption scenarios.
+                        </p>
+                        <div class="space-y-3">
+                            <button onclick="updateLineChart('conservative')" id="btn-conservative" class="w-full text-left px-4 py-3 rounded-lg border border-stone-200 hover:bg-stone-50 transition-colors focus:outline-none flex justify-between items-center group">
+                                <span class="font-medium text-stone-700">Conservative</span>
+                                <span class="w-2 h-2 rounded-full bg-stone-300 group-hover:bg-amber-500"></span>
+                            </button>
+                            <button onclick="updateLineChart('base')" id="btn-base" class="w-full text-left px-4 py-3 rounded-lg border border-amber-200 bg-amber-50 transition-colors focus:outline-none flex justify-between items-center group">
+                                <span class="font-medium text-amber-900">Base Case (Current)</span>
+                                <span class="w-2 h-2 rounded-full bg-amber-600"></span>
+                            </button>
+                            <button onclick="updateLineChart('aggressive')" id="btn-aggressive" class="w-full text-left px-4 py-3 rounded-lg border border-stone-200 hover:bg-stone-50 transition-colors focus:outline-none flex justify-between items-center group">
+                                <span class="font-medium text-stone-700">Aggressive</span>
+                                <span class="w-2 h-2 rounded-full bg-stone-300 group-hover:bg-amber-500"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold text-stone-800">Global Enterprise Spending Forecast (Billions USD)</h3>
+                        <div class="text-xs text-stone-400 font-mono">Source: SynthData 2025</div>
+                    </div>
+                    <!-- Chart Container -->
+                    <div class="chart-container">
+                        <canvas id="velocityChart"></canvas>
+                    </div>
+                    <div id="velocity-insight" class="mt-4 p-4 bg-stone-50 rounded-lg text-sm text-stone-700 border-l-4 border-amber-500">
+                        <strong>Insight:</strong> In the Base Case scenario, enterprise spending is expected to triple by 2028, driven largely by specialized vertical LLMs.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Divider -->
+        <div class="border-t border-stone-200"></div>
+
+        <!-- Section 2: Adoption Landscape (Comparison & Filtering) -->
+        <section id="adoption-landscape" class="py-16 bg-stone-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="mb-10 text-center max-w-3xl mx-auto">
+                    <h2 class="text-2xl font-bold text-stone-900 mb-4">Adoption Landscape by Industry</h2>
+                    <p class="text-stone-600">
+                        While adoption is high globally, the maturity of implementation varies significantly by sector and geography.
+                        Use the filters below to explore how different regions are prioritizing AI integration.
+                    </p>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex justify-center mb-8">
+                    <div class="inline-flex bg-white rounded-lg p-1 border border-stone-200 shadow-sm">
+                        <button onclick="updateBarChart('Global')" class="region-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-amber-100 text-amber-800" data-region="Global">Global</button>
+                        <button onclick="updateBarChart('NA')" class="region-btn px-4 py-2 rounded-md text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors" data-region="NA">North America</button>
+                        <button onclick="updateBarChart('EMEA')" class="region-btn px-4 py-2 rounded-md text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors" data-region="EMEA">EMEA</button>
+                        <button onclick="updateBarChart('APAC')" class="region-btn px-4 py-2 rounded-md text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors" data-region="APAC">APAC</button>
+                    </div>
+                </div>
+
+                <!-- Chart Layout -->
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <!-- Chart -->
+                    <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+                        <div class="chart-container">
+                            <canvas id="adoptionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Details Panel -->
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm card-hover">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">Fin</div>
+                                <h3 class="font-bold text-stone-800">Financial Services</h3>
+                            </div>
+                            <p id="desc-finance" class="text-sm text-stone-600">Leading in quantitative analysis and fraud detection. 82% of firms have active production models.</p>
+                            <div class="mt-3 w-full bg-stone-100 rounded-full h-2">
+                                <div id="bar-finance" class="bg-blue-500 h-2 rounded-full" style="width: 82%"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm card-hover">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm">Hea</div>
+                                <h3 class="font-bold text-stone-800">Healthcare & Pharma</h3>
+                            </div>
+                            <p id="desc-health" class="text-sm text-stone-600">High focus on drug discovery and administrative automation. Compliance remains a major bottleneck.</p>
+                            <div class="mt-3 w-full bg-stone-100 rounded-full h-2">
+                                <div id="bar-health" class="bg-emerald-500 h-2 rounded-full" style="width: 65%"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-stone-200 shadow-sm card-hover">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm">Med</div>
+                                <h3 class="font-bold text-stone-800">Media & Entertainment</h3>
+                            </div>
+                            <p id="desc-media" class="text-sm text-stone-600">Rapid adoption for content generation. Legal challenges concerning IP rights are slowing full scale-up.</p>
+                            <div class="mt-3 w-full bg-stone-100 rounded-full h-2">
+                                <div id="bar-media" class="bg-purple-500 h-2 rounded-full" style="width: 78%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Strategic Priorities (Drill-down Interaction) -->
+        <section class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-12 gap-12">
+                <!-- Chart Area -->
+                <div class="lg:col-span-5 flex flex-col items-center justify-center bg-white p-8 rounded-xl border border-stone-200 shadow-sm">
+                    <h3 class="font-bold text-stone-800 mb-6 text-center">Budget Allocation Priorities</h3>
+                    <div class="chart-container" style="max-width: 350px; height: 350px;">
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+                    <p class="text-xs text-stone-400 mt-4 text-center">Click slices for details</p>
+                </div>
+
+                <!-- Content Area -->
+                <div class="lg:col-span-7 flex flex-col justify-center">
+                    <h2 class="text-2xl font-bold text-stone-900 mb-6">Where the Money Flows</h2>
+                    <p class="text-stone-600 mb-8">
+                        Investment is shifting from pure R&D to infrastructure and governance. As enterprises move to production, the cost of inference and data management is overtaking model training costs.
+                    </p>
+
+                    <!-- Dynamic Info Box -->
+                    <div id="budget-details" class="bg-stone-50 border border-stone-200 p-8 rounded-xl transition-all duration-300">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span id="budget-icon" class="text-2xl">🏗️</span>
+                            <h3 id="budget-title" class="text-xl font-bold text-stone-800">Infrastructure & Compute</h3>
+                        </div>
+                        <div id="budget-stat" class="text-3xl font-bold text-amber-600 mb-2">42%</div>
+                        <p id="budget-desc" class="text-stone-600 leading-relaxed">
+                            The largest share of budget goes to cloud GPU compute and specialized hardware. Organizations are optimizing for inference latency and cost control.
+                        </p>
+                        <div class="mt-4 pt-4 border-t border-stone-200">
+                            <h4 class="text-xs font-bold text-stone-500 uppercase tracking-wide mb-2">Key Initiative</h4>
+                            <p id="budget-initiative" class="text-sm text-stone-800">Moving from generic heavy models (GPT-4 class) to optimized small language models (SLMs) for specific tasks.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Barriers & Challenges (Tabbed Qualitative Data) -->
+        <section id="strategic-barriers" class="py-16 bg-stone-900 text-stone-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row justify-between items-end mb-10 border-b border-stone-700 pb-6">
+                    <div class="max-w-2xl">
+                        <h2 class="text-2xl md:text-3xl font-bold mb-4">The Barrier Matrix</h2>
+                        <p class="text-stone-400">
+                            Despite enthusiasm, significant roadblocks remain. We categorized qualitative responses from 2,000 leaders into three core friction zones.
+                        </p>
+                    </div>
+                    <!-- Tabs -->
+                    <div class="flex space-x-6 mt-6 md:mt-0">
+                        <button onclick="switchTab('technical')" id="tab-technical" class="text-sm font-medium pb-2 border-b-2 border-amber-500 text-white transition-colors">Technical</button>
+                        <button onclick="switchTab('ethical')" id="tab-ethical" class="text-sm font-medium pb-2 border-b-2 border-transparent text-stone-400 hover:text-stone-200 transition-colors">Ethical & Legal</button>
+                        <button onclick="switchTab('organizational')" id="tab-organizational" class="text-sm font-medium pb-2 border-b-2 border-transparent text-stone-400 hover:text-stone-200 transition-colors">Organizational</button>
+                    </div>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="content-technical" class="grid md:grid-cols-3 gap-6 animate-fade-in">
+                    <div class="bg-stone-800 p-6 rounded-lg border border-stone-700">
+                        <div class="text-amber-500 text-xl mb-3">⚡</div>
+                        <h3 class="font-bold text-lg mb-2">Hallucination Rates</h3>
+                        <p class="text-stone-400 text-sm">Critical systems cannot tolerate the 2-5% error rate seen in general purpose models.</p>
+                    </div>
+                    <div class="bg-stone-800 p-6 rounded-lg border border-stone-700">
+                        <div class="text-amber-500 text-xl mb-3">💾</div>
+                        <h3 class="font-bold text-lg mb-2">Data Quality</h3>
+                        <p class="text-stone-400 text-sm">Unstructured enterprise data is often too siloed or "dirty" for effective RAG implementation.</p>
+                    </div>
+                    <div class="bg-stone-800 p-6 rounded-lg border border-stone-700">
+                        <div class="text-amber-500 text-xl mb-3">🔌</div>
+                        <h3 class="font-bold text-lg mb-2">Integration Debt</h3>
+                        <p class="text-stone-400 text-sm">Legacy ERP and CRM systems lack the API surface area needed for seamless AI agents.</p>
+                    </div>
+                </div>
+
+                <div id="content-ethical" class="hidden grid md:grid-cols-3 gap-6 animate-fade-in">
+                    <div class="bg-stone-800 p-6 rounded-lg border border-stone-700">
+                        <div class="text-blue-400 text-xl mb-3">⚖️</div>
+                        <h3 class="font-bold text-lg mb-2">Copyright Liability</h3>
+                        <p class="text-stone-400 text-sm">Uncertainty regarding IP ownership of generated code and creative assets.</p>
+                    </div>
+                    <div class="bg-stone-800 p-6 rounded-lg border border-stone-700">
+                        <div class="text-blue-400 text-xl mb-3">🔒</div>
+                        <h3 class="font-bold text-lg mb-2">Data Privacy</h3>
+                        <p class="text-stone-400 text-sm">Risk of leaking PII or trade secrets into public model training sets.</p>
+                    </div>
+                    <div class="bg-stone-800 p-6 rounded-lg border border-stone-700">
+                        <div class="text-blue-400 text-xl mb-3">👁️</div>
+                        <h3 class="font-bold text-lg mb-2">Explainability</h3>
+                        <p class="text-stone-400 text-sm">Regulatory requirements (e.g., EU AI Act) demanding transparency in automated decisions.</p>
+                    </div>
+                </div>
+
+                <div id="content-organizational" class="hidden grid md:grid-cols-3 gap-6 animate-fade-in">
+                    <div class="bg-stone-800 p-6 rounded-lg border border-stone-700">
+                        <div class="text-emerald-400 text-xl mb-3">👥</div>
+                        <h3 class="font-bold text-lg mb-2">Skills Gap</h3>
+                        <p class="text-stone-400 text-sm">Severe shortage of AI engineers capable of fine-tuning and prompt engineering.</p>
+                    </div>
+                    <div class="bg-stone-800 p-6 rounded-lg border border-stone-700">
+                        <div class="text-emerald-400 text-xl mb-3">🔄</div>
+                        <h3 class="font-bold text-lg mb-2">Change Management</h3>
+                        <p class="text-stone-400 text-sm">Employee resistance due to fear of displacement or replacement.</p>
+                    </div>
+                    <div class="bg-stone-800 p-6 rounded-lg border border-stone-700">
+                        <div class="text-emerald-400 text-xl mb-3">💰</div>
+                        <h3 class="font-bold text-lg mb-2">ROI Measurement</h3>
+                        <p class="text-stone-400 text-sm">Difficulty in attributing specific revenue uplifts directly to AI implementations.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-stone-100 border-t border-stone-200 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-stone-500 text-sm">
+                &copy; 2025 Synthetic Intelligence Research Group. All rights reserved.
+            </div>
+            <div class="flex space-x-6 text-stone-400">
+                <span>Methodology</span>
+                <span>Privacy</span>
+                <span>Contact</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Application Logic -->
+    <script>
+        // --- Data Store ---
+        const reportData = {
+            velocity: {
+                labels: ['2023', '2024', '2025', '2026', '2027', '2028'],
+                scenarios: {
+                    conservative: [16, 28, 42, 55, 68, 79],
+                    base: [16, 32, 58, 89, 125, 165],
+                    aggressive: [16, 45, 85, 140, 210, 290]
+                },
+                insights: {
+                    conservative: "The Conservative outlook assumes regulatory headwinds and slow integration into legacy systems dampen growth.",
+                    base: "In the Base Case scenario, enterprise spending is expected to triple by 2028, driven largely by specialized vertical LLMs.",
+                    aggressive: "Aggressive adoption assumes a breakthrough in autonomous agents that replaces 30% of manual back-office workflows."
+                }
+            },
+            adoption: {
+                labels: ['Financial Services', 'Healthcare', 'Retail', 'Manufacturing', 'Media', 'Legal'],
+                regions: {
+                    Global: [82, 65, 71, 55, 78, 60],
+                    NA: [89, 72, 78, 60, 85, 70],
+                    EMEA: [76, 68, 65, 58, 70, 55],
+                    APAC: [80, 55, 82, 68, 80, 45]
+                }
+            },
+            budget: {
+                labels: ['Infrastructure', 'Talent', 'Data Mgmt', 'Software/Model Lic.', 'Services'],
+                data: [42, 25, 18, 10, 5],
+                details: [{
+                        title: "Infrastructure & Compute",
+                        stat: "42%",
+                        icon: "🏗️",
+                        desc: "The largest share goes to cloud GPU compute and specialized hardware. Organizations are optimizing for inference latency and cost control.",
+                        initiative: "Moving to SLMs (Small Language Models)"
+                    },
+                    {
+                        title: "Talent & Acquisition",
+                        stat: "25%",
+                        icon: "👨‍💻",
+                        desc: "High competition for AI researchers and prompt engineers is driving up wage bills significantly.",
+                        initiative: "Internal Upskilling Programs"
+                    },
+                    {
+                        title: "Data Management",
+                        stat: "18%",
+                        icon: "🗄️",
+                        desc: "Cleaning, vectorizing, and securing proprietary data for RAG implementations.",
+                        initiative: "Vector Database Integration"
+                    },
+                    {
+                        title: "Model Licensing",
+                        stat: "10%",
+                        icon: "🎫",
+                        desc: "Fees paid to foundation model providers (OpenAI, Anthropic, etc.) or enterprise API usage.",
+                        initiative: "Hybrid Open-Source Strategy"
+                    },
+                    {
+                        title: "External Services",
+                        stat: "5%",
+                        icon: "🤝",
+                        desc: "Consulting and implementation partners to bridge the skills gap.",
+                        initiative: "Strategic Partnerships"
+                    }
+                ]
+            }
+        };
+
+        // --- Chart Objects (Global Scopes) ---
+        let velocityChartInst = null;
+        let adoptionChartInst = null;
+        let budgetChartInst = null;
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initVelocityChart();
+            initAdoptionChart();
+            initBudgetChart();
+        });
+
+        // --- 1. Velocity Chart Logic (Line) ---
+        function initVelocityChart() {
+            const ctx = document.getElementById('velocityChart').getContext('2d');
+            velocityChartInst = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: reportData.velocity.labels,
+                    datasets: [{
+                        label: 'Global Spend ($ Billion)',
+                        data: reportData.velocity.scenarios.base,
+                        borderColor: '#d97706', // amber-600
+                        backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#d97706',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#292524',
+                            titleColor: '#f5f5f4',
+                            bodyColor: '#f5f5f4',
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `$${context.parsed.y} Billion`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#e7e5e4'
+                            }, // stone-200
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                },
+                                color: '#78716c'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                },
+                                color: '#78716c'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateLineChart(scenario) {
+            // Update Data
+            velocityChartInst.data.datasets[0].data = reportData.velocity.scenarios[scenario];
+            velocityChartInst.update();
+
+            // Update Text
+            const insightBox = document.getElementById('velocity-insight');
+            insightBox.innerHTML = `<strong>Insight:</strong> ${reportData.velocity.insights[scenario]}`;
+
+            // Update Buttons Styles
+            ['conservative', 'base', 'aggressive'].forEach(key => {
+                const btn = document.getElementById(`btn-${key}`);
+                const dot = btn.querySelector('span:last-child');
+                const text = btn.querySelector('span:first-child');
+
+                if (key === scenario) {
+                    btn.className = "w-full text-left px-4 py-3 rounded-lg border border-amber-200 bg-amber-50 transition-colors focus:outline-none flex justify-between items-center group";
+                    dot.className = "w-2 h-2 rounded-full bg-amber-600";
+                    text.className = "font-medium text-amber-900";
+                } else {
+                    btn.className = "w-full text-left px-4 py-3 rounded-lg border border-stone-200 hover:bg-stone-50 transition-colors focus:outline-none flex justify-between items-center group";
+                    dot.className = "w-2 h-2 rounded-full bg-stone-300 group-hover:bg-amber-500";
+                    text.className = "font-medium text-stone-700";
+                }
+            });
+        }
+
+        // --- 2. Adoption Chart Logic (Bar) ---
+        function initAdoptionChart() {
+            const ctx = document.getElementById('adoptionChart').getContext('2d');
+            adoptionChartInst = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: reportData.adoption.labels,
+                    datasets: [{
+                        label: 'Adoption Rate (%)',
+                        data: reportData.adoption.regions.Global,
+                        backgroundColor: [
+                            '#3b82f6', // Fin - Blue
+                            '#10b981', // Health - Emerald
+                            '#f59e0b', // Retail - Amber
+                            '#64748b', // Manuf - Slate
+                            '#a855f7', // Media - Purple
+                            '#ef4444' // Legal - Red
+                        ],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Horizontal bar
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#292524',
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.parsed.x}% Adoption`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            max: 100,
+                            grid: {
+                                color: '#e7e5e4'
+                            },
+                            ticks: {
+                                color: '#78716c'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter',
+                                    weight: '500'
+                                },
+                                color: '#44403c'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateBarChart(region) {
+            // Update Chart
+            adoptionChartInst.data.datasets[0].data = reportData.adoption.regions[region];
+            adoptionChartInst.update();
+
+            // Update Button Styling
+            document.querySelectorAll('.region-btn').forEach(btn => {
+                if (btn.dataset.region === region) {
+                    btn.className = "region-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-amber-100 text-amber-800";
+                } else {
+                    btn.className = "region-btn px-4 py-2 rounded-md text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors";
+                }
+            });
+
+            // Update Detail Text for top categories (Simulation of dynamic content)
+            // Just updating the specific example progress bars to match the new chart data for visual consistency
+            const data = reportData.adoption.regions[region];
+            document.getElementById('bar-finance').style.width = data[0] + "%";
+            document.getElementById('bar-health').style.width = data[1] + "%";
+            document.getElementById('bar-media').style.width = data[4] + "%";
+
+            // In a real full app, we would update the text descriptions here too based on region nuances.
+        }
+
+        // --- 3. Budget Chart Logic (Donut) ---
+        function initBudgetChart() {
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+            budgetChartInst = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: reportData.budget.labels,
+                    datasets: [{
+                        data: reportData.budget.data,
+                        backgroundColor: ['#d97706', '#f59e0b', '#fbbf24', '#fcd34d', '#fde68a'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                usePointStyle: true,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        tooltip: {
+                            enabled: false
+                        } // We use click interaction instead
+                    },
+                    onClick: (e, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            updateBudgetDetails(index);
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateBudgetDetails(index) {
+            const info = reportData.budget.details[index];
+            const container = document.getElementById('budget-details');
+
+            // Simple fade effect
+            container.style.opacity = '0.5';
+            setTimeout(() => {
+                document.getElementById('budget-icon').innerText = info.icon;
+                document.getElementById('budget-title').innerText = info.title;
+                document.getElementById('budget-stat').innerText = info.stat;
+                document.getElementById('budget-desc').innerText = info.desc;
+                document.getElementById('budget-initiative').innerText = info.initiative;
+                container.style.opacity = '1';
+            }, 150);
+        }
+
+        // --- 4. Qualitative Tabs Logic ---
+        function switchTab(tabId) {
+            // Hide all content
+            ['technical', 'ethical', 'organizational'].forEach(id => {
+                const content = document.getElementById(`content-${id}`);
+                const tab = document.getElementById(`tab-${id}`);
+
+                if (id === tabId) {
+                    content.classList.remove('hidden');
+                    // Style Active Tab
+                    tab.className = "text-sm font-medium pb-2 border-b-2 border-amber-500 text-white transition-colors";
+                } else {
+                    content.classList.add('hidden');
+                    // Style Inactive Tab
+                    tab.className = "text-sm font-medium pb-2 border-b-2 border-transparent text-stone-400 hover:text-stone-200 transition-colors";
+                }
+            });
+        }
+
+        // --- Navigation ---
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+    </script>
+</body>
+
+</html>

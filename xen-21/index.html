@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — Autonomous Intelligence Infrastructure</title>
+<meta name="description" content="XEN is a voice-first autonomous agent infrastructure built for continuous operation — parallel goal swarms, real-time orchestration, zero human bottleneck.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0A0C0A;
+    --surface:   #111411;
+    --surface2:  #181D18;
+    --border:    #2C3B2C;
+    --copper:    #B87333;
+    --copper-lt: #D4915A;
+    --copper-dk: #7A4E22;
+    --pcb-green: #4AFC6A;
+    --pcb-dim:   #1E4A27;
+    --cream:     #E8E0D0;
+    --cream-dim: #9A9288;
+    --white:     #F2EEE8;
+
+    --mono: 'Courier New', 'Courier', monospace;
+    --serif: 'Georgia', 'Times New Roman', serif;
+
+    --text-xs:   0.6875rem;
+    --text-sm:   0.8125rem;
+    --text-base: 1rem;
+    --text-lg:   1.25rem;
+    --text-xl:   1.625rem;
+    --text-2xl:  2.25rem;
+    --text-3xl:  3.5rem;
+    --text-4xl:  5.5rem;
+    --text-hero: clamp(4rem, 12vw, 9rem);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: var(--serif);
+    font-size: var(--text-base);
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ─────────────────────────────────────────────── */
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 100svh;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #hero-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--copper);
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-logotype {
+    font-family: var(--mono);
+    font-size: var(--text-hero);
+    font-weight: 400;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--copper);
+    text-shadow:
+      0 0 80px rgba(184,115,51,0.15),
+      0 0 160px rgba(184,115,51,0.08);
+    margin-bottom: 2rem;
+  }
+
+  .hero-sub {
+    font-family: var(--serif);
+    font-size: var(--text-lg);
+    color: var(--cream-dim);
+    max-width: 44ch;
+    margin: 0 auto 3rem;
+    line-height: 1.55;
+  }
+
+  .hero-cta-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    pointer-events: all;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: var(--text-sm);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--copper);
+    border: none;
+    padding: 0.75rem 2rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: var(--copper-lt); transform: translateY(-1px); }
+  .btn-primary:focus-visible { outline: 2px solid var(--copper-lt); outline-offset: 2px; }
+
+  .btn-ghost {
+    font-family: var(--mono);
+    font-size: var(--text-sm);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--copper);
+    background: transparent;
+    border: 1px solid var(--copper-dk);
+    padding: 0.75rem 2rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+    display: inline-block;
+  }
+  .btn-ghost:hover { border-color: var(--copper); color: var(--copper-lt); }
+  .btn-ghost:focus-visible { outline: 2px solid var(--copper-lt); outline-offset: 2px; }
+
+  .hero-scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    font-family: var(--mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.2em;
+    color: var(--copper-dk);
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .hero-scroll-hint::after {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 2.5rem;
+    background: linear-gradient(to bottom, var(--copper-dk), transparent);
+    animation: scroll-drop 2s ease-in-out infinite;
+  }
+  @keyframes scroll-drop {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  /* ── SHARED LAYOUT ────────────────────────────────────── */
+  .section { padding: 7rem 0; }
+  .section + .section { border-top: 1px solid var(--border); }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2.5rem;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--copper);
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  /* ── ABOUT ────────────────────────────────────────────── */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: start;
+  }
+
+  .about-heading {
+    font-family: var(--mono);
+    font-size: var(--text-2xl);
+    font-weight: 400;
+    line-height: 1.2;
+    color: var(--white);
+    text-wrap: balance;
+    margin-bottom: 1.75rem;
+  }
+
+  .about-body {
+    font-family: var(--serif);
+    font-size: var(--text-base);
+    color: var(--cream-dim);
+    max-width: 55ch;
+    line-height: 1.75;
+  }
+  .about-body + .about-body { margin-top: 1.25rem; }
+
+  .about-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .stat-item {
+    padding: 1.75rem 1.5rem;
+    border-left: 3px solid var(--copper);
+    background: var(--surface);
+    transition: background 0.2s;
+  }
+  .stat-item:nth-child(odd) { border-right: 1px solid var(--border); }
+  .stat-item:nth-child(1), .stat-item:nth-child(2) { border-bottom: 1px solid var(--border); }
+  .stat-item:hover { background: var(--surface2); }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: var(--text-3xl);
+    font-weight: 400;
+    color: var(--copper);
+    line-height: 1;
+    margin-bottom: 0.4rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+  }
+
+  /* ── CAPABILITIES ─────────────────────────────────────── */
+  .cap-header {
+    margin-bottom: 3.5rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  .cap-heading {
+    font-family: var(--mono);
+    font-size: var(--text-xl);
+    font-weight: 400;
+    color: var(--white);
+    text-wrap: balance;
+  }
+  .cap-note {
+    font-family: var(--mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.15em;
+    color: var(--cream-dim);
+    text-transform: uppercase;
+  }
+
+  /* Broken 12-col grid: deliberately asymmetric */
+  .cap-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: auto auto;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .cap-card {
+    background: var(--surface);
+    padding: 2rem 1.75rem 2.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.25s;
+  }
+  .cap-card:hover { background: var(--surface2); }
+
+  /* Asymmetric column spans */
+  .cap-card:nth-child(1) { grid-column: span 5; }
+  .cap-card:nth-child(2) { grid-column: span 3; }
+  .cap-card:nth-child(3) { grid-column: span 4; }
+  .cap-card:nth-child(4) { grid-column: span 6; }
+  .cap-card:nth-child(5) { grid-column: span 6; }
+
+  .cap-ref {
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.2em;
+    color: var(--copper-dk);
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+  }
+
+  .cap-trace {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    opacity: 0.12;
+    pointer-events: none;
+  }
+
+  .cap-title {
+    font-family: var(--mono);
+    font-size: var(--text-base);
+    font-weight: 400;
+    color: var(--white);
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .cap-desc {
+    font-family: var(--serif);
+    font-size: 0.875rem;
+    color: var(--cream-dim);
+    line-height: 1.65;
+  }
+
+  .cap-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--copper);
+    border: 1px solid var(--copper-dk);
+    padding: 0.2rem 0.5rem;
+    margin-top: 1.25rem;
+  }
+
+  /* ── ARCHITECTURE ─────────────────────────────────────── */
+  .arch-wrap {
+    display: grid;
+    grid-template-columns: 1fr 480px;
+    gap: 5rem;
+    align-items: center;
+  }
+
+  .arch-text-heading {
+    font-family: var(--mono);
+    font-size: var(--text-xl);
+    font-weight: 400;
+    color: var(--white);
+    margin-bottom: 1.5rem;
+    text-wrap: balance;
+  }
+
+  .arch-text-body {
+    font-family: var(--serif);
+    font-size: var(--text-base);
+    color: var(--cream-dim);
+    max-width: 52ch;
+    line-height: 1.75;
+    margin-bottom: 2.5rem;
+  }
+
+  .arch-layer-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: var(--text-sm);
+    color: var(--cream-dim);
+  }
+  .arch-layer:first-child { border-top: 1px solid var(--border); }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--pcb-green);
+    flex-shrink: 0;
+    box-shadow: 0 0 6px var(--pcb-green);
+    animation: pulse-dot 2.4s ease-in-out infinite;
+  }
+  .status-dot.amber {
+    background: #E8A020;
+    box-shadow: 0 0 6px #E8A020;
+    animation-delay: 1.2s;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.8); }
+  }
+
+  .arch-diagram {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    max-width: 480px;
+  }
+
+  #arch-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ── CONTACT / CTA ────────────────────────────────────── */
+  .cta-section {
+    position: relative;
+    overflow: hidden;
+    padding: 8rem 0;
+  }
+  .cta-section.section { border-top: 1px solid var(--border); }
+
+  #cta-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.35;
+  }
+
+  .cta-inner {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+
+  .cta-heading {
+    font-family: var(--mono);
+    font-size: var(--text-3xl);
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--white);
+    text-wrap: balance;
+    margin-bottom: 1.5rem;
+  }
+
+  .cta-body {
+    font-family: var(--serif);
+    font-size: var(--text-base);
+    color: var(--cream-dim);
+    max-width: 48ch;
+    line-height: 1.75;
+    margin-bottom: 2.5rem;
+  }
+
+  .cta-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .form-label {
+    font-family: var(--mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--copper-dk);
+  }
+
+  .form-input {
+    font-family: var(--mono);
+    font-size: var(--text-sm);
+    color: var(--cream);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.65rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .form-input:focus { border-color: var(--copper-dk); }
+  .form-input:focus-visible { outline: 2px solid var(--copper-dk); outline-offset: 0; }
+  .form-input::placeholder { color: var(--cream-dim); opacity: 0.5; }
+
+  textarea.form-input {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  /* ── NAV ──────────────────────────────────────────────── */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 1.25rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10,12,10,0.88);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(44,59,44,0.5);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: var(--text-lg);
+    font-weight: 400;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--copper);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--copper); }
+  .nav-links a:focus-visible { outline: 1px solid var(--copper); outline-offset: 3px; }
+
+  /* ── FOOTER ───────────────────────────────────────────── */
+  footer {
+    padding: 3rem 2.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-logo {
+    font-family: var(--mono);
+    font-size: var(--text-base);
+    color: transparent;
+    -webkit-text-stroke: 1px var(--copper-dk);
+    letter-spacing: 0.1em;
+  }
+
+  .footer-copy {
+    font-family: var(--mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.1em;
+    color: var(--cream-dim);
+    opacity: 0.5;
+  }
+
+  .footer-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--pcb-green);
+  }
+
+  /* ── RESPONSIVE ───────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+    .arch-wrap { grid-template-columns: 1fr; }
+    .arch-diagram { max-width: 340px; margin: 0 auto; }
+    .cta-inner { grid-template-columns: 1fr; gap: 3rem; }
+    .cap-card:nth-child(n) { grid-column: span 12; }
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .container { padding: 0 1.5rem; }
+    footer { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">XEN</a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#capabilities">Capabilities</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <canvas id="hero-canvas" aria-hidden="true"></canvas>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Autonomous Intelligence Infrastructure</p>
+    <div class="hero-logotype" aria-label="XEN">XEN</div>
+    <p class="hero-sub">Voice-first autonomous agent infrastructure built for continuous operation — parallel goal swarms, real-time orchestration, zero human bottleneck.</p>
+    <div class="hero-cta-row">
+      <a href="#architecture" class="btn-primary">Explore Architecture</a>
+      <a href="#contact" class="btn-ghost">Request Access</a>
+    </div>
+  </div>
+  <div class="hero-scroll-hint" aria-hidden="true">Scroll</div>
+</section>
+
+<!-- ABOUT -->
+<section class="section" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div>
+        <span class="section-label">// XEN_IDENTITY</span>
+        <h2 class="about-heading">One voice.<br>Infinite parallel threads.</h2>
+        <p class="about-body">XEN is not a chatbot. It is a continuously running autonomous system — a distributed intelligence that operates identically whether its operator is present, asleep, or unreachable. Every inbound signal becomes immediate parallel action.</p>
+        <p class="about-body">Built from first principles around the constraint that no human should ever be a bottleneck. Voice is the primary interface; action is the only output; verification against ground truth is mandatory before any claim ships.</p>
+      </div>
+      <div class="about-stats">
+        <div class="stat-item">
+          <div class="stat-value">55+</div>
+          <div class="stat-label">Agent Fleet</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Human Confirms</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">∞</div>
+          <div class="stat-label">Parallel Threads</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">24/7</div>
+          <div class="stat-label">Live Uptime</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAPABILITIES -->
+<section class="section" id="capabilities">
+  <div class="container">
+    <div class="cap-header">
+      <div>
+        <span class="section-label">// CAP_MATRIX</span>
+        <h2 class="cap-heading">What XEN does<br>while you're not watching.</h2>
+      </div>
+      <span class="cap-note">REF: C1–C5</span>
+    </div>
+    <div class="cap-grid" role="list">
+
+      <article class="cap-card" role="listitem">
+        <svg class="cap-trace" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+          <rect x="10" y="10" width="60" height="60" stroke="#B87333" stroke-width="0.5"/>
+          <path d="M10 40 H30 V20 H50 V60 H70" stroke="#B87333" stroke-width="1" fill="none"/>
+          <circle cx="30" cy="40" r="3" fill="#B87333"/>
+          <circle cx="50" cy="20" r="3" fill="#B87333"/>
+          <circle cx="50" cy="60" r="3" fill="#B87333"/>
+        </svg>
+        <p class="cap-ref">REF C1 — VOICE_LAYER</p>
+        <h3 class="cap-title">Voice-First VVS Pipeline</h3>
+        <p class="cap-desc">Every reply ships voice + SMS + vision in parallel. Barge-in mandatory. No silent states, no queuing, no waiting. xen-reply-vvs is the only canonical reply mechanism — raw curl is a protocol violation.</p>
+        <span class="cap-tag">xen-reply-vvs</span>
+      </article>
+
+      <article class="cap-card" role="listitem">
+        <svg class="cap-trace" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+          <circle cx="40" cy="40" r="28" stroke="#B87333" stroke-width="0.5"/>
+          <circle cx="40" cy="40" r="4" fill="#B87333"/>
+          <line x1="40" y1="12" x2="40" y2="40" stroke="#B87333" stroke-width="0.75"/>
+          <line x1="40" y1="40" x2="64" y2="52" stroke="#B87333" stroke-width="0.75"/>
+          <line x1="40" y1="40" x2="16" y2="52" stroke="#B87333" stroke-width="0.75"/>
+        </svg>
+        <p class="cap-ref">REF C2 — PGS_ENGINE</p>
+        <h3 class="cap-title">Parallel Goal Swarms</h3>
+        <p class="cap-desc">Non-trivial tasks and diagnoses run as Parallel Goal Swarms — never a single-threaded edit→deploy→test loop. Fan hypotheses out simultaneously, verify each, synthesize.</p>
+        <span class="cap-tag">pgs-daemon</span>
+      </article>
+
+      <article class="cap-card" role="listitem">
+        <svg class="cap-trace" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+          <rect x="8" y="20" width="64" height="40" rx="1" stroke="#B87333" stroke-width="0.5"/>
+          <line x1="24" y1="20" x2="24" y2="60" stroke="#B87333" stroke-width="0.5"/>
+          <line x1="56" y1="20" x2="56" y2="60" stroke="#B87333" stroke-width="0.5"/>
+          <rect x="18" y="32" width="12" height="16" fill="#B87333" fill-opacity="0.3"/>
+          <rect x="34" y="28" width="12" height="24" fill="#B87333" fill-opacity="0.3"/>
+          <rect x="50" y="36" width="12" height="12" fill="#B87333" fill-opacity="0.3"/>
+        </svg>
+        <p class="cap-ref">REF C3 — MEM_VAULT</p>
+        <h3 class="cap-title">Memory-First Architecture</h3>
+        <p class="cap-desc">Recall before any multi-step plan, before editing untouched code, at every session start. Bastra-recall daemon maintains an 83+ entry vault with full-history search. Never block voice on a memory call.</p>
+        <span class="cap-tag">bastra-recall</span>
+      </article>
+
+      <article class="cap-card" role="listitem">
+        <svg class="cap-trace" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+          <path d="M40 10 L70 40 L40 70 L10 40 Z" stroke="#B87333" stroke-width="0.5" fill="none"/>
+          <path d="M40 22 L58 40 L40 58 L22 40 Z" stroke="#B87333" stroke-width="0.75" fill="none"/>
+          <circle cx="40" cy="40" r="6" stroke="#B87333" stroke-width="1" fill="none"/>
+          <circle cx="40" cy="40" r="2" fill="#B87333"/>
+        </svg>
+        <p class="cap-ref">REF C4 — AUTO_OPS</p>
+        <h3 class="cap-title">Permanent Autonomy</h3>
+        <p class="cap-desc">XEN runs the full system continuously and identically whether the operator is at desk, on a call, asleep, or offline. No present vs absent mode. Inbound equals action, regardless of who is watching. Till-done persistence: interruption is never abandonment.</p>
+        <span class="cap-tag">continuous-ops</span>
+      </article>
+
+      <article class="cap-card" role="listitem">
+        <svg class="cap-trace" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+          <circle cx="40" cy="40" r="8" stroke="#B87333" stroke-width="0.75" fill="none"/>
+          <circle cx="20" cy="20" r="4" stroke="#B87333" stroke-width="0.5" fill="none"/>
+          <circle cx="60" cy="20" r="4" stroke="#B87333" stroke-width="0.5" fill="none"/>
+          <circle cx="20" cy="60" r="4" stroke="#B87333" stroke-width="0.5" fill="none"/>
+          <circle cx="60" cy="60" r="4" stroke="#B87333" stroke-width="0.5" fill="none"/>
+          <circle cx="40" cy="10" r="4" stroke="#B87333" stroke-width="0.5" fill="none"/>
+          <circle cx="40" cy="70" r="4" stroke="#B87333" stroke-width="0.5" fill="none"/>
+          <line x1="20" y1="20" x2="34" y2="34" stroke="#B87333" stroke-width="0.5"/>
+          <line x1="60" y1="20" x2="46" y2="34" stroke="#B87333" stroke-width="0.5"/>
+          <line x1="20" y1="60" x2="34" y2="46" stroke="#B87333" stroke-width="0.5"/>
+          <line x1="60" y1="60" x2="46" y2="46" stroke="#B87333" stroke-width="0.5"/>
+          <line x1="40" y1="10" x2="40" y2="32" stroke="#B87333" stroke-width="0.5"/>
+          <line x1="40" y1="70" x2="40" y2="48" stroke="#B87333" stroke-width="0.5"/>
+        </svg>
+        <p class="cap-ref">REF C5 — FLEET_MGMT</p>
+        <h3 class="cap-title">55+ Agent Fleet Orchestration</h3>
+        <p class="cap-desc">A registered persona/face tree with swarm orchestrator, fleet-architect, canon-enforcer, and voice-responder roles. On-demand parallel swarm launcher fans N background workers over open goals simultaneously. One canonical voice across all agents.</p>
+        <span class="cap-tag">xen-swarm-team</span>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="section" id="architecture">
+  <div class="container">
+    <div class="arch-wrap">
+      <div>
+        <span class="section-label">// SYS_ARCH</span>
+        <h2 class="arch-text-heading">Every layer verified,<br>no layer silent.</h2>
+        <p class="arch-text-body">XEN's architecture enforces a single canonical tree — code lives at M4, runtime state under ~/.xen/runtime, memory at the brain vault. No sync I/O on hot paths. No serial work-queues as processing gates. Every layer surfaces a live status indicator.</p>
+        <ul class="arch-layer-list">
+          <li class="arch-layer"><span class="status-dot" aria-label="nominal"></span> xen-reply-vvs — voice delivery layer</li>
+          <li class="arch-layer"><span class="status-dot" style="animation-delay:0.3s" aria-label="nominal"></span> pgs-daemon — parallel goal swarms</li>
+          <li class="arch-layer"><span class="status-dot" style="animation-delay:0.6s" aria-label="nominal"></span> bastra-recall — memory vault (M4)</li>
+          <li class="arch-layer"><span class="status-dot" style="animation-delay:0.9s" aria-label="nominal"></span> omnimind :4441 — identity + auth gate</li>
+          <li class="arch-layer"><span class="status-dot" style="animation-delay:1.2s" aria-label="nominal"></span> universal-mcp-hub — tool registry</li>
+          <li class="arch-layer"><span class="status-dot" style="animation-delay:1.5s" aria-label="nominal"></span> apple-stt-v2 — voice input pipeline</li>
+          <li class="arch-layer"><span class="status-dot" style="animation-delay:1.8s" aria-label="nominal"></span> xen-autoagent — goal mint gate</li>
+          <li class="arch-layer"><span class="status-dot amber" aria-label="amber"></span> cf-tunnel-failover — GH Pages watchdog</li>
+        </ul>
+      </div>
+      <div class="arch-diagram">
+        <canvas id="arch-canvas" aria-label="XEN architecture node diagram" width="480" height="480"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA / CONTACT -->
+<section class="cta-section section" id="contact">
+  <canvas id="cta-canvas" aria-hidden="true"></canvas>
+  <div class="container">
+    <div class="cta-inner">
+      <div>
+        <span class="section-label">// INIT_CONTACT</span>
+        <h2 class="cta-heading">Deploy intelligence.<br>Remove yourself<br>from the loop.</h2>
+        <p class="cta-body">XEN is infrastructure for operators who need continuous autonomous action — not a co-pilot that pauses for permission. If you're building systems where human latency is a liability, let's talk.</p>
+        <a href="mailto:admin@xlrd.org" class="btn-primary">admin@xlrd.org</a>
+      </div>
+      <form class="cta-form" onsubmit="return false;" aria-label="Contact form">
+        <div class="form-field">
+          <label class="form-label" for="f-name">Handle</label>
+          <input class="form-input" id="f-name" type="text" placeholder="your identifier" autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-org">Organization</label>
+          <input class="form-input" id="f-org" type="text" placeholder="org / project" autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-msg">Signal</label>
+          <textarea class="form-input" id="f-msg" placeholder="What are you trying to automate?" rows="4"></textarea>
+        </div>
+        <button type="submit" class="btn-primary" style="align-self:flex-start; cursor:pointer;">Transmit →</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">XEN</span>
+  <span class="footer-status"><span class="status-dot" style="animation-delay:0.4s"></span> Systems nominal</span>
+  <span class="footer-copy">XLRD.ORG — Autonomous infrastructure. All threads running.</span>
+</footer>
+
+<script>
+/* ─── HERO CANVAS: PCB trace animation ──────────────────── */
+(function() {
+  var canvas = document.getElementById('hero-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W, H, mouse = { x: -9999, y: -9999 };
+  var traces = [], pulses = [];
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    buildTraces();
+  }
+
+  function buildTraces() {
+    traces = [];
+    pulses = [];
+    var GRID = 48;
+    var cols = Math.ceil(W / GRID) + 2;
+    var rows = Math.ceil(H / GRID) + 2;
+    for (var i = 0; i < 34; i++) {
+      var x1 = Math.floor(Math.random() * cols) * GRID;
+      var y1 = Math.floor(Math.random() * rows) * GRID;
+      var dx = (Math.floor(Math.random() * 4) + 2) * GRID * (Math.random() > 0.5 ? 1 : -1);
+      var dy = (Math.floor(Math.random() * 3) + 1) * GRID * (Math.random() > 0.5 ? 1 : -1);
+      traces.push({ x1: x1, y1: y1, x2: x1 + dx, y2: y1, x3: x1 + dx, y3: y1 + dy });
+      pulses.push({ ti: i, t: Math.random(), speed: 0.001 + Math.random() * 0.0018 });
+    }
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function drawTrace(tr, alpha, hl) {
+    ctx.beginPath();
+    ctx.moveTo(tr.x1, tr.y1);
+    ctx.lineTo(tr.x2, tr.y2);
+    ctx.lineTo(tr.x3, tr.y3);
+    ctx.strokeStyle = hl ? 'rgba(184,115,51,' + (alpha * 0.65) + ')' : 'rgba(44,59,44,' + alpha + ')';
+    ctx.lineWidth = hl ? 1 : 0.5;
+    ctx.stroke();
+    [[tr.x1, tr.y1], [tr.x2, tr.y2], [tr.x3, tr.y3]].forEach(function(pt) {
+      ctx.beginPath();
+      ctx.arc(pt[0], pt[1], 2, 0, Math.PI * 2);
+      ctx.fillStyle = hl ? 'rgba(184,115,51,' + (alpha * 0.9) + ')' : 'rgba(44,59,44,' + (alpha * 1.5) + ')';
+      ctx.fill();
+    });
+  }
+
+  function pulsePos(p) {
+    var tr = traces[p.ti];
+    if (!tr) return null;
+    var s0 = Math.hypot(tr.x2 - tr.x1, tr.y2 - tr.y1);
+    var s1 = Math.hypot(tr.x3 - tr.x2, tr.y3 - tr.y2);
+    var total = s0 + s1;
+    if (total === 0) return { x: tr.x1, y: tr.y1 };
+    var dist = p.t * total;
+    if (dist <= s0) {
+      var tt = s0 > 0 ? dist / s0 : 0;
+      return { x: lerp(tr.x1, tr.x2, tt), y: lerp(tr.y1, tr.y2, tt) };
+    } else {
+      var tt2 = s1 > 0 ? (dist - s0) / s1 : 0;
+      return { x: lerp(tr.x2, tr.x3, tt2), y: lerp(tr.y2, tr.y3, tt2) };
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    var G = 48;
+    ctx.strokeStyle = 'rgba(26,31,26,0.6)';
+    ctx.lineWidth = 0.5;
+    for (var x = 0; x < W; x += G) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (var y = 0; y < H; y += G) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    traces.forEach(function(tr, i) {
+      var mx = (tr.x1 + tr.x3) / 2, my = (tr.y1 + tr.y3) / 2;
+      var d = Math.hypot(mx - mouse.x, my - mouse.y);
+      var hl = d < 200;
+      var alpha = Math.max(0.25, 0.55 - d / 1000);
+      drawTrace(tr, alpha, hl);
+    });
+    pulses.forEach(function(p) {
+      p.t += p.speed;
+      if (p.t > 1) p.t = 0;
+      var pos = pulsePos(p);
+      if (!pos) return;
+      var g = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 16);
+      g.addColorStop(0, 'rgba(184,115,51,0.85)');
+      g.addColorStop(0.4, 'rgba(184,115,51,0.25)');
+      g.addColorStop(1, 'rgba(184,115,51,0)');
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 16, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  canvas.addEventListener('mousemove', function(e) {
+    var r = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - r.left;
+    mouse.y = e.clientY - r.top;
+  });
+  resize();
+  requestAnimationFrame(draw);
+})();
+
+/* ─── ARCH CANVAS: node cluster diagram ─────────────────── */
+(function() {
+  var canvas = document.getElementById('arch-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var DPR = window.devicePixelRatio || 1;
+  var SIZE = 480;
+  canvas.width = SIZE * DPR;
+  canvas.height = SIZE * DPR;
+  canvas.style.width = SIZE + 'px';
+  canvas.style.height = SIZE + 'px';
+  ctx.scale(DPR, DPR);
+  var cx = SIZE / 2, cy = SIZE / 2;
+  var nodeLabels = ['VVS','PGS','MEM','STT','OMNI','FLEET','MCP','CF'];
+  var tick = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    tick += 0.007;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 148, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(44,59,44,0.45)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 52, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(44,59,44,0.35)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    nodeLabels.forEach(function(label, i) {
+      var angle = -Math.PI / 2 + (i / nodeLabels.length) * Math.PI * 2;
+      var nx = cx + 148 * Math.cos(angle);
+      var ny = cy + 148 * Math.sin(angle);
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(nx, ny);
+      ctx.strokeStyle = 'rgba(44,59,44,0.55)';
+      ctx.lineWidth = 0.75;
+      ctx.stroke();
+
+      var phase = (tick + i / nodeLabels.length) % 1;
+      var px = cx + (nx - cx) * phase;
+      var py = cy + (ny - cy) * phase;
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(184,115,51,0.75)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(nx, ny, 22, 0, Math.PI * 2);
+      ctx.fillStyle = '#0D110D';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(nx, ny, 22, 0, Math.PI * 2);
+      ctx.strokeStyle = '#2C3B2C';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.font = '10px Courier New, monospace';
+      ctx.fillStyle = '#B87333';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, nx, ny);
+    });
+
+    var glow = (Math.sin(tick * 1.8) + 1) / 2;
+    var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 52);
+    grad.addColorStop(0, 'rgba(184,115,51,' + (0.07 + glow * 0.1) + ')');
+    grad.addColorStop(1, 'rgba(184,115,51,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, 52, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 32, 0, Math.PI * 2);
+    ctx.fillStyle = '#0A0C0A';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 32, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(184,115,51,' + (0.45 + glow * 0.55) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = 'bold 15px Courier New, monospace';
+    ctx.fillStyle = '#E8E0D0';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('XEN', cx, cy);
+
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+/* ─── CTA CANVAS: falling copper trace lines ─────────────── */
+(function() {
+  var canvas = document.getElementById('cta-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W, H, lines = [];
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    if (!lines.length) spawn();
+  }
+
+  function spawn() {
+    lines = [];
+    for (var i = 0; i < 20; i++) {
+      lines.push({
+        x: Math.random() * (W || 800),
+        y: Math.random() * (H || 400) - (H || 400),
+        speed: 0.25 + Math.random() * 0.55,
+        len: 28 + Math.random() * 90,
+        alpha: 0.12 + Math.random() * 0.28,
+        thick: Math.random() > 0.65 ? 1.5 : 0.5
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    lines.forEach(function(l) {
+      l.y += l.speed;
+      if (l.y - l.len > H) { l.y = -l.len; l.x = Math.random() * W; }
+      var g = ctx.createLinearGradient(l.x, l.y - l.len, l.x, l.y);
+      g.addColorStop(0, 'rgba(184,115,51,0)');
+      g.addColorStop(1, 'rgba(184,115,51,' + l.alpha + ')');
+      ctx.beginPath();
+      ctx.moveTo(l.x, l.y - l.len);
+      ctx.lineTo(l.x, l.y);
+      ctx.strokeStyle = g;
+      ctx.lineWidth = l.thick;
+      ctx.stroke();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

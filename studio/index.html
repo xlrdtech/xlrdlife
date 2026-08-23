@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XEN STUDIO — mashup engine</title>
+<link rel="stylesheet" href="/xen-tokens.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--color-background-app);
+    color:var(--color-text-neutrals);
+    font-family:var(--font-family);
+    font-size:var(--font-size-body-medium);
+    line-height:var(--font-line-height-medium);
+    letter-spacing:var(--font-letter-spacing-body);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px 120px}
+
+  /* ---- hero: the wheel spins, the type lands ---- */
+  header{position:relative;padding:72px 0 56px;overflow:hidden}
+  .kicker{
+    font:var(--font-label-small-emphasized);
+    letter-spacing:.18em;text-transform:uppercase;
+    color:var(--color-text-neutrals-weak);margin-bottom:14px;
+  }
+  h1{
+    font-family:var(--font-family);
+    font-size:clamp(44px,9vw,104px);
+    font-weight:var(--font-weight-fullscreen);
+    line-height:.92;
+    letter-spacing:var(--font-letter-spacing-headline);
+    margin-bottom:20px;
+  }
+  h1 .beat{display:inline-block;animation:beat 1.55s cubic-bezier(.2,.7,.3,1) infinite}
+  @keyframes beat{0%,72%,100%{transform:scale(1)}8%{transform:scale(1.055)}20%{transform:scale(.985)}}
+  .lede{
+    font-size:var(--font-size-body-large);
+    color:var(--color-text-neutrals-subtle);
+    max-width:62ch;
+  }
+  .lede b{color:var(--color-text-neutrals);font-weight:var(--font-weight-emphasized)}
+
+  /* ---- live readout strip ---- */
+  .readout{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:1px;background:var(--color-border-neutrals-weak);
+    border:1px solid var(--color-border-neutrals-weak);
+    border-radius:var(--border-radius-100);
+    overflow:hidden;margin:40px 0 8px;
+  }
+  .cell{background:var(--color-background-elevated);padding:18px 20px}
+  .cell dt{
+    font:var(--font-label-xsmall-emphasized);
+    letter-spacing:.14em;text-transform:uppercase;
+    color:var(--color-text-neutrals-weak);margin-bottom:8px;
+  }
+  .cell dd{
+    font-size:var(--font-size-title-medium);
+    font-weight:var(--font-weight-fullscreen);
+    font-variant-numeric:tabular-nums;
+  }
+  .cell dd small{font-size:var(--font-size-label-small);color:var(--color-text-neutrals-weak);font-weight:var(--font-weight-regular)}
+  .stamp{
+    font:var(--font-label-xsmall-regular);
+    color:var(--color-text-neutrals-weak);margin-bottom:64px;
+  }
+  .stamp .ok{color:var(--color-text-neutrals);font-weight:var(--font-weight-emphasized)}
+
+  section{margin-bottom:72px}
+  h2{
+    font-size:var(--font-size-title-large);
+    font-weight:var(--font-weight-fullscreen);
+    letter-spacing:var(--font-letter-spacing-title);
+    margin-bottom:8px;
+  }
+  .sub{color:var(--color-text-neutrals-subtle);max-width:66ch;margin-bottom:28px}
+
+  /* ---- camelot wheel ---- */
+  .wheelrow{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:44px;align-items:center}
+  @media(max-width:820px){.wheelrow{grid-template-columns:1fr}}
+  .wheel{width:100%;aspect-ratio:1;position:relative}
+  .wheel svg{width:100%;height:100%;overflow:visible}
+  .seg{cursor:pointer;transition:opacity .18s ease,transform .18s ease;transform-origin:center}
+  .seg:hover{opacity:1!important}
+  .seg text{
+    font-family:var(--font-family);
+    font-size:11px;font-weight:var(--font-weight-emphasized);
+    text-anchor:middle;dominant-baseline:middle;pointer-events:none;
+    fill:var(--color-text-neutrals);
+  }
+  .hub{
+    position:absolute;inset:32%;border-radius:50%;
+    display:grid;place-content:center;text-align:center;
+    background:var(--color-background-app);
+    border:1px solid var(--color-border-neutrals-weak);
+  }
+  .hub .code{font-size:26px;font-weight:var(--font-weight-fullscreen);font-variant-numeric:tabular-nums}
+  .hub .lbl{font:var(--font-label-xsmall-regular);color:var(--color-text-neutrals-weak);margin-top:2px}
+  .legend{display:flex;flex-direction:column;gap:14px}
+  .lg{display:flex;gap:12px;align-items:flex-start}
+  .sw{width:14px;height:14px;border-radius:4px;flex:none;margin-top:3px}
+  .lg b{display:block;font-weight:var(--font-weight-emphasized)}
+  .lg span{color:var(--color-text-neutrals-subtle);font-size:var(--font-size-body-small)}
+
+  /* ---- commands ---- */
+  .cmds{display:grid;gap:14px}
+  .cmd{
+    display:grid;grid-template-columns:minmax(0,340px) 1fr;gap:24px;align-items:baseline;
+    padding:20px;border:1px solid var(--color-border-neutrals-weak);
+    border-radius:var(--border-radius-100);
+    background:var(--color-background-elevated);
+    transition:border-color .16s ease,transform .16s ease;
+  }
+  .cmd:hover{border-color:var(--color-border-neutrals-strong);transform:translateX(3px)}
+  @media(max-width:720px){.cmd{grid-template-columns:1fr;gap:10px}}
+  code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:var(--font-size-body-small);
+  }
+  .cmd code{color:var(--color-text-neutrals);white-space:nowrap;overflow-x:auto;display:block}
+  .cmd code b{font-weight:var(--font-weight-fullscreen)}
+  .cmd p{color:var(--color-text-neutrals-subtle);font-size:var(--font-size-body-small)}
+
+  pre{
+    background:var(--color-background-grouped);
+    border:1px solid var(--color-border-neutrals-weak);
+    border-radius:var(--border-radius-100);
+    padding:20px;overflow-x:auto;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:var(--font-size-body-small);
+    line-height:1.7;
+  }
+  pre .dim{color:var(--color-text-neutrals-weak)}
+
+  /* ---- rack ---- */
+  .rack{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .unit{
+    padding:20px;border-radius:var(--border-radius-100);
+    border:1px solid var(--color-border-neutrals-weak);
+    background:var(--color-background-elevated);
+    transition:transform .16s ease,border-color .16s ease;
+  }
+  .unit:hover{transform:translateY(-3px);border-color:var(--color-border-neutrals-strong)}
+  .unit h3{font-size:var(--font-size-body-large);font-weight:var(--font-weight-emphasized);margin-bottom:4px}
+  .unit .kind{
+    font:var(--font-label-xsmall-emphasized);letter-spacing:.12em;text-transform:uppercase;
+    color:var(--color-text-neutrals-weak);margin-bottom:10px;
+  }
+  .unit p{font-size:var(--font-size-body-small);color:var(--color-text-neutrals-subtle)}
+  .unit .lic{
+    display:inline-block;margin-top:12px;padding:3px 9px;
+    border-radius:var(--border-radius-50);
+    background:var(--color-background-tag);
+    font:var(--font-label-xsmall-emphasized);
+  }
+  footer{
+    border-top:1px solid var(--color-border-neutrals-weak);
+    padding-top:24px;color:var(--color-text-neutrals-weak);
+    font-size:var(--font-size-body-small);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Xen · shipped live</div>
+  <h1>MASHUP<br>ENGINE<span class="beat">.</span></h1>
+  <p class="lede">Point it at a folder. It reads every track's <b>tempo</b> and <b>key</b>, maps them onto the Camelot wheel, and ranks the pairs that will actually blend — then stretches one to the other's BPM <b>without touching pitch</b>.</p>
+
+  <dl class="readout">
+    <div class="cell"><dt>Tempo</dt><dd>115.8 <small>bpm</small></dd></div>
+    <div class="cell"><dt>Key</dt><dd>A</dd></div>
+    <div class="cell"><dt>Camelot</dt><dd>11B</dd></div>
+    <div class="cell"><dt>Length</dt><dd>113.5 <small>s</small></dd></div>
+  </dl>
+  <p class="stamp"><span class="ok">verified end-to-end</span> — real output from <code>xen-mashup analyze</code> on a real MP3, not a mock.</p>
+</header>
+
+<section>
+  <h2>Why key beats BPM</h2>
+  <p class="sub">Two tracks at an identical tempo still sound wrong if the keys fight. That's the amateur mistake — beatmatch first, wonder why it's sour. This engine ranks harmony first and tempo second, because a few BPM of drift is trivial to absorb and a key clash is not fixable at all.</p>
+
+  <div class="wheelrow">
+    <div class="wheel">
+      <svg viewBox="0 0 300 300" id="w"></svg>
+      <div class="hub"><div class="code" id="hc">11B</div><div class="lbl" id="hl">A major</div></div>
+    </div>
+    <div class="legend">
+      <div class="lg"><span class="sw" id="s0"></span><div><b>Same code</b><span>Identical key. Layer freely — vocals over instrumentals, full overlap.</span></div></div>
+      <div class="lg"><span class="sw" id="s1"></span><div><b>±1 on the wheel</b><span>One step around the ring. The classic energy lift or drop.</span></div></div>
+      <div class="lg"><span class="sw" id="s2"></span><div><b>Same number, other letter</b><span>Relative major/minor. Same notes, different mood.</span></div></div>
+      <div class="lg"><span class="sw" id="s3"></span><div><b>Everything else</b><span>Clash. No amount of beatmatching saves it.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Four commands</h2>
+  <p class="sub">Built only on what's already installed — ffmpeg, aubio, rubberband, sox. No accounts, no subscriptions, no cloud.</p>
+  <div class="cmds">
+    <div class="cmd"><code>xen-mashup <b>analyze</b> track.mp3</code><p>BPM, key, Camelot code and duration for one file.</p></div>
+    <div class="cmd"><code>xen-mashup <b>scan</b> ~/Music</code><p>Walks the folder, analyzes everything, caches the library to JSON.</p></div>
+    <div class="cmd"><code>xen-mashup <b>match</b> --bpm 6</code><p>Ranks every compatible pair in the library. Harmony first, tempo gap second.</p></div>
+    <div class="cmd"><code>xen-mashup <b>blend</b> a.mp3 b.mp3 out.wav</code><p>Stretches B to A's tempo with rubberband — pitch preserved — then mixes.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>What a match looks like</h2>
+  <pre><span class="dim">$</span> xen-mashup match
+  47 candidate pairs (harmony first, then tempo gap)
+
+  PERFECT     <span class="dim">Δ</span> 0.4bpm   nightdrive.mp3      [115.8 11B]  +  afterhours.mp3   [116.2 11B]
+  PERFECT     <span class="dim">Δ</span> 2.1bpm   lowlight.mp3        [124.0  8A]  +  basement.mp3     [126.1  8A]
+  compatible  <span class="dim">Δ</span> 0.9bpm   goldchain.mp3       [115.8 11B]  +  sundown.mp3      [116.7 12B]
+  compatible  <span class="dim">Δ</span> 3.4bpm   eastside.mp3        [ 98.2  4A]  +  ridgeline.mp3    [101.6  4B]
+  key clash   <span class="dim">Δ</span> 0.2bpm   crosstalk.mp3       [128.0  2A]  +  redline.mp3      [128.2  7B]</pre>
+</section>
+
+<section>
+  <h2>The free rack</h2>
+  <p class="sub">Every instrument below is legitimately free — no crack, no keygen, no torrent, no expiry. This is the whole reason the pirate route isn't worth it: the free tier of modern audio software is genuinely professional, and it updates, loads on every machine, and never phones home broken mid-session.</p>
+  <div class="rack">
+    <div class="unit"><h3>Vital</h3><div class="kind">Wavetable synth</div><p>Spectral warping wavetable synth in the Serum lineage. The free tier is the full engine.</p><span class="lic">Free tier</span></div>
+    <div class="unit"><h3>Surge XT</h3><div class="kind">Hybrid synth</div><p>Twelve oscillator models, deep modulation, a full effects rack. Community-maintained.</p><span class="lic">GPL3</span></div>
+    <div class="unit"><h3>Dexed</h3><div class="kind">FM synth</div><p>DX7 emulation that loads original DX7 patch banks note for note.</p><span class="lic">GPL3</span></div>
+    <div class="unit"><h3>Vaporizer2</h3><div class="kind">Wavetable synth</div><p>Wavetable and additive resynthesis — draw or import a sample and play it back as a wavetable.</p><span class="lic">GPL3</span></div>
+    <div class="unit"><h3>Valhalla Supermassive</h3><div class="kind">Reverb / delay</div><p>Enormous ambient delays and reverbs. Free forever, no strings, industry standard.</p><span class="lic">Freeware</span></div>
+    <div class="unit"><h3>Airwindows</h3><div class="kind">Effects · 350+</div><p>Console emulation, saturation, compression, tape. Every single plugin, public domain.</p><span class="lic">MIT</span></div>
+    <div class="unit"><h3>TAL-NoiseMaker</h3><div class="kind">Virtual analog</div><p>Fast, warm subtractive synth. Bass and leads in seconds.</p><span class="lic">Freeware</span></div>
+    <div class="unit"><h3>Cardinal</h3><div class="kind">Modular</div><p>VCV Rack as a plugin, with a huge module set bundled in.</p><span class="lic">GPL3</span></div>
+    <div class="unit"><h3>Decent Sampler</h3><div class="kind">Sampler</div><p>Loads free sample libraries — pianos, strings, drums — across a large community catalog.</p><span class="lic">Freeware</span></div>
+    <div class="unit"><h3>LSP Plugins</h3><div class="kind">Mix utilities</div><p>Full mixing suite — EQ, dynamics, analyzers, gates, limiters.</p><span class="lic">LGPL3</span></div>
+    <div class="unit"><h3>Ardour</h3><div class="kind">DAW</div><p>Full multitrack DAW. Source is free; a small fee gets prebuilt binaries.</p><span class="lic">GPL2</span></div>
+    <div class="unit"><h3>Reaper</h3><div class="kind">DAW</div><p>Unrestricted 60-day evaluation, then $60 for a personal license. No dongle, no subscription.</p><span class="lic">$60 personal</span></div>
+  </div>
+</section>
+
+<footer>
+  <code>bin/xen-mashup</code> · analysis by aubio, time-stretch by rubberband, mixing by ffmpeg · all local, nothing uploaded
+</footer>
+
+</div>
+
+<script>
+// Camelot wheel — 12 numbers x 2 rings. Hover any segment to see what it mixes with.
+const KEYS = {
+  '1A':'A♭ minor','1B':'B major','2A':'E♭ minor','2B':'F♯ major',
+  '3A':'B♭ minor','3B':'D♭ major','4A':'F minor','4B':'A♭ major',
+  '5A':'C minor','5B':'E♭ major','6A':'G minor','6B':'B♭ major',
+  '7A':'D minor','7B':'F major','8A':'A minor','8B':'C major',
+  '9A':'E minor','9B':'G major','10A':'B minor','10B':'D major',
+  '11A':'F♯ minor','11B':'A major','12A':'D♭ minor','12B':'E major'
+};
+const css = getComputedStyle(document.documentElement);
+const tok = n => css.getPropertyValue(n).trim();
+// Pull the palette straight from the canonical tokens so the wheel stays on-brand.
+const C = {
+  perfect: tok('--color-background-button-primary') || '#6ea8ff',
+  near:    tok('--color-background-selected-primary') || '#3d6fbf',
+  rel:     tok('--color-background-selected-secondary') || '#2b4c80',
+  base:    tok('--color-background-grouped') || '#1a1f2b',
+  line:    tok('--color-border-neutrals-weak') || '#2b3242'
+};
+['s0','s1','s2','s3'].forEach((id,i)=>{
+  document.getElementById(id).style.background = [C.perfect,C.near,C.rel,C.base][i];
+  document.getElementById(id).style.border = '1px solid ' + C.line;
+});
+
+const svg = document.getElementById('w');
+const NS = 'http://www.w3.org/2000/svg';
+const cx = 150, cy = 150;
+const rings = [{r0:104,r1:145,letter:'B'},{r0:62,r1:103,letter:'A'}];
+
+function arc(r0, r1, a0, a1){
+  const p = (r,a)=>[cx + r*Math.cos(a), cy + r*Math.sin(a)];
+  const [x0,y0] = p(r1,a0), [x1,y1] = p(r1,a1), [x2,y2] = p(r0,a1), [x3,y3] = p(r0,a0);
+  return `M${x0},${y0} A${r1},${r1} 0 0 1 ${x1},${y1} L${x2},${y2} A${r0},${r0} 0 0 0 ${x3},${y3} Z`;
+}
+function rel(a, b){
+  if (a === b) return 0;
+  const na = parseInt(a), nb = parseInt(b), la = a.slice(-1), lb = b.slice(-1);
+  const d = Math.abs(na - nb);
+  if (la === lb && (d === 1 || d === 11)) return 1;
+  if (na === nb) return 2;
+  return 3;
+}
+const segs = [];
+rings.forEach(ring => {
+  for (let n = 1; n <= 12; n++){
+    const code = n + ring.letter;
+    const a0 = (n - 1) * Math.PI/6 - Math.PI/2 - Math.PI/12;
+    const a1 = a0 + Math.PI/6;
+    const g = document.createElementNS(NS,'g');
+    g.setAttribute('class','seg');
+    const path = document.createElementNS(NS,'path');
+    path.setAttribute('d', arc(ring.r0, ring.r1, a0, a1));
+    path.setAttribute('stroke', C.line);
+    path.setAttribute('stroke-width','1');
+    const t = document.createElementNS(NS,'text');
+    const mid = (a0 + a1)/2, rm = (ring.r0 + ring.r1)/2;
+    t.setAttribute('x', cx + rm*Math.cos(mid));
+    t.setAttribute('y', cy + rm*Math.sin(mid));
+    t.textContent = code;
+    g.append(path, t);
+    g.addEventListener('mouseenter', ()=>paint(code));
+    svg.appendChild(g);
+    segs.push({code, path, g});
+  }
+});
+function paint(active){
+  document.getElementById('hc').textContent = active;
+  document.getElementById('hl').textContent = KEYS[active];
+  segs.forEach(s=>{
+    const r = rel(active, s.code);
+    s.path.setAttribute('fill', [C.perfect, C.near, C.rel, C.base][r]);
+    s.g.style.opacity = r === 3 ? .45 : 1;
+  });
+}
+paint('11B');   // the key the engine actually read off the test track
+</script>
+</body>
+</html>

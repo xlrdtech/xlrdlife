@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>VEINOM · RUACH</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://tts.rocks/tts.js"></script>
+  <style>
+    /* ===== VEI canon palette · verbatim ===== */
+    :root {
+      --bg:#0A1F12;
+      --bg-glow:#1A4D2E;
+      --bg-elev:rgba(20, 60, 35, .25);
+      --bg-input:rgba(20, 60, 35, .45);
+      --fg:#F0EAD6;
+      --fg-dim:#A8C0A4;
+      --fg-mute:#6B8B72;
+      --line:rgba(176, 255, 200, .12);
+      --line-strong:rgba(176, 255, 200, .22);
+      --accent:#00FF88;
+      --accent-hover:#5FFF9E;
+      --accent-glow:rgba(0, 255, 136, .35);
+      --bubble-bg:rgba(176, 200, 170, .92);
+      --bubble-fg:#0A1F12;
+      --good:#00FF88;
+      --warn:#F5C842;
+      --bad:#FF6B5A;
+      --r-card:18px;
+      --r-pill:9999px;
+      --sans:'Inter','SF Pro Text',-apple-system,system-ui,sans-serif;
+      --mono:'JetBrains Mono','SF Mono',ui-monospace,monospace;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html, body {
+      height:100%;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:var(--sans);
+      font-feature-settings:"ss01","cv11";
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overflow:hidden;
+    }
+
+    /* Background glow · phosphor radial under glass */
+    .bg-glow-layer {
+      position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 30%, rgba(26,77,46,.55), transparent 60%),
+        radial-gradient(ellipse 70% 50% at 50% 90%, rgba(0,255,136,.10), transparent 65%),
+        linear-gradient(180deg, #0A1F12 0%, #06170D 100%);
+    }
+    .bg-overlay {
+      position:fixed; inset:0; z-index:1; pointer-events:none;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 55%, rgba(10,31,18,.30), rgba(2,6,10,.55)),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      backdrop-filter:blur(22px) saturate(1.15);
+      -webkit-backdrop-filter:blur(22px) saturate(1.15);
+      border-top:1px solid rgba(255,255,255,.04);
+      border-bottom:1px solid rgba(0,0,0,.18);
+    }
+
+    .wrap {
+      position:relative; z-index:2;
+      display:flex; flex-direction:column;
+      height:100dvh; width:100%;
+      max-width:760px; margin:0 auto;
+      padding:env(safe-area-inset-top, 18px) 20px env(safe-area-inset-bottom, 16px);
+    }
+
+    /* Header · brand + mic */
+    header {
+      padding:8px 0 22px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+    }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .brand-text { display:flex; flex-direction:column; gap:3px; }
+    .title { font-size:15px; font-weight:500; letter-spacing:.02em; line-height:1; color:var(--fg-dim); }
+    .title .heb { color:var(--accent); margin-left:6px; font-size:14px; }
+    .subtitle { font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; color:var(--fg-mute); text-transform:uppercase; }
+
+    .mic-icon {
+      width:32px; height:32px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      color:var(--fg);
+      opacity:.85;
+      cursor:pointer;
+      transition:opacity .15s, transform .15s, color .15s, filter .15s;
+    }
+    .mic-icon svg { width:18px; height:18px; }
+    .mic-icon:hover { opacity:1; transform:scale(1.05); }
+    .mic-icon.active { color:var(--accent); opacity:1; filter:drop-shadow(0 0 6px var(--accent-glow)); }
+    .mic-icon.speaking { color:var(--accent-hover); opacity:1; filter:drop-shadow(0 0 12px var(--accent-glow)); }
+
+    /* Transcript · top-anchored bubbles */
+    #transcript {
+      flex:1; overflow-y:auto;
+      display:flex; flex-direction:column; gap:10px;
+      padding:4px 4px 24px;
+      scroll-behavior:smooth;
+    }
+    #transcript::-webkit-scrollbar { width:5px; }
+    #transcript::-webkit-scrollbar-thumb { background:var(--line-strong); border-radius:3px; }
+
+    .bubble-ts {
+      display:block; font-family:var(--mono); font-size:9.5px; letter-spacing:.16em;
+      text-transform:uppercase; color:var(--fg-dim); opacity:.62;
+      margin-bottom:4px;
+    }
+    .bubble-txt { display:block; }
+
+    /* Glass bubbles · VEI canon hyperreal glass */
+    .you, .veinom {
+      position:relative;
+      max-width:78%;
+      padding:12px 16px; border-radius:var(--r-card);
+      background:linear-gradient(145deg, rgba(255,255,255,.22), rgba(255,255,255,.08));
+      border:1px solid rgba(255,255,255,.18);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.30),
+        inset 0 -1px 0 rgba(255,255,255,.06),
+        0 8px 24px rgba(0,0,0,.28),
+        0 0 0 0.5px rgba(255,255,255,.06);
+      backdrop-filter:blur(18px) saturate(1.3);
+      -webkit-backdrop-filter:blur(18px) saturate(1.3);
+      color:var(--fg);
+      font-size:15px; line-height:1.45; font-weight:500;
+      word-break:break-word;
+      animation:fadeIn .22s cubic-bezier(.32,.72,.2,1);
+    }
+    .you::before, .veinom::before {
+      content:""; position:absolute; inset:1px 1px auto 1px; height:38%;
+      border-radius:var(--r-card) var(--r-card) 30% 30%/var(--r-card) var(--r-card) 60% 60%;
+      background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0));
+      pointer-events:none;
+    }
+    .you { align-self:flex-end; }
+    .veinom {
+      align-self:flex-start;
+      background:linear-gradient(145deg, rgba(0,255,136,.16), rgba(0,255,136,.04));
+      border-color:rgba(0,255,136,.28);
+    }
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(4px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    /* Controls · input row */
+    #controls {
+      display:flex; gap:10px; align-items:center;
+      padding:12px 0 6px;
+      border-top:1px solid var(--line);
+    }
+    #prompt {
+      flex:1; min-width:0;
+      background:var(--bg-input);
+      border:1px solid var(--line-strong);
+      color:var(--fg);
+      padding:13px 16px;
+      font-family:var(--sans); font-size:15px;
+      border-radius:var(--r-card);
+      outline:none;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    #prompt::placeholder { color:var(--fg-mute); }
+    #prompt:focus {
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px var(--accent-glow);
+    }
+    button {
+      background:var(--bg-elev);
+      border:1px solid var(--line-strong);
+      color:var(--fg);
+      padding:12px 18px;
+      font-family:var(--mono); font-size:11px;
+      font-weight:500; letter-spacing:.18em; text-transform:uppercase;
+      border-radius:var(--r-pill);
+      cursor:pointer;
+      transition:all .15s;
+    }
+    button:hover { background:rgba(0,255,136,.12); border-color:var(--accent); color:var(--accent); }
+    button:active { transform:scale(.97); }
+    #listenBtn.listening {
+      background:rgba(0,255,136,.18);
+      border-color:var(--accent);
+      color:var(--accent);
+      box-shadow:0 0 0 2px var(--accent-glow);
+    }
+    #listenBtn.listening::before {
+      content:""; display:inline-block;
+      width:8px; height:8px; border-radius:50%;
+      background:var(--accent); margin-right:8px;
+      box-shadow:0 0 8px var(--accent);
+      animation:pulseDot 1.5s ease-in-out infinite;
+    }
+    #listenBtn.speaking {
+      background:rgba(95,255,158,.22);
+      border-color:var(--accent-hover);
+      color:var(--accent-hover);
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity:1; transform:scale(1); }
+      50% { opacity:.4; transform:scale(1.3); }
+    }
+
+    /* Activation overlay */
+    #activateOverlay {
+      position:fixed; inset:0; z-index:9999;
+      display:none; align-items:center; justify-content:center;
+      background:rgba(2,6,10,.88);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+    }
+    #activateOverlay > div {
+      padding:32px 40px;
+      background:linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+      border:1px solid rgba(0,255,136,.28);
+      border-radius:var(--r-card);
+      color:var(--fg);
+      text-align:center;
+      font-family:var(--sans); font-size:18px; font-weight:500;
+      letter-spacing:.02em;
+      box-shadow:0 16px 48px rgba(0,0,0,.5), 0 0 0 1px var(--accent-glow);
+      max-width:380px;
+    }
+    #activateOverlay small {
+      display:block; margin-top:8px;
+      font-family:var(--mono); font-size:10px; letter-spacing:.18em;
+      text-transform:uppercase; color:var(--fg-mute);
+    }
+    #activateOverlay .tap-pulse {
+      display:inline-block; margin-bottom:12px;
+      width:12px; height:12px; border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 0 16px var(--accent);
+      animation:pulseDot 1.5s ease-in-out infinite;
+    }
+
+    /* Status pill above input */
+    #status {
+      font-family:var(--mono); font-size:10px;
+      letter-spacing:.16em; text-transform:uppercase;
+      color:var(--fg-mute);
+      padding:6px 0;
+      text-align:center;
+      min-height:22px;
+    }
+    #status.live { color:var(--accent); }
+    #status.speaking { color:var(--accent-hover); }
+    #status.err { color:var(--bad); }
+  </style>
+</head>
+<body>
+  <!-- Palindrome video background · prominent · full opacity -->
+  <video id="bgVideo" autoplay muted loop playsinline preload="auto" poster="assets/bg-poster.jpg"
+         style="position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;z-index:0;opacity:1;">
+    <source src="assets/bg-loop.mp4" type="video/mp4">
+  </video>
+  <!-- Lightweight vignette ONLY at very edges · keep video visible in center -->
+  <div style="position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 100% 80% at 50% 50%, transparent 35%, rgba(6,23,13,.45) 85%, rgba(3,11,5,.78) 100%);"></div>
+
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="brand-text">
+          <span class="title">VEINOM<span class="heb">רוּחַ</span></span>
+          <span class="subtitle">VOICE OS AVATAR · EVOLVING · RESHAPING</span>
+        </div>
+      </div>
+      <div class="mic-icon" id="micIcon" title="Mic status" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </div>
+    </header>
+
+    <div id="transcript"></div>
+    <div id="status">idle</div>
+
+    <div id="controls">
+      <input id="prompt" placeholder="Speak or type…" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button onclick="sendToTUI()" id="sendBtn">Send</button>
+      <button id="listenBtn" onclick="toggleAutoListen()">Stop</button>
+    </div>
+  </div>
+
+  <div id="activateOverlay">
+    <div>
+      <span class="tap-pulse"></span><br>
+      Tap anywhere to activate voice
+      <small>One-time mic permission</small>
+    </div>
+  </div>
+
+  <script>
+    // ===== VEINOM voice loop · patched =====
+    let recognition = null;
+    let isListening = false;
+    let isSpeaking = false;
+    let lastSent = '';
+    let lastSentAt = 0;
+    let restartTimer = null;
+    let restartCount = 0;
+    let stallWatchdog = null;
+    const STALL_MS = 50 * 60 * 1000; // 50 min · pre-empt Chrome SR throttle
+
+    const $ = id => document.getElementById(id);
+    const status = (txt, cls = '') => { $('status').textContent = txt; $('status').className = cls; };
+    const ts = () => {
+      const d = new Date();
+      let h = d.getHours(); const m = String(d.getMinutes()).padStart(2,'0');
+      const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+      return `${h}:${m} ${ap}`;
+    };
+
+    function addMessage(sender, text) {
+      const chat = $('transcript');
+      const div = document.createElement('div');
+      div.className = sender === 'You' ? 'you' : 'veinom';
+      div.innerHTML =
+        `<span class="bubble-ts">${sender === 'You' ? 'YOU' : 'VEINOM'} · ${ts()}</span>` +
+        `<span class="bubble-txt">${text.replace(/[<>]/g, c => c === '<' ? '&lt;' : '&gt;')}</span>`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    /* Inject-queue ack · small mono badge, not a bubble · never spoken */
+    function addAck(payload) {
+      const chat = $('transcript');
+      const div = document.createElement('div');
+      div.style.cssText =
+        'align-self:flex-end;padding:6px 12px;border-radius:9999px;' +
+        'background:rgba(0,255,136,.10);border:1px solid rgba(0,255,136,.28);' +
+        'color:var(--accent);font-family:var(--mono);font-size:10.5px;' +
+        'letter-spacing:.16em;text-transform:uppercase;' +
+        'animation:fadeIn .22s cubic-bezier(.32,.72,.2,1);';
+      div.innerHTML = `✓ INJECTED · ${payload.chars || 0} chars · ${ts()}`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    /* ── Ava-direct TTS · localhost:7723 primary → ava.xlrd.org fallback → silence.
+       Ava-only per canon · NO native SpeechSynthesis fallback. ── */
+    let currentAudio = null;
+    const AVA_LOCAL_URL = 'http://localhost:7723/';
+    // qi 2026-06-10: ava.xlrd.org relay was 502-DEAD (Venom voice failed off-Mac).
+    // Wired to the LIVE singular hosted Xen voice (same endpoint VVSVEI uses) so
+    // every Venom-injected surface speaks through ONE hosted voice. Verified 200.
+    const AVA_RELAY_URL = 'https://api.xlrd.org/api/tts';
+    const AVA_VOICE = 'en-US-AvaMultilingualNeural';
+
+    async function avaSynthesize(text) {
+      const qs = `?text=${encodeURIComponent(text)}&voice=${AVA_VOICE}`;
+      for (const base of [AVA_LOCAL_URL, AVA_RELAY_URL]) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 12000);
+        try {
+          const res = await fetch(base + qs, { signal: ctrl.signal });
+          if (!res.ok) { clearTimeout(t); continue; }
+          const blob = await res.blob();
+          clearTimeout(t);
+          if (blob.size < 200) continue;
+          return URL.createObjectURL(blob);
+        } catch (e) { clearTimeout(t); continue; }
+      }
+      throw new Error('all Ava endpoints unreachable');
+    }
+
+    /* speak · pause SR + barge-watcher armed while Ava plays, resume on end */
+    function speak(text) {
+      return new Promise(async resolve => {
+        if (!text) { resolve(); return; }
+        if (text.length > 1500) text = text.slice(0, 1500) + '…';
+        isSpeaking = true;
+        $('micIcon').classList.add('speaking');
+        $('listenBtn').classList.add('speaking');
+        status('VEINOM speaking · Ava', 'speaking');
+        if (recognition) { try { recognition.stop(); } catch(e){} }
+
+        const done = () => {
+          isSpeaking = false;
+          $('micIcon').classList.remove('speaking');
+          $('listenBtn').classList.remove('speaking');
+          status(isListening ? 'listening' : 'idle', isListening ? 'live' : '');
+          if (isListening && recognition) { try { recognition.start(); } catch (e) {} }
+          resolve();
+        };
+
+        try {
+          const url = await avaSynthesize(text);
+          if (currentAudio) { try { currentAudio.pause(); } catch(_){} }
+          currentAudio = new Audio(url);
+          currentAudio.volume = 1.0;
+          const fin = () => { if (url) URL.revokeObjectURL(url); currentAudio = null; done(); };
+          currentAudio.onended = fin;
+          currentAudio.onerror = fin;
+          await currentAudio.play().catch(fin);
+        } catch (e) {
+          console.warn('[VEINOM] Ava unreachable:', e.message);
+          status('ava offline · silence', 'err');
+          done();
+        }
+      });
+    }
+
+    /* Barge-in cancel · stop Ava mid-utterance */
+    function cancelSpeak() {
+      if (currentAudio) { try { currentAudio.pause(); currentAudio.currentTime = 0; } catch(_){} }
+      isSpeaking = false;
+      $('micIcon').classList.remove('speaking');
+      $('listenBtn').classList.remove('speaking');
+    }
+
+    /* ── VAD barge-in · WebAudio amplitude watcher · independent mic stream ── */
+    let bargeStream = null, bargeCtx = null, bargeAnalyser = null, bargeRAF = null;
+    const BARGE_THRESHOLD = 28;
+    async function startBargeWatcher() {
+      if (bargeAnalyser) return;
+      try {
+        bargeStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+        bargeCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const src = bargeCtx.createMediaStreamSource(bargeStream);
+        bargeAnalyser = bargeCtx.createAnalyser();
+        bargeAnalyser.fftSize = 256;
+        bargeAnalyser.smoothingTimeConstant = 0.4;
+        src.connect(bargeAnalyser);
+        tickBarge();
+      } catch (e) { console.warn('[VEINOM] barge watcher unavailable:', e.message); }
+    }
+    function tickBarge() {
+      if (!bargeAnalyser) return;
+      const buf = new Uint8Array(bargeAnalyser.frequencyBinCount);
+      bargeAnalyser.getByteFrequencyData(buf);
+      const start = Math.floor(buf.length * 0.12);
+      let sum = 0;
+      for (let i = start; i < buf.length; i++) sum += buf[i] * buf[i];
+      const rms = Math.sqrt(sum / (buf.length - start));
+      if (isSpeaking && rms > BARGE_THRESHOLD) {
+        cancelSpeak();
+        status('barge-in · interrupted Ava', 'live');
+        if (isListening && recognition) { try { recognition.start(); } catch(_){} }
+      }
+      bargeRAF = requestAnimationFrame(tickBarge);
+    }
+
+    /* Patch · debounce · don't double-send if SR fires twice rapidly */
+    async function sendToTUI(textOverride = null) {
+      const input = $('prompt');
+      const text = (textOverride ?? input.value).trim();
+      if (!text) return;
+      if (isSpeaking) return; // ignore inputs during TTS playback
+
+      const now = Date.now();
+      if (text === lastSent && now - lastSentAt < 1500) return;
+      lastSent = text; lastSentAt = now;
+
+      addMessage('You', text);
+      if (!textOverride) input.value = '';
+      status('thinking…', 'live');
+
+      const url = `https://tui.xlrd.org/tui?q=${encodeURIComponent(text)}`;
+      try {
+        const res = await fetch(url, { mode: 'cors' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const raw = (await res.text()).trim();
+        if (!raw) throw new Error('empty response');
+
+        /* Parse · tui.xlrd.org returns {ok:true, via:'inject-queue', chars:N} ack */
+        let payload = null;
+        try { payload = JSON.parse(raw); } catch(_) { /* not JSON · treat as text */ }
+
+        if (payload && payload.via === 'inject-queue') {
+          if (payload.ok) {
+            addAck(payload);
+            status(isListening ? 'listening · injected' : 'injected', 'live');
+            setTimeout(() => status(isListening ? 'listening' : 'idle', isListening ? 'live' : ''), 1500);
+          } else {
+            addMessage('VEINOM', `Inject rejected · ${payload.error || 'unknown error'}`);
+            status('rejected', 'err');
+          }
+          return; // never speak the ack
+        }
+
+        /* Non-ack response · treat as conversational reply (current TUI is one-way · this branch
+           is here for when a /tui/reply stream is wired up later) */
+        addMessage('VEINOM', raw);
+        await speak(raw);
+      } catch (e) {
+        console.error('TUI fetch error:', e);
+        const msg = /CORS|Failed to fetch|NetworkError/i.test(String(e))
+          ? 'Bridge offline · check network. tui.xlrd.org CORS is open but the fetch failed.'
+          : `Connection error · ${e.message || e}`;
+        addMessage('VEINOM', msg);
+        status('err', 'err');
+        setTimeout(() => status(isListening ? 'listening' : 'idle', isListening ? 'live' : ''), 4000);
+      }
+    }
+
+    /* Patch #3 · iOS Safari compat · continuous=false + manual restart loop */
+    function startListening() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        addMessage('VEINOM', 'This browser does not support speech recognition. Use Chrome desktop or Safari iOS.');
+        return false;
+      }
+
+      recognition = new SR();
+      // Cross-platform: don't rely on continuous mode (iOS ignores it)
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
+
+      let finalAccumulator = '';
+      let silenceTimer = null;
+      const SILENCE_MS = 1500;  /* accumulate across breath pauses · ship after true silence */
+
+      function flushFinal() {
+        silenceTimer = null;
+        if (!finalAccumulator.trim()) return;
+        const t = finalAccumulator.trim();
+        finalAccumulator = '';
+        sendToTUI(t);
+      }
+
+      recognition.onresult = (event) => {
+        let finals = '', interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const r = event.results[i];
+          if (r.isFinal) finals += r[0].transcript + ' ';
+          else interim += r[0].transcript;
+        }
+        /* Barge-in via transcript · cancel Ava the instant speech is detected */
+        if (isSpeaking && (finals.trim() || interim.trim())) {
+          cancelSpeak();
+          status('barge-in · interrupted Ava', 'live');
+        }
+        if (finals.trim()) {
+          finalAccumulator = (finalAccumulator + ' ' + finals).replace(/\s+/g, ' ').trim();
+          status('capturing · ' + finalAccumulator.slice(-60), 'live');
+          if (silenceTimer) clearTimeout(silenceTimer);
+          silenceTimer = setTimeout(flushFinal, SILENCE_MS);
+        }
+        if (interim) status('hearing · ' + interim.slice(-50), 'live');
+      };
+
+      recognition.onend = () => {
+        if (isListening && !isSpeaking) {
+          if (restartTimer) clearTimeout(restartTimer);
+          restartTimer = setTimeout(() => {
+            if (isListening && !isSpeaking && recognition) {
+              try { recognition.start(); restartCount++; } catch(e){}
+            }
+          }, 280);
+        }
+        if (!isListening) {
+          $('listenBtn').textContent = 'Start';
+          $('listenBtn').classList.remove('listening');
+          $('micIcon').classList.remove('active');
+          status('idle');
+        }
+      };
+
+      /* Patch #5 · guard not-allowed · don't recurse on permission denial */
+      recognition.onerror = (e) => {
+        console.log('SR error:', e.error);
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          isListening = false;
+          addMessage('VEINOM', 'Microphone permission denied. Enable in browser settings + tap mic to retry.');
+          status('mic blocked', 'err');
+          $('listenBtn').textContent = 'Start';
+          $('listenBtn').classList.remove('listening');
+          return;
+        }
+        if (e.error === 'no-speech' || e.error === 'aborted') return; // benign · onend handles restart
+        if (isListening && !isSpeaking) {
+          if (restartTimer) clearTimeout(restartTimer);
+          restartTimer = setTimeout(() => {
+            try { if (isListening && recognition) recognition.start(); } catch(_){}
+          }, 600);
+        }
+      };
+
+      try {
+        recognition.start();
+        isListening = true;
+        $('listenBtn').textContent = 'Stop';
+        $('listenBtn').classList.add('listening');
+        $('micIcon').classList.add('active');
+        status('listening', 'live');
+
+        /* Watchdog · pre-empt Chrome's silent throttle after ~60min */
+        if (stallWatchdog) clearTimeout(stallWatchdog);
+        stallWatchdog = setTimeout(() => {
+          if (isListening) {
+            console.log('Watchdog · refreshing SR session');
+            try { recognition.stop(); } catch(_){}
+          }
+        }, STALL_MS);
+
+        /* Arm the VAD barge-in watcher once · independent mic stream */
+        startBargeWatcher();
+
+        return true;
+      } catch (e) {
+        console.warn('SR start failed:', e);
+        return false;
+      }
+    }
+
+    function stopListening() {
+      isListening = false;
+      if (restartTimer) clearTimeout(restartTimer);
+      if (stallWatchdog) clearTimeout(stallWatchdog);
+      if (recognition) { try { recognition.stop(); } catch(_){} }
+      $('listenBtn').textContent = 'Start';
+      $('listenBtn').classList.remove('listening');
+      $('micIcon').classList.remove('active');
+      status('idle');
+    }
+
+    function toggleAutoListen() {
+      if (isListening) stopListening();
+      else startListening();
+    }
+
+    /* Auto-start with fallback overlay if mic gesture required */
+    window.addEventListener('load', () => {
+      const started = startListening();
+      if (!started) {
+        const overlay = $('activateOverlay');
+        overlay.style.display = 'flex';
+        const activate = () => {
+          overlay.style.display = 'none';
+          startListening();
+        };
+        overlay.addEventListener('click', activate, { once: true });
+        overlay.addEventListener('touchend', activate, { once: true });
+      }
+    });
+
+    /* Enter to send · V to toggle */
+    $('prompt').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); sendToTUI(); }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key.toLowerCase() === 'v') { e.preventDefault(); toggleAutoListen(); }
+    });
+
+    /* Mic icon click also toggles */
+    $('micIcon').addEventListener('click', toggleAutoListen);
+  </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

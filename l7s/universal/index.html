@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L7S Inc. - Legal Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Roboto:wght@300;400;500;700&display=swap');
+
+        :root {
+            --brand-red: #D60000;
+            --brand-black: #000000;
+            --brand-white: #FFFFFF;
+            --brand-gray: #f3f4f6;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--brand-gray);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .l7-header {
+            background-color: var(--brand-black);
+            color: var(--brand-white);
+            border-bottom: 8px solid var(--brand-red);
+        }
+
+        .section-header {
+            background-color: var(--brand-red);
+            color: var(--brand-white);
+            padding: 0.5rem 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            clip-path: polygon(0 0, 100% 0, 98% 100%, 0% 100%);
+        }
+
+        .legal-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            text-align: justify;
+        }
+        
+        .legal-text h4 {
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            font-size: 0.95rem;
+            color: var(--brand-black);
+        }
+
+        .legal-text ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .legal-text ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .legal-text li { margin-bottom: 0.5rem; }
+
+        .signature-box {
+            border-top: 1px solid #ccc;
+            margin-top: 3rem;
+            padding-top: 1rem;
+        }
+
+        /* Screen Only UI */
+        @media screen {
+            .control-panel {
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                background: white;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                border-bottom: 4px solid var(--brand-red);
+            }
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white; }
+            .page-container { box-shadow: none !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+            .page-break { page-break-before: always; }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <!-- CONTROL PANEL (NO PRINT) -->
+    <div class="control-panel no-print p-4 mb-8">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div class="bg-black text-white px-3 py-1 font-bold text-xl rounded">L7S</div>
+                <h1 class="font-bold text-gray-800">LEGAL ENGINE <span class="text-red-600 text-xs uppercase tracking-wider">v3.1 (Court-Ready)</span></h1>
+            </div>
+            
+            <div class="flex gap-4 items-center">
+                <select id="contractType" onchange="updateForm()" class="border-2 border-gray-300 rounded px-3 py-2 font-bold text-sm focus:border-red-600 outline-none">
+                    <option value="external">EXTERNAL: Client Service Agreement (U.C.S.A.)</option>
+                    <option value="internal">INTERNAL: Team/Partner Agreement (O.O.A.)</option>
+                </select>
+                <button onclick="generateDoc()" class="bg-red-600 text-white px-6 py-2 font-bold hover:bg-red-700 transition rounded shadow text-sm">
+                    <i class="fas fa-sync"></i> GENERATE
+                </button>
+                <button onclick="window.print()" class="bg-black text-white px-6 py-2 font-bold hover:bg-gray-800 transition rounded shadow text-sm">
+                    <i class="fas fa-print"></i> PRINT / PDF
+                </button>
+            </div>
+        </div>
+        
+        <!-- DYNAMIC INPUTS -->
+        <div id="inputForm" class="max-w-6xl mx-auto mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
+            <!-- Injected by JS -->
+        </div>
+    </div>
+
+    <!-- DOCUMENT PREVIEW AREA -->
+    <div id="documentContainer" class="page-container max-w-4xl mx-auto bg-white shadow-2xl overflow-hidden min-h-[1100px]">
+        <!-- Header -->
+        <header class="l7-header p-8 flex justify-between items-center">
+            <div class="w-2/3">
+                <h1 class="text-5xl font-extrabold tracking-tighter mb-1"><span class="text-red-600">L7</span>S INC.</h1>
+                <h2 class="text-xl font-semibold opacity-90 tracking-widest">L7 SOLUTIONS</h2>
+                <p class="mt-4 italic text-sm text-gray-300">"Where we take the Guesswork from your Framework!"</p>
+            </div>
+            <div class="w-1/3 text-right text-sm">
+                <p class="font-bold text-red-500 text-lg mb-1">LEGAL AGREEMENT</p>
+                <p id="docTypeLabel">UNIVERSAL SERVICE AGREEMENT</p>
+                <p class="text-xs text-gray-400 mt-1">Ref ID: <span id="refId">...</span></p>
+            </div>
+        </header>
+
+        <!-- Dynamic Content -->
+        <div id="docContent" class="p-10 legal-text text-gray-800">
+            <div class="flex flex-col items-center justify-center h-64 text-gray-400">
+                <i class="fas fa-file-contract text-6xl mb-4"></i>
+                <p>Select Contract Type and Click "Generate"</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-black text-white p-6 text-center text-xs mt-auto">
+            <p class="font-bold tracking-widest mb-2">L7 SOLUTIONS • L7S, INC.</p>
+            <p>760 OLD ROSWELL RD, SUITE 324, ROSWELL, GA 30076 | HELLO@L7SINC.COM</p>
+            <p class="mt-2 text-gray-500">GOVERNED BY THE LAWS OF THE STATE OF GEORGIA</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- DATA STORE ---
+        const inputs = {
+            external: `
+                <input type="text" id="clientName" placeholder="Client Name" class="border p-2 rounded w-full">
+                <input type="text" id="clientAddress" placeholder="Client Address" class="border p-2 rounded w-full">
+                <input type="date" id="effDate" class="border p-2 rounded w-full">
+                <div class="md:col-span-3 flex gap-4 text-sm font-bold">
+                    <label><input type="checkbox" id="srv_edu"> L7S University</label>
+                    <label><input type="checkbox" id="srv_credit"> Credit Hero</label>
+                    <label><input type="checkbox" id="srv_funding"> Loan Hero</label>
+                    <label><input type="checkbox" id="srv_ceo"> CEO Hero</label>
+                    <label><input type="checkbox" id="srv_crypto"> B.A.T.M.A.N.</label>
+                </div>
+            `,
+            internal: `
+                <input type="text" id="assocName" placeholder="Associate Name" class="border p-2 rounded w-full">
+                <input type="text" id="assocTitle" placeholder="Role / Title" class="border p-2 rounded w-full">
+                <input type="date" id="effDate" class="border p-2 rounded w-full">
+                <select id="roleType" class="border p-2 rounded w-full">
+                    <option value="contractor">Independent Contractor (1099)</option>
+                    <option value="employee">Employee (W2)</option>
+                    <option value="partner">Strategic Partner</option>
+                </select>
+            `
+        };
+
+        // Header label per contract type. The header must ALWAYS match the
+        // selected type, never the last-generated one -- otherwise switching
+        // type and printing without re-generating ships an OMNI-OPERATIONS
+        // header on a client agreement.
+        const LABELS = {
+            external: "UNIVERSAL CLIENT SERVICE AGREEMENT",
+            internal: "OMNI-OPERATIONS AGREEMENT"
+        };
+
+        const EMPTY_DOC = `
+            <div class="flex flex-col items-center justify-center h-64 text-gray-400">
+                <i class="fas fa-file-contract text-6xl mb-4"></i>
+                <p>Select Contract Type and Click "Generate"</p>
+            </div>`;
+
+        let lastType = null;
+
+        // Persistent across contract-type switches. A snapshot of only the
+        // CURRENTLY rendered form is not enough: external's clientName has no
+        // counterpart in the internal form, so it would be dropped the moment
+        // you switch and be gone when you switch back. Values live here until
+        // their form is on screen again.
+        const fieldMemory = {};
+
+        function newRefId() {
+            // Ref ID is stamped per GENERATE, not per page load. Stamping it
+            // once on load meant every contract produced in one session
+            // carried the same Ref ID across different clients.
+            return 'GEN-' + Math.floor(Math.random() * 1000000);
+        }
+
+        // --- INIT ---
+        window.onload = function() {
+            updateForm();
+            document.getElementById('refId').innerText = newRefId();
+        };
+
+        function updateForm() {
+            const type = document.getElementById('contractType').value;
+            const form = document.getElementById('inputForm');
+
+            // Replacing innerHTML destroys every field, so anything already
+            // typed -- client name, address, date, all five service checkboxes
+            // -- silently vanished on a dropdown change. Snapshot first,
+            // restore after, so switching type never eats the operator's work.
+            form.querySelectorAll('input, select').forEach(function (el) {
+                if (!el.id) return;
+                fieldMemory[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
+            });
+
+            form.innerHTML = inputs[type];
+
+            form.querySelectorAll('input, select').forEach(function (el) {
+                if (!el.id || !(el.id in fieldMemory)) return;
+                if (el.type === 'checkbox') { el.checked = fieldMemory[el.id]; }
+                else if (fieldMemory[el.id] !== '') { el.value = fieldMemory[el.id]; }
+            });
+
+            // Default the date only when it wasn't carried over.
+            const d = document.getElementById('effDate');
+            if (d && !d.value) d.valueAsDate = new Date();
+
+            // Keep the printed header honest, and drop any preview belonging
+            // to the other contract type so a stale body can't be printed
+            // under a new header. Inputs above are preserved either way.
+            document.getElementById('docTypeLabel').innerText = LABELS[type];
+            if (lastType !== null && lastType !== type) {
+                document.getElementById('docContent').innerHTML = EMPTY_DOC;
+            }
+            lastType = type;
+        }
+
+        function generateDoc() {
+            const type = document.getElementById('contractType').value;
+            const container = document.getElementById('docContent');
+            const date = document.getElementById('effDate').value;
+
+            document.getElementById('refId').innerText = newRefId();
+            document.getElementById('docTypeLabel').innerText = LABELS[type];
+
+            if (type === 'external') {
+                generateExternal(container, date);
+            } else {
+                generateInternal(container, date);
+            }
+        }
+
+        // --- GENERATORS ---
+
+        function generateExternal(container, date) {
+            const name = document.getElementById('clientName').value || "THE CLIENT";
+            const addr = document.getElementById('clientAddress').value || "[CLIENT ADDRESS]";
+            
+            // Build Services List
+            let services = [];
+            if(document.getElementById('srv_edu').checked) services.push("<li><b>L7S University (Education):</b> Access to proprietary blueprints, courses, and the L7S Operating System.</li>");
+            if(document.getElementById('srv_credit').checked) services.push("<li><b>Credit Hero (Consulting):</b> Education regarding consumer credit laws (FCRA/FDCPA) and document processing. <b>NOTE:</b> See Exhibit A for CROA Disclosures.</li>");
+            if(document.getElementById('srv_funding').checked) services.push("<li><b>Loan Hero (Capital):</b> Strategic consulting and introductions to third-party lenders.</li>");
+            if(document.getElementById('srv_ceo').checked) services.push("<li><b>CEO Hero (Structuring):</b> Business entity formation and compliance consulting.</li>");
+            if(document.getElementById('srv_crypto').checked) services.push("<li><b>Project B.A.T.M.A.N.™ (Digital Assets):</b> Strategic advice on digital asset management.</li>");
+
+            if (services.length === 0) services.push("<li>General Consulting Services</li>");
+
+            container.innerHTML = `
+                <div class="text-center font-bold text-xl mb-6 uppercase border-b-2 border-black pb-4">
+                    UNIVERSAL CLIENT SERVICE AGREEMENT (U.C.S.A.)
+                </div>
+
+                <p><b>THIS AGREEMENT</b> is made on <b>${date}</b> (the "Effective Date") by and between <b>L7S, INC.</b> ("Company"), a Georgia Corporation, and <b>${name}</b> ("Client").</p>
+
+                <h4>1. SCOPE OF SERVICES</h4>
+                <p>The Client engages the Company to provide the following services:</p>
+                <ul>${services.join('')}</ul>
+
+                <h4>2. NATURE OF RELATIONSHIP & DISCLAIMERS</h4>
+                <p><b>2.1 Done-With-You (DWY):</b> Unless explicitly stated as "Done-For-You," Company provides strategy and blueprints ("The Map"), but Client is responsible for execution ("Driving the Car").</p>
+                <p><b>2.2 No Guarantees of Results (FTC Compliance):</b> Company makes <b>NO REPRESENTATIONS OR WARRANTIES</b> regarding specific outcomes, including credit score increases, funding amounts, or income. Results vary based on Client effort and market conditions.</p>
+                <p><b>2.3 Not Legal or Financial Advice:</b> Company is not a law firm, CPA, or Registered Investment Advisor. Services are for educational purposes. Client should consult their own professionals.</p>
+
+                <h4>3. PAYMENT & REFUND POLICY</h4>
+                <p><b>3.1 Non-Refundable:</b> Due to the immediate disclosure of proprietary Intellectual Property (IP), <b>ALL SALES ARE FINAL</b>. Client waives any right to chargebacks.</p>
+                <p><b>3.2 Cancellation:</b> Recurring subscriptions require 30 days' written notice to cancel.</p>
+
+                <h4>4. INTELLECTUAL PROPERTY & CONFIDENTIALITY</h4>
+                <p><b>4.1 Ownership:</b> All Frameworks (C.R.E.A.T.E., B.O.S.S.) remain the exclusive property of L7S, Inc.</p>
+                <p><b>4.2 License:</b> Client is granted a personal, non-transferable license. <b>Reselling or white-labeling is strictly prohibited.</b></p>
+                <p><b>4.3 Non-Circumvention:</b> Client agrees not to bypass Company to deal directly with introduced Lenders, Investors, or Partners for 24 months. Violation triggers liquidated damages equal to the potential commission of the circumvented deal.</p>
+
+                <h4>5. DISPUTE RESOLUTION</h4>
+                <p><b>5.1 Binding Arbitration:</b> Any dispute shall be settled by binding arbitration administered by the AAA in <b>Fulton County, Georgia</b>.</p>
+                <p><b>5.2 Class Action Waiver:</b> Client waives the right to participate in any class action lawsuit against Company.</p>
+                
+                <h4>6. INDEMNIFICATION</h4>
+                <p>Client agrees to indemnify and hold harmless L7S, Inc., its officers (Luckie Goggins), and affiliates from any claims arising from Client's business operations or use of Company strategies.</p>
+
+                <div class="page-break"></div>
+
+                <div class="section-header mt-8">EXHIBIT A: CONSUMER RIGHTS (CROA)</div>
+                <p class="text-sm italic mb-4">Required by Federal Law for Credit Services</p>
+                <div class="border p-4 bg-gray-50 text-sm">
+                    <p class="font-bold text-center mb-2">CONSUMER CREDIT FILE RIGHTS UNDER STATE AND FEDERAL LAW</p>
+                    <p>You have a right to dispute inaccurate information in your credit report by contacting the credit bureau directly. However, neither you nor any "credit repair" company or credit repair organization has the right to have accurate, current, and verifiable information removed from your credit report. The credit bureau must remove accurate, negative information from your report only if it is over 7 years old. Bankruptcy information can be reported for 10 years.</p>
+                    <p class="mt-2">You have a right to obtain a copy of your credit report from a credit bureau. You may be charged a reasonable fee. There is no fee, however, if you have been turned down for credit, employment, insurance, or a rental dwelling because of information in your credit report within the preceding 60 days. The credit bureau must provide someone to help you interpret the information in your credit file. You are entitled to receive a free copy of your credit report if you are unemployed and intend to apply for employment in the next 60 days, if you are a recipient of public welfare assistance, or if you have reason to believe that there is inaccurate information in your credit report due to fraud.</p>
+                    <p class="mt-2">You have a right to sue a credit repair organization that violates the Credit Repair Organization Act. This law prohibits deceptive practices by credit repair organizations.</p>
+                    <p class="mt-2 font-bold">You have the right to cancel your contract with any credit repair organization for any reason within 3 business days from the date you signed it.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-12 mt-12">
+                    <div>
+                        <div class="signature-box"></div>
+                        <p class="font-bold uppercase">L7S, INC.</p>
+                        <p class="text-xs">Authorized Signature</p>
+                    </div>
+                    <div>
+                        <div class="signature-box"></div>
+                        <p class="font-bold uppercase">${name}</p>
+                        <p class="text-xs">Client Signature</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateInternal(container, date) {
+            const name = document.getElementById('assocName').value || "THE ASSOCIATE";
+            const role = document.getElementById('assocTitle').value || "Consultant";
+            const type = document.getElementById('roleType').value;
+            
+            let typeLabel = "Independent Contractor";
+            if (type === 'employee') typeLabel = "Employee";
+            if (type === 'partner') typeLabel = "Strategic Partner";
+
+            container.innerHTML = `
+                <div class="text-center font-bold text-xl mb-6 uppercase border-b-2 border-black pb-4">
+                    OMNI-OPERATIONS AGREEMENT (INTERNAL)
+                </div>
+
+                <p><b>THIS AGREEMENT</b> is made on <b>${date}</b> by and between <b>L7S, INC.</b> ("Company") and <b>${name}</b> ("Associate").</p>
+                <p><b>RELATIONSHIP:</b> The Associate is engaged as an <b>${typeLabel}</b> in the capacity of <b>${role}</b>.</p>
+
+                <h4>1. CONFIDENTIALITY (NDA)</h4>
+                <p>Associate acknowledges access to "Confidential Information" including Client Lists (P.O.P. Culture Collection), Financial Data, and Proprietary Frameworks. Associate agrees strictly <b>NOT</b> to disclose, copy, or use this information for personal gain or third parties perpetually.</p>
+
+                <h4>2. INTELLECTUAL PROPERTY (WORK FOR HIRE)</h4>
+                <p><b>2.1 Assignment:</b> Associate agrees that all work product (Code, Content, Strategies) created during the engagement is a "Work Made for Hire" and is the sole property of L7S, Inc.</p>
+                <p><b>2.2 Waiver:</b> Associate waives any "Moral Rights" to the work product.</p>
+
+                <h4>3. NON-CIRCUMVENTION</h4>
+                <p>Associate agrees not to bypass L7S to deal directly with any Investors, Lenders, or Clients introduced by Company. This covenant survives termination for <b>24 months</b>.</p>
+
+                <h4>4. RESTRICTIVE COVENANTS (NON-COMPETE)</h4>
+                <p><i>Pursuant to O.C.G.A. § 13-8-50 et seq.:</i></p>
+                <p><b>4.1 Non-Solicitation:</b> For 12 months post-termination, Associate shall not solicit Company employees or clients.</p>
+                <p><b>4.2 Non-Compete:</b> For 12 months post-termination, Associate shall not engage in a competing business providing Credit Repair Education or Business Structuring within a 50-mile radius of Fulton County, GA.</p>
+
+                <h4>5. TERMINATION</h4>
+                <p>This relationship is "At-Will" and may be terminated by either party at any time with written notice. Upon termination, Associate must immediately return all Company property and credentials.</p>
+
+                <h4>6. INDEMNIFICATION</h4>
+                <p>Associate agrees to indemnify Company against any losses arising from Associate's gross negligence, willful misconduct, or breach of this Agreement.</p>
+
+                <h4>7. GOVERNING LAW</h4>
+                <p>This Agreement shall be governed by the laws of the <b>State of Georgia</b>. Disputes shall be resolved via binding arbitration in Fulton County.</p>
+
+                <div class="grid grid-cols-2 gap-12 mt-12">
+                    <div>
+                        <div class="signature-box"></div>
+                        <p class="font-bold uppercase">L7S, INC.</p>
+                        <p class="text-xs">Luckie "Links" Goggins, Founder</p>
+                    </div>
+                    <div>
+                        <div class="signature-box"></div>
+                        <p class="font-bold uppercase">${name}</p>
+                        <p class="text-xs">Associate Signature</p>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

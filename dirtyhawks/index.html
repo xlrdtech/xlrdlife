@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dirty Hawks Shooting Club | Shooting Dept.</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Cinzel:wght@400;700;900&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <!-- Tailwind CSS Configuration -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bone: '#e6e3df',      
+                        stone: '#d0c8bd',     
+                        eggshell: '#f0eeea',  
+                        charcoal: {
+                            DEFAULT: '#2C2C2B', 
+                            dark: '#1F1F1E',    
+                            light: '#424240'    
+                        },
+                        dept: {
+                            red: '#781F1F', 
+                            gold: '#D6A648' 
+                        }
+                    },
+                    fontFamily: {
+                        'heritage': ['Cinzel', 'serif'],
+                        'body': ['Lato', 'sans-serif'],
+                        'tactical': ['Black Ops One', 'cursive'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .font-heritage { font-family: 'Cinzel', serif; }
+        .font-tactical { font-family: 'Black Ops One', cursive; }
+
+        /* Fine Fabric Texture Overlay */
+        .texture-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.06'/%3E%3C/svg%3E");
+            z-index: 100;
+            mix-blend-mode: multiply;
+        }
+
+        .dark .texture-overlay {
+            mix-blend-mode: overlay;
+            opacity: 0.1;
+        }
+
+        /* Outline Text Helper */
+        .text-stroke-2 {
+            -webkit-text-stroke: 2px currentColor;
+        }
+
+        /* Image Treatments */
+        html:not(.dark) img.blend-mode { filter: sepia(20%) contrast(105%) brightness(95%); }
+        .dark img.blend-mode { filter: brightness(80%) contrast(110%); }
+
+        /* Modal Transitions */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.3s ease-out; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #e6e3df; }
+        .dark ::-webkit-scrollbar-track { background: #1F1F1E; }
+        ::-webkit-scrollbar-thumb { background: #781F1F; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-bone text-charcoal dark:bg-charcoal-dark dark:text-bone overflow-x-hidden">
+
+    <div class="texture-overlay"></div>
+
+    <!-- Modals -->
+    <div id="auth-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-charcoal/90 backdrop-blur-md">
+        <div class="bg-bone dark:bg-charcoal p-8 w-full max-w-md border-t-4 border-dept-red shadow-2xl relative">
+            <button onclick="toggleModal('auth-modal')" class="absolute top-4 right-4 text-charcoal/50 dark:text-white/50 hover:text-dept-red transition">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <h3 class="text-3xl font-heritage font-black uppercase mb-2">Member Login</h3>
+            <p class="font-tactical text-[10px] text-dept-red tracking-widest mb-6">Restricted Access // HQ</p>
+            <form onsubmit="event.preventDefault();" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-widest mb-1">Service Number / Email</label>
+                    <input type="text" class="w-full bg-white dark:bg-charcoal-dark border border-stone dark:border-charcoal-light p-3 focus:outline-none focus:border-dept-red text-sm uppercase font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-widest mb-1">Passcode</label>
+                    <input type="password" class="w-full bg-white dark:bg-charcoal-dark border border-stone dark:border-charcoal-light p-3 focus:outline-none focus:border-dept-red">
+                </div>
+                <button class="w-full bg-dept-red text-bone font-bold py-4 uppercase tracking-widest text-xs hover:bg-red-900 transition">Authenticate</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-white/80 dark:bg-charcoal/80 backdrop-blur-md p-3 rounded-full shadow-2xl border border-stone dark:border-gray-600 transition-transform hover:scale-110">
+        <i class="fas fa-sun text-dept-gold"></i>
+        <label for="theme-toggle" class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="theme-toggle" class="sr-only peer">
+            <div class="w-11 h-6 bg-stone peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-dept-gold"></div>
+        </label>
+        <i class="fas fa-moon text-charcoal dark:text-bone"></i>
+    </div>
+
+    <!-- Header -->
+    <header class="fixed w-full z-40 transition-all duration-500 bg-bone/95 dark:bg-charcoal-dark/95 backdrop-blur-md border-b border-stone/30 dark:border-gray-700" id="header">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="relative w-10 h-10 flex items-center justify-center bg-charcoal dark:bg-bone rounded-full border-2 border-dept-gold transition-transform group-hover:rotate-45">
+                    <i class="fas fa-crosshairs text-bone dark:text-charcoal text-xl"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-xl font-heritage font-black tracking-widest uppercase leading-none">Dirty Hawks</span>
+                    <span class="text-[10px] font-tactical tracking-[0.2em] uppercase leading-none text-dept-red mt-1">Shooting Dept.</span>
+                </div>
+            </a>
+
+            <!-- Nav -->
+            <nav class="hidden lg:flex space-x-10 text-xs font-bold tracking-[0.2em] uppercase">
+                <a href="#club" class="hover:text-dept-red transition-colors relative group">The Club
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-dept-red transition-all group-hover:w-full"></span>
+                </a>
+                <a href="#range" class="hover:text-dept-red transition-colors relative group">Range
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-dept-red transition-all group-hover:w-full"></span>
+                </a>
+                <a href="#merch" class="hover:text-dept-red transition-colors relative group">Merch
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-dept-red transition-all group-hover:w-full"></span>
+                </a>
+            </nav>
+
+            <!-- CTA -->
+            <div class="hidden lg:block">
+                <button onclick="toggleModal('auth-modal')" class="bg-dept-red text-bone px-8 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-charcoal dark:hover:bg-dept-gold transition duration-300 shadow-xl">
+                    Member Portal
+                </button>
+            </div>
+            
+            <button id="mobile-menu-btn" class="lg:hidden text-2xl focus:outline-none"><i class="fas fa-bars"></i></button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="club" class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden min-h-screen flex items-center">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute inset-0 bg-bone dark:bg-charcoal-dark transition-colors duration-700"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[25rem] font-tactical text-charcoal/[0.03] dark:text-white/[0.02] pointer-events-none select-none leading-none rotate-12">
+                HAWK
+            </div>
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="flex flex-col lg:flex-row items-center gap-16">
+                <div class="lg:w-1/2" data-aos="fade-right" data-aos-duration="1200">
+                    <div class="flex items-center gap-4 mb-8">
+                        <span class="bg-dept-red text-white text-[10px] font-black px-3 py-1 uppercase tracking-[0.2em]">Live Drop // 001</span>
+                        <span class="text-charcoal/40 dark:text-gray-500 font-tactical text-xs tracking-[0.3em]">EST. 2025</span>
+                    </div>
+                    <h1 class="text-7xl md:text-9xl font-heritage font-black leading-[0.85] mb-8 uppercase text-charcoal dark:text-white">
+                        Elite <br>
+                        <span class="text-transparent text-stroke-2">Sanctuary</span>
+                    </h1>
+                    <p class="text-charcoal/70 dark:text-gray-300 text-xl mb-12 max-w-lg leading-relaxed font-light border-l-4 border-dept-gold pl-8 italic">
+                        "Precision is the only language we speak." — HQ Command.
+                    </p>
+                    <div class="flex flex-wrap gap-6">
+                        <a href="#membership" class="bg-charcoal dark:bg-bone text-white dark:text-charcoal-dark font-black py-5 px-12 transition duration-300 uppercase tracking-[0.2em] text-xs hover:bg-dept-red dark:hover:bg-dept-gold hover:-translate-y-1 hover:shadow-2xl">
+                            Join The Flock
+                        </a>
+                        <a href="#merch" class="group flex items-center gap-4 text-xs font-black uppercase tracking-[0.2em] hover:text-dept-red transition">
+                            <span class="w-12 h-px bg-charcoal dark:bg-white group-hover:bg-dept-red transition-all"></span>
+                            Shop Gear
+                        </a>
+                    </div>
+                </div>
+
+                <div class="lg:w-1/2 relative" data-aos="zoom-in-left" data-aos-duration="1200">
+                    <div class="relative z-10 bg-bone dark:bg-charcoal shadow-[50px_50px_100px_rgba(0,0,0,0.1)] dark:shadow-none border border-stone/50 dark:border-charcoal-light p-4 md:p-10 transform -rotate-2 hover:rotate-0 transition duration-700">
+                        <div class="aspect-[4/5] bg-[#D6D3C9] dark:bg-charcoal-dark relative overflow-hidden group">
+                            <img src="https://cdn.sintra.ai/img/1MNh_jamrga6jOUe6nMaBORqQS0y1vonmbzGaSJQ9Cg/g:ce/rs:fit:400:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS9rbm93bGVkZ2UtcHJvZmlsZXMvODQ5YzhiMjUtMWE2OC00ZmZlLWIyNzUtZTkzODk3YmZlODIxL2Fzc2V0cy84YWVkNzEzNi04N2U4LTQyNmYtOTZhNS1iMGZlZWRiMzEzMjQvSU1HXzAxNjdfXzFfLmpwZWc" 
+                                 class="object-cover w-full h-full blend-mode group-hover:scale-110 transition duration-1000" alt="Mascot Graphic">
+                            <div class="absolute top-6 left-6 bg-dept-red text-white font-tactical px-3 py-1 text-sm -rotate-12 shadow-lg">AUTHENTIC</div>
+                        </div>
+                        <div class="mt-8 flex justify-between items-center">
+                            <div class="font-heritage">
+                                <h3 class="font-black text-2xl uppercase tracking-wider">Dept. Classic Tee</h3>
+                                <p class="text-[10px] text-dept-red font-black uppercase tracking-[0.3em] mt-1">Platinum Bone / Heavyweight</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-[10px] font-bold text-stone uppercase tracking-widest mb-1 line-through">$45</span>
+                                <span class="font-tactical text-3xl text-dept-gold">$35</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-10 -left-10 w-full h-full border-2 border-dept-gold/30 z-0"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lookbook Section -->
+    <section id="merch" class="py-24 bg-bone dark:bg-charcoal-dark border-y border-stone/20 dark:border-white/5">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col lg:flex-row items-center gap-20">
+                <div class="lg:w-1/2 grid grid-cols-2 gap-6" data-aos="fade-up-right">
+                    <div class="relative group aspect-square overflow-hidden rounded-sm border border-stone/30 dark:border-white/5 shadow-xl">
+                        <img src="https://cdn.sintra.ai/img/oVdWV6Y_gwKb6wxwIYR2chEGCJXmgN7csQGpijSr14w/g:ce/rs:fit:400:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS9rbm93bGVkZ2UtcHJvZmlsZXMvODQ5YzhiMjUtMWE2OC00ZmZlLWIyNzUtZTkzODk3YmZlODIxL2Fzc2V0cy9mY2Q0MzlmYy02OWIyLTQ1MDktOTFlMy01NzJjZDdhOTg4NjkvSU1HXzAxNjlfXzFfLmpwZWc" 
+                             class="w-full h-full object-cover blend-mode transition duration-700 group-hover:scale-125" alt="Front Detail">
+                    </div>
+                    <div class="relative group aspect-square overflow-hidden rounded-sm border border-stone/30 dark:border-white/5 shadow-xl mt-12">
+                        <img src="https://cdn.sintra.ai/img/ioBh6zI675UlZ5IRuaSzsn2fId8jgXw6ePJShOeMVYg/g:ce/rs:fit:200:0:0/czM6Ly9zaW50cmEtYnJhaW5haS1tZWRpYS9rbm93bGVkZ2UtcHJvZmlsZXMvODQ5YzhiMjUtMWE2OC00ZmZlLWIyNzUtZTkzODk3YmZlODIxL2Fzc2V0cy8yMTY0NDZlNy1kODI2LTRiOGYtYmZkZS1lNGJlNGUyYTEyYWMvSU1HXzAxNjhfXzFfLmpwZWc" 
+                             class="w-full h-full object-cover blend-mode transition duration-700 group-hover:scale-125" alt="Back Graphic">
+                    </div>
+                </div>
+                <div class="lg:w-1/2" data-aos="fade-left">
+                    <h2 class="text-5xl font-heritage font-black uppercase text-charcoal dark:text-white mb-8 leading-tight">The Dirty Hawks <br><span class="text-dept-gold">Standard</span></h2>
+                    <p class="text-charcoal/70 dark:text-gray-400 mb-10 text-lg leading-relaxed">
+                        Every thread is vetted. Every graphic is earned. Our Apparel Division (Shooting Dept.) creates equipment for life on and off the line.
+                    </p>
+                    <ul class="space-y-6 mb-12">
+                        <li class="flex items-center gap-5 group">
+                            <span class="w-10 h-10 bg-dept-gold flex items-center justify-center text-charcoal font-black transition group-hover:bg-dept-red group-hover:text-white">01</span>
+                            <span class="font-bold text-sm uppercase tracking-widest">Heritage Fabric Selection</span>
+                        </li>
+                        <li class="flex items-center gap-5 group">
+                            <span class="w-10 h-10 bg-dept-gold flex items-center justify-center text-charcoal font-black transition group-hover:bg-dept-red group-hover:text-white">02</span>
+                            <span class="font-bold text-sm uppercase tracking-widest">High-Contrast Tactical Prints</span>
+                        </li>
+                        <li class="flex items-center gap-5 group">
+                            <span class="w-10 h-10 bg-dept-gold flex items-center justify-center text-charcoal font-black transition group-hover:bg-dept-red group-hover:text-white">03</span>
+                            <span class="font-bold text-sm uppercase tracking-widest">Est. 2025 Collector Series</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="inline-block bg-dept-red text-white font-black py-4 px-12 uppercase tracking-widest text-xs hover:bg-charcoal transition">Explore Drop 01</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Field Intel -->
+    <section class="py-24 bg-eggshell dark:bg-charcoal">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-heritage font-black uppercase mb-4">Field Intel</h2>
+                <div class="w-24 h-1 bg-dept-red mx-auto mb-6"></div>
+                <p class="font-tactical text-xs tracking-[0.3em] text-dept-red uppercase">Live from Range Control // @DirtyHawksClub</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <!-- Reel Cards (Looping through 6 provided links) -->
+                <script>
+                    const reels = [
+                        'DKqT0oyNErb', 'DKpOW-8A1Gq', 'DKn1TuDN0eh',
+                        'DKnv18vtnzN', 'DKk_0D_t3cr', 'DKk_IL8NfrQ'
+                    ];
+                    reels.forEach((id, i) => {
+                        document.write(`
+                            <a href="https://www.instagram.com/reel/${id}/" target="_blank" 
+                               class="group relative aspect-[9/16] bg-charcoal-dark overflow-hidden border border-white/5 shadow-2xl" 
+                               data-aos="fade-up" data-aos-delay="${i * 100}">
+                                <div class="absolute inset-0 bg-gradient-to-t from-charcoal to-transparent opacity-60 z-10"></div>
+                                <div class="absolute inset-0 flex items-center justify-center z-20">
+                                    <div class="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center backdrop-blur-sm group-hover:bg-dept-red group-hover:border-dept-red transition duration-300">
+                                        <i class="fas fa-play text-white text-xs ml-1"></i>
+                                    </div>
+                                </div>
+                                <div class="absolute bottom-4 left-4 z-20">
+                                    <p class="text-[8px] font-tactical tracking-widest text-white uppercase">Feed_${i+1}</p>
+                                </div>
+                            </a>
+                        `);
+                    });
+                </script>
+            </div>
+        </div>
+    </section>
+
+    <!-- Membership -->
+    <section id="membership" class="py-24 relative overflow-hidden">
+        <div class="absolute inset-0 bg-dept-gold z-0"></div>
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 z-10"></div>
+        <div class="container mx-auto px-6 text-center relative z-20" data-aos="zoom-in">
+            <h2 class="text-5xl md:text-7xl font-heritage font-black uppercase text-charcoal mb-8">Join The Flock</h2>
+            <p class="text-charcoal/80 max-w-2xl mx-auto mb-12 text-xl font-bold leading-relaxed">
+                Unlock 24/7 access, ammunition drops, and member-only events. The department is waiting.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-6">
+                <button class="bg-charcoal text-white font-black py-5 px-14 uppercase tracking-[0.2em] text-sm hover:bg-white hover:text-charcoal transition-all shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+                    Secure Membership
+                </button>
+                <button class="border-4 border-charcoal text-charcoal font-black py-5 px-14 uppercase tracking-[0.2em] text-sm hover:bg-charcoal hover:text-white transition-all">
+                    Pricing Matrix
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-charcoal-dark text-stone border-t border-white/5 pt-20 pb-10">
+        <div class="container mx-auto px-6 text-center md:text-left">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
+                <div class="col-span-1 md:col-span-1">
+                    <div class="flex items-center justify-center md:justify-start gap-3 mb-8">
+                        <i class="fas fa-feather-alt text-3xl text-dept-gold"></i>
+                        <span class="text-2xl font-heritage font-black tracking-widest uppercase text-white">Dirty Hawks</span>
+                    </div>
+                    <p class="text-xs uppercase tracking-[0.2em] leading-loose opacity-60">
+                        HQ // South Fulton, GA<br>
+                        EST. 2025 // Series 001<br>
+                        Precision. Heritage. Discipline.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-dept-red font-tactical uppercase text-sm tracking-[0.2em] mb-8">Navigation</h4>
+                    <ul class="space-y-4 text-[10px] font-black uppercase tracking-widest">
+                        <li><a href="#" class="hover:text-white transition">Armory</a></li>
+                        <li><a href="#" class="hover:text-white transition">The Academy</a></li>
+                        <li><a href="#" class="hover:text-white transition">Range Rules</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-dept-red font-tactical uppercase text-sm tracking-[0.2em] mb-8">Contact</h4>
+                    <ul class="space-y-4 text-[10px] font-black uppercase tracking-widest">
+                        <li><i class="fas fa-map-marker-alt mr-3 text-dept-gold"></i> 123 Hawk's Nest, GA 30213</li>
+                        <li><i class="fas fa-phone mr-3 text-dept-gold"></i> (555) 123-DHCLUB</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-dept-red font-tactical uppercase text-sm tracking-[0.2em] mb-8">Intel</h4>
+                    <form onsubmit="event.preventDefault();" class="flex flex-col gap-3">
+                        <input type="email" placeholder="ENLIST EMAIL" class="bg-charcoal border border-white/10 px-4 py-3 text-[10px] font-black uppercase focus:outline-none focus:border-dept-gold text-white tracking-widest">
+                        <button class="bg-dept-gold text-charcoal font-black py-3 uppercase text-[10px] tracking-widest hover:bg-white transition">Subscribe</button>
+                    </form>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-10 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40 text-[8px] font-black uppercase tracking-[0.4em]">
+                <p>&copy; 2025-2026 Dirty Hawks Shooting Club. All Rights Reserved.</p>
+                <div class="flex gap-8">
+                    <a href="#" class="hover:text-white">Privacy</a>
+                    <a href="#" class="hover:text-white">Terms</a>
+                    <a href="#" class="hover:text-white">IG</a>
+                    <a href="#" class="hover:text-white">YT</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Final Scripts -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        // AOS Init
+        AOS.init({ once: true, offset: 50, duration: 800, easing: 'ease-out-cubic' });
+
+        // Theme Management Engine
+        const toggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+
+        const setDarkMode = () => { html.classList.add('dark'); toggle.checked = true; localStorage.theme = 'dark'; };
+        const setLightMode = () => { html.classList.remove('dark'); toggle.checked = false; localStorage.theme = 'light'; };
+
+        // 1. Time-Based Logic (6PM - 6AM = Dark)
+        const hour = new Date().getHours();
+        const isNightTime = hour < 6 || hour >= 18;
+
+        // 2. Init Priority: Saved Setting > Time-Based > System
+        if (localStorage.theme === 'dark' || (!localStorage.theme && isNightTime)) {
+            setDarkMode();
+        } else {
+            setLightMode();
+        }
+
+        toggle.addEventListener('change', () => toggle.checked ? setDarkMode() : setLightMode());
+
+        // Modal Control System
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            if(modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex', 'modal-enter-active');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex', 'modal-enter-active');
+            }
+        }
+
+        // Header Scroll Interaction
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('header');
+            if (window.scrollY > 50) {
+                header.classList.add('py-2', 'shadow-2xl');
+                header.classList.remove('py-4');
+            } else {
+                header.classList.add('py-4');
+                header.classList.remove('py-2', 'shadow-2xl');
+            }
+        });
+
+        // Mobile Menu
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+        menuBtn.addEventListener('click', () => menu.classList.toggle('hidden'));
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

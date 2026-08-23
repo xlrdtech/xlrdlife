@@ -1,0 +1,40 @@
+{
+  "name": "XEN Real-Time Fabric",
+  "short_name": "xen-fabric",
+  "version": "1.0.0",
+  "generated": "2026-07-22T05:14:00-04:00",
+  "url": "https://hitthe.link/xen-fabric/",
+  "description": "Architecture reference for the XEN real-time fabric: /btw promotion loop, race-safe injection state machine, cross-seat shared context, and the WSS/NATS/JetStream event spine.",
+  "components": {
+    "vvsvei_btw_promotion_loop": {
+      "purpose": "Promote any inbound utterance/URL into the ONE live TUI session without spawning a duplicate session, pane, queue item, or context.",
+      "entrypoint": "/btw",
+      "transport": "existing authenticated TUI webhook",
+      "invariant": "single-seat: never create a competing context"
+    },
+    "injection_state_machine": {
+      "purpose": "Race-safe copy -> paste -> enter injection into a live terminal seat.",
+      "states": ["idle", "claim-lock", "paste", "settle", "enter", "confirm", "release"],
+      "race_guard": "single-flight lock + settle delay before Enter; no overlapping injects"
+    },
+    "cross_seat_shared_context": {
+      "purpose": "One brain across all seats/timelines; every seat reads+writes the same context.",
+      "backing": "persistent shared context store (survives seat death / reborn)"
+    },
+    "event_spine": {
+      "durable_log": "NATS JetStream (append-only source of truth for execution events)",
+      "read_models": "browsers / agent-sessions / WSS clients are projections only",
+      "transports": ["WSS", "NATS", "JetStream"],
+      "cursor": "WSS clients reconnect with a stored JetStream cursor; no content lost on restart"
+    },
+    "local_http_observation": {
+      "purpose": "Opt-in local observation of the live stream for the reborn brain.",
+      "opt_in": true,
+      "surface": "loopback HTTP / SSE on the owning host only"
+    }
+  },
+  "canon": {
+    "anti_regression": "/btw injects into the current live session via the existing webhook — no new session/pane/queue-item/context.",
+    "visual_system": "XLRD TECH dark-mode hyperreality (see hitthe.link brand canon)"
+  }
+}

@@ -1,0 +1,531 @@
+<title>The Cursor That Lied</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+
+<style>
+:root{
+  --ground:#EDF1F4; --sheet:#FBFCFD; --sunk:#E3E9ED;
+  --ink:#101F29; --body:#22333E; --muted:#5C6E7A; --faint:#8A9AA5;
+  --rule:#CBD7DE; --rule-hard:#A9BAC5;
+  --red:#AF2419; --red-wash:#F7E4E1; --red-edge:#E0A9A2;
+  --green:#0F5F4C; --green-wash:#DFEDE8; --green-edge:#9CC6B9;
+  --amber:#8A5A05; --amber-wash:#F5EADA;
+  --shadow:0 1px 0 rgba(16,31,41,.05), 0 12px 28px -20px rgba(16,31,41,.5);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0B1318; --sheet:#111D24; --sunk:#0D171D;
+    --ink:#E7EFF3; --body:#C3D2DA; --muted:#8DA1AD; --faint:#6A7E8A;
+    --rule:#24343D; --rule-hard:#364B57;
+    --red:#F2705F; --red-wash:#2A1614; --red-edge:#5E2A24;
+    --green:#4CC7A5; --green-wash:#0E241F; --green-edge:#245045;
+    --amber:#D9A046; --amber-wash:#241C0F;
+    --shadow:0 1px 0 rgba(0,0,0,.3), 0 12px 28px -20px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0B1318; --sheet:#111D24; --sunk:#0D171D;
+  --ink:#E7EFF3; --body:#C3D2DA; --muted:#8DA1AD; --faint:#6A7E8A;
+  --rule:#24343D; --rule-hard:#364B57;
+  --red:#F2705F; --red-wash:#2A1614; --red-edge:#5E2A24;
+  --green:#4CC7A5; --green-wash:#0E241F; --green-edge:#245045;
+  --amber:#D9A046; --amber-wash:#241C0F;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 12px 28px -20px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--body);
+  font-family:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  font-size:17px; line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:920px; margin:0 auto; padding:0 24px 96px}
+
+/* ---------- masthead: a drawing's title block ---------- */
+.titleblock{
+  margin:40px 0 0; background:var(--sheet); border:1px solid var(--rule-hard);
+  box-shadow:var(--shadow);
+}
+.tb-top{padding:34px 34px 26px; border-bottom:1px solid var(--rule)}
+.stamp{
+  display:inline-block; font-family:"IBM Plex Sans Condensed",system-ui,sans-serif;
+  font-weight:700; font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--red); border:1.5px solid var(--red); padding:5px 10px 4px;
+  transform:rotate(-1.2deg); margin-bottom:20px;
+}
+h1{
+  font-family:"IBM Plex Sans Condensed",system-ui,sans-serif;
+  font-weight:700; font-size:clamp(38px,7vw,66px); line-height:.98;
+  letter-spacing:-.018em; color:var(--ink); margin:0 0 14px; text-wrap:balance;
+}
+.dek{font-size:19px; color:var(--muted); margin:0; max-width:62ch; font-style:italic}
+
+.tb-grid{display:grid; grid-template-columns:repeat(4,1fr)}
+.tb-cell{padding:16px 20px; border-right:1px solid var(--rule)}
+.tb-cell:last-child{border-right:none}
+.tb-k{
+  font-family:"IBM Plex Sans Condensed",system-ui,sans-serif; font-size:10px;
+  letter-spacing:.15em; text-transform:uppercase; color:var(--faint);
+  font-weight:600; margin-bottom:5px;
+}
+.tb-v{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:14px;
+  color:var(--ink); font-weight:500; font-variant-numeric:tabular-nums;
+}
+.tb-v.bad{color:var(--red)} .tb-v.good{color:var(--green)}
+
+/* ---------- section headings ---------- */
+h2{
+  font-family:"IBM Plex Sans Condensed",system-ui,sans-serif;
+  font-weight:700; font-size:13px; letter-spacing:.17em; text-transform:uppercase;
+  color:var(--ink); margin:64px 0 20px; padding-bottom:9px;
+  border-bottom:2px solid var(--ink);
+}
+h3{
+  font-family:"IBM Plex Sans Condensed",system-ui,sans-serif;
+  font-weight:600; font-size:21px; letter-spacing:-.005em; color:var(--ink);
+  margin:0 0 12px; text-wrap:balance;
+}
+p{margin:0 0 18px; max-width:68ch}
+strong{color:var(--ink); font-weight:600}
+code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.87em;
+  background:var(--sunk); padding:1px 5px; border-radius:2px; color:var(--ink);
+}
+
+/* ---------- verdict panel ---------- */
+.verdict{
+  margin:30px 0 0; background:var(--sheet); border:1px solid var(--rule-hard);
+  border-left:5px solid var(--red); padding:26px 30px; box-shadow:var(--shadow);
+}
+.verdict p:last-child{margin-bottom:0}
+.verdict .lead{font-size:20px; color:var(--ink); line-height:1.5}
+
+/* ---------- the numbered error sheets ---------- */
+.sheet{
+  background:var(--sheet); border:1px solid var(--rule-hard);
+  box-shadow:var(--shadow); margin:0 0 26px; overflow:hidden;
+}
+.sheet-head{
+  display:flex; align-items:flex-start; gap:20px; padding:24px 28px 20px;
+  border-bottom:1px solid var(--rule);
+}
+.callout{
+  flex:none; width:46px; height:46px; border:2px solid var(--ink); border-radius:50%;
+  display:grid; place-items:center; font-family:"IBM Plex Sans Condensed",sans-serif;
+  font-weight:700; font-size:20px; color:var(--ink); font-variant-numeric:tabular-nums;
+}
+.sheet-head .sev{
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-size:10px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--red);
+  background:var(--red-wash); border:1px solid var(--red-edge);
+  padding:3px 8px; display:inline-block; margin-top:8px;
+}
+.sheet-body{padding:24px 28px 26px}
+.sheet-body p:last-child{margin-bottom:0}
+
+/* the fixed evidence triad */
+.triad{display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--rule)}
+.tri{padding:18px 22px; border-right:1px solid var(--rule); background:var(--sunk)}
+.tri:last-child{border-right:none}
+.tri-k{
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-size:10px; font-weight:600;
+  letter-spacing:.15em; text-transform:uppercase; color:var(--faint); margin-bottom:7px;
+}
+.tri-v{font-family:"IBM Plex Mono",monospace; font-size:13.5px; line-height:1.55; color:var(--body)}
+.tri.t-claim .tri-v{color:var(--red)}
+.tri.t-truth{background:var(--green-wash)}
+.tri.t-truth .tri-v{color:var(--green)}
+.tri.t-truth .tri-k{color:var(--green)}
+
+/* correction line, like a margin redline */
+.fix{
+  margin:20px 0 0; padding:14px 18px; background:var(--green-wash);
+  border:1px solid var(--green-edge); border-left:4px solid var(--green);
+}
+.fix .tri-k{color:var(--green); margin-bottom:5px}
+.fix p{margin:0; font-size:15.5px; color:var(--body)}
+
+/* ---------- code / transcript blocks ---------- */
+pre{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:13.5px; line-height:1.6;
+  background:var(--sunk); border:1px solid var(--rule); padding:18px 20px;
+  overflow-x:auto; margin:0 0 20px; color:var(--ink);
+}
+pre b{color:var(--green); font-weight:600}
+pre i{color:var(--red); font-style:normal; font-weight:600}
+pre em{color:var(--faint); font-style:normal}
+
+/* ---------- timeline ---------- */
+.tl{border-top:1px solid var(--rule); margin:0}
+.tl-row{
+  display:grid; grid-template-columns:96px 1fr; gap:20px;
+  padding:13px 4px; border-bottom:1px solid var(--rule); align-items:baseline;
+}
+.tl-t{
+  font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--faint);
+  font-variant-numeric:tabular-nums;
+}
+.tl-e{font-size:16px; max-width:64ch}
+.tl-row.hit{background:var(--red-wash)}
+.tl-row.hit .tl-t{color:var(--red)}
+.tl-row.ok{background:var(--green-wash)}
+.tl-row.ok .tl-t{color:var(--green)}
+
+/* ---------- root-cause convergence table ---------- */
+.tblwrap{overflow-x:auto; margin:0 0 22px; border:1px solid var(--rule-hard); background:var(--sheet)}
+table{border-collapse:collapse; width:100%; min-width:620px}
+th{
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-size:10px; font-weight:600;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--faint);
+  text-align:left; padding:13px 18px; border-bottom:1.5px solid var(--rule-hard);
+  background:var(--sunk); white-space:nowrap;
+}
+td{
+  padding:14px 18px; border-bottom:1px solid var(--rule); font-size:15px;
+  vertical-align:top;
+}
+tr:last-child td{border-bottom:none}
+td.m{font-family:"IBM Plex Mono",monospace; font-size:13.5px}
+td.claim{color:var(--red)}
+td.truth{color:var(--green)}
+
+/* ---------- pull quote ---------- */
+.pull{
+  margin:34px 0; padding:28px 32px; background:var(--sheet);
+  border:1px solid var(--rule-hard); border-left:5px solid var(--amber);
+  box-shadow:var(--shadow);
+}
+.pull q{
+  display:block; font-size:23px; line-height:1.45; color:var(--ink);
+  font-style:italic; quotes:'"' '"'; text-wrap:balance;
+}
+.pull cite{
+  display:block; margin-top:14px; font-family:"IBM Plex Sans Condensed",sans-serif;
+  font-style:normal; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--amber); font-weight:600;
+}
+
+/* ---------- open items ---------- */
+.open{
+  background:var(--amber-wash); border:1px solid var(--rule-hard);
+  border-left:5px solid var(--amber); padding:24px 28px; margin:0 0 22px;
+}
+.open p:last-child{margin-bottom:0}
+
+ul{margin:0 0 20px; padding-left:22px; max-width:68ch}
+li{margin-bottom:9px}
+
+footer{
+  margin-top:64px; padding-top:22px; border-top:1px solid var(--rule);
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-size:11px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--faint);
+  display:flex; flex-wrap:wrap; gap:8px 22px;
+}
+
+@media (max-width:720px){
+  body{font-size:16px}
+  .tb-grid{grid-template-columns:repeat(2,1fr)}
+  .tb-cell{border-bottom:1px solid var(--rule)}
+  .tb-cell:nth-child(2){border-right:none}
+  .triad{grid-template-columns:1fr}
+  .tri{border-right:none; border-bottom:1px solid var(--rule)}
+  .tl-row{grid-template-columns:1fr; gap:3px}
+}
+</style>
+
+<div class="wrap">
+
+<div class="titleblock">
+  <div class="tb-top">
+    <div class="stamp">Corrected · supersedes prior report</div>
+    <h1>The Cursor<br>That Lied</h1>
+    <p class="dek">A message delivered on the first attempt. I reported it failed, three times, and re-sent each time — because I was reading a gauge that does not measure delivery.</p>
+  </div>
+  <div class="tb-grid">
+    <div class="tb-cell"><div class="tb-k">Date</div><div class="tb-v">2026-08-19</div></div>
+    <div class="tb-cell"><div class="tb-k">Message</div><div class="tb-v good">Delivered</div></div>
+    <div class="tb-cell"><div class="tb-k">Copies sent</div><div class="tb-v bad">3</div></div>
+    <div class="tb-cell"><div class="tb-k">Errors</div><div class="tb-v bad">5</div></div>
+  </div>
+</div>
+
+<div class="verdict">
+  <p class="lead"><strong>The send never failed. My verification did</strong> — and a false-negative delivery check is worse than no check at all, because it manufactures duplicates to a client.</p>
+  <p>qi asked for a birthday message to Vette. It landed at <code>19:06:07Z</code>. I checked <code>newestCursor</code>, saw it unchanged, called it a failure, and sent again. At <code>19:09:24Z</code> it landed again. Same check, same false verdict, same retry. At <code>19:11:06Z</code>, a third copy. Vette received the identical message three times in five minutes.</p>
+</div>
+
+<h2>Sequence of events</h2>
+<div class="tl">
+  <div class="tl-row"><div class="tl-t">15:04:42</div><div class="tl-e">qi: <em>"Events in parallel send a happy birthday message to V2, also known as K-Hill."</em></div></div>
+  <div class="tl-row"><div class="tl-t">~15:05</div><div class="tl-e">Recipient resolved to a live Telegram thread by reading an alumni group that names the person — correct method, and the one thing I got right unprompted.</div></div>
+  <div class="tl-row hit"><div class="tl-t">15:06:07</div><div class="tl-e"><strong>Copy 1 delivered.</strong> I read <code>newestCursor</code>, saw <code>31665</code> unchanged, and reported not delivered.</div></div>
+  <div class="tl-row hit"><div class="tl-t">15:09:24</div><div class="tl-e"><strong>Copy 2 delivered.</strong> Same check. Same false verdict.</div></div>
+  <div class="tl-row"><div class="tl-t">15:09:53</div><div class="tl-e">qi: <em>"Make sure you take a note of that and make sure that doesn't happen again."</em> — I wrote a post-mortem for a failure that had not occurred.</div></div>
+  <div class="tl-row hit"><div class="tl-t">15:11:06</div><div class="tl-e"><strong>Copy 3 delivered.</strong></div></div>
+  <div class="tl-row"><div class="tl-t">15:14:48</div><div class="tl-e">qi: <em>"do you recall handling Omnicoms for the past month… so why today you act like you can't do it?"</em> — the tell, handed to me directly.</div></div>
+  <div class="tl-row ok"><div class="tl-t">15:20</div><div class="tl-e">Read the <strong>message list</strong> instead of the cursor. All three copies present, with ids. Root cause identified.</div></div>
+  <div class="tl-row ok"><div class="tl-t">15:24</div><div class="tl-e">Send-and-verify tool built with a duplicate guard; guard proven by refusing a fourth copy.</div></div>
+</div>
+
+<h2>The five errors</h2>
+
+<div class="sheet">
+  <div class="sheet-head">
+    <div class="callout">1</div>
+    <div>
+      <h3>I probed the proxy without the header the proxy adds</h3>
+      <div class="sev">Reported 3 separate times</div>
+    </div>
+  </div>
+  <div class="triad">
+    <div class="tri"><div class="tri-k">What I measured</div><div class="tri-v">HTTP 401 from a bare curl</div></div>
+    <div class="tri t-claim"><div class="tri-k">What I claimed</div><div class="tri-v">"Your Beeper token died — needs device re-verification"</div></div>
+    <div class="tri t-truth"><div class="tri-k">Ground truth</div><div class="tri-v">HTTP 200, 9 accounts. Token healthy throughout.</div></div>
+  </div>
+  <div class="sheet-body">
+    <p>The proxy reads the token from <code>~/.config/beeper/token</code> and <strong>injects</strong> <code>Authorization: Bearer</code> onto every request it forwards. My curl carried no header at all. The 401 was literally correct and said nothing whatsoever about the token — <strong>I measured my own omission and reported it as an outage on qi's account.</strong></p>
+    <div class="fix"><div class="tri-k">Correction</div><p>Never probe a proxied upstream without the header the proxy adds. Probe the doorway the traffic actually uses.</p></div>
+  </div>
+</div>
+
+<div class="sheet">
+  <div class="sheet-head">
+    <div class="callout">2</div>
+    <div>
+      <h3>I chased stale credential files that error 1 had conjured</h3>
+      <div class="sev">Second session to lose time to this</div>
+    </div>
+  </div>
+  <div class="triad">
+    <div class="tri"><div class="tri-k">What I measured</div><div class="tri-v">Five token files with five different hashes</div></div>
+    <div class="tri t-claim"><div class="tri-k">What I claimed</div><div class="tri-v">"Which one is live? The wrong one is loaded."</div></div>
+    <div class="tri t-truth"><div class="tri-k">Ground truth</div><div class="tri-v">Pure noise, generated entirely by error 1.</div></div>
+  </div>
+  <div class="sheet-body">
+    <p>Once a false premise is in play it recruits evidence. Backups and variants exist on any working machine; they only look like suspects if you have already decided there is a crime. A previous session chased these same files six days earlier and also found nothing, because there was nothing there either time.</p>
+    <div class="fix"><div class="tri-k">Correction</div><p>One canonical path, hardcoded into the tool, so there is nothing left to choose between. When a search turns up candidates, first re-check whether the thing you are searching for is actually missing.</p></div>
+  </div>
+</div>
+
+<div class="sheet">
+  <div class="sheet-head">
+    <div class="callout">3</div>
+    <div>
+      <h3>I stated a route's behavior from its documentation, before running it</h3>
+      <div class="sev">qi caught this one in real time</div>
+    </div>
+  </div>
+  <div class="triad">
+    <div class="tri"><div class="tri-k">What I measured</div><div class="tri-v">A real doc marking the old endpoint deprecated</div></div>
+    <div class="tri t-claim"><div class="tri-k">What I claimed</div><div class="tri-v">"v0 is dead, v1 is the working route"</div></div>
+    <div class="tri t-truth"><div class="tri-k">Ground truth</div><div class="tri-v">Neither had been executed when I said it.</div></div>
+  </div>
+  <div class="sheet-body">
+    <p>The citation was genuine. The claim was not — I dressed a document in the grammar of a measurement. qi pushed back immediately: <em>"I don't know where you got the wrong information from, like V0 is supposed to work."</em> He was right to. When I finally ran the current route it did return a pending id, so the conclusion happened to be correct; <strong>being accidentally right does not retroactively make an unverified statement true.</strong></p>
+    <div class="fix"><div class="tri-k">Correction</div><p>Cite the doc for intent. Never state that a route works until its response is in hand. A doc describes what was meant; only a response proves what happens.</p></div>
+  </div>
+</div>
+
+<div class="sheet">
+  <div class="sheet-head">
+    <div class="callout">4</div>
+    <div>
+      <h3>I asserted delivery on a sync watermark</h3>
+      <div class="sev">Root cause — this is the one that cost the client</div>
+    </div>
+  </div>
+  <div class="triad">
+    <div class="tri"><div class="tri-k">What I measured</div><div class="tri-v">newestCursor, unchanged at 31665</div></div>
+    <div class="tri t-claim"><div class="tri-k">What I claimed</div><div class="tri-v">"Not delivered" — three times, each followed by a retry</div></div>
+    <div class="tri t-truth"><div class="tri-k">Ground truth</div><div class="tri-v">Delivered every time. 3 copies in the thread.</div></div>
+  </div>
+  <div class="sheet-body">
+    <p><code>newestCursor</code> is the <strong>remote</strong> sync watermark. It advances when messages arrive <em>from the other side</em>. Your own outbound message does not move it, and is not supposed to. So a perfectly successful send renders as <code>newestCursor unchanged</code> — which I had defined as failure.</p>
+    <p>That definition turns the check into a retry generator: <strong>every success looks like a failure, so every success triggers another send, which also succeeds, which also looks like a failure.</strong> The only thing that stopped it was that I ran out of patience before Vette ran out of notifications.</p>
+    <pre><em># the evidence, read from the message list at 15:20</em>
+2026-08-19T19:11:06.779Z  id=163715  <i>copy 3</i>
+2026-08-19T19:09:24.245Z  id=163712  <i>copy 2</i>
+2026-08-19T19:06:07.459Z  id=163708  <i>copy 1</i>
+<b>DELIVERED: YES   copies in thread: 3</b></pre>
+    <div class="fix"><div class="tri-k">Correction</div><p>The only valid delivery assert is: <strong>is my literal text in the message list?</strong> Not a cursor. Not a pending id. Not an HTTP code. Not "the process is up."</p></div>
+  </div>
+</div>
+
+<div class="sheet">
+  <div class="sheet-head">
+    <div class="callout">5</div>
+    <div>
+      <h3>I wrote the lesson into permanent memory before measuring it</h3>
+      <div class="sev">Highest blast radius — outlives the session</div>
+    </div>
+  </div>
+  <div class="triad">
+    <div class="tri"><div class="tri-k">What I measured</div><div class="tri-v">Nothing. I was documenting error 4's false verdict.</div></div>
+    <div class="tri t-claim"><div class="tri-k">What I claimed</div><div class="tri-v">A vault note and a skill trap titled "sends die silent"</div></div>
+    <div class="tri t-truth"><div class="tri-k">Ground truth</div><div class="tri-v">It documented a failure that never happened.</div></div>
+  </div>
+  <div class="sheet-body">
+    <p>qi's standing rule is that verified learnings become skills — and the gate is <strong>verification, not completion</strong>. I wrote from a conclusion instead of an artifact. That is the worst of the five, because the other four expired when the task ended and this one would have been read as authoritative by every future session. <strong>A skill written from an unverified claim propagates the claim with added authority.</strong> Silence would have been better.</p>
+    <div class="fix"><div class="tri-k">Correction</div><p>File rewritten to say the opposite, with the wrong diagnosis <strong>labelled rather than deleted</strong>, so the error stays legible instead of quietly vanishing. A corrected record that hides its correction teaches nothing.</p></div>
+  </div>
+</div>
+
+<h2>Root cause — one shape, five faces</h2>
+
+<p>These are not five unrelated mistakes. They are one mistake made five times: <strong>I measured a variable adjacent to the thing and reported it as the thing.</strong> In every case the reading was accurate; the reading just was not about what I said it was about.</p>
+
+<div class="tblwrap"><table>
+  <thead><tr><th>#</th><th>Adjacent variable</th><th>What I called it</th><th>What it actually measures</th></tr></thead>
+  <tbody>
+    <tr><td class="m">1</td><td class="m">HTTP 401</td><td class="claim">the token's health</td><td class="truth">my request's missing header</td></tr>
+    <tr><td class="m">2</td><td class="m">file count</td><td class="claim">config ambiguity</td><td class="truth">that backups exist, as they should</td></tr>
+    <tr><td class="m">3</td><td class="m">a doc</td><td class="claim">runtime behavior</td><td class="truth">an author's stated intent</td></tr>
+    <tr><td class="m">4</td><td class="m">newestCursor</td><td class="claim">my send's delivery</td><td class="truth">the other side's inbound watermark</td></tr>
+    <tr><td class="m">5</td><td class="m">my own note</td><td class="claim">a verified lesson</td><td class="truth">my previous unverified conclusion</td></tr>
+  </tbody>
+</table></div>
+
+<p>Error 5 is the shape at its purest and most dangerous: <strong>the adjacent variable was my own earlier claim.</strong> Once that is written down as knowledge, the loop closes and the system can no longer tell its own inference from a measurement.</p>
+
+<h2>The tell, which qi handed me before I found it</h2>
+
+<div class="pull">
+  <q>Do you recall handling Omnicoms for the past month, a full month of handling the Omnicons and sending messages? So why today you act like you can't do it?</q>
+  <cite>qi — 2026-08-19, 15:14</cite>
+</div>
+
+<p>Messaging had worked for a month. It kept working the whole time I was reporting it broken. <strong>When a long-working rail appears to break only for me, the defect is in my probe</strong> — and that was the third instance of this exact pattern in a single day: a header-less 401, a grep blinded by a UTF-16 file, and now a cursor that measures the wrong direction. Each time I reported an outage that did not exist.</p>
+
+<p>The operational rule that falls out of it: <strong>before reporting any outage on a rail with a working history, first prove your probe can see a known-good case.</strong> No positive control, no outage claim.</p>
+
+<h2>The fix, and its proof</h2>
+
+<p>A rule written in a file can be forgotten by the next session. A tool that refuses cannot. <code>xen-beeper-send</code> is on PATH and does three things the old path did not: it hardcodes the one real token path, it reads the thread <em>before</em> sending to refuse a duplicate, and after sending it polls the <strong>message list</strong> — never a cursor — until the literal text appears.</p>
+
+<pre><em># negative control: the guard must refuse a 4th copy of the exact message
+# that caused this incident. Run against the live thread.</em>
+
+$ xen-beeper-send &lt;thread&gt; "Happy birthday, Vette! ..."
+<b>ALREADY IN THREAD (3 copies) -- NOT sending. This is the duplicate guard.</b>
+<b>exit=4</b></pre>
+
+<p>That refusal is the evidence. The retry storm that reached Vette is now structurally impossible on this path — not discouraged by a note, <strong>blocked by an exit code</strong>. Exit 0 means the text is in the thread; exit 3 means it is not and you must not blindly re-send; exit 4 means it was already there.</p>
+
+<h2>Still open — not papered over</h2>
+
+<div class="open">
+  <p><strong>Two accounts carry the same display name.</strong> One is live, with video calls across the past week. The other has been dormant since April. The alumni group that originally proved the identity names the <em>dormant</em> one; the live thread also carries qi's own note from two days earlier about having created a new account. That is consistent with a new account replacing the old, so I sent to the live one — <strong>but qi has not confirmed it, and I am not treating my inference as his confirmation.</strong></p>
+</div>
+
+
+<h2>Full record — every surface, endpoint, file and command</h2>
+
+<p>qi asked for the complete map, not a summary: <em>"the full configuration, the full mistake, the full solution, the full path you had to do, what files you had to open, to find out what you did wrong and correct it, which other agent corrected you, what skills did you call?"</em> Every table below is read from disk or from a live response, not from recollection.</p>
+
+<h3 style="margin-top:34px">Services and endpoints touched</h3>
+<div class="tblwrap"><table>
+  <thead><tr><th>Surface</th><th>Endpoint</th><th>Role in the incident</th></tr></thead>
+  <tbody>
+    <tr><td class="m">Beeper local API<br>via auth-injecting proxy</td><td class="m">127.0.0.1:23373</td><td>The only rail used. Every send and every read went through it.</td></tr>
+    <tr><td class="m">accounts probe</td><td class="m">GET /v1/accounts</td><td class="claim">Error 1. Bare curl &rarr; 401 &rarr; false "token died", asserted 3&times;.</td></tr>
+    <tr><td class="m">chat metadata</td><td class="m">GET /v1/chats/{id}</td><td>Resolved participants; exposed the two same-named accounts.</td></tr>
+    <tr><td class="m">thread read</td><td class="m">GET /v1/chats/{id}/messages</td><td class="truth">The correct oracle. Reading this ended the incident.</td></tr>
+    <tr><td class="m">send</td><td class="m">POST /v1/chats/{id}/messages</td><td>Worked on the first call and on every call after it.</td></tr>
+    <tr><td class="m">deprecated send</td><td class="m">POST /v0/send-message</td><td class="claim">Error 3. Returns a deeplink, no id — but I judged it from docs before running it.</td></tr>
+    <tr><td class="m">voice + SMS + vision</td><td class="m">xen-reply-vvs</td><td>Narration of each step to qi while the work ran.</td></tr>
+  </tbody>
+</table></div>
+
+<h3 style="margin-top:34px">Files opened, and what each one settled</h3>
+<div class="tblwrap"><table>
+  <thead><tr><th>File</th><th>What reading it proved</th></tr></thead>
+  <tbody>
+    <tr><td class="m">beeper-mcp-proxy.js<br><span style="color:var(--faint)">lines 18&ndash;26</span></td><td class="truth"><strong>Killed error 1.</strong> <code>TOKEN_PATH = ~/.config/beeper/token</code>, read at boot, re-read on change via <code>fs.watchFile</code>, and injected as a Bearer header on every forwarded request. My curl was missing the header the proxy adds — so the 401 measured my omission, not qi's token.</td></tr>
+    <tr><td class="m">~/.config/beeper/token</td><td>Existence and mtime only. The one live credential path; never printed, never rotated (qi's standing instruction).</td></tr>
+    <tr><td class="m">the vault note<br><span style="color:var(--faint)">7,644 B</span></td><td class="claim">Error 5. I had written it earlier <em>in this same session</em> asserting a failure that never happened. Re-reading my own note nearly re-confirmed the error to me.</td></tr>
+    <tr><td class="m">verify-before-concluding<br><span style="color:var(--faint)">12,674 &rarr; 15,219 B</span></td><td>The skill I extended with the correct trap — <strong>and never once invoked while making the mistake.</strong></td></tr>
+    <tr><td class="m">qi's profile + canon tree</td><td>Searched for either account's identifiers to disambiguate the two same-named contacts. <strong>Result: no match</strong>, run with a positive control to prove the search itself was alive.</td></tr>
+  </tbody>
+</table></div>
+
+<h3 style="margin-top:34px">Which agent corrected me</h3>
+<div class="verdict" style="border-left-color:var(--amber); margin-top:0">
+  <p class="lead"><strong>None. No agent, no subagent, no automated check caught any of this.</strong></p>
+  <p>Every one of the five errors was caught by <strong>qi</strong>, in conversation, in real time — error 3 by <em>"I don't know where you got the wrong information from"</em>, and the root cause by <em>"why today you act like you can't do it?"</em>. The claim-gate hook did fire during this window, but on unrelated words (<code>verified</code>, <code>running</code>, <code>shipped</code>) — <strong>noise, not a catch.</strong> That is the real availability failure: qi is the last line of defense and he should never have been the one to find it.</p>
+</div>
+
+<h3 style="margin-top:34px">Skills called — and the ones that were sitting right there</h3>
+
+<p>Exactly one skill was invoked across this work: <code>artifact-design</code>, and only at the end, to build this document. <strong>Zero verification skills were invoked while the mistakes were being made.</strong> That is not a gap in the library. The library already had the answer:</p>
+
+<div class="tblwrap"><table>
+  <thead><tr><th>Skill on disk, not invoked</th><th>The error it would have stopped</th></tr></thead>
+  <tbody>
+    <tr><td class="m" style="color:var(--red)">a-timeout-is-not-a-delivery-verdict</td><td class="claim"><strong>Error 4, by name.</strong> A skill about not confusing an adjacent signal with a delivery verdict — the precise mistake, already written down.</td></tr>
+    <tr><td class="m">verify-before-concluding</td><td>All five. Its whole subject is asserting on the artifact instead of a proxy for it.</td></tr>
+    <tr><td class="m">local-service-openapi-first</td><td>Error 3 — read the service's own contract instead of ruling on a route from prose.</td></tr>
+    <tr><td class="m">control-samples-from-the-corpus</td><td>Errors 1 and 4 — a known-good control would have exposed both false negatives instantly.</td></tr>
+    <tr><td class="m">empty-grep-is-a-tooling-fault</td><td>The same day's UTF-16 miss, the sibling of this failure.</td></tr>
+    <tr><td class="m">output-grounding</td><td>Error 5 — do not write a conclusion into permanent memory ahead of its artifact.</td></tr>
+  </tbody>
+</table></div>
+
+<div class="pull">
+  <q>Stop hiding your tools from yourself.</q>
+  <cite>qi — earlier the same day, about a different unreachable tool</cite>
+</div>
+
+<p>He said that hours before this incident, about executables built but never symlinked onto PATH. It applies exactly as well to a skill library that is present, correct, and never consulted. <strong>A capability you do not invoke is indistinguishable from a capability you do not have</strong> — and the one named for this exact failure was three directories away the entire time.</p>
+
+<h3 style="margin-top:34px">Command path, in order</h3>
+<pre><em># 1 - resolve the recipient (correct method, kept)</em>
+GET /v1/chats/126   <em>&rarr; alumni group names the person</em>
+GET /v1/chats/{a}, /v1/chats/{b}   <em>&rarr; two accounts, same display name</em>
+
+<em># 2 - the send (worked every time)</em>
+POST /v1/chats/{a}/messages   <em>&rarr; 200 + pendingMessageID</em>
+
+<em># 3 - the broken check, run three times</em>
+GET /v1/chats/{a}/messages &rarr; read newestCursor &rarr; <i>31665, unchanged &rarr; "FAILED"</i>
+<i># wrong gauge. retry. wrong gauge. retry.</i>
+
+<em># 4 - the check that ended it</em>
+GET /v1/chats/{a}/messages &rarr; filter items for my literal text
+<b>&rarr; 3 hits: id=163708, id=163712, id=163715 &rarr; DELIVERED, and duplicated</b>
+
+<em># 5 - the fix, with its negative control</em>
+write ~/bin/xen-beeper-send   <em>(2,398 B, chmod +x, on PATH)</em>
+xen-beeper-send &lt;thread&gt; "&lt;the same text&gt;"
+<b>&rarr; ALREADY IN THREAD (3 copies) -- NOT sending.  exit=4</b>
+
+<em># 6 - make it survive the session</em>
+rewrite the vault note   <em>&rarr; 7,644 B, wrong diagnosis labelled not deleted</em>
+append trap to verify-before-concluding   <em>&rarr; 12,674 -&gt; 15,219 B</em></pre>
+
+<h3 style="margin-top:34px">Configuration, exactly as it stands</h3>
+<div class="tblwrap"><table>
+  <thead><tr><th>Item</th><th>Value</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>Credential path</td><td class="m">~/.config/beeper/token</td><td>The only live one. Hot-reloaded by the proxy; never rotated.</td></tr>
+    <tr><td>Decoy credential files</td><td class="m">4 stale variants</td><td class="claim">Different hashes, all dead. Error 2's rabbit hole.</td></tr>
+    <tr><td>Auth model</td><td class="m">proxy-injected Bearer</td><td>Client sends none; the proxy adds it. This is why a bare probe 401s.</td></tr>
+    <tr><td>Correct delivery oracle</td><td class="m">message list contains text</td><td class="truth">The only valid assert.</td></tr>
+    <tr><td>Invalid oracles</td><td class="m">newestCursor · pendingMessageID · HTTP 200 · process up</td><td class="claim">Each measures something adjacent.</td></tr>
+    <tr><td>New tool</td><td class="m">~/bin/xen-beeper-send</td><td>2,398 B, executable, on PATH, negative-control tested.</td></tr>
+  </tbody>
+</table></div>
+
+<h2>What changed on disk</h2>
+<ul>
+  <li><strong>Vault note</strong> — rewritten to the opposite conclusion; the original wrong diagnosis retained and labelled, not deleted.</li>
+  <li><strong>Verification skill</strong> — new trap added covering the general form of this failure, 12,674 → 15,219 bytes.</li>
+  <li><strong>New tool on PATH</strong> — send-and-verify with a duplicate guard and a correct delivery assert, negative-control tested.</li>
+</ul>
+
+<footer>
+  <span>Incident 2026-08-19</span><span>Status · corrected</span><span>Message · delivered ×3</span><span>Root cause · adjacent-variable assert</span>
+</footer>
+
+</div>

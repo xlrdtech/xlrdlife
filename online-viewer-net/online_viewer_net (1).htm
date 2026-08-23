@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project BUILD - Configuration & Setup Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 3.5em;
+            margin-bottom: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+        }
+        
+        .content {
+            padding: 60px 40px;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 15px;
+            border-left: 6px solid #16a34a;
+        }
+        
+        .section-title {
+            font-size: 2em;
+            color: #15803d;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .section-title::before {
+            content: "●";
+            color: #16a34a;
+            font-size: 1.5em;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .config-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .config-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            border-color: #16a34a;
+        }
+        
+        .config-card h3 {
+            color: #1e293b;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .config-card h3::before {
+            content: "⚙️";
+        }
+        
+        .config-item {
+            margin: 12px 0;
+            padding: 12px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .config-label {
+            color: #64748b;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .config-value {
+            color: #0f172a;
+            word-break: break-all;
+            font-weight: 600;
+        }
+        
+        .warning-box {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .warning-box h4 {
+            color: #92400e;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .warning-box h4::before {
+            content: "⚠️";
+            font-size: 1.5em;
+        }
+        
+        .dependency-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .dependency-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #8b5cf6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .dependency-item strong {
+            color: #6d28d9;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .feature-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-refresh {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .footer {
+            background: #1e293b;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .footer p {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ Project BUILD</h1>
+            <p>Workforce Application - Configuration & Setup Documentation</p>
+        </div>
+        
+        <div class="content">
+            <!-- API CONFIGURATIONS -->
+            <div class="section">
+                <h2 class="section-title">API Configurations</h2>
+                
+                <div class="config-grid">
+                    <div class="config-card">
+                        <h3>EmailJS</h3>
+                        <div class="config-item">
+                            <div class="config-label">Public Key</div>
+                            <div class="config-value">aorg2J2NM2WBFJ</div>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-label">Service ID</div>
+                            <div class="config-value">emailxlrd.org</div>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-label">Template ID</div>
+                            <div class="config-value">template_efuux1q</div>
+                        </div>
+                        <span class="status-badge status-active">ACTIVE</span>
+                    </div>
+                    
+                    <div class="config-card">
+                        <h3>Cloudinary</h3>
+                        <div class="config-item">
+                            <div class="config-label">Cloud Name</div>
+                            <div class="config-value">dyozjvutz</div>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-label">Upload Preset</div>
+                            <div class="config-value">project_build_ids</div>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-label">API Endpoint</div>
+                            <div class="config-value">https://api.cloudinary.com/v1_1/dyozjvutz/image/upload</div>
+                        </div>
+                        <span class="status-badge status-active">ACTIVE</span>
+                    </div>
+                    
+                    <div class="config-card">
+                        <h3>Dropbox</h3>
+                        <div class="config-item">
+                            <div class="config-label">Access Token</div>
+                            <div class="config-value">sl.u.AGLVTTMNkmU3FGD...</div>
+                        </div>
+                        <span class="status-badge status-refresh">REFRESH NEEDED</span>
+                        <div class="warning-box">
+                            <h4>Token Refresh Required</h4>
+                            <p>Dropbox access tokens expire frequently. Update this token regularly or implement a backend OAuth flow.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CDN DEPENDENCIES -->
+            <div class="section">
+                <h2 class="section-title">CDN Dependencies</h2>
+                
+                <div class="dependency-list">
+                    <div class="dependency-item">
+                        <strong>Tailwind CSS</strong>
+                        de>https://cdn.tailwindcss.com</code>
+                    </div>
+                    <div class="dependency-item">
+                        <strong>React 18</strong>
+                        de>unpkg.com/react@18</code>
+                    </div>
+                    <div class="dependency-item">
+                        <strong>React DOM</strong>
+                        de>unpkg.com/react-dom@18</code>
+                    </div>
+                    <div class="dependency-item">
+                        <strong>Babel Standalone</strong>
+                        de>babel.min.js</code>
+                    </div>
+                    <div class="dependency-item">
+                        <strong>jsPDF</strong>
+                        de>jspdf.umd.min.js</code>
+                    </div>
+                    <div class="dependency-item">
+                        <strong>EmailJS</strong>
+                        de>email.min.js</code>
+                    </div>
+                    <div class="dependency-item">
+                        <strong>Dropbox SDK</strong>
+                        de>Dropbox-sdk.min.js</code>
+                    </div>
+                    <div class="dependency-item">
+                        <strong>Tesseract.js</strong>
+                        de>tesseract.min.js (OCR)</code>
+                    </div>
+                    <div class="dependency-item">
+                        <strong>PDF.js v3.4.120</strong>
+                        de>pdf.min.js</code>
+                    </div>
+                    <div class="dependency-item">
+                        <strong>Mammoth.js</strong>
+                        de>mammoth.browser.min.js</code>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- APPLICATION FEATURES -->
+            <div class="section">
+                <h2 class="section-title">Application Features</h2>
+                
+                <div class="feature-grid">
+                    <div class="feature-badge">📸 ID Scanning (OCR)</div>
+                    <div class="feature-badge">📄 PDF Generation</div>
+                    <div class="feature-badge">📧 Email Notifications</div>
+                    <div class="feature-badge">☁️ Cloud Storage</div>
+                    <div class="feature-badge">🔒 Digital Signatures</div>
+                    <div class="feature-badge">📱 Mobile Responsive</div>
+                    <div class="feature-badge">♿ Accessibility</div>
+                    <div class="feature-badge">🖨️ Print Optimized</div>
+                </div>
+            </div>
+            
+            <!-- FORM WORKFLOW -->
+            <div class="section">
+                <h2 class="section-title">Form Workflow</h2>
+                
+                <div class="code-block">
+1. User selects age category (Under 18 / 18+)
+   ↓
+2. Complete Personal Information
+   → Name, DOB, Contact, Address, SSN
+   ↓
+3. History & Status
+   → Education, Legal, Financial Aid
+   ↓
+4. Construction Background
+   → Experience, Interests, Training
+   ↓
+5. Employment History (Optional)
+   → Previous jobs, supervisors
+   ↓
+6. References (3 required)
+   ↓
+7. Gear & Goals
+   → Shirt/Shoe/Belt sizes, Program goals
+   ↓
+8. ID Verification Upload
+   → Scan ID with camera (OCR auto-fill)
+   ↓
+9. Legal Waivers & Permissions
+   → Workforce, Forklift, Liability, ROI, Media
+   ↓
+10. Digital Signature
+    ↓
+11. SUBMIT
+    → Generate PDF
+    → Upload to Dropbox
+    → Send email via EmailJS
+    → Display success message
+                </div>
+            </div>
+            
+            <!-- DATA STRUCTURE -->
+            <div class="section">
+                <h2 class="section-title">Form Data Structure</h2>
+                
+                <div class="code-block">
+const formData = {
+  // Personal Info
+  firstName, middleName, lastName, dob, address, phone, email, ssn,
+  raceEthnicity, isHispanic, gender, language,
+  
+  // Guardian (if under 18)
+  guardianName, guardianPhone,
+  
+  // Education
+  inSchool, schoolName, graduated, gradYear, lastGrade, attendedCollege,
+  
+  // Legal History
+  arrested, arrestOutcome, probation, probationReleaseDate,
+  schoolStatusArrest, employStatusArrest,
+  
+  // Financial
+  registeredVoter, needVoterHelp, receiveSSI, receiv

@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>xt/16c — igloo standard, candidate C</title>
+<style>
+  :root{
+    --ink:#0d1114;
+    --hair:rgba(255,255,255,.55);
+    --mono:"SFMono-Regular", ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#0b0e11;color:#fff;scrollbar-width:none;-ms-overflow-style:none}
+  body{height:340vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  ::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
+  html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
+  #gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
+  #ui{position:fixed;inset:0;z-index:3;pointer-events:none;font-family:var(--mono)}
+  #net{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:visible}
+  .blk{position:absolute;letter-spacing:.02em}
+  #brand{top:38px;left:44px}
+  .mark{
+    font-weight:800;font-size:44px;line-height:.9;letter-spacing:-.02em;
+    font-family:var(--mono);
+    text-shadow:0 1px 22px rgba(30,44,60,.45);
+  }
+  .mark .dot{display:inline-block;transform:translateY(-2px)}
+  .fine{margin-top:16px;font-size:11.5px;line-height:1.65;opacity:.92;text-shadow:0 1px 10px rgba(30,44,60,.35)}
+  #manifesto{top:38px;right:44px;text-align:right;max-width:264px}
+  #manifesto .tag{font-size:11.5px;opacity:.95;margin-bottom:12px;letter-spacing:.06em}
+  #manifesto p{margin:0;font-size:11.5px;line-height:1.7;opacity:.95;text-shadow:0 1px 10px rgba(30,44,60,.35)}
+  #foot{left:44px;bottom:42px;font-size:11.5px;line-height:1.7;opacity:.95}
+  #foot .snd{margin-top:22px;display:flex;gap:9px;align-items:center;opacity:.9}
+  #seedline{right:44px;bottom:42px;text-align:right;font-size:10.5px;line-height:1.7;opacity:.42}
+  .scrollhint{display:inline-block}
+  #net text{
+    font-family:var(--mono);font-size:11px;fill:#fff;opacity:.62;
+    paint-order:stroke;stroke:rgba(20,30,40,.28);stroke-width:2px;
+  }
+  #net path,#net line{stroke:rgba(255,255,255,.42);stroke-width:.75;fill:none}
+  #net circle{fill:#fff;opacity:.7}
+  #vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(112% 86% at 50% 46%, rgba(0,0,0,0) 34%, rgba(8,13,19,.46) 100%);}
+  #boot{position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;
+    background:#c9d2da;color:#25303a;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    transition:opacity .5s ease}
+  #boot.gone{opacity:0;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="vig"></div>
+<svg id="net" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<div id="ui">
+  <div class="blk" id="brand">
+    <div class="mark">XT/16</div>
+    <div class="fine">// Copyright &copy; 2026<br/>hitthe.link<br/>XT series.</div>
+  </div>
+  <div class="blk" id="manifesto">
+    <div class="tag">////// Manifesto</div>
+    <p>Grown, never copied. A seeded crystal algorithm packs ice inside a container, so no two blocks share a lattice.</p>
+  </div>
+  <div class="blk" id="foot">
+    <div class="scrollhint">Scroll down to<br/>discover.</div>
+    <div class="snd"><span>&#9788;</span><span>Growth: precomputed</span></div>
+  </div>
+  <div class="blk" id="seedline">SEED <span id="seedval">—</span><br/><span id="statline">—</span></div>
+</div>
+
+<div id="boot">GROWING ICE…</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
+
+/* ────────────────────────────────────────────────────────────────
+   0. deterministic RNG
+   ──────────────────────────────────────────────────────────────── */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const GLOBAL_SEED = 20260811;
+
+/* ────────────────────────────────────────────────────────────────
+   1. THE GROWTH ALGORITHM
+      Anisotropic seeded aggregation on a voxel lattice, clipped to a
+      container primitive (box / cylinder / cap). Nuclei start ON the
+      container wall and grow inward, exactly like ice freezing in a
+      mould. Growth direction is biased by a per-block crystal habit
+      (a c-axis + a basal plane), which is what makes each block a
+      different creature instead of a copy.
+      Output: a graph of nodes + parent edges → shard instances.
+   ──────────────────────────────────────────────────────────────── */
+
+// container membership in normalised [-1,1]^3
+function inside(kind, x, y, z){
+  if (kind === 0){ // rounded box (superellipsoid p=6)
+    const p = (v)=>{const a=Math.abs(v);const a2=a*a;return a2*a2*a2;};
+    return p(x)+p(y)+p(z) <= 1.0;
+  }
+  if (kind === 1){ // cylinder, axis = Z
+    return (x*x + y*y) <= 1.0 && Math.abs(z) <= 1.0;
+  }
+  // kind 2: hemispherical cap bulging toward +Z
+  return (x*x + y*y + z*z) <= 1.0 && z >= -0.02;
+}
+
+const NB = [
+  [ 1,0,0],[-1,0,0],[0, 1,0],[0,-1,0],[0,0, 1],[0,0,-1],
+  [ 1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
+  [ 1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],
+  [ 0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]
+];
+
+function growCrystal(seed, kind, dims, targetNodes){
+  const rnd = mulberry32(seed);
+  const [nx, ny, nz] = dims;
+  const idx = (i,j,k)=> (k*ny + j)*nx + i;
+  const occ = new Uint8Array(nx*ny*nz);
+  const nodes = [];          // {p:Vec3-ish normalised, gen, thick}
+  const edges = [];          // [aIdx, bIdx]
+  const norm = (i,n)=> (n<=1)? 0 : (i/(n-1))*2 - 1;
+
+  // per-block crystal habit: a c-axis and how strongly it dominates
+  const ax = rnd()*2-1, ay = rnd()*2-1, az = rnd()*2-1;
+  let al = Math.hypot(ax,ay,az) || 1;
+  const cAxis = [ax/al, ay/al, az/al];
+  const habit = 0.35 + rnd()*1.55;        // anisotropy strength
+  const basal = rnd() < 0.5;              // grow in plane vs along axis
+  const branchP = 0.10 + rnd()*0.22;      // branching probability
+  const wander  = 0.15 + rnd()*0.55;      // isotropic noise floor
+
+  // --- nucleation: 2..5 seeds sitting on the container wall
+  const nuclei = 2 + (rnd()*4|0);
+  const frontier = [];
+  let guard = 0;
+  while (nodes.length < nuclei && guard++ < 4000){
+    const i = rnd()*nx|0, j = rnd()*ny|0, k = rnd()*nz|0;
+    const x = norm(i,nx), y = norm(j,ny), z = norm(k,nz);
+    if (!inside(kind, x, y, z)) continue;
+    // wall test: at least one 6-neighbour is outside the container
+    let wall = false;
+    for (let d=0; d<6; d++){
+      const nX = norm(i+NB[d][0], nx), nY = norm(j+NB[d][1], ny), nZ = norm(k+NB[d][2], nz);
+      if (!inside(kind, nX, nY, nZ)) { wall = true; break; }
+    }
+    if (!wall && rnd() > 0.12) continue;
+    if (occ[idx(i,j,k)]) continue;
+    occ[idx(i,j,k)] = 1;
+    nodes.push({i,j,k,x,y,z,gen:0,parent:-1});
+    frontier.push(nodes.length-1);
+  }
+
+  // --- anisotropic aggregation
+  // the habit weight for a direction is constant for the whole block,
+  // so it is computed once instead of per growth step
+  const baseW = new Float64Array(NB.length);
+  for (let d=0; d<NB.length; d++){
+    const v = NB[d];
+    const l = Math.hypot(v[0],v[1],v[2]);
+    const dot = (v[0]*cAxis[0] + v[1]*cAxis[1] + v[2]*cAxis[2]) / l;
+    const align = basal ? (1 - Math.abs(dot)) : Math.abs(dot);
+    let w = wander + habit * Math.pow(align, 2.2);
+    if (l > 1.2) w *= 0.55;
+    baseW[d] = w;
+  }
+
+  const dirW = new Float64Array(NB.length);
+  let steps = 0;
+  const maxSteps = targetNodes * 30;
+  while (nodes.length < targetNodes && steps++ < maxSteps){
+    // a dead frontier means the crystal stalled — re-nucleate from
+    // existing sites so every container actually fills
+    if (!frontier.length){
+      if (!nodes.length) break;
+      for (let k=0;k<4;k++) frontier.push((rnd()*nodes.length)|0);
+    }
+    // pick a frontier site, biased toward younger tips (dendritic)
+    let fi = frontier.length - 1 - ((rnd()*rnd()*frontier.length)|0);
+    if (fi < 0) fi = 0;
+    const ni = frontier[fi];
+    const n = nodes[ni];
+
+    // weight the 18 directions by the crystal habit + surface noise
+    let total = 0;
+    for (let d=0; d<NB.length; d++){
+      const w = baseW[d] * (0.35 + rnd());   // stochastic surface energy
+      dirW[d] = w; total += w;
+    }
+
+    let r = rnd()*total, pick = 0;
+    for (let d=0; d<NB.length; d++){ r -= dirW[d]; if (r <= 0){ pick = d; break; } }
+    const v = NB[pick];
+    const i2 = n.i+v[0], j2 = n.j+v[1], k2 = n.k+v[2];
+    if (i2<0||j2<0||k2<0||i2>=nx||j2>=ny||k2>=nz){ retire(fi); continue; }
+    const id2 = idx(i2,j2,k2);
+    if (occ[id2]){ if (rnd()<0.25) retire(fi); continue; }
+    const x2 = norm(i2,nx), y2 = norm(j2,ny), z2 = norm(k2,nz);
+    if (!inside(kind, x2, y2, z2)){ retire(fi); continue; }
+
+    occ[id2] = 1;
+    nodes.push({i:i2,j:j2,k:k2,x:x2,y:y2,z:z2,gen:n.gen+1,parent:ni});
+    const child = nodes.length-1;
+    edges.push([ni, child]);
+    frontier.push(child);
+    // the parent only keeps growing if it branches
+    if (rnd() > branchP) retire(fi);
+  }
+
+  function retire(fi){
+    frontier[fi] = frontier[frontier.length-1];
+    frontier.pop();
+  }
+
+  // signature so uniqueness is measurable, not asserted
+  let sig = 2166136261 >>> 0;
+  for (let i=0;i<nodes.length;i++){
+    const n = nodes[i];
+    sig ^= (n.i*73856093) ^ (n.j*19349663) ^ (n.k*83492791);
+    sig = Math.imul(sig, 16777619) >>> 0;
+  }
+
+  return { nodes, edges, sig, kind, habit, basal, nuclei, cAxis };
+}
+
+/* ────────────────────────────────────────────────────────────────
+   2. renderer / scene
+   ──────────────────────────────────────────────────────────────── */
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.14;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const FOG = new THREE.Color(0xaab6c3);
+scene.fog = new THREE.FogExp2(FOG.getHex(), 0.0052);
+
+const camera = new THREE.PerspectiveCamera(32, innerWidth/innerHeight, 0.4, 900);
+
+/* ---- sky + environment: painted equirect with fogged mountain bands ---- */
+function makeSky(){
+  const W = 2048, H = 1024;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+
+  const grad = g.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0.00, '#2b3644');
+  grad.addColorStop(0.20, '#5a6a7b');
+  grad.addColorStop(0.38, '#93a2b1');
+  grad.addColorStop(0.470,'#c6d0d9');
+  grad.addColorStop(0.505,'#e6ecf1');
+  grad.addColorStop(0.58, '#b9c2cb');
+  grad.addColorStop(1.00, '#8e99a5');
+  g.fillStyle = grad; g.fillRect(0,0,W,H);
+
+  // soft sun
+  const sx = W*0.70, sy = H*0.40;
+  const sun = g.createRadialGradient(sx,sy,0,sx,sy,H*0.42);
+  sun.addColorStop(0,'rgba(255,255,255,0.95)');
+  sun.addColorStop(0.25,'rgba(255,255,255,0.35)');
+  sun.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle = sun; g.fillRect(0,0,W,H);
+
+  // mountain silhouettes, back to front, each less fogged
+  const rnd = mulberry32(9911);
+  const bands = [
+    {amp:26, base:H*0.497, col:'rgba(126,140,156,0.50)', f:1.3},
+    {amp:38, base:H*0.506, col:'rgba(104,119,137,0.58)', f:2.3},
+    {amp:52, base:H*0.518, col:'rgba(84,99,117,0.66)',  f:3.9}
+  ];
+  for (const b of bands){
+    g.beginPath(); g.moveTo(0,H);
+    const pts = 220;
+    const ph = rnd()*100;
+    for (let i=0;i<=pts;i++){
+      const u = i/pts;
+      const a = Math.sin((u*b.f*9.0)+ph)*0.55
+              + Math.sin((u*b.f*23.0)+ph*2.1)*0.28
+              + Math.sin((u*b.f*47.0)+ph*3.7)*0.17;
+      const y = b.base - (a*0.5+0.5)*b.amp - b.amp*0.15;
+      g.lineTo(u*W, y);
+    }
+    g.lineTo(W,H); g.closePath();
+    g.fillStyle = b.col; g.fill();
+  }
+  // haze wash over the horizon so the ridges sit back in the fog
+  const haze = g.createLinearGradient(0,H*0.44,0,H*0.60);
+  haze.addColorStop(0,'rgba(206,216,225,0.0)');
+  haze.addColorStop(0.55,'rgba(206,216,225,0.60)');
+  haze.addColorStop(1,'rgba(180,192,203,0.92)');
+  g.fillStyle = haze; g.fillRect(0,H*0.44,W,H*0.20);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+const skyTex = makeSky();
+scene.background = skyTex;
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+scene.environment = pmrem.fromEquirectangular(skyTex).texture;
+
+/* ---- lights ---- */
+const hemi = new THREE.HemisphereLight(0xd7e4f0, 0x5d6874, 0.62);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xffffff, 4.4);
+sun.position.set(-30, 46, -22);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.radius = 7;
+sun.shadow.bias = -0.0016;
+{
+  const c = sun.shadow.camera;
+  c.left=-34; c.right=34; c.top=34; c.bottom=-34; c.near=1; c.far=140;
+  c.updateProjectionMatrix();
+}
+scene.add(sun);
+
+const rim = new THREE.DirectionalLight(0xcfe0f2, 0.85);
+rim.position.set(22, 10, 26);
+scene.add(rim);
+
+// the glow that makes light read THROUGH the grown ice
+const core = new THREE.PointLight(0xeaf6ff, 340, 38, 2);
+scene.add(core);
+const core2 = new THREE.PointLight(0xd8ecff, 150, 24, 2);
+scene.add(core2);
+
+/* ────────────────────────────────────────────────────────────────
+   3. ground: displaced snow with a mound under the structure
+   ──────────────────────────────────────────────────────────────── */
+const noise = new ImprovedNoise();
+function terrainH(x, z){
+  let h = 0, amp = 4.6, f = 0.020;
+  for (let o=0;o<6;o++){
+    h += noise.noise(x*f, z*f, 12.7+o*3.1) * amp;
+    amp *= 0.50; f *= 2.09;
+  }
+  // fine wind-scoured relief so the foreground snow isn't a blank sheet
+  h += noise.noise(x*0.30, z*0.30, 41.2)*0.34;
+  h += noise.noise(x*0.85, z*0.85, 77.9)*0.13;
+  const r = Math.hypot(x, z);
+  // broad mound the igloo sits on
+  const mound = 6.0 * Math.exp(-(r*r)/(2*24*24));
+  // flatten the pad
+  const pad = Math.exp(-(r*r)/(2*10*10));
+  h = h*(1-0.86*pad) + mound;
+  // real mountains beyond the plain
+  const far = Math.max(0, r-78);
+  h += far*0.30 + Math.max(0, noise.noise(x*0.010, z*0.010, 5.5))*far*0.62;
+  return h;
+}
+const groundGeo = new THREE.PlaneGeometry(440, 440, 440, 440);
+groundGeo.rotateX(-Math.PI/2);
+{
+  const p = groundGeo.attributes.position;
+  const col = [];
+  for (let i=0;i<p.count;i++){
+    const x = p.getX(i), z = p.getZ(i);
+    const y = terrainH(x,z);
+    p.setY(i, y);
+    const t = 0.74 + Math.min(0.26, Math.max(-0.22, y*0.022)) + (noise.noise(x*0.4,z*0.4,3.3))*0.10;
+    col.push(t*1.00, t*1.02, t*1.06);
+  }
+  groundGeo.setAttribute('color', new THREE.Float32BufferAttribute(col,3));
+  groundGeo.computeVertexNormals();
+}
+// a normal map gives the snow surface texture the vertex grid cannot resolve
+function snowNormalMap(size=512){
+  const n = new ImprovedNoise();
+  const hgt = new Float32Array(size*size);
+  for (let y=0;y<size;y++) for (let x=0;x<size;x++){
+    let v=0, amp=1.0, f=0.02;
+    for (let o=0;o<5;o++){ v += n.noise(x*f, y*f, 3.7+o*11.1)*amp; amp*=0.55; f*=2.17; }
+    hgt[y*size+x] = v;
+  }
+  const c = document.createElement('canvas'); c.width=c.height=size;
+  const g = c.getContext('2d');
+  const img = g.createImageData(size,size);
+  const S = 2.4;
+  for (let y=0;y<size;y++) for (let x=0;x<size;x++){
+    const xl = hgt[y*size + ((x-1+size)%size)], xr = hgt[y*size + ((x+1)%size)];
+    const yl = hgt[((y-1+size)%size)*size + x], yr = hgt[((y+1)%size)*size + x];
+    let nx = (xl-xr)*S, ny = (yl-yr)*S, nz = 1.0;
+    const l = Math.hypot(nx,ny,nz);
+    const i = (y*size+x)*4;
+    img.data[i]   = ((nx/l)*0.5+0.5)*255;
+    img.data[i+1] = ((ny/l)*0.5+0.5)*255;
+    img.data[i+2] = ((nz/l)*0.5+0.5)*255;
+    img.data[i+3] = 255;
+  }
+  g.putImageData(img,0,0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(26,26);
+  return t;
+}
+const groundMat = new THREE.MeshStandardMaterial({
+  color: 0xdae3eb, roughness: 0.95, metalness: 0.0, vertexColors: true,
+  envMapIntensity: 0.48,
+  normalMap: snowNormalMap(),
+  normalScale: new THREE.Vector2(0.55, 0.55)
+});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.receiveShadow = true;
+scene.add(ground);
+
+const PAD_Y = terrainH(0,0);
+
+/* ---- contact shadow (painted, always reads) ---- */
+{
+  const s = 512;
+  const c = document.createElement('canvas'); c.width=c.height=s;
+  const g = c.getContext('2d');
+  const rg = g.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  rg.addColorStop(0,'rgba(24,34,44,0.60)');
+  rg.addColorStop(0.42,'rgba(24,34,44,0.34)');
+  rg.addColorStop(0.75,'rgba(24,34,44,0.10)');
+  rg.addColorStop(1,'rgba(24,34,44,0)');
+  g.fillStyle = rg; g.fillRect(0,0,s,s);
+  const t = new THREE.CanvasTexture(c);
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(30,30),
+    new THREE.MeshBasicMaterial({ map:t, transparent:true, depthWrite:false, opacity:0.95, toneMapped:false })
+  );
+  m.rotation.x = -Math.PI/2;
+  m.position.set(1.4, PAD_Y + 0.06, 1.0);
+  m.scale.set(1.05, 1, 0.78);
+  m.renderOrder = 1;
+  scene.add(m);
+}
+
+/* ────────────────────────────────────────────────────────────────
+   4. materials for the grown ice
+   ──────────────────────────────────────────────────────────────── */
+function frostTexture(seed, size=256){
+  const c = document.createElement('canvas'); c.width=c.height=size;
+  const g = c.getContext('2d');
+  const img = g.createImageData(size,size);
+  const rnd = mulberry32(seed);
+  const n = new ImprovedNoise();
+  const off = rnd()*100;
+  for (let y=0;y<size;y++) for (let x=0;x<size;x++){
+    let v=0, amp=0.5, f=0.035;
+    for (let o=0;o<4;o++){ v += n.noise(x*f, y*f, off+o*7.3)*amp; amp*=0.5; f*=2.2; }
+    const b = Math.max(0, Math.min(255, (0.62 + v)*255));
+    const i = (y*size+x)*4;
+    img.data[i]=img.data[i+1]=img.data[i+2]=b; img.data[i+3]=255;
+  }
+  g.putImageData(img,0,0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+const frostA = frostTexture(101);
+const frostB = frostTexture(707);
+
+const iceMats = [];
+{
+  // Two families, exactly like the reference: some blocks are clear and
+  // let the grown interior read through; others are dense frozen frost
+  // that goes DARK against the sky. That contrast is the whole value range.
+  const specs = [
+    // clear ice — interior structure visible
+    { rough:0.13, trans:0.98, thick:1.1, tint:0xffffff, cc:0.70, env:1.5, map:frostA },
+    { rough:0.24, trans:0.94, thick:1.8, tint:0xf6fbff, cc:0.50, env:1.3, map:frostB },
+    { rough:0.36, trans:0.86, thick:2.6, tint:0xeaf3fa, cc:0.30, env:1.1, map:frostA },
+    // dense frost — dark, opaque, structural
+    { rough:0.74, trans:0.20, thick:4.2, tint:0x6d7a88, cc:0.07, env:0.34, map:frostB },
+    { rough:0.83, trans:0.10, thick:4.8, tint:0x515d69, cc:0.04, env:0.26, map:frostA },
+    { rough:0.66, trans:0.32, thick:3.6, tint:0x8593a1, cc:0.11, env:0.42, map:frostB }
+  ];
+  for (const s of specs){
+    const m = new THREE.MeshPhysicalMaterial({
+      color: s.tint,
+      roughness: s.rough,
+      metalness: 0.0,
+      transmission: s.trans,
+      thickness: s.thick,
+      ior: 1.31,
+      attenuationColor: new THREE.Color(0xa8c8e2),
+      attenuationDistance: 4.0,
+      clearcoat: s.cc,
+      clearcoatRoughness: 0.45,
+      roughnessMap: s.map,
+      envMapIntensity: s.env,
+      side: THREE.FrontSide
+    });
+    iceMats.push(m);
+  }
+}
+// index split so composition can choose clear vs dense deliberately
+const CLEAR = [0,1,2], DENSE = [3,4,5];
+
+// the shards: opaque, so they land in the transmission pass and read
+// THROUGH the shells instead of being hidden by them
+const shardMat = new THREE.MeshStandardMaterial({
+  color: 0xa9c6de,
+  roughness: 0.22,
+  metalness: 0.0,
+  emissive: 0x4c6d8c,
+  emissiveIntensity: 0.16,
+  envMapIntensity: 1.6,
+  vertexColors: false
+});
+
+/* ────────────────────────────────────────────────────────────────
+   5. block factory — container + grown interior
+   ──────────────────────────────────────────────────────────────── */
+const unitBox = new RoundedBoxGeometry(2,2,2,4,0.13);
+const unitCyl = (()=>{ const g = new THREE.CylinderGeometry(1,1,2,26,1,false); g.rotateX(Math.PI/2); return g; })();
+const unitCap = (()=>{ const g = new THREE.SphereGeometry(1,26,14,0,Math.PI*2,0,Math.PI/2); g.rotateX(Math.PI/2); return g; })();
+const unitGeos = [unitBox, unitCyl, unitCap];
+
+const shardGeo = new THREE.OctahedronGeometry(0.5, 0);
+
+const blocksGroup = new THREE.Group();
+scene.add(blocksGroup);
+
+const shardXforms = [];   // Matrix4 accumulated across every block
+const blockReport = [];
+
+const _m = new THREE.Matrix4();
+const _q = new THREE.Quaternion();
+const _up = new THREE.Vector3(0,0,1);
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _d = new THREE.Vector3(), _mid = new THREE.Vector3();
+
+let SEED_CURSOR = GLOBAL_SEED;
+function nextSeed(){ SEED_CURSOR = (SEED_CURSOR * 1664525 + 1013904223) >>> 0; return SEED_CURSOR; }
+
+function makeBlock(half, pos, quat, opts={}){
+  const seed = nextSeed();
+  const rnd = mulberry32(seed ^ 0x9e3779b9);
+  const kind = opts.kind !== undefined ? opts.kind : (rnd() < 0.72 ? 0 : (rnd() < 0.5 ? 1 : 2));
+
+  const fam = opts.family || (rnd() < 0.46 ? CLEAR : DENSE);
+  const mesh = new THREE.Mesh(unitGeos[kind], iceMats[fam[(rnd()*fam.length)|0]]);
+  mesh.position.copy(pos);
+  mesh.quaternion.copy(quat);
+  mesh.scale.copy(half);
+  mesh.updateMatrixWorld(true);
+  blocksGroup.add(mesh);
+
+  // lattice resolution follows the container proportions
+  const base = 13;
+  const mx = Math.max(half.x, half.y, half.z);
+  const dims = [
+    Math.max(7, Math.min(16, Math.round(base*half.x/mx))),
+    Math.max(7, Math.min(16, Math.round(base*half.y/mx))),
+    Math.max(7, Math.min(16, Math.round(base*half.z/mx)))
+  ];
+  const target = opts.target || 210;
+  const crystal = growCrystal(seed, kind, dims, target);
+
+  // shards along the growth graph, baked to world space
+  const M = mesh.matrixWorld;
+  const maxGen = crystal.nodes.reduce((m,n)=>Math.max(m,n.gen), 1);
+  for (const [ai, bi] of crystal.edges){
+    const na = crystal.nodes[ai], nb = crystal.nodes[bi];
+    _a.set(na.x, na.y, na.z).applyMatrix4(M);
+    _b.set(nb.x, nb.y, nb.z).applyMatrix4(M);
+    _d.subVectors(_b, _a);
+    const len = _d.length();
+    if (len < 1e-5) continue;
+    _d.multiplyScalar(1/len);
+    _mid.addVectors(_a,_b).multiplyScalar(0.5);
+    _q.setFromUnitVectors(_up, _d);
+    // taper: thick near the nucleus, needle-fine at the dendrite tips
+    const t = 1 - (nb.gen / (maxGen+1));
+    const th = (0.035 + 0.20*t*t) * Math.min(half.x, half.y, half.z);
+    _m.compose(_mid, _q, new THREE.Vector3(th, th, len*1.55));
+    shardXforms.push(_m.clone());
+  }
+
+  blockReport.push({
+    seed, kind, sig: crystal.sig, nodes: crystal.nodes.length, edges: crystal.edges.length,
+    nuclei: crystal.nuclei, habit: +crystal.habit.toFixed(3), basal: crystal.basal
+  });
+  return mesh;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   6. composition — igloo dome + doorway tunnel
+   ──────────────────────────────────────────────────────────────── */
+const R = 6.35;                       // dome radius
+const DOME_Y = 1.20;                  // vertical stretch — a dome, not a pile
+const T0 = performance.now();
+const layout = mulberry32(4242);
+// doorway azimuth is chosen so the tunnel presents to the camera's right
+// and leans toward the viewer, the way the reference frames it
+const DOOR_AZ = 1.50;
+const DOOR_HALF = 0.46;
+
+const domeCenter = new THREE.Vector3(0, PAD_Y - 0.35, 0);
+
+// base course: heavy slabs on the ground
+{
+  const n = 13;
+  for (let i=0;i<n;i++){
+    const az = (i/n)*Math.PI*2 + 0.11;
+    let dd = Math.atan2(Math.sin(az-DOOR_AZ), Math.cos(az-DOOR_AZ));
+    if (Math.abs(dd) < DOOR_HALF*1.15) continue;
+    const rr = R*0.985;
+    const w = (Math.PI*2*rr/n)*0.47*(0.88+layout()*0.26);
+    const h = 0.92*(0.9+layout()*0.24);
+    const t = 0.78;
+    const p = new THREE.Vector3(Math.cos(az)*(rr-t*0.5), PAD_Y + h*0.86, Math.sin(az)*(rr-t*0.5));
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+      (layout()-0.5)*0.10, -az + Math.PI/2, (layout()-0.5)*0.13, 'YXZ'
+    ));
+    makeBlock(new THREE.Vector3(w,h,t), p, q, { kind:0, target:170 });
+  }
+}
+
+// hemispherical courses
+const courses = [
+  { el: 0.20, t: 0.80, h: 1.02, gap: 0.46 },
+  { el: 0.52, t: 0.80, h: 1.02, gap: 0.44 },
+  { el: 0.84, t: 0.78, h: 0.98, gap: 0.42 },
+  { el: 1.14, t: 0.74, h: 0.92, gap: 0.40 },
+  { el: 1.40, t: 0.70, h: 0.86, gap: 0.40 }
+];
+for (let ci=0; ci<courses.length; ci++){
+  const c = courses[ci];
+  const ringR = R*Math.cos(c.el);
+  const n = Math.max(4, Math.round((Math.PI*2*ringR)/2.25));
+  const phase = layout()*Math.PI*2;
+  for (let i=0;i<n;i++){
+    const az = (i/n)*Math.PI*2 + phase + (layout()-0.5)*0.05;
+    if (ci < 2){
+      const dd = Math.atan2(Math.sin(az-DOOR_AZ), Math.cos(az-DOOR_AZ));
+      if (Math.abs(dd) < DOOR_HALF) continue;
+    }
+    if (layout() < 0.05) continue;              // a missing block here and there
+    const w = ((Math.PI*2*ringR)/n)*c.gap*(0.86+layout()*0.30);
+    const h = c.h*(0.86+layout()*0.30);
+    const t = c.t*(0.86+layout()*0.28);
+    const rad = R - t*0.5;
+    const y = Math.sin(c.el)*rad*DOME_Y;
+    const rr = Math.cos(c.el)*rad;
+    const p = new THREE.Vector3(Math.cos(az)*rr, domeCenter.y + y + 0.95, Math.sin(az)*rr);
+
+    // orient: local +Z outward along the (stretched) surface normal
+    const nrm = new THREE.Vector3(
+      Math.cos(az)*Math.cos(c.el)*DOME_Y, Math.sin(c.el), Math.sin(az)*Math.cos(c.el)*DOME_Y
+    ).normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1), nrm);
+    // spin the slab about its own normal + tumble it slightly
+    q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), (layout()-0.5)*0.55));
+    q.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(
+      (layout()-0.5)*0.22, (layout()-0.5)*0.22, (layout()-0.5)*0.18
+    )));
+
+    const kind = layout() < 0.88 ? 0 : 2;
+    makeBlock(new THREE.Vector3(w,h,t), p, q, { kind, target: 210 + (layout()*110|0) });
+  }
+}
+
+// crown blocks — flat caps, they must not spike above the dome silhouette
+for (let i=0;i<3;i++){
+  const az = layout()*Math.PI*2;
+  const rr = 0.85*layout();
+  const p = new THREE.Vector3(Math.cos(az)*rr, domeCenter.y + R*0.94*DOME_Y + 0.95, Math.sin(az)*rr);
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler((layout()-0.5)*0.16, layout()*Math.PI, (layout()-0.5)*0.16));
+  makeBlock(new THREE.Vector3(1.05+layout()*0.45, 0.92, 0.42), p, q, { kind:0, target:200 });
+}
+
+// doorway tunnel: arches marching outward along the door azimuth
+{
+  const dir = new THREE.Vector3(Math.cos(DOOR_AZ), 0, Math.sin(DOOR_AZ)).normalize();
+  const side = new THREE.Vector3(-dir.z, 0, dir.x);
+  const tunnelR = 2.25;
+  const stations = [R*0.96, R*0.96 + 1.45, R*0.96 + 2.85];
+  const UPV = new THREE.Vector3(0,1,0);
+  for (let s=0; s<stations.length; s++){
+    const dist = stations[s];
+    const shrink = 1 - s*0.055;
+    const segs = 9;
+    for (let a=0; a<=segs; a++){
+      const ang = (a/segs)*Math.PI;                 // 0..π over the arch
+      const rr = tunnelR*shrink;
+      const local = new THREE.Vector3()
+        .addScaledVector(side, Math.cos(ang)*rr)
+        .addScaledVector(UPV, Math.sin(ang)*rr);
+      const p = new THREE.Vector3().addScaledVector(dir, dist).add(local);
+      p.y += PAD_Y + 0.05;
+      if (p.y < PAD_Y + 0.20) continue;
+      const nrm = local.clone().normalize();
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1), nrm);
+      q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), Math.PI/2));
+      q.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,(layout()-0.5)*0.20)));
+      const w = 0.80*(0.88+layout()*0.26), h = 0.78*(0.88+layout()*0.26), t = 0.66;
+      makeBlock(new THREE.Vector3(w,h,t), p, q, { kind:0, target:150 });
+    }
+  }
+  // the mouth reads as a void, not as more ice
+  const mouth = new THREE.Mesh(
+    new THREE.CircleGeometry(tunnelR*0.80, 28, 0, Math.PI),
+    new THREE.MeshBasicMaterial({ color:0x1d2833, side:THREE.DoubleSide, fog:true, toneMapped:false })
+  );
+  mouth.position.copy(new THREE.Vector3().addScaledVector(dir, stations[2]+0.30));
+  mouth.position.y = PAD_Y + 0.05;
+  mouth.lookAt(mouth.position.clone().add(dir));
+  scene.add(mouth);
+
+  core.position.set(0, PAD_Y + 2.4, 0);
+  core2.position.copy(new THREE.Vector3().addScaledVector(dir, R*0.65));
+  core2.position.y = PAD_Y + 1.5;
+}
+
+// dark interior so the doorway and the joints read as a real void
+{
+  const interior = new THREE.Mesh(
+    new THREE.SphereGeometry(R-1.45, 30, 20, 0, Math.PI*2, 0, Math.PI*0.52),
+    new THREE.MeshStandardMaterial({
+      color:0xd8e8f6, roughness:0.95, metalness:0, side:THREE.BackSide,
+      emissive:0x7ba2c4, emissiveIntensity:0.28
+    })
+  );
+  interior.position.set(0, domeCenter.y + 0.95, 0);
+  interior.scale.y = DOME_Y;
+  scene.add(interior);
+}
+
+// shadow proxy: casts a real soft shadow without the transmissive shells
+// blackening the ground
+{
+  const proxy = new THREE.Mesh(
+    new THREE.SphereGeometry(R*0.98, 20, 12, 0, Math.PI*2, 0, Math.PI*0.5),
+    new THREE.MeshBasicMaterial({ colorWrite:false, depthWrite:false })
+  );
+  proxy.position.set(0, domeCenter.y + 0.95, 0);
+  proxy.scale.y = DOME_Y;
+  proxy.castShadow = true;
+  proxy.renderOrder = -1;
+  scene.add(proxy);
+}
+
+const BUILD_MS = performance.now() - T0;
+
+/* ---- bake every shard into ONE InstancedMesh ---- */
+const shards = new THREE.InstancedMesh(shardGeo, shardMat, shardXforms.length);
+for (let i=0;i<shardXforms.length;i++) shards.setMatrixAt(i, shardXforms[i]);
+shards.instanceMatrix.needsUpdate = true;
+shards.frustumCulled = false;
+scene.add(shards);
+
+/* ────────────────────────────────────────────────────────────────
+   7. framing — subject ≈45% of frame width, anchored lower third
+   ──────────────────────────────────────────────────────────────── */
+const SUBJECT = new THREE.Box3();
+blocksGroup.updateMatrixWorld(true);
+SUBJECT.setFromObject(blocksGroup);
+const subCenter = SUBJECT.getCenter(new THREE.Vector3());
+const subSize   = SUBJECT.getSize(new THREE.Vector3());
+const subRadius = Math.max(subSize.x, subSize.z)*0.5;
+
+const FRAME = {
+  widthFrac: 0.455,     // subject width as a fraction of the frame
+  anchorY:   0.605,     // subject centre, 0 = top of frame, 1 = bottom
+  azimuth:   2.30,
+  height:    0.34       // camera height above subject centre, in radii
+};
+
+const _corners = (()=>{
+  const b = SUBJECT, out = [];
+  for (const x of [b.min.x,b.max.x]) for (const y of [b.min.y,b.max.y]) for (const z of [b.min.z,b.max.z])
+    out.push(new THREE.Vector3(x,y,z));
+  return out;
+})();
+const _pv = new THREE.Vector3();
+function measuredWidthFrac(){
+  let minX=1e9, maxX=-1e9;
+  for (const c of _corners){
+    _pv.copy(c).project(camera);
+    if (_pv.x<minX) minX=_pv.x;
+    if (_pv.x>maxX) maxX=_pv.x;
+  }
+  return (maxX-minX)/2;
+}
+function placeCamera(dist, t){
+  const vHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov*0.5));
+  const az = FRAME.azimuth + t*0.62;
+  const camY = subCenter.y + subRadius*(FRAME.height + t*0.40);
+  camera.position.set(
+    subCenter.x + Math.cos(az)*dist,
+    camY,
+    subCenter.z + Math.sin(az)*dist
+  );
+  // push the subject into the lower third by aiming above it
+  const yOffsetNDC = (0.5 - FRAME.anchorY)*2;   // +ve = subject moves down
+  const look = subCenter.clone();
+  look.y += -yOffsetNDC * vHalf * dist;
+  camera.lookAt(look);
+  camera.updateMatrixWorld(true);
+}
+// closed loop: place, MEASURE the projected width, correct. Framing is
+// never assumed — it converges on the number.
+let _dist = subRadius*4.0;
+function fitCamera(t){
+  const target = FRAME.widthFrac*(1 - t*0.22);
+  for (let it=0; it<4; it++){
+    placeCamera(_dist, t);
+    const w = measuredWidthFrac();
+    if (!(w > 1e-4)) break;
+    _dist = THREE.MathUtils.clamp(_dist * (w/target), subRadius*1.4, subRadius*30);
+  }
+  placeCamera(_dist, t);
+}
+
+/* metrics so the framing claim is measured, never guessed */
+window.__frameMetrics = function(){
+  const pts = [];
+  const b = SUBJECT;
+  for (const x of [b.min.x,b.max.x]) for (const y of [b.min.y,b.max.y]) for (const z of [b.min.z,b.max.z])
+    pts.push(new THREE.Vector3(x,y,z));
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for (const p of pts){
+    const v = p.clone().project(camera);
+    minX=Math.min(minX,v.x); maxX=Math.max(maxX,v.x);
+    minY=Math.min(minY,v.y); maxY=Math.max(maxY,v.y);
+  }
+  const c = subCenter.clone().project(camera);
+  return {
+    widthFrac: (maxX-minX)/2,
+    heightFrac: (maxY-minY)/2,
+    centerScreenY: (1 - c.y)/2,
+    bottomScreenY: (1 - minY)/2,
+    blocks: blockReport.length,
+    shards: shardXforms.length,
+    buildMs: +BUILD_MS.toFixed(1),
+    firstFrameMs: window.__firstFrameMs || null
+  };
+};
+window.__growthReport = ()=>blockReport;
+window.__uniqueness = function(){
+  const sigs = new Set(blockReport.map(b=>b.sig));
+  const nodeCounts = new Set(blockReport.map(b=>b.nodes));
+  return {
+    blocks: blockReport.length,
+    distinctSignatures: sigs.size,
+    distinctNodeCounts: nodeCounts.size,
+    minNodes: Math.min(...blockReport.map(b=>b.nodes)),
+    maxNodes: Math.max(...blockReport.map(b=>b.nodes)),
+    kinds: blockReport.reduce((a,b)=>(a[b.kind]=(a[b.kind]||0)+1,a),{})
+  };
+};
+
+/* ────────────────────────────────────────────────────────────────
+   8. numeral / hairline overlay, anchored to the structure
+   ──────────────────────────────────────────────────────────────── */
+const NET_ANCHORS = [
+  { p:new THREE.Vector3(-3.2, PAD_Y+5.2,  4.1), n:'31' },
+  { p:new THREE.Vector3( 0.3, PAD_Y+6.7,  4.7), n:'27' },
+  { p:new THREE.Vector3( 3.7, PAD_Y+5.6,  3.0), n:'44' },
+  { p:new THREE.Vector3(-2.3, PAD_Y+2.4,  5.4), n:'19' },
+  { p:new THREE.Vector3( 1.8, PAD_Y+2.7,  5.2), n:'36' }
+];
+const NET_LINKS = [[0,1],[1,2],[0,3],[3,4],[4,1],[4,2]];
+const svg = document.getElementById('net');
+const svgNS = 'http://www.w3.org/2000/svg';
+const netLines = NET_LINKS.map(()=>{ const l=document.createElementNS(svgNS,'line'); svg.appendChild(l); return l; });
+const netDots = [], netTexts = [];
+for (const a of NET_ANCHORS){
+  const c = document.createElementNS(svgNS,'circle'); c.setAttribute('r','1.6'); svg.appendChild(c); netDots.push(c);
+  const t = document.createElementNS(svgNS,'text'); t.textContent = a.n; svg.appendChild(t); netTexts.push(t);
+}
+const _proj = new THREE.Vector3();
+function updateNet(){
+  const w = innerWidth, h = innerHeight;
+  const sp = NET_ANCHORS.map(a=>{
+    _proj.copy(a.p).project(camera);
+    return { x:(_proj.x*0.5+0.5)*w, y:(1-(_proj.y*0.5+0.5))*h, vis:_proj.z < 1 };
+  });
+  NET_LINKS.forEach((lk,i)=>{
+    const A=sp[lk[0]], B=sp[lk[1]];
+    netLines[i].setAttribute('x1',A.x); netLines[i].setAttribute('y1',A.y);
+    netLines[i].setAttribute('x2',B.x); netLines[i].setAttribute('y2',B.y);
+  });
+  sp.forEach((p,i)=>{
+    netDots[i].setAttribute('cx',p.x); netDots[i].setAttribute('cy',p.y);
+    netTexts[i].setAttribute('x', p.x - 26); netTexts[i].setAttribute('y', p.y + 4);
+  });
+}
+
+/* ────────────────────────────────────────────────────────────────
+   9. loop
+   ──────────────────────────────────────────────────────────────── */
+let scrollT = 0, scrollTarget = 0;
+function onScroll(){
+  const max = document.body.scrollHeight - innerHeight;
+  scrollTarget = max > 0 ? Math.min(1, Math.max(0, scrollY/max)) : 0;
+}
+addEventListener('scroll', onScroll, { passive:true });
+onScroll();
+
+function resize(){
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight, false);
+  svg.setAttribute('viewBox', `0 0 ${innerWidth} ${innerHeight}`);
+}
+addEventListener('resize', resize);
+resize();
+
+const ui = document.getElementById('ui');
+function tick(){
+  scrollT += (scrollTarget - scrollT)*0.09;
+  fitCamera(scrollT);
+  updateNet();
+  ui.style.opacity = String(1 - Math.min(1, scrollT*1.5));
+  renderer.render(scene, camera);
+  if (!window.__firstFrameMs) window.__firstFrameMs = +(performance.now()).toFixed(1);
+  requestAnimationFrame(tick);
+}
+
+fitCamera(0);
+tick();
+
+const u = window.__uniqueness();
+document.getElementById('seedval').textContent = String(GLOBAL_SEED);
+document.getElementById('statline').textContent =
+  `${u.blocks} GROWN BLOCKS / ${u.distinctSignatures} DISTINCT LATTICES / ${shardXforms.length} SHARDS`;
+
+requestAnimationFrame(()=>{
+  const b = document.getElementById('boot');
+  b.classList.add('gone');
+  setTimeout(()=>b.remove(), 700);
+  window.__ready = true;
+});
+</script>
+</body>
+</html>

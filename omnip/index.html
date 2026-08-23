@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OmniP — omnipresent capture mesh</title>
+<meta name="description" content="Many-to-one always-on audio capture across every platform, over Tailscale. Verified design brief.">
+<style>
+:root{
+  --bg:#07080a; --panel:#0e1014; --panel2:#12151b; --line:#1e232c;
+  --ink:#e8ecf2; --dim:#8b95a5; --faint:#5a6472;
+  --ok:#3ddc97; --bad:#ff5c68; --warn:#ffc857; --acc:#7aa2ff;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--ink);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+  padding:clamp(18px,5vw,56px) clamp(14px,4vw,24px);
+  overflow-x:hidden;
+}
+.wrap{max-width:820px;margin:0 auto}
+header{text-align:center;margin-bottom:clamp(28px,6vw,52px)}
+.kicker{
+  font:600 11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:14px
+}
+h1{
+  font-size:clamp(30px,8vw,54px);line-height:1.04;letter-spacing:-.03em;font-weight:700;
+  background:linear-gradient(180deg,#fff,#8fa3c0);-webkit-background-clip:text;
+  background-clip:text;color:transparent;margin-bottom:12px
+}
+.sub{color:var(--dim);font-size:clamp(14px,3.4vw,17px);max-width:52ch;margin:0 auto}
+h2{
+  font-size:clamp(19px,4.6vw,25px);letter-spacing:-.02em;font-weight:650;
+  margin:clamp(34px,7vw,52px) 0 14px;padding-bottom:9px;border-bottom:1px solid var(--line)
+}
+h3{font-size:15px;font-weight:650;margin:22px 0 8px;color:var(--ink)}
+p{margin:0 0 13px;color:#c3ccd9}
+strong{color:var(--ink);font-weight:650}
+em{color:var(--dim);font-style:italic}
+a{color:var(--acc);text-decoration:none;border-bottom:1px solid #2a3d63}
+a:hover{border-bottom-color:var(--acc)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:clamp(16px,4vw,24px);margin:16px 0}
+.verdict{border-color:#4a1f26;background:linear-gradient(180deg,#170e11,#0e1014)}
+.verdict .tag{color:var(--bad)}
+.tag{
+  display:inline-block;font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;
+  padding:5px 9px;border:1px solid currentColor;border-radius:5px;margin-bottom:12px
+}
+.tag.ok{color:var(--ok)} .tag.warn{color:var(--warn)} .tag.acc{color:var(--acc)}
+blockquote{
+  border-left:2px solid #2b3546;padding:2px 0 2px 15px;margin:12px 0;
+  color:var(--dim);font-size:14.5px
+}
+blockquote cite{display:block;margin-top:6px;font:400 11px/1.5 var(--mono);color:var(--faint);font-style:normal}
+code{font:13px/1.5 var(--mono);background:#191d25;border:1px solid #232a35;border-radius:4px;padding:1.5px 5px;color:#c7d4e8}
+pre{
+  background:#0a0c10;border:1px solid var(--line);border-radius:10px;
+  padding:14px;margin:12px 0;overflow-x:auto;-webkit-overflow-scrolling:touch
+}
+pre code{background:none;border:none;padding:0;white-space:pre;font-size:12.5px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0;border-radius:10px;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:480px;font-size:14px}
+th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--panel2);font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+ul,ol{margin:0 0 13px;padding-left:20px;color:#c3ccd9}
+li{margin-bottom:7px}
+li::marker{color:var(--faint)}
+.flow{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  font:12px/1 var(--mono);color:var(--dim);margin:14px 0
+}
+.flow span{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;white-space:nowrap}
+.flow b{color:var(--faint);font-weight:400}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:16px 0}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+.stat .n{font:700 21px/1 var(--mono);color:var(--ok);letter-spacing:-.02em}
+.stat .l{font-size:12.5px;color:var(--dim);margin-top:6px;line-height:1.45}
+.rule{color:var(--warn)}
+footer{
+  margin-top:clamp(40px,8vw,68px);padding-top:22px;border-top:1px solid var(--line);
+  text-align:center;font:11.5px/1.7 var(--mono);color:var(--faint)
+}
+@media (max-width:520px){ blockquote{font-size:14px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Design brief · verified 2026-08-16</div>
+  <h1>OmniP</h1>
+  <p class="sub">Every device hears you. One hub remembers. A dead battery costs nothing.</p>
+</header>
+
+<div class="card verdict">
+  <span class="tag">Verdict — false</span>
+  <h3 style="margin-top:0">Snapcast runs the opposite direction</h3>
+  <p>The claim under test: <em>"run a snapclient on each machine to capture its audio and stream it to the central server."</em> That is inverted. <code>snapclient</code> is a <strong>playback</strong> client — it decodes and plays, it never captures.</p>
+  <blockquote>
+    "Audio is captured by the server and routed to the connected clients. Several players can feed audio to the server in parallel and clients can be grouped to play the same audio stream."
+    <cite>snapcast README, line 17</cite>
+  </blockquote>
+  <blockquote>
+    "Knowing the server's time, the chunk is <strong>played out</strong> using a system dependend low level audio API (e.g. ALSA) at the appropriate time."
+    <cite>snapcast README, line 41</cite>
+  </blockquote>
+  <p>Snapcast is <strong>one source in, many speakers out</strong> — multiroom sync. OmniP needs <strong>many capturers in, one hub out</strong>. Installing snapclient on the Mac, the PC and the phone produces three devices playing the same audio out their speakers. Zero capture.</p>
+  <p><strong>The steelman, stated honestly:</strong> snapserver does accept a <code>tcp://</code> source, so remote machines <em>can</em> push PCM in. But it is one hand-configured port per sender with no discovery, and the <code>meta</code> combiner that sounds like a mixer is documented as <em>"plays audio from the active source with the highest priority"</em> — a failover selector. It would silently discard the redundant capture that is the entire point.</p>
+  <p style="margin-bottom:0"><strong>Keep Snapcast for the other leg.</strong> It is genuinely good at fanning one stream out to speakers everywhere — the <em>listen from anywhere</em> half of OmniP. It just cannot be the capture half.</p>
+</div>
+
+<h2>The requirement, in his words</h2>
+<blockquote style="border-left-color:#3a4a68">
+  "Right now my context is getting fragmented because when one device dies that's connected to something enabling the transcription or audio injection, then there's a gap. It's really frustrating… The fallback shouldn't be 'grab another device that's charged.' The audio should be coming from everywhere. <strong>Omnipresence. And omni-awareness.</strong>"
+  <cite>2026-08-16, 17:48–17:49</cite>
+</blockquote>
+<p>Two constraints ride alongside it: it must work across every platform, and <strong>desktop audio must not be required</strong> — <em>"I want the desktop audio to be me, but it should not be required."</em></p>
+
+<h2>Per-platform capture</h2>
+<p>There is no single cross-platform capture API. The capture agent is per-platform; only the transport is shared. Anything claiming otherwise is describing a product that doesn't exist.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Platform</th><th>Mechanism</th><th>Reality</th></tr></thead>
+<tbody>
+<tr><td><strong>macOS</strong></td><td>ScreenCaptureKit <code>capturesAudio</code> (13.0+), or BlackHole 2ch</td><td class="rule">Both available. BlackHole already installed.</td></tr>
+<tr><td><strong>Windows</strong></td><td>WASAPI loopback</td><td class="rule">⚠ ffmpeg has <em>no</em> native WASAPI loopback input. <code>-f dshow</code> enumerates DirectShow sources, not render endpoints. Needs a small capture binary.</td></tr>
+<tr><td><strong>Linux</strong></td><td>PipeWire / Pulse <code>.monitor</code> source</td><td>Straightforward. Known but unverified here.</td></tr>
+<tr><td><strong>Android</strong></td><td><code>AudioPlaybackCapture</code> (API 29+)</td><td class="rule">⚠ Requires a MediaProjection consent tap <em>per session</em>. Use <code>AudioRecord</code> mic capture in a foreground service instead — one grant, ever.</td></tr>
+<tr><td><strong>iOS</strong></td><td>ReplayKit broadcast extension</td><td class="rule">⚠ <strong>No system-audio capture exists.</strong> <code>RPSampleBufferType.audioApp</code> is <em>app</em> audio only — AVPlayer, Safari video and Music are all uncapturable. Broadcast must be started by hand from Control Center.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>iOS is a real hole, not a skipped step.</strong> The honest version: the iPhone can be a <em>listener</em>, not a <em>capturer</em>, without a signed app built for the purpose. The practical always-on iOS node is microphone capture from an app with the background-audio mode — it hears the room, runs unattended, needs no per-session tap.</p>
+
+<h2>Transport — WebSocket carrying Opus, over Tailscale</h2>
+<p>Evaluated against the constraint that this must be free, self-hosted, always-on, and survive a node dying mid-sentence.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Candidate</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td><strong>WebSocket + Opus</strong></td><td class="rule">✅ <strong>Recommended.</strong> First-party client on every platform. Many-to-one is its default shape — one port, N connections, dynamic join. TCP rides Tailscale with zero NAT work.</td></tr>
+<tr><td>SRT</td><td>Strong runner-up — reconnect and ARQ built in, already compiled into his ffmpeg. Weak on mobile.</td></tr>
+<tr><td>RTP</td><td>Port-or-SSRC per sender, no reconnect, UDP loss degrades STT.</td></tr>
+<tr><td>LiveKit</td><td>Apache-2.0 and self-hostable, but a conferencing SFU with recording bolted on. Heavy for one-way audio.</td></tr>
+<tr><td>Raw PCM over TCP</td><td>256 kbps/node vs ~24 kbps for Opus, for zero benefit.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Each message is a header plus one Opus packet. The header carries <code>node_id</code>, <code>seq</code>, <code>t_capture</code>, and <code>capture_source</code>. <strong>The timestamp is not decoration — it is the entire basis of dedupe.</strong></p>
+<p>Reconnect is where the whole requirement lives: a dying node isn't a crash, it's a reconnect loop with a monotonic sequence number, so the hub knows exactly what it missed.</p>
+
+<h2>The hub</h2>
+<div class="flow">
+  <span>N nodes</span><b>→</b><span>one listener</span><b>→</b><span>per-node archive</span><b>→</b><span>per-node STT</span><b>→</b><span>align</span><b>→</b><span>merge + vote</span>
+</div>
+<p><strong>Never mix at the audio level for the archive.</strong> Mixing destroys attribution and makes dedupe impossible. Mix only for live monitoring. Each node gets its own segmented Opus on disk plus a JSONL index.</p>
+
+<h3>Auto room-grouping, no config</h3>
+<p>A rolling energy-envelope fingerprint per node, cross-correlated pairwise. High correlation at small constant lag means same acoustic space. It detects co-presence automatically — which matters because these devices move with him.</p>
+
+<h3>Dedupe — merge, never drop</h3>
+<ol>
+<li><strong>Independent STT per node.</strong> Never transcribe a mix. N streams, N transcript tracks.</li>
+<li><strong>Align</strong> same-room segments on the common clock, ±1.5s jitter window.</li>
+<li><strong>Score</strong> token-set similarity over the overlap. Above threshold means the same utterance heard twice.</li>
+<li><strong>Merge</strong> into one canonical utterance carrying <code>heard_by: [node_a, node_b, …]</code>, each node's raw text and confidence retained. Canonical text by word-level vote across all N — never by taking the highest-confidence transcript wholesale.</li>
+</ol>
+
+<div class="card">
+  <span class="tag ok">The part nobody mentions</span>
+  <p style="margin-bottom:0"><strong>Redundancy is an accuracy win, not just a reliability win.</strong> Two microphones voting produce a better transcript than either alone. You are not paying a cost for the overlap — you are buying error-rate reduction with it.</p>
+</div>
+
+<h3>Why this closes the actual gap</h3>
+<p>Because the merged timeline carries <code>heard_by</code>, a node dying produces no discontinuity — the utterance survives from the other node, and downstream context sees unbroken speech. A real gap exists only when <code>heard_by</code> reaches <strong>zero</strong>, and that is now a precise detectable event rather than a silence discovered hours later.</p>
+
+<h2>Coverage watchdog</h2>
+<p>Continuously tracks how many nodes currently hear him.</p>
+<ul>
+<li>Runs on its own schedule, never on a prompt.</li>
+<li>Announces <strong>only on state change</strong> — the transition to <code>coverage == 1</code> is the pre-failure warning: <em>you are now one device away from a gap.</em> Narrating every healthy tick trains him to ignore it, which is how the real alarm gets missed.</li>
+<li>Asserts on <strong>artifacts</strong>: per-node last-audio-frame timestamp, battery percentage, segment file mtime. Never "the process is up."</li>
+</ul>
+<p>Battery telemetry belongs <em>inside</em> this watchdog, not beside it. The described failure is substantially a charge-state problem, so charge state is a first-class mesh signal.</p>
+
+<h2>Machine state — probed, not assumed</h2>
+<div class="grid">
+  <div class="stat"><div class="n">8.1.2</div><div class="l">ffmpeg at <code>/opt/homebrew/bin/ffmpeg</code>, built with <code>--enable-libopus</code></div></div>
+  <div class="stat"><div class="n">present</div><div class="l">BlackHole2ch.driver in <code>/Library/Audio/Plug-Ins/HAL/</code></div></div>
+  <div class="stat"><div class="n">srt · rtp</div><div class="l">Both protocols compiled in</div></div>
+  <div class="stat"><div class="n">installed</div><div class="l">Tailscale at <code>/opt/homebrew/bin/tailscale</code></div></div>
+</div>
+<p>ffmpeg enumerates seven audio devices: <code>ZoomAudioDevice</code>, <code>BlackHole 2ch</code>, <code>Phound Audio Device</code>, <code>out</code>, <code>Jump Desktop Microphone</code>, <code>Jump Desktop Audio</code>, <code>in</code>.</p>
+
+<h2>First step</h2>
+<p>The M4 is <strong>the hub</strong>, not a required capture source — which is exactly the constraint that desktop audio be him, not a dependency.</p>
+<ol>
+<li>Stand up the hub listener on the M4's tailnet address, speaking the frame format above, writing per-node segmented archives plus a JSONL index.</li>
+<li>Make the M4 the first capture node, to close the loop end-to-end with one node before a second device exists:</li>
+</ol>
+<pre><code>ffmpeg -f avfoundation -i ":1" -ac 1 -ar 16000 \
+       -c:a libopus -b:a 24k -f ogg &lt;hub-url&gt;</code></pre>
+<p><code>:1</code> is BlackHole — routed desktop audio. Room audio is <code>:6</code> (<code>in</code>), which raises the open blocker below.</p>
+<p><strong>Second node is the phone</strong>, mic-capture path — because that is the node that proves the design. Mobile, moves with him, battery-limited. The exact failure he described.</p>
+
+<div class="card">
+  <span class="tag warn">Open blocker</span>
+  <p style="margin-bottom:0">The M4 is a Mac mini with <strong>no built-in microphone</strong>. ffmpeg does enumerate an <code>in</code> device at index 6, but what physical input backs it is unverified. That needs eyes on the hardware — it determines whether the M4 can be a room-capture node at all, or is hub-only.</p>
+</div>
+
+<h2>Status</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>Claim</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>snapclient is playback, not capture</td><td style="color:var(--ok)">verified — quoted from fetched README</td></tr>
+<tr><td>snapserver ingest source list</td><td style="color:var(--ok)">verified — fetched configuration.md</td></tr>
+<tr><td>iOS has no system-audio capture</td><td style="color:var(--ok)">verified — Apple RPSampleBufferType docs</td></tr>
+<tr><td>Android needs a consent tap per projection</td><td style="color:var(--ok)">verified — developer.android.com</td></tr>
+<tr><td>ffmpeg / BlackHole / Tailscale on this machine</td><td style="color:var(--ok)">verified — probed</td></tr>
+<tr><td>WASAPI loopback semantics</td><td style="color:var(--warn)">known, page not fetched</td></tr>
+<tr><td>Linux PipeWire monitor path</td><td style="color:var(--warn)">known, unverified</td></tr>
+<tr><td>The mesh itself</td><td style="color:var(--faint)">designed, not built</td></tr>
+</tbody>
+</table>
+</div>
+
+<footer>
+  hitthe.link/omnip · design brief, nothing installed<br>
+  Snapcast direction verified against badaix/snapcast · 2026-08-16
+</footer>
+
+</div>
+</body>
+</html>

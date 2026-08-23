@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Xen — Listen</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    color: #00ff88;
+    font-family: monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  #dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #222;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  #dot.live { background: #00ff88; box-shadow: 0 0 12px #00ff88; animation: pulse 1.4s infinite; }
+  #dot.speaking { background: #fff; box-shadow: 0 0 16px #fff; animation: pulse 0.6s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+  #status { font-size: 0.8rem; opacity: 0.6; letter-spacing: 0.1em; text-align: center; }
+  #arm-btn {
+    display: none;
+    padding: 16px 32px;
+    border: 1px solid #00ff88;
+    border-radius: 4px;
+    color: #00ff88;
+    font-family: monospace;
+    font-size: 1rem;
+    background: transparent;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div id="dot"></div>
+<div id="status">tap to arm</div>
+<button id="arm-btn">TAP TO ARM</button>
+<script>
+  
+  const SSE_URL = 'https://xen.xlrd.org/events';
+
+  const dot = document.getElementById('dot');
+  const status = document.getElementById('status');
+
+  let ctx, armed = false, speaking = false;
+  const queue = [];
+
+  async function arm() {
+    if (armed) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') await ctx.resume();
+    armed = true;
+    connect();
+  }
+
+  function connect() {
+    const es = new EventSource(SSE_URL);
+    es.onopen = () => { dot.className = 'live'; status.textContent = 'Xen live'; };
+    es.onmessage = (e) => {
+      try {
+        const d = JSON.parse(e.data);
+        if (d.type === 'xen-out' && d.text) enqueue(d.text);
+        if (d.type === 'xen-status') status.textContent = d.text || '';
+      } catch(_) {}
+    };
+    es.onerror = () => { dot.className = ''; status.textContent = 'reconnecting…'; setTimeout(connect, 3000); };
+  }
+
+  function enqueue(text) { queue.push(text); if (!speaking) drain(); }
+
+  
+    if (!queue.length) { speaking = false; dot.className = 'live'; return; }
+    speaking = true;
+    const text = queue.shift();
+    dot.className = 'speaking';
+    status.textContent = text;
+    try {
+      const res = await fetch(TTS + '/api/tts?text=' + encodeURIComponent(text));
+      if (!res.ok) throw new Error(res.status);
+      const buf = await res.arrayBuffer();
+      const decoded = await ctx.decodeAudioData(buf);
+      const src = ctx.createBufferSource();
+      src.buffer = decoded;
+      src.connect(ctx.destination);
+      src.onended = drain;
+      src.start(0);
+    } catch(e) { drain(); }
+  }
+
+  // Auto-arm on any gesture
+  document.addEventListener('click', arm, { once: true });
+  document.addEventListener('touchstart', arm, { once: true });
+
+  // Try auto-arm immediately (works if page already had interaction)
+  arm().catch(() => { status.textContent = 'tap to arm'; });
+</script>
+</body>
+</html>

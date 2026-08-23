@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>xt/16a — igloo standard, candidate A</title>
+<style>
+  :root{
+    --ui:#f2f5f8;
+    --mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  html{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0;height:0;display:none}
+  body{
+    background:#0b0e11;
+    color:var(--ui);
+    font-family:var(--mono);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  /* scroll runway — canvas is fixed, page scrolls behind it */
+  #runway{height:320vh}
+  #gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
+
+  /* ---------- overlays ---------- */
+  .layer{position:fixed;inset:0;z-index:2;pointer-events:none}
+
+  /* film grain + vignette, very low amplitude */
+  #grain{
+    z-index:3;
+    opacity:.055;
+    mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+    background-size:160px 160px;
+  }
+  #vig{
+    z-index:3;
+    background:
+      radial-gradient(115% 88% at 50% 46%, rgba(0,0,0,0) 30%, rgba(6,10,14,.34) 72%, rgba(3,6,9,.78) 100%);
+  }
+
+  /* ---------- UI type ---------- */
+  .ui{position:fixed;z-index:6;pointer-events:none;color:var(--ui)}
+
+  #tl{top:34px;left:38px}
+  .wordmark{
+    font-weight:800;
+    font-size:40px;
+    letter-spacing:-.5px;
+    line-height:.9;
+    text-shadow:0 1px 22px rgba(10,16,22,.45);
+  }
+  .wordmark i{font-style:normal;opacity:.45;font-weight:300;margin:0 1px}
+  .meta{
+    margin-top:16px;
+    font-size:11.5px;
+    line-height:1.7;
+    letter-spacing:.06em;
+    opacity:.86;
+    text-shadow:0 1px 12px rgba(10,16,22,.5);
+  }
+
+  #tr{top:36px;right:38px;text-align:right;max-width:280px}
+  .tag{font-size:11.5px;letter-spacing:.14em;opacity:.85;margin-bottom:12px}
+  .manifesto{
+    font-size:11.5px;
+    line-height:1.72;
+    letter-spacing:.03em;
+    opacity:.9;
+    text-shadow:0 1px 12px rgba(10,16,22,.5);
+  }
+
+  #bl{bottom:38px;left:38px}
+  .scroll{
+    font-size:11.5px;line-height:1.7;letter-spacing:.06em;opacity:.9;
+    text-shadow:0 1px 12px rgba(10,16,22,.5);
+  }
+  .scroll .car{display:inline-block;width:7px;height:7px;border-left:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(-45deg);margin-left:8px;margin-bottom:2px;opacity:.7;animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:rotate(-45deg) translate(0,0)}50%{transform:rotate(-45deg) translate(-3px,3px)}}
+  #snd{
+    pointer-events:auto;
+    margin-top:22px;display:flex;align-items:center;gap:9px;
+    background:none;border:0;color:inherit;font:inherit;font-size:11.5px;letter-spacing:.06em;
+    cursor:pointer;opacity:.88;padding:0;
+  }
+  #snd:hover{opacity:1}
+  #snd svg{width:14px;height:14px;display:block}
+
+  #br{bottom:38px;right:38px;text-align:right;font-size:10.5px;letter-spacing:.12em;opacity:.5}
+
+  /* ---------- technical annotation over the dome ---------- */
+  #tech{
+    position:fixed;z-index:5;pointer-events:none;
+    left:31.5%;top:35%;width:31%;height:27%;
+    opacity:.62;
+  }
+  #tech svg{width:100%;height:100%;overflow:visible}
+  #tech text{
+    font-family:var(--mono);font-size:9.2px;letter-spacing:.1em;
+    fill:#ffffff;paint-order:stroke;stroke:rgba(12,18,24,.35);stroke-width:2.2px;
+  }
+  #tech .ln{fill:none;stroke:#ffffff;stroke-width:.75;opacity:.62}
+  #tech .nd{fill:none;stroke:#ffffff;stroke-width:.75;opacity:.8}
+
+  /* ---------- loader ---------- */
+  #load{
+    position:fixed;inset:0;z-index:20;background:#0d1116;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;letter-spacing:.32em;opacity:1;
+    transition:opacity .9s ease .12s;
+  }
+  #load.off{opacity:0;pointer-events:none}
+
+  @media (max-width:760px){
+    #tl{top:22px;left:20px} #tr{top:24px;right:20px;max-width:190px}
+    #bl{bottom:24px;left:20px} #br{display:none}
+    .wordmark{font-size:28px}
+    #tech{left:24%;width:52%;top:38%;height:24%}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+
+<div class="layer" id="vig"></div>
+<div class="layer" id="grain"></div>
+
+<div id="tech" aria-hidden="true">
+  <svg viewBox="0 0 300 210" preserveAspectRatio="xMidYMid meet">
+    <polyline class="ln" points="34,58 118,88 196,44 232,10 150,124 62,150 34,58"/>
+    <polyline class="ln" points="196,44 244,116 150,124"/>
+    <g class="nd">
+      <path d="M34,54v8M30,58h8"/>
+      <path d="M118,84v8M114,88h8"/>
+      <path d="M196,40v8M192,44h8"/>
+      <path d="M232,6v8M228,10h8"/>
+      <path d="M150,120v8M146,124h8"/>
+      <path d="M62,146v8M58,150h8"/>
+      <path d="M244,112v8M240,116h8"/>
+    </g>
+    <text x="18" y="47">32</text>
+    <text x="103" y="77">29</text>
+    <text x="181" y="33">49</text>
+    <text x="238" y="8">21</text>
+    <text x="134" y="141">29</text>
+    <text x="46" y="167">17</text>
+    <text x="250" y="120">08</text>
+  </svg>
+</div>
+
+<div class="ui" id="tl">
+  <div class="wordmark">XT<i>/</i>16</div>
+  <div class="meta">
+    // hitthe.link<br/>
+    2026
+  </div>
+</div>
+
+<div class="ui" id="tr">
+  <div class="tag">////// Manifesto</div>
+  <div class="manifesto">
+    Real-time ice, built in
+    the browser. No baked
+    frames, no video — every
+    block displaced, every
+    seam lit by one source
+    burning inside the dome.
+  </div>
+</div>
+
+<div class="ui" id="bl">
+  <div class="scroll">Scroll down to<br/>discover.<span class="car"></span></div>
+  <button id="snd" type="button" aria-label="Toggle sound">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 9v6h4l5 4V5L8 9H4z"/>
+      <path id="sx" d="M17 9l4 6M21 9l-4 6"/>
+      <path id="son" style="display:none" d="M16.5 8.5a5 5 0 010 7M19.5 6a8.5 8.5 0 010 12"/>
+    </svg>
+    <span id="sndlbl">Sound: Off</span>
+  </button>
+</div>
+
+<div class="ui" id="br">XT—16 / CANDIDATE A / PBR ICE</div>
+
+<div id="load">GROWING&nbsp;CRYSTAL</div>
+
+<div id="runway"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+/* =========================================================================
+   0. NOISE — value noise + fbm, used for terrain, textures and block jitter
+   ========================================================================= */
+/* Integer hash, NOT the usual sin-based one. Displacing every block vertex plus
+   a 600^2 terrain runs this ~10^8 times; Math.sin made the build take minutes
+   and the page never finished. This is the same noise character, ~20x cheaper. */
+function hash2(x, y){
+  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) * 2.3283064365386963e-10;
+}
+function vnoise(x, y){
+  const ix = Math.floor(x), iy = Math.floor(y);
+  const fx = x - ix, fy = y - iy;
+  const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+  const a = hash2(ix, iy),     b = hash2(ix + 1, iy);
+  const c = hash2(ix, iy + 1), d = hash2(ix + 1, iy + 1);
+  return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
+}
+function fbm(x, y, oct = 5, seed = 0){
+  let v = 0, amp = 0.5, f = 1;
+  for (let i = 0; i < oct; i++){
+    v += amp * vnoise(x * f + seed * 19.7, y * f + seed * 11.3);
+    f *= 2.03; amp *= 0.5;
+  }
+  return v;
+}
+function ridged(x, y, oct = 5, seed = 0){
+  let v = 0, amp = 0.5, f = 1;
+  for (let i = 0; i < oct; i++){
+    const n = 1 - Math.abs(vnoise(x * f + seed * 31.1, y * f + seed * 17.9) * 2 - 1);
+    v += amp * n * n;
+    f *= 2.07; amp *= 0.5;
+  }
+  return v;
+}
+const smoothstep = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
+let _s = 1337;
+const rnd = () => { _s = (_s * 1664525 + 1013904223) % 4294967296; return _s / 4294967296; };
+const rr = (a, b) => a + (b - a) * rnd();
+
+/* =========================================================================
+   1. RENDERER / SCENE / CAMERA
+   ========================================================================= */
+const canvas   = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.outputColorSpace  = THREE.SRGBColorSpace;
+renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.60;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+
+const scene  = new THREE.Scene();
+
+// aerial perspective — exponential fog tuned so 3 mountain planes separate
+const FOG = new THREE.Color(0x8e9caa);
+scene.fog  = new THREE.FogExp2(FOG, 0.0030);
+
+const camera = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 900);
+
+/* ---- framing constants (reference-matched) -----------------------------
+   dome: half-width RX = 3.0, height RY = 5.05  → h/w = 0.84 (measured 0.86)
+   at camera distance 17.4 with fov 30 the dome fills ~40% of frame width
+   and its base sits at ~67% of frame height → lower-third anchored.
+------------------------------------------------------------------------ */
+const RX = 3.05, RY = 4.90, RZ = 3.05;
+
+/* DOME PROFILE — a plain ellipsoid tapers to a point and reads as a beehive.
+   Raising sin(theta) to a power < 1 keeps the shoulders broad and flattens the
+   crown, which is the actual shape of a snow dome. 0.55 is the measured match. */
+const DOME_EXP = 0.55;
+const domeR = th => RX * Math.pow(Math.max(0, Math.sin(th)), DOME_EXP);
+const domeY = th => RY * Math.cos(th);
+// outward normal of the surface of revolution, via finite difference on the meridian
+function domeNormal(th, phi, out){
+  const e = 0.004;
+  const dr = domeR(th + e) - domeR(th - e);
+  const dy = domeY(th + e) - domeY(th - e);
+  const l = Math.hypot(dr, dy) || 1;
+  const nr =  dy / l, ny = -dr / l;          // rotate meridian tangent outward
+  return out.set(nr * Math.cos(phi), ny, nr * Math.sin(phi)).normalize();
+}
+
+const CAM_HOME  = new THREE.Vector3( 1.1, 4.30, 22.2);
+const LOOK_HOME = new THREE.Vector3( 0.25, 1.05, 0);
+camera.position.copy(CAM_HOME);
+camera.lookAt(LOOK_HOME);
+
+/* =========================================================================
+   2. SKY / ENVIRONMENT — procedural equirect canvas → PMREM
+   ========================================================================= */
+function skyCanvas(w = 1024, h = 512){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, h);
+  grd.addColorStop(0.00, '#2c353f');   // zenith — the dark end of the range
+  grd.addColorStop(0.26, '#596775');
+  grd.addColorStop(0.44, '#93a1af');
+  grd.addColorStop(0.50, '#b9c4ce');   // horizon haze
+  grd.addColorStop(0.58, '#8e9baa');
+  grd.addColorStop(1.00, '#4d5865');   // nadir
+  g.fillStyle = grd; g.fillRect(0, 0, w, h);
+
+  // sun bloom behind-right of subject (matches the hotspot in the reference)
+  const sx = w * 0.70, sy = h * 0.40;
+  const sg = g.createRadialGradient(sx, sy, 0, sx, sy, w * 0.30);
+  sg.addColorStop(0, 'rgba(255,255,255,0.98)');
+  sg.addColorStop(0.16, 'rgba(248,251,255,0.55)');
+  sg.addColorStop(1, 'rgba(230,238,246,0)');
+  g.fillStyle = sg; g.fillRect(0, 0, w, h);
+
+  // soft cloud banding
+  for (let i = 0; i < 5; i++){
+    const y = h * (0.12 + i * 0.06);
+    const cg = g.createLinearGradient(0, y - 22, 0, y + 22);
+    cg.addColorStop(0, 'rgba(226,233,240,0)');
+    cg.addColorStop(0.5, `rgba(226,233,240,${0.10 + i * 0.02})`);
+    cg.addColorStop(1, 'rgba(226,233,240,0)');
+    g.fillStyle = cg; g.fillRect(0, y - 22, w, 44);
+  }
+  return c;
+}
+const skyTex = new THREE.CanvasTexture(skyCanvas());
+skyTex.mapping    = THREE.EquirectangularReflectionMapping;
+skyTex.colorSpace = THREE.SRGBColorSpace;
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+const envRT = pmrem.fromEquirectangular(skyTex);
+scene.environment = envRT.texture;
+scene.background  = skyTex;
+scene.backgroundIntensity = 1.0;
+
+/* =========================================================================
+   3. PROCEDURAL TEXTURES (generated in-canvas, no external assets)
+   ========================================================================= */
+function heightCanvas(size, fn){
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  const img = g.createImageData(size, size);
+  for (let y = 0; y < size; y++){
+    for (let x = 0; x < size; x++){
+      const v = Math.max(0, Math.min(1, fn(x / size, y / size)));
+      const i = (y * size + x) * 4;
+      const b = (v * 255) | 0;
+      img.data[i] = img.data[i+1] = img.data[i+2] = b; img.data[i+3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+function normalFromHeight(hc, strength = 3.0){
+  const size = hc.width;
+  const src = hc.getContext('2d').getImageData(0, 0, size, size).data;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  const out = g.createImageData(size, size);
+  const at = (x, y) => src[(((y + size) % size) * size + ((x + size) % size)) * 4] / 255;
+  for (let y = 0; y < size; y++){
+    for (let x = 0; x < size; x++){
+      const dx = (at(x + 1, y) - at(x - 1, y)) * strength;
+      const dy = (at(x, y + 1) - at(x, y - 1)) * strength;
+      let nx = -dx, ny = -dy, nz = 1;
+      const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
+      const i = (y * size + x) * 4;
+      out.data[i]   = (nx * 0.5 + 0.5) * 255;
+      out.data[i+1] = (ny * 0.5 + 0.5) * 255;
+      out.data[i+2] = (nz * 0.5 + 0.5) * 255;
+      out.data[i+3] = 255;
+    }
+  }
+  g.putImageData(out, 0, 0);
+  return c;
+}
+function wrapTex(cv, repeat, srgb = false){
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeat, repeat);
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// --- ice micro-surface: frosted patches + internal fracture streaks --------
+const iceH = heightCanvas(256, (u, v) => {
+  const f  = fbm(u * 7.0, v * 7.0, 5, 3);
+  const fr = ridged(u * 14.0, v * 14.0, 4, 8);
+  const cell = fbm(u * 26.0, v * 26.0, 3, 12);
+  return 0.42 + f * 0.30 + fr * 0.22 + cell * 0.10;
+});
+const iceNormalTex = wrapTex(normalFromHeight(iceH, 2.1), 1.6);
+const iceRoughTex  = wrapTex(heightCanvas(256, (u, v) => {
+  const f = fbm(u * 5.0, v * 5.0, 4, 21);
+  const p = smoothstep(0.42, 0.72, fbm(u * 2.4, v * 2.4, 3, 5));  // frost patches
+  return 0.24 + f * 0.34 + p * 0.40;
+}), 1.4);
+
+// --- snow micro-surface ---------------------------------------------------
+const snowH = heightCanvas(512, (u, v) => {
+  const dune = fbm(u * 6.0, v * 6.0, 5, 41);
+  const wind = ridged(u * 3.0 + dune * 0.6, v * 22.0, 4, 60) * 0.5;
+  const grain = fbm(u * 60.0, v * 60.0, 2, 77) * 0.16;
+  return 0.30 + dune * 0.42 + wind * 0.28 + grain;
+});
+const snowNormalTex = wrapTex(normalFromHeight(snowH, 1.5), 26);
+const snowRoughTex  = wrapTex(heightCanvas(256, (u, v) =>
+  0.72 + fbm(u * 8.0, v * 8.0, 4, 91) * 0.26), 18);
+
+/* =========================================================================
+   4. TERRAIN — displaced ground, fbm evaluated per-vertex on the CPU
+   ========================================================================= */
+function groundHeight(x, z){
+  const d = Math.hypot(x, z);
+
+  // broad plateau the igloo is built on; ground falls away from it
+  let h = -1.55 * (1 - Math.exp(-(d * d) / (2 * 17 * 17)));
+
+  // large dunes, faded out right under the structure so blocks bed flat
+  const mask = smoothstep(3.6, 13.0, d);
+  h += (fbm(x * 0.026 + 10, z * 0.026 + 10, 5, 2) - 0.5) * 6.4 * mask;
+  h += (fbm(x * 0.075 + 3,  z * 0.075 + 3,  4, 7) - 0.5) * 2.10 * mask;
+  h += (fbm(x * 0.190 + 8,  z * 0.190 + 8,  4, 23) - 0.5) * 0.62 * mask;
+
+  // wind-carved ripples (all over, small)
+  /* SASTRUGI. A raw anisotropic ridged() field runs as one unbroken crease
+     straight at the camera and reads as a mesh seam. Gating it by an fbm mask
+     breaks it into discrete wind-carved patches, which is what real drift does. */
+  const sast = smoothstep(0.42, 0.78, fbm(x * 0.045 + 21, z * 0.030 + 21, 3, 44));
+  h += (ridged(x * 0.13, z * 0.055, 3, 15) - 0.5) * 0.44 * sast * smoothstep(3.2, 8.0, d);
+  h += (ridged(x * 0.31, z * 0.115, 3, 71) - 0.5) * 0.20 * sast * smoothstep(4.0, 12.0, d);
+
+  /* NEAR-FIELD DRIFT. Camera sits at z ~ 22, so the bottom third of the frame
+     is ground within ~6-16 units of the lens. Detail has to be at THAT scale or
+     the foreground reads as a smooth empty field. */
+  const near = smoothstep(4.0, 15.0, z) * smoothstep(3.6, 9.0, d);
+  h += (fbm(x * 0.36 + 60, z * 0.36 + 60, 4, 82) - 0.5) * 0.62 * near;
+  h += (fbm(x * 0.85 + 12, z * 0.85 + 12, 3, 91) - 0.5) * 0.24 * near;
+  h += (ridged(x * 0.55, z * 0.22, 3, 103) - 0.5) * 0.20 * near;
+
+  // fine snow grain
+  h += (fbm(x * 0.9, z * 0.9, 2, 33) - 0.5) * 0.11;
+
+  // foreground berm so the bottom of the frame reads as a near dune
+  h += smoothstep(15, 34, z) * (1.9 + fbm(x * 0.05, z * 0.05, 3, 55) * 3.4);
+
+  return h;
+}
+
+const GSIZE = 520, GSEG = 600;
+const groundGeo = new THREE.PlaneGeometry(GSIZE, GSIZE, GSEG, GSEG);
+groundGeo.rotateX(-Math.PI / 2);
+{
+  const p = groundGeo.attributes.position;
+  const colors = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++){
+    const x = p.getX(i), z = p.getZ(i);
+    const y = groundHeight(x, z);
+    p.setY(i, y);
+    // subtle value break-up: lower ground reads cooler + darker
+    const t = smoothstep(-7, 3.0, y);
+    const c = 0.22 + t * 0.86;
+    colors[i * 3]     = c * 0.97;
+    colors[i * 3 + 1] = c * 0.99;
+    colors[i * 3 + 2] = c * 1.00;
+  }
+  groundGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  groundGeo.computeVertexNormals();
+}
+const groundMat = new THREE.MeshStandardMaterial({
+  color: 0xc9d3de,
+  vertexColors: true,
+  roughness: 0.95,
+  metalness: 0.0,
+  normalMap: snowNormalTex,
+  normalScale: new THREE.Vector2(1.7, 1.7),
+  roughnessMap: snowRoughTex,
+  envMapIntensity: 0.38,
+  dithering: true
+});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* --- 3 receding mountain planes ----------------------------------------- */
+function mountainRange(zPos, width, depth, amp, seed, baseY, col){
+  const g = new THREE.PlaneGeometry(width, depth, 300, 130);
+  g.rotateX(-Math.PI / 2);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++){
+    const x = p.getX(i), z = p.getZ(i);
+    const edge = smoothstep(0, depth * 0.42, z + depth / 2);      // rise away from camera
+    // softened ridges — a hard ridged() field facets badly at this scale
+    let h = (ridged(x * 0.009, z * 0.009, 5, seed) * 0.62 +
+             fbm(x * 0.012, z * 0.012, 5, seed + 1) * 0.58) * amp * edge;
+    h += (fbm(x * 0.05, z * 0.05, 4, seed + 3) - 0.5) * amp * 0.12;
+    h *= 0.55 + 0.45 * smoothstep(0, 1, fbm(x * 0.0045, z * 0.0045, 3, seed + 9));
+    p.setY(i, h + baseY);
+  }
+  g.computeVertexNormals();
+  const m = new THREE.MeshStandardMaterial({
+    color: col, roughness: 0.97, metalness: 0,
+    normalMap: snowNormalTex, normalScale: new THREE.Vector2(0.55, 0.55),
+    envMapIntensity: 0.4, dithering: true
+  });
+  const mesh = new THREE.Mesh(g, m);
+  mesh.position.z = zPos;
+  scene.add(mesh);
+  return mesh;
+}
+// pushed beyond the ground plane's far edge (z = -170) so no near edge can
+// draw a hard diagonal across the sky
+mountainRange(-235, 620, 130, 27, 4,  -12, 0x8e9aa7);
+mountainRange(-345, 860, 180, 48, 17, -20, 0xa2adb9);
+mountainRange(-490, 1180, 240, 78, 29, -30, 0xb6c0ca);
+
+/* =========================================================================
+   5. LIGHTING — low sun behind-right, cool sky fill, INTERNAL dome source
+   ========================================================================= */
+const hemi = new THREE.HemisphereLight(0x93a8bd, 0x1e242c, 0.55);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xfff2df, 4.2);
+sun.position.set(17, 13, -13);
+sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far  = 110;
+// wide enough that the shadow-frustum edge never crosses the visible ground
+sun.shadow.camera.left = -34; sun.shadow.camera.right = 34;
+sun.shadow.camera.top  =  34; sun.shadow.camera.bottom = -34;
+sun.shadow.bias = -0.0009;
+sun.shadow.normalBias = 0.045;
+sun.shadow.radius = 3;
+scene.add(sun);
+
+// cool bounce from the snow, front-left — keeps shadow sides off pure black
+const fill = new THREE.DirectionalLight(0x7d95ad, 0.30);
+fill.position.set(-14, 4, 12);
+scene.add(fill);
+
+// THE INTERNAL SOURCE — this is what lights the seams between blocks
+const coreLight = new THREE.PointLight(0xdcefff, 62, 26, 1.9);
+coreLight.position.set(0, 1.9, 0);
+scene.add(coreLight);
+const coreLight2 = new THREE.PointLight(0xbcdcff, 26, 20, 2.0);
+coreLight2.position.set(0, 3.6, 0);
+scene.add(coreLight2);
+
+/* =========================================================================
+   6. THE ICE — crystal-grown blocks laid in courses on an ellipsoid
+   ========================================================================= */
+const iglooGroup = new THREE.Group();
+scene.add(iglooGroup);
+
+// inner glowing shell — seen through every gap, this IS the seam glow
+// lathe the shell from the SAME meridian the blocks sit on, inset by half a
+// wall — a plain sphere would sit far inside the broadened crown and the seams
+// up there would stop reading
+function shellProfile(inset){
+  const pts = [];
+  for (let d = 92; d >= 0; d -= 2){
+    const th = THREE.MathUtils.degToRad(d);
+    const n = domeNormal(Math.max(th, 0.02), 0, new THREE.Vector3());
+    const nr = Math.hypot(n.x, n.z), ny = n.y;
+    pts.push(new THREE.Vector2(
+      Math.max(0.0001, domeR(th) - nr * inset),
+      domeY(th) - ny * inset
+    ));
+  }
+  return pts;
+}
+{
+  // HDR white: values > 1 in linear space so ACES blows the seams to paper
+  // white instead of tone-mapping them down to grey
+  const m = new THREE.MeshBasicMaterial({ fog:false, side: THREE.DoubleSide });
+  m.color.setRGB(9.0, 9.6, 10.4);
+  const shell = new THREE.Mesh(new THREE.LatheGeometry(shellProfile(0.40), 72), m);
+  shell.position.y = 0.05;
+  iglooGroup.add(shell);
+
+  // additive bloom just outside the wall so light bleeds onto the block edges
+  const m2 = new THREE.MeshBasicMaterial({
+    transparent:true, opacity:0.5,
+    side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite:false, fog:false
+  });
+  m2.color.setRGB(1.6, 2.0, 2.4);
+  const shell2 = new THREE.Mesh(new THREE.LatheGeometry(shellProfile(-0.10), 72), m2);
+  shell2.position.y = 0.05;
+  iglooGroup.add(shell2);
+}
+
+// --- ice material factory: physically-based, per-block variation ----------
+/* six roughness variants so the frost patches sit differently on every block —
+   spatial variation ACROSS a face, not just a per-block scalar */
+const iceRoughVariants = [];
+for (let v = 0; v < 6; v++){
+  iceRoughVariants.push(wrapTex(heightCanvas(256, (u, w) => {
+    const f = fbm(u * 5.0, w * 5.0, 4, 21 + v * 13);
+    const p = smoothstep(0.40, 0.74, fbm(u * 2.4, w * 2.4, 3, 5 + v * 7));
+    const g = fbm(u * 17.0, w * 17.0, 3, 60 + v * 3) * 0.22;
+    return 0.10 + f * 0.40 + p * 0.52 + g;
+  }), 1.2 + v * 0.12));
+}
+
+function makeIce(seedT){
+  const frost = seedT;                              // 0 = clear core ice, 1 = dense frosted/opaque
+  // dark frosted blocks are the bottom of the value range; clear blocks the top
+  const lum = 0.19 + Math.pow(1 - frost, 1.20) * 0.66;
+  const m = new THREE.MeshPhysicalMaterial({
+    color:            new THREE.Color().setHSL(0.575, 0.05 - 0.02 * frost, lum),
+    roughness:        0.05 + frost * 0.46,
+    metalness:        0.0,
+    ior:              1.31,                          // ice
+    // light must enter the block, not merely escape between blocks
+    transmission:     0.92 - frost * 0.40,           // 0.92 clear .. 0.52 frosted
+    thickness:        0.40 + (1 - frost) * 1.75,
+    attenuationColor: new THREE.Color(0x86b6d8),     // thick paths tint cool + deep
+    attenuationDistance: 0.45 + frost * 1.30,
+    clearcoat:        0.62 + (1 - frost) * 0.36,
+    clearcoatRoughness: 0.03 + frost * 0.34,
+    specularIntensity: 1.0,
+    sheen:            0.45 * frost,
+    sheenColor:       new THREE.Color(0xc9dcee),
+    sheenRoughness:   0.75,
+    normalMap:        iceNormalTex,
+    normalScale:      new THREE.Vector2(0.6 + frost * 1.1, 0.6 + frost * 1.1),
+    envMapIntensity:  1.05 + (1 - frost) * 0.55,
+    transparent:      false,
+    side:             THREE.FrontSide,
+    dithering:        true
+  });
+  return m;
+}
+const ICE_BUCKETS = 15;
+const iceMats = [];
+for (let i = 0; i < ICE_BUCKETS; i++) iceMats.push(makeIce(i / (ICE_BUCKETS - 1)));
+
+// every block gets its OWN material instance: optical thickness is a property
+// of the individual block, so thick ones must go deeper and cooler than thin ones
+function pickIce(t){
+  const base = iceMats[Math.min(ICE_BUCKETS - 1, Math.max(0, Math.round(t * (ICE_BUCKETS - 1))))];
+  const m = base.clone();
+  m.thickness           = base.thickness * rr(0.5, 2.1);
+  m.attenuationDistance = base.attenuationDistance * rr(0.65, 1.7);
+  m.transmission        = THREE.MathUtils.clamp(base.transmission + rr(-0.10, 0.06), 0.35, 0.95);
+  m.roughness           = THREE.MathUtils.clamp(base.roughness * rr(0.7, 1.35), 0.03, 0.92);
+  m.ior                 = 1.31 + rr(-0.02, 0.02);
+  m.roughnessMap        = iceRoughVariants[(rnd() * 6) | 0];
+  return m;
+}
+
+/* WEATHERED BLOCK GEOMETRY.
+   At this subject scale a normal map cannot sell a chipped edge — the silhouette
+   gives it away. So the rounded box is subdivided and every vertex is pushed
+   along its own normal by 3-octave noise: broad dishing, angular chipping, fine
+   pitting. RoundedBoxGeometry's normals are a pure function of position, and the
+   noise is sampled from position too, so the duplicated verts along shared edges
+   move identically and the block stays watertight — no cracks. */
+function chippedBlock(w, h, d, seed){
+  const g = new RoundedBoxGeometry(w, h, d, 3, Math.min(w, h, d) * 0.13);
+  const pos = g.attributes.position, nrm = g.attributes.normal;
+  const smooth = Float32Array.from(nrm.array);
+  const s = seed * 91.7;
+  const scl = Math.min(w, h, d);
+  for (let i = 0; i < pos.count; i++){
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const dish = fbm(x * 1.15 + s, z * 1.15 + y * 0.95 + s, 4, 3) - 0.5;
+    const chip = ridged(x * 3.4 + s, y * 3.4 + z * 2.7 + s, 3, 8) - 0.5;
+    const pit  = fbm(x * 9.5 + s, y * 9.5 + z * 8.0 + s, 2, 14) - 0.5;
+    const amt = (dish * 0.30 + chip * 0.20 + pit * 0.07) * scl;
+    pos.setXYZ(i, x + nrm.getX(i) * amt, y + nrm.getY(i) * amt, z + nrm.getZ(i) * amt);
+  }
+  pos.needsUpdate = true;
+  g.computeVertexNormals();                    // flat facets = fractured ice
+  const fn = g.attributes.normal;
+  for (let i = 0; i < fn.count; i++){          // blend back toward the smooth
+    const x = fn.getX(i) * 0.55 + smooth[i*3]     * 0.45;   // normals so the
+    const y = fn.getY(i) * 0.55 + smooth[i*3 + 1] * 0.45;   // clearcoat still
+    const z = fn.getZ(i) * 0.55 + smooth[i*3 + 2] * 0.45;   // sweeps the faces
+    const l = Math.hypot(x, y, z) || 1;
+    fn.setXYZ(i, x / l, y / l, z / l);
+  }
+  fn.needsUpdate = true;
+  return g;
+}
+let _blockSeed = 0;
+const block = (w, h, d) => chippedBlock(w, h, d, ++_blockSeed);
+
+const DOOR_PHI = 0.62;                     // radians, front-right of the dome
+const DOOR_HALF = 0.52;                    // matches the vault's clear opening
+const _o = new THREE.Vector3(0, 0, 0);
+const _up = new THREE.Vector3(0, 1, 0);
+const _m4 = new THREE.Matrix4();
+
+function placeOnShell(x, y, z, w, h, d, tilt, spin, matT, normal){
+  const mesh = new THREE.Mesh(block(w, h, d), pickIce(matT));
+  const n = normal || new THREE.Vector3(x / (RX * RX), y / (RY * RY), z / (RZ * RZ)).normalize();
+  _m4.lookAt(n, _o, _up);                  // +Z of the box points along the surface normal
+  mesh.quaternion.setFromRotationMatrix(_m4);
+  mesh.rotateZ(spin);
+  mesh.rotateX(tilt.x);
+  mesh.rotateY(tilt.y);
+  mesh.position.set(x, y, z).addScaledVector(n, tilt.z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  iglooGroup.add(mesh);
+  return mesh;
+}
+
+// --- courses -------------------------------------------------------------
+/* course thetas chosen so the arc-length spacing between courses is close to
+   the block height — the blocks nearly touch, so the interior source escapes
+   as a thin bright SEAM rather than a hole */
+const courses = [
+  // theta(deg), block width, block height, wall depth, size jitter, gap factor
+  { th: 90, bw: 1.60, bh: 1.15, bd: 0.62, jit: 0.11, gap: 0.900 },
+  { th: 76, bw: 1.55, bh: 1.12, bd: 0.60, jit: 0.12, gap: 0.898 },
+  { th: 62, bw: 1.50, bh: 1.06, bd: 0.58, jit: 0.13, gap: 0.895 },
+  { th: 48, bw: 1.44, bh: 0.99, bd: 0.56, jit: 0.14, gap: 0.892 },
+  { th: 34, bw: 1.34, bh: 0.90, bd: 0.54, jit: 0.15, gap: 0.888 },
+  { th: 20, bw: 1.20, bh: 0.79, bd: 0.52, jit: 0.16, gap: 0.884 },
+  { th:  8, bw: 1.02, bh: 0.66, bd: 0.50, jit: 0.16, gap: 0.880 }
+];
+
+courses.forEach((c, ci) => {
+  const th = THREE.MathUtils.degToRad(c.th);
+  const r  = domeR(th);
+  const y  = domeY(th);
+  const n  = Math.max(3, Math.round((2 * Math.PI * r) / (c.bw * 0.99)));
+  const phi0 = rr(0, Math.PI * 2);
+
+  for (let i = 0; i < n; i++){
+    const phi = phi0 + (i / n) * Math.PI * 2;
+
+    // doorway: cut the two lowest courses open on the door azimuth
+    if (ci <= 1){
+      let dd = Math.abs(((phi - DOOR_PHI + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+      dd = Math.PI - dd;
+      if (dd < DOOR_HALF + (ci === 0 ? 0.08 : 0.0)) continue;
+    }
+    // one or two deliberately missing blocks high up — a bright vent
+    if (ci >= 4 && rnd() < 0.07) continue;
+
+    const x = r * Math.cos(phi);
+    const z = r * Math.sin(phi);
+
+    // occasional oversized slab — the reference has a few blocks that
+    // clearly broke the course rhythm
+    const big = rnd() < 0.12 ? rr(1.25, 1.55) : 1.0;
+    const sw = c.bw * c.gap * rr(1 - c.jit, 1 + c.jit * 1.4) * big;
+    const sh = c.bh * rr(1 - c.jit * 0.7, 1 + c.jit * 0.9) * (big > 1 ? 1.18 : 1);
+    const sd = c.bd * rr(0.85, 1.35);
+
+    placeOnShell(
+      x, y, z, sw, sh, sd,
+      new THREE.Vector3(rr(-0.16, 0.16), rr(-0.20, 0.20), rr(-0.14, 0.30)),
+      rr(-0.16, 0.16),
+      // lower courses read frostier/darker, upper courses clearer & brighter
+      THREE.MathUtils.clamp(0.92 - ci * 0.13 + rr(-0.24, 0.24), 0, 1),
+      domeNormal(th, phi, new THREE.Vector3())
+    );
+  }
+});
+
+// crown — a few chunky slabs closing the top, deliberately irregular
+for (let i = 0; i < 3; i++){
+  const phi = rr(0, Math.PI * 2), th = THREE.MathUtils.degToRad(rr(3, 11));
+  const r = domeR(th), y = domeY(th);
+  placeOnShell(
+    r * Math.cos(phi), y, r * Math.sin(phi),
+    rr(1.15, 1.55), rr(0.95, 1.25), rr(0.5, 0.62),
+    new THREE.Vector3(rr(-0.22, 0.22), rr(-0.22, 0.22), rr(-0.02, 0.16)),
+    rr(-0.4, 0.4),
+    rr(0.0, 0.28),
+    domeNormal(th, phi, new THREE.Vector3())
+  );
+}
+
+/* --- entrance: a real barrel vault --------------------------------------
+   Fixed inner radius, fixed wall thickness, voussoirs sized to the arc so they
+   sit FLUSH, and rings marching along one axis. The previous version randomised
+   every block's size and angle, which is why that side read as rubble. Jitter
+   here is tiny and deliberate. */
+{
+  const dir  = new THREE.Vector3(Math.cos(DOOR_PHI), 0, Math.sin(DOOR_PHI)).normalize();
+  const side = new THREE.Vector3().crossVectors(dir, _up).normalize();
+
+  const R_IN   = 1.20;                    // clear opening
+  const WALL   = 0.52;
+  const R_MID  = R_IN + WALL / 2;
+  const RINGS  = 4;
+  const RING_D = 0.80;                    // spacing along the tunnel axis
+  const N_V    = 11;                      // voussoirs per ring
+  const A0 = THREE.MathUtils.degToRad(-13), A1 = THREE.MathUtils.degToRad(193);
+  const ARC_W = (R_MID * (A1 - A0)) / (N_V - 1);   // exact flush tangential width
+  const out0  = RX * 0.80 + 0.40;
+
+  for (let k = 0; k < RINGS; k++){
+    const out = out0 + k * RING_D;
+    for (let i = 0; i < N_V; i++){
+      const a = A0 + (A1 - A0) * (i / (N_V - 1));
+      const worldN = new THREE.Vector3()
+        .addScaledVector(side, Math.cos(a))
+        .addScaledVector(_up,  Math.sin(a));
+
+      const mesh = new THREE.Mesh(
+        block(ARC_W * 1.02, RING_D * 0.94, WALL * rr(0.95, 1.10)),
+        pickIce(THREE.MathUtils.clamp(0.70 + rr(-0.22, 0.22), 0, 1))
+      );
+      _m4.lookAt(worldN, _o, dir);        // +Z = radial out, +Y = along the tunnel
+      mesh.quaternion.setFromRotationMatrix(_m4);
+      mesh.rotateZ(rr(-0.035, 0.035));
+      mesh.position
+        .copy(dir).multiplyScalar(out)
+        .addScaledVector(worldN, R_MID + rr(-0.025, 0.025));
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      iglooGroup.add(mesh);
+    }
+  }
+
+  // dark throat: a disc capping the FAR end of the vault, sized to the clear
+  // opening so it can never poke out past the stonework
+  const cap = new THREE.Mesh(
+    new THREE.CircleGeometry(R_IN, 32),
+    new THREE.MeshBasicMaterial({ color: 0x11171e, fog:false })
+  );
+  cap.position.copy(dir).multiplyScalar(out0 - 0.30).setY(0.02);
+  cap.lookAt(cap.position.clone().addScaledVector(dir, 1));
+  iglooGroup.add(cap);
+
+  // rim light so the mouth edge catches, and the vault does not go dead flat
+  const glow = new THREE.PointLight(0xbfe0ff, 8, 7, 2);
+  glow.position.copy(dir).multiplyScalar(out0 + 0.4).setY(0.9);
+  scene.add(glow);
+}
+
+// a low apron of blocks bedding the structure into the snow
+for (let i = 0; i < 18; i++){
+  const phi = rr(0, Math.PI * 2);
+  const r = RX * rr(0.92, 1.10);
+  const mesh = new THREE.Mesh(
+    block(rr(1.2, 1.9), rr(0.7, 1.0), rr(0.7, 1.05)),
+    pickIce(rr(0.78, 1.0))
+  );
+  mesh.position.set(r * Math.cos(phi), rr(-0.72, -0.44), r * Math.sin(phi));
+  mesh.rotation.set(rr(-0.08, 0.08), phi + rr(-0.3, 0.3), rr(-0.06, 0.06));
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  iglooGroup.add(mesh);
+}
+
+/* --- contact shadow ------------------------------------------------------ */
+{
+  const s = 256;
+  const c = document.createElement('canvas'); c.width = c.height = s;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+  grd.addColorStop(0.00, 'rgba(10,16,22,0.92)');
+  grd.addColorStop(0.28, 'rgba(12,18,25,0.72)');
+  grd.addColorStop(0.58, 'rgba(16,24,32,0.32)');
+  grd.addColorStop(1.00, 'rgba(20,30,40,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, s, s);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  // kept inside the flattened bed under the structure (r < 3.5) — any larger
+  // and the plane clips through the dunes as a hard-edged dark polygon
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(6.4, 4.9),
+    new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0.62, depthWrite: false, fog: true })
+  );
+  m.rotation.x = -Math.PI / 2;
+  m.position.set(0.35, 0.10, 0.5);
+  m.renderOrder = 1;
+  scene.add(m);
+}
+
+/* --- ground-hugging haze so the structure sits in air, not on a card ----- */
+{
+  const g = new THREE.PlaneGeometry(220, 60, 1, 1);
+  const m = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    uniforms: { uCol: { value: new THREE.Color(0xc9d3dd) } },
+    vertexShader: `varying vec2 vU; void main(){ vU=uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
+    fragmentShader: `
+      uniform vec3 uCol; varying vec2 vU;
+      void main(){
+        float a = smoothstep(1.0,0.0,vU.y) * 0.42;
+        a *= smoothstep(0.0,0.10,vU.x) * smoothstep(1.0,0.90,vU.x);
+        gl_FragColor = vec4(uCol, a);
+      }`
+  });
+  // one low haze band, sunk so its top edge sits under the far ridgeline —
+  // exponential fog does the rest of the aerial perspective
+  const h = new THREE.Mesh(g, m);
+  h.position.set(0, -14, -205);
+  h.scale.set(3.2, 1.4, 1);
+  h.renderOrder = 2;
+  scene.add(h);
+}
+
+// drifting snow motes — cheap points, adds depth cues in the air
+{
+  const N = 900;
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++){
+    pos[i*3]   = rr(-40, 40);
+    pos[i*3+1] = rr(-1, 20);
+    pos[i*3+2] = rr(-40, 26);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const m = new THREE.PointsMaterial({
+    color: 0xffffff, size: 0.055, sizeAttenuation: true,
+    transparent: true, opacity: 0.42, depthWrite: false
+  });
+  const pts = new THREE.Points(g, m);
+  scene.add(pts);
+  pts.userData.spin = true;
+  scene.userData.motes = pts;
+}
+
+/* =========================================================================
+   7. SOUND TOGGLE (WebAudio wind — self contained, no assets)
+   ========================================================================= */
+let audioCtx = null, windGain = null, soundOn = false;
+document.getElementById('snd').addEventListener('click', () => {
+  try {
+    if (!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const len = audioCtx.sampleRate * 3;
+      const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++){ const w = Math.random()*2-1; last = (last + 0.03*w)/1.03; d[i] = last*3.2; }
+      const src = audioCtx.createBufferSource(); src.buffer = buf; src.loop = true;
+      const flt = audioCtx.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = 520; flt.Q.value = 0.6;
+      windGain = audioCtx.createGain(); windGain.gain.value = 0;
+      src.connect(flt); flt.connect(windGain); windGain.connect(audioCtx.destination);
+      src.start();
+    }
+    audioCtx.resume();
+    soundOn = !soundOn;
+    windGain.gain.setTargetAtTime(soundOn ? 0.12 : 0, audioCtx.currentTime, 0.4);
+  } catch(e){ soundOn = !soundOn; }
+  document.getElementById('sndlbl').textContent = 'Sound: ' + (soundOn ? 'On' : 'Off');
+  document.getElementById('sx').style.display  = soundOn ? 'none' : '';
+  document.getElementById('son').style.display = soundOn ? '' : 'none';
+});
+
+/* =========================================================================
+   8. LOOP — scroll-driven camera, breathing internal light
+   ========================================================================= */
+let scrollP = 0, scrollTarget = 0;
+function onScroll(){
+  const max = document.body.scrollHeight - innerHeight;
+  scrollTarget = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+}
+addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+
+let mx = 0, my = 0, tmx = 0, tmy = 0;
+addEventListener('pointermove', e => {
+  tmx = (e.clientX / innerWidth  - 0.5);
+  tmy = (e.clientY / innerHeight - 0.5);
+}, { passive: true });
+
+function resize(){
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight, false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+}
+addEventListener('resize', resize);
+
+const _look = new THREE.Vector3();
+const clock = new THREE.Clock();
+let frames = 0;
+
+function tick(){
+  const t = clock.getElapsedTime();
+  scrollP += (scrollTarget - scrollP) * 0.075;
+  mx += (tmx - mx) * 0.045;
+  my += (tmy - my) * 0.045;
+
+  // scroll: push in, drop the eye, drift around the structure
+  const p = scrollP;
+  const orbit = -0.30 * p + mx * 0.10;
+  const dist  = CAM_HOME.z - 7.6 * p;
+  const eyeY  = CAM_HOME.y - 0.85 * p - my * 0.55;
+
+  camera.position.set(
+    Math.sin(orbit) * dist + Math.cos(orbit) * CAM_HOME.x * (1 - 0.3 * p),
+    eyeY,
+    Math.cos(orbit) * dist
+  );
+  _look.set(LOOK_HOME.x, LOOK_HOME.y + 0.55 * p + my * 0.25, 0);
+  camera.lookAt(_look);
+
+  // the light inside is alive
+  const b = 1 + Math.sin(t * 0.7) * 0.10 + Math.sin(t * 2.3) * 0.035;
+  coreLight.intensity  = 34 * b;
+  coreLight2.intensity = 14 * (2 - b);
+
+  const motes = scene.userData.motes;
+  if (motes){
+    motes.rotation.y = t * 0.006;
+    motes.position.y = Math.sin(t * 0.1) * 0.4;
+  }
+
+  renderer.render(scene, camera);
+
+  if (++frames === 3) document.getElementById('load').classList.add('off');
+  requestAnimationFrame(tick);
+}
+tick();
+
+// expose a hook so an automated capture can confirm the scene is live
+window.__xt16 = { ready: () => frames > 5, blocks: iglooGroup.children.length, camera, renderer };
+</script>
+</body>
+</html>

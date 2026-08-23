@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Beside AI · the only path to Twilio</title>
+<meta name="description" content="Beside AI proxy is the only allowed access to Twilio API while Twilio sits on the D.I.E. list. AI-layer interception, cost containment, qi sovereignty.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0A0A0A; --bg-2:#111; --fg:#E5E5E5; --mute:#8A8A8A;
+  --cyan:#A5F3FC; --amber:#FFB347; --red:#F87171; --green:#4ADE80; --gold:#D2AC47;
+  --magenta:#F472B6; --violet:#A78BFA;
+  --line:#1F1F1F;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:var(--bg); color:var(--fg); font-family:'Figtree','Inter',-apple-system,sans-serif; line-height:1.55; }
+.wrap { max-width:1100px; margin:0 auto; padding:60px 24px 100px; }
+.glow { color:var(--cyan); text-shadow:0 0 8px rgba(165,243,252,.55), 0 0 24px rgba(165,243,252,.25); }
+.red-glow { color:var(--red); text-shadow:0 0 10px rgba(248,113,113,.5); }
+.green-glow { color:var(--green); text-shadow:0 0 10px rgba(74,222,128,.5); }
+header { text-align:center; margin-bottom:56px; }
+.eyebrow { font-family:'Inter',sans-serif; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--cyan); margin-bottom:14px; font-weight:600; }
+h1 { font-size:52px; margin:0 0 12px; font-weight:900; letter-spacing:-.025em; line-height:1; }
+.lede { color:var(--mute); font-size:15px; font-style:italic; max-width:620px; margin:14px auto 0; }
+h2 { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--mute); font-weight:700; margin:48px 0 16px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+
+/* Flow diagram */
+.flow {
+  background:linear-gradient(155deg,#141414,#0E0E0E); border:1px solid var(--line); border-radius:16px;
+  padding:36px 32px; margin:24px 0; position:relative;
+}
+.flow-row { display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:14px; align-items:center; margin-bottom:24px; }
+.node {
+  background:#0E0E0E; border:2px solid var(--accent); border-radius:14px;
+  padding:22px 20px; text-align:center; position:relative;
+}
+.node.qi { --accent:var(--cyan); box-shadow:0 0 24px rgba(165,243,252,.2); }
+.node.beside { --accent:var(--green); box-shadow:0 0 24px rgba(74,222,128,.25); }
+.node.twilio { --accent:var(--amber); box-shadow:0 0 16px rgba(255,179,71,.18); }
+.node.recip { --accent:var(--violet); }
+.node .icon { font-family:'Figtree',sans-serif; font-size:24px; font-weight:900; margin-bottom:6px; color:var(--accent); }
+.node .name { font-family:'Figtree',sans-serif; font-weight:800; font-size:18px; color:var(--fg); letter-spacing:-.005em; margin-bottom:4px; }
+.node .meta { font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--mute); }
+.flow-arrow { color:var(--green); font-family:'JetBrains Mono',monospace; font-size:22px; text-align:center; }
+.flow-banned-row { display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:center; }
+.flow-banned-row .banned-arrow { color:var(--red); font-family:'JetBrains Mono',monospace; font-size:22px; text-align:center; position:relative; }
+.flow-banned-row .banned-arrow::after { content:"✗ DIE'd"; position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-family:'Inter',sans-serif; font-size:10px; letter-spacing:.14em; color:var(--red); font-weight:700; background:rgba(248,113,113,.1); padding:2px 8px; border-radius:50px; border:1px solid rgba(248,113,133,.3); }
+.path-banned-detail { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--red); opacity:.55; text-decoration:line-through; }
+
+/* Why grid */
+.why-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin:14px 0 24px; }
+.why-card { background:#0E0E0E; border:1px solid var(--line); border-radius:10px; padding:18px 22px; border-left:3px solid var(--accent); }
+.why-card:nth-child(1) { --accent:var(--cyan); }
+.why-card:nth-child(2) { --accent:var(--green); }
+.why-card:nth-child(3) { --accent:var(--gold); }
+.why-card:nth-child(4) { --accent:var(--magenta); }
+.why-card .head { font-family:'Inter',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:6px; }
+.why-card .body { font-size:13px; color:var(--mute); line-height:1.55; }
+.why-card .body strong { color:var(--fg); }
+
+/* Spec */
+.spec-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.spec { background:#0E0E0E; border:1px solid var(--line); border-radius:10px; padding:18px 22px; }
+.spec .lbl { font-family:'Inter',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--cyan); font-weight:700; margin-bottom:6px; }
+.spec .val { font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--fg); line-height:1.6; word-break:break-all; }
+.spec .val small { color:var(--mute); font-size:11px; display:block; margin-top:4px; }
+
+.cta-card { background:linear-gradient(155deg,rgba(74,222,128,.08),rgba(74,222,128,.02)); border:1.5px solid var(--green); border-radius:14px; padding:24px 28px; margin-top:32px; text-align:center; }
+.cta-card .head { color:var(--green); font-size:11px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; margin-bottom:8px; }
+.cta-card .name { font-size:24px; font-weight:800; color:var(--fg); margin-bottom:6px; }
+.cta-card .meta { color:var(--mute); font-size:13px; }
+.cta-card a { color:var(--green); border-bottom:1px dotted rgba(74,222,128,.4); text-decoration:none; }
+code { font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.06); padding:2px 6px; border-radius:3px; font-size:12px; }
+.footer { color:var(--mute); font-size:11px; margin-top:60px; text-align:center; letter-spacing:.1em; text-transform:uppercase; }
+a { color:var(--cyan); border-bottom:1px dotted rgba(165,243,252,.4); text-decoration:none; }
+@media (max-width:780px) { .flow-row { grid-template-columns:1fr; } .flow-arrow { transform:rotate(90deg); padding:8px 0; } .spec-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Exedus Xen · canonical telephony layer</div>
+  <h1>Beside <span class="green-glow">AI proxy</span></h1>
+  <div class="lede">The <strong>only</strong> path to Twilio API while Twilio stays on the <a href="/die-list/">D.I.E. list</a>. AI-layer interception. Cost containment. qi sovereignty.</div>
+</header>
+
+<h2>The flow</h2>
+<div class="flow">
+  <div class="flow-row">
+    <div class="node qi"><div class="icon">qi</div><div class="name">Source</div><div class="meta">voice · text · SMS</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="node beside"><div class="icon">Beside</div><div class="name">AI proxy</div><div class="meta">chatID prv_BD42PG...</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="node twilio"><div class="icon">Twilio</div><div class="name">Carrier API</div><div class="meta">backend only</div></div>
+  </div>
+  <div style="text-align:center; margin:4px 0 8px; color:var(--green); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.08em;">→ delivered to <span style="color:var(--violet);">8672</span> (qi's phone) · or any recipient</div>
+
+  <hr style="border:0; border-top:1px dashed var(--line); margin:32px 0;">
+
+  <div class="flow-banned-row">
+    <div class="node qi"><div class="icon">qi</div><div class="name">Source</div><div class="meta">code · agent · script</div></div>
+    <div class="banned-arrow">↦</div>
+    <div class="node twilio"><div class="icon">Twilio</div><div class="name">Direct API</div><div class="meta">DIE'd · no Exedus code calls api.twilio.com directly</div></div>
+  </div>
+  <div style="text-align:center; margin:14px 0 0;" class="path-banned-detail">api.twilio.com/2010-04-01/Accounts/AC.../Messages.json · banned in Exedus code</div>
+</div>
+
+<h2>Why Beside is the only allowed path</h2>
+<div class="why-grid">
+  <div class="why-card">
+    <div class="head">1 · AI-layer interception</div>
+    <div class="body">Beside is an AI proxy, not just a dumb relay. Every inbound/outbound message passes through an <strong>AI-aware layer</strong> that can route, classify, escalate, or compose before hitting Twilio.</div>
+  </div>
+  <div class="why-card">
+    <div class="head">2 · Cost containment</div>
+    <div class="body">Beside absorbs Twilio's per-message pricing complexity. <strong>One subscription line</strong> at the proxy, no per-message Twilio billing leak into agent code.</div>
+  </div>
+  <div class="why-card">
+    <div class="head">3 · qi sovereignty</div>
+    <div class="body">qi owns the Beside chatID and proxy config. Twilio is the carrier — Beside is the surface. If Twilio changes terms or pricing, Beside swaps the backend without rewriting any Exedus code.</div>
+  </div>
+  <div class="why-card">
+    <div class="head">4 · No raw endpoints in agent code</div>
+    <div class="body">No Twilio account SID / auth token in Ezekiel or mac-xen code. The credential surface stops at Beside. Reduces blast radius of any token leak.</div>
+  </div>
+</div>
+
+<h2>Implementation spec</h2>
+<div class="spec-grid">
+  <div class="spec">
+    <div class="lbl">Beside chatID · qi 8672 VVS leg</div>
+    <div class="val">prv_BD42PGSXAD2KV575NQZQWGCT84<small>private chat · drives the SMS leg of VVS</small></div>
+  </div>
+  <div class="spec">
+    <div class="lbl">Outbound (xen-reply-vvs)</div>
+    <div class="val">POST → Beside REST<small>token: <code>bdapi_...</code> · payload: text + chatID</small></div>
+  </div>
+  <div class="spec">
+    <div class="lbl">Inbound (beside_inbox_poller.py)</div>
+    <div class="val">Beside fetch_inbox<small>line 117 · Authorization: Bearer &lt;token&gt; · external API auth (canon as-is)</small></div>
+  </div>
+  <div class="spec">
+    <div class="lbl">Bridge forward (forward_to_beeper)</div>
+    <div class="val">POST /api/beside-bridge/inbound<small>line ~247 · X-Xen-Token header · landed 2026-05-21 21:21:06 (bridge-401 v2 fix)</small></div>
+  </div>
+</div>
+
+<h2>Recent operational</h2>
+<ul style="padding-left:20px; font-size:14px;">
+  <li><strong>2026-05-21 21:21:06</strong> — Bridge-401 v2 fix landed. <code>X-Xen-Token</code> header added to forward_to_beeper(). Auth layer end-to-end verified.</li>
+  <li><strong>Conference layer degraded</strong> — Beside's vendor-side conference audio had 5+ empty-payload status notices 2026-05-21 night. FCC bridge 727-731-8395 PIN 938316741 dial-in may degrade. VVS legs unaffected.</li>
+  <li><strong>Layer-2 blocker open</strong> — omnimind still calls Beeper 2226 HTTP API (retired). Awaits Phase-2 rewrite against Beeper MCP at port 23374. Recon report at <code>~/.claude/swarm-history/2026-05-21-beeper-2226-to-mcp-23374-recon.md</code>.</li>
+</ul>
+
+<div class="cta-card">
+  <div class="head">canonical SMS leg</div>
+  <div class="name">Beside → Twilio → 8672</div>
+  <div class="meta">qi's phone, qi's chatID, qi's proxy. Every VVS SMS goes through here. Direct Twilio remains on the <a href="/die-list/">D.I.E. list</a>.</div>
+</div>
+
+<div class="footer">hitthe.link/beside-proxy/ · canon · 2026-05-22</div>
+</div>
+<script src="/_shared/ava-play.js" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

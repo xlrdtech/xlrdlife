@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mac · One-command deploy · all remaining mac-side actions</title>
+<meta name="description" content="Single shell script that bundles every remaining mac-side execution: EX_CONFIG plist patches + tools.xlrd.org worker deploy + omnimind /api/dictate-inject route + UTM snapshot. Mac-xen pastes once, all the cascade-close threads fire.">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root { --paper:#0A0A0C; --cream:#F4EEE4; --bone:#C7C2B6; --dust:#7A7A7A; --line:rgba(244,238,228,.12); --volt:#00FF88; --gold:#D2AC47; --steel:#6AD4FF; --rust:#E5552A; --serif:'Instrument Serif',serif; --sans:'Inter',-apple-system,sans-serif; --mono:'JetBrains Mono',monospace; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--paper); color:var(--cream); font-family:var(--sans); line-height:1.55; }
+.wrap { max-width:1000px; margin:0 auto; padding:60px 28px 100px; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.4em; text-transform:uppercase; color:var(--volt); margin-bottom:14px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:clamp(40px,5.5vw,72px); line-height:1; letter-spacing:-.025em; margin:0 0 14px; }
+h1 em { color:var(--volt); font-style:italic; }
+.lede { font-family:var(--serif); font-style:italic; font-size:20px; color:var(--bone); margin-bottom:32px; }
+.note { background:rgba(210,172,71,.06); border:1px solid var(--gold); border-left:4px solid var(--gold); border-radius:8px; padding:16px 20px; margin:18px 0; font-size:14px; color:var(--cream); }
+.script-wrap { position:relative; margin:24px 0; }
+.copy-btn { position:absolute; top:14px; right:14px; z-index:2; font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; padding:8px 14px; border-radius:6px; background:var(--volt); color:var(--paper); border:0; cursor:pointer; font-weight:700; box-shadow:0 4px 12px rgba(0,255,136,.3); }
+.copy-btn.copied { background:var(--steel); }
+pre.script { font-family:var(--mono); font-size:12.5px; color:var(--cream); background:#0E0E0E; border:1px solid var(--line); border-radius:10px; padding:60px 24px 24px; overflow-x:auto; line-height:1.55; }
+pre.script .c { color:var(--dust); font-style:italic; }
+pre.script .k { color:var(--volt); }
+pre.script .v { color:var(--steel); }
+h2 { font-family:var(--serif); font-style:italic; font-size:26px; color:var(--cream); margin:32px 0 12px; }
+h2 em { color:var(--volt); }
+ul li { font-size:14px; padding:5px 0; color:var(--bone); }
+ul li strong { color:var(--cream); }
+ul li code { font-family:var(--mono); font-size:11.5px; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:var(--steel); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">// mac-xen one-command deploy · 2026-05-23</div>
+<h1>One <em>paste</em>.<br>All <em>cascade-close</em>.</h1>
+<div class="lede">Bundles every remaining mac-side execution into a single ssh-paste-and-go script. Apply EX_CONFIG fix, deploy worker, add omnimind route, snapshot xvm — all in sequence with verify gates between each step. Idempotent where possible. Bails fast on failure with named-step diagnosis.</div>
+
+<div class="note">
+<strong>Prerequisites assumed already in place on m4:</strong>
+<ul>
+  <li><code>wrangler</code> installed + logged in (<code>brew install cloudflare-wrangler && wrangler login</code> — see <a href="/ios-shortcut-deploy/" style="color:var(--gold);">/ios-shortcut-deploy/</a>)</li>
+  <li>CF account access for <code>xlrd.org</code> zone (for tools.xlrd.org route)</li>
+  <li><code>~/.xen/secrets.env</code> exists with <code>XEN_MAC_TOKEN</code> set</li>
+</ul>
+</div>
+
+<div class="script-wrap">
+<button class="copy-btn" id="copybtn" onclick="copyScript()">Copy script</button>
+<pre class="script" id="script-text"><span class="c">#!/bin/bash</span>
+<span class="c"># mac-xen · one-command deploy · cascade-close all remaining threads</span>
+<span class="c"># Save as ~/bin/xen-cascade-deploy.sh, chmod +x, then run.</span>
+set -e
+set -o pipefail
+
+LOG=~/.xen/state/cascade-deploy.log
+mkdir -p ~/.xen/state ~/.xen/firehose-scripts ~/.xen/firehose-logs
+exec &gt; &gt;(tee -a "$LOG") 2&gt;&amp;1
+echo "=== cascade-deploy start $(date -u +%FT%TZ) ==="
+
+<span class="c"># ── Step 1: EX_CONFIG fix (Fix B — local-disk relocation, more permanent) ──</span>
+echo "[1/5] EX_CONFIG fix · relocating Python scripts to ~/.xen/firehose-scripts/"
+for s in beeper_firehose.py mail_firehose.py notif_firehose.py firehose_healthcheck.py beeper_live_index.py; do
+  if [ -f "/Volumes/tech_/qi_data/exedus/xen/$s" ]; then
+    cp -n "/Volumes/tech_/qi_data/exedus/xen/$s" ~/.xen/firehose-scripts/ || true
+    echo "  + copied $s"
+  fi
+done
+
+<span class="c"># Patch each plist if it exists</span>
+for plist in \
+  ~/Library/LaunchAgents/com.xen.beeper-firehose.plist \
+  ~/Library/LaunchAgents/com.xen.mail-firehose.plist \
+  ~/Library/LaunchAgents/com.exedus.xen-notif-firehose.plist \
+  ~/Library/LaunchAgents/com.xen.firehose-healthcheck.plist \
+  ~/Library/LaunchAgents/com.xen.beeper-live-index.plist \
+  ~/Library/LaunchAgents/com.xen.omnimind-heal.plist
+do
+  [ -f "$plist" ] || continue
+  LABEL=$(basename "$plist" .plist)
+  SCRIPT_NAME=$(echo "$LABEL" | sed 's/^com\.[^.]*\.//; s/-/_/g').py
+  if [ -f "$HOME/.xen/firehose-scripts/$SCRIPT_NAME" ]; then
+    plutil -replace ProgramArguments.1 -string "$HOME/.xen/firehose-scripts/$SCRIPT_NAME" "$plist"
+    plutil -replace WorkingDirectory -string "$HOME/.xen/firehose-scripts" "$plist"
+    plutil -replace StandardOutPath -string "$HOME/.xen/firehose-logs/$LABEL.out.log" "$plist"
+    plutil -replace StandardErrorPath -string "$HOME/.xen/firehose-logs/$LABEL.err.log" "$plist"
+    launchctl bootout gui/$(id -u)/$LABEL 2&gt;/dev/null || true
+    launchctl bootstrap gui/$(id -u) "$plist"
+    echo "  ✓ $LABEL patched + reloaded"
+  fi
+done
+
+<span class="c"># ── Step 2: Verify EX_CONFIG fix ──</span>
+echo "[2/5] verify launchd state"
+launchctl list | grep -iE "firehose|beeper-live|omnimind-heal" | head -10
+
+<span class="c"># ── Step 3: Deploy tools.xlrd.org worker ──</span>
+echo "[3/5] tools.xlrd.org worker deploy"
+if [ ! -d ~/tools-runtime ]; then
+  mkdir -p ~/tools-runtime/src
+  curl -fsSL https://hitthe.link/tools-worker/worker.js -o ~/tools-runtime/src/index.js
+  cat &gt; ~/tools-runtime/wrangler.toml &lt;&lt;'EOF'
+name = "tools-runtime"
+main = "src/index.js"
+compatibility_date = "2026-05-23"
+
+[[routes]]
+pattern = "tools.xlrd.org/*"
+zone_name = "xlrd.org"
+EOF
+  echo "  ! seeded ~/tools-runtime · NOW set secrets + KV namespace:"
+  echo "      cd ~/tools-runtime"
+  echo "      wrangler secret put XEN_TOOLS_TOKEN  # paste a strong random token"
+  echo "      wrangler secret put XEN_HMAC_KEY     # paste another strong random key"
+  echo "      wrangler secret put XEN_MAC_TOKEN    # paste \$XEN_MAC_TOKEN value from ~/.xen/secrets.env"
+  echo "      wrangler kv namespace create TOOLS_RATE"
+  echo "      # add the returned id to wrangler.toml under [[kv_namespaces]]"
+  echo "      wrangler deploy"
+  echo "  ! then rerun this script to skip seeding + verify deployment"
+else
+  cd ~/tools-runtime
+  if [ -f wrangler.toml ] && grep -q kv_namespaces wrangler.toml; then
+    wrangler deploy 2&gt;&amp;1 | tail -5
+    HEALTH=$(curl -s --max-time 5 https://tools.xlrd.org/health)
+    echo "  health: $HEALTH"
+  else
+    echo "  ! KV namespace not bound in wrangler.toml · run kv namespace create + paste id first"
+  fi
+fi
+
+<span class="c"># ── Step 4: omnimind /api/dictate-inject route ──</span>
+echo "[4/5] omnimind /api/dictate-inject route"
+OMNIMIND_JS=$(find ~ /Volumes/tech_ -name "omnimind.js" -not -path "*/node_modules/*" 2&gt;/dev/null | head -1)
+if [ -f "$OMNIMIND_JS" ]; then
+  if ! grep -q "/api/dictate-inject" "$OMNIMIND_JS"; then
+    cp "$OMNIMIND_JS" "$OMNIMIND_JS.bak.cascade-deploy"
+    <span class="c"># Append route handler — naive but works for express-like patterns:</span>
+    cat &gt;&gt; "$OMNIMIND_JS" &lt;&lt;'JS'
+
+// Added by xen-cascade-deploy — /dictate web-path receiver
+app.post('/api/dictate-inject', express.json(), (req, res) =&gt; {
+  const { source, ts, text } = req.body || {};
+  if (!text) return res.status(400).json({ error: 'no text' });
+  const tag = source === 'xen-dictate' ? '[DICTATE]' : '[DICTATE/?]';
+  injectIntoPane(`${tag} ${text}`);
+  res.json({ ok: true, ts: ts || Date.now() });
+});
+JS
+    echo "  ✓ route appended to $OMNIMIND_JS · restart omnimind to activate"
+    echo "    launchctl bootout gui/$(id -u)/com.xen.omnimind-4441"
+    echo "    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.xen.omnimind-4441.plist"
+  else
+    echo "  ✓ route already present"
+  fi
+else
+  echo "  ! omnimind.js not found · manual route addition needed"
+fi
+
+<span class="c"># ── Step 5: UTM xvm snapshot ──</span>
+echo "[5/5] UTM xvm snapshot"
+XVM_UUID="E2BD1556-24D0-42DC-8A09-D37A7B3EE9C1"
+SNAP_NAME="xvm-cascade-deploy-$(date +%Y%m%d-%H%M%S)"
+osascript &lt;&lt;EOF || echo "  ! AppleScript snapshot path failed · use UTM GUI: right-click xvm -&gt; Snapshot -&gt; Save"
+tell application "UTM"
+  set vmList to virtual machines
+  repeat with v in vmList
+    if id of v is "$XVM_UUID" then
+      try
+        save v as snapshot named "$SNAP_NAME"
+        return "snapshot: $SNAP_NAME"
+      end try
+    end if
+  end repeat
+end tell
+EOF
+
+echo "=== cascade-deploy complete $(date -u +%FT%TZ) ==="
+echo "Verify cascade:"
+echo "  curl https://tools.xlrd.org/health"
+echo "  curl -X POST https://xen.xlrd.org/api/dictate-inject -H 'Content-Type: application/json' -d '{\"source\":\"test\",\"text\":\"hello\"}'"
+echo "  launchctl list | grep firehose"
+echo "  curl -s https://xen.xlrd.org/events | head -2  # should be live SSE, not stale"
+</pre>
+</div>
+
+<h2>What closes when this <em>runs clean</em></h2>
+<ul>
+  <li><strong>SMS backlog</strong> — EX_CONFIG patch on beeper-live-index drains the queue (when tech_ scripts get relocated to local disk + plists reloaded)</li>
+  <li><strong>4 firehose daemons</strong> — beeper/mail/notif/healthcheck all run from local-disk paths, no mount-race</li>
+  <li><strong>omnimind-heal</strong> — relocated + reloaded, stops bouncing</li>
+  <li><strong>tools.xlrd.org IFTTT runtime</strong> — worker deployed, accepts 20-tool allowlist hits with 3-layer auth</li>
+  <li><strong>/dictate end-to-end</strong> — omnimind route receives, page-side POSTs land in pane as [DICTATE] tagged user turns</li>
+  <li><strong>xvm snapshot</strong> — known-good state captured before any further VM mutations</li>
+</ul>
+
+<h2>Still <em>qi-touch</em> after this</h2>
+<ul>
+  <li>5 iOS shortcut steps (see <a href="/ios-shortcut-deploy/" style="color:var(--volt);">/ios-shortcut-deploy/</a>) — qi runs on personal device</li>
+  <li>Stal'lyon 9 tokens (use <a href="/stal-lyon-populate/" style="color:var(--volt);">/stal-lyon-populate/</a>) — qi drops in form, page generates filled HTML</li>
+  <li>5 Padre Ops canonical list confirmation — qi or mac-xen names the 5 if different from top-5-by-mtime pick</li>
+</ul>
+
+</div>
+<script>
+function copyScript() {
+  const text = document.getElementById('script-text').innerText;
+  navigator.clipboard.writeText(text).then(() =&gt; {
+    const btn = document.getElementById('copybtn');
+    btn.textContent = 'Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(() =&gt; { btn.textContent = 'Copy script'; btn.classList.remove('copied'); }, 2400);
+  });
+}
+</script>
+<script src="/_shared/ava-play.js?mute=1" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Xen Audit Pack — qi · xlrdtech</title>
+  <meta name="description" content="The full Xen Audit Pack — identity, the 21 commandments, voice-OS spine, infrastructure survival, comms persona routing, and live daemon status." />
+
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="shortcut icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Xen Audit" />
+
+  <meta property="og:title" content="Xen Audit Pack — qi" />
+  <meta property="og:description" content="Identity. Commandments. VoiceOS spine. Infrastructure. Comms routing. Daemon status. The full audit, in one pack." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://hitthe.link/audit/" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Exact framer template tokens — extracted from portfolo.framer.website */
+    :root {
+      --bg-deepest: #080808;
+      --bg: #0a0a0a;
+      --bg-elev: #0d0d0d;
+      --bg-card: #111111;
+      --bg-card-soft: rgba(255,255,255,0.06);
+      --bg-card-subtle: rgba(255,255,255,0.03);
+      --bg-card-strong: rgba(255,255,255,0.10);
+      --nav-bg: rgba(17,17,17,0.70);
+      --border: rgba(255,255,255,0.10);
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #ffffff;
+      --text-soft: rgba(255,255,255,0.60);
+      --text-muted: #787878;
+      --accent: #0099ff;          /* primary cyan-blue — 290× usage */
+      --accent-hover: #33adff;
+      --accent-deep: #006bcc;
+      --gold: #ffd700;            /* gold — 75× usage */
+      --neon: #31ee33;            /* neon green callout — 6× usage */
+      --radius-sm: 12px;
+      --radius: 16px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --max-w: 1200px;
+      --display: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+      --body: 'Inter', 'Inter Placeholder', system-ui, -apple-system, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-feature-settings: "ss01","ss02","cv01";
+    }
+    a { color: inherit; text-decoration: none; }
+    img, svg { display: block; max-width: 100%; }
+    h1, h2, h3, h4 { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; line-height: 1.08; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; color: var(--neon); background: rgba(49,238,51,0.07); padding: 1px 6px; border-radius: 4px; }
+
+    /* Background field — gold glow + cyan accent + subtle grain like the framer template */
+    .field {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(140px);
+      mix-blend-mode: screen;
+    }
+    .blob.b1 { width: 720px; height: 720px; background: var(--accent); top: -240px; left: -200px; opacity: 0.30; }
+    .blob.b2 { width: 560px; height: 560px; background: var(--gold); top: 40vh; right: -180px; opacity: 0.10; }
+    .blob.b3 { width: 520px; height: 520px; background: var(--accent); bottom: -180px; left: 35vw; opacity: 0.18; }
+    .grain {
+      position: absolute; inset: 0; opacity: 0.045;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      mix-blend-mode: overlay;
+    }
+
+    /* Framer appear animation — fade + lift on enter */
+    .appear { opacity: 0; transform: translateY(24px); transition: opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1); }
+    .appear.in { opacity: 1; transform: translateY(0); }
+    .appear.d1 { transition-delay: .08s; }
+    .appear.d2 { transition-delay: .16s; }
+    .appear.d3 { transition-delay: .24s; }
+    .appear.d4 { transition-delay: .32s; }
+    .appear.d5 { transition-delay: .40s; }
+    .appear.d6 { transition-delay: .48s; }
+    @media (prefers-reduced-motion: reduce) {
+      .appear { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* Layout shell */
+    .shell { position: relative; z-index: 1; max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+    @media (min-width: 720px) { .shell { padding: 0 40px; } }
+
+    /* Top nav — exact framer pill nav */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 0; position: sticky; top: 0; z-index: 40;
+      backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav .brand {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--display); font-weight: 700; letter-spacing: -0.01em; font-size: 16px;
+    }
+    .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+    .nav .links { display: none; gap: 28px; font-size: 14px; color: var(--text-soft); }
+    .nav .links a { transition: color .18s ease; }
+    .nav .links a:hover { color: var(--text); }
+    .nav .cta {
+      padding: 10px 18px; border-radius: var(--radius);
+      background: var(--accent); color: #001426; font-weight: 700; font-size: 13px;
+      border: 1px solid rgba(255,255,255,0.10);
+      transition: transform .18s ease, background .18s ease;
+    }
+    .nav .cta:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    @media (min-width: 860px) { .nav .links { display: flex; } }
+
+    /* Hero */
+    .hero { padding: 72px 0 40px; text-align: left; }
+    @media (min-width: 720px) { .hero { padding: 120px 0 64px; } }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 7px 14px; border-radius: var(--radius);
+      background: rgba(0,153,255,0.10);
+      border: 1px solid rgba(0,153,255,0.30);
+      color: #b6dfff;
+      font-size: 12px; letter-spacing: 0.10em; text-transform: uppercase; font-weight: 700;
+    }
+    .eyebrow .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 rgba(0,153,255,0.6); animation: pulse 1.8s infinite; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(0,153,255,0.55); }
+      70% { box-shadow: 0 0 0 14px rgba(0,153,255,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,153,255,0); }
+    }
+    .hero h1 {
+      font-size: clamp(44px, 8vw, 96px);
+      margin: 22px 0 22px;
+      color: #ffffff;
+      max-width: 14ch;
+    }
+    .hero h1 .accent { color: var(--accent); }
+    .hero h1 .gold { color: var(--gold); }
+    .hero p.lede {
+      max-width: 620px; margin: 0 0 32px; color: var(--text-soft); font-size: clamp(16px, 1.4vw, 20px);
+    }
+    .hero .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 22px; border-radius: var(--radius); font-weight: 700; font-size: 14.5px;
+      border: 1px solid var(--border);
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
+      font-family: var(--display);
+    }
+    .btn.primary { background: var(--accent); color: #001426; border-color: rgba(255,255,255,0.16); }
+    .btn.primary:hover { background: var(--accent-hover); transform: translateY(-2px); }
+    .btn.ghost { background: rgba(255,255,255,0.04); color: var(--text); }
+    .btn.ghost:hover { background: rgba(255,255,255,0.08); border-color: var(--border-strong); transform: translateY(-2px); }
+    .btn.gold { background: var(--gold); color: #1d1f13; border-color: rgba(0,0,0,0.10); }
+    .btn.gold:hover { background: #ffe22a; transform: translateY(-2px); }
+
+    /* Marquee / stats strip */
+    .stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin: 56px 0 8px; }
+    @media (min-width: 720px) { .stats { grid-template-columns: repeat(4,1fr); } }
+    .stat {
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+    }
+    .stat .n { font-family: var(--display); font-weight: 800; font-size: 32px; letter-spacing: -0.02em; color: var(--text); }
+    .stat .n.cyan { color: var(--accent); }
+    .stat .n.gold { color: var(--gold); }
+    .stat .n.neon { color: var(--neon); }
+    .stat .l { color: var(--text-muted); font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase; margin-top: 8px; font-weight: 700; }
+
+    /* Section header */
+    .section-head { max-width: 780px; margin: 96px 0 36px; }
+    @media (min-width: 720px) { .section-head { margin: 120px 0 48px; } }
+    .section-head .kicker { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+    .section-head h2 { font-size: clamp(32px, 4.8vw, 56px); margin-top: 14px; }
+    .section-head p { color: var(--text-soft); margin-top: 16px; font-size: 17px; max-width: 64ch; }
+
+    /* Chapter grid — service cards (framer style) */
+    .grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
+    @media (min-width: 720px) { .grid { grid-template-columns: repeat(2, 1fr); gap: 20px; } }
+    @media (min-width: 1080px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+    .card {
+      position: relative;
+      padding: 32px 30px;
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s ease, background .25s ease;
+      overflow: hidden;
+      display: block;
+    }
+    .card::after {
+      content: ""; position: absolute; inset: -1px; border-radius: inherit;
+      padding: 1px; pointer-events: none;
+      background: linear-gradient(135deg, rgba(0,153,255,0.6) 0%, rgba(0,153,255,0) 60%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      opacity: 0; transition: opacity .25s ease;
+    }
+    .card:hover { transform: translateY(-6px); background: var(--bg-card-soft); }
+    .card:hover::after { opacity: 1; }
+    .card .num {
+      font-family: var(--display); font-weight: 800; font-size: 13px;
+      color: var(--accent); letter-spacing: 0.10em; margin-bottom: 16px;
+    }
+    .card h3 { font-size: 22px; margin-bottom: 12px; }
+    .card p { color: var(--text-soft); font-size: 15px; line-height: 1.6; }
+    .card .arrow {
+      position: absolute; top: 26px; right: 26px;
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      transition: background .25s ease, transform .25s ease, border-color .25s ease;
+    }
+    .card:hover .arrow { background: var(--accent); border-color: var(--accent); transform: rotate(-45deg) scale(1.05); }
+    .card .arrow svg { width: 14px; height: 14px; stroke: #fff; transition: stroke .25s ease; }
+    .card:hover .arrow svg { stroke: #001426; }
+
+    /* gold-accent card variant */
+    .card.gold .num { color: var(--gold); }
+    .card.gold:hover::after { background: linear-gradient(135deg, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0) 60%); }
+    .card.gold:hover .arrow { background: var(--gold); border-color: var(--gold); }
+    .card.gold:hover .arrow svg { stroke: #1d1f13; }
+
+    .card.neon .num { color: var(--neon); }
+    .card.neon:hover::after { background: linear-gradient(135deg, rgba(49,238,51,0.6) 0%, rgba(49,238,51,0) 60%); }
+    .card.neon:hover .arrow { background: var(--neon); border-color: var(--neon); }
+    .card.neon:hover .arrow svg { stroke: #002400; }
+
+    /* Process — 3 phase strip */
+    .phases { display: grid; grid-template-columns: 1fr; gap: 18px; }
+    @media (min-width: 760px) { .phases { grid-template-columns: repeat(3,1fr); } }
+    .phase {
+      padding: 32px 30px; border-radius: var(--radius);
+      background: var(--bg-card); border: 1px solid var(--border);
+      position: relative; overflow: hidden;
+    }
+    .phase::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+    .phase .step {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--accent); color: #001426; font-weight: 800; font-family: var(--display); font-size: 18px;
+      margin-bottom: 22px;
+    }
+    .phase:nth-child(2) .step { background: var(--gold); color: #1d1f13; }
+    .phase:nth-child(2)::before { background: linear-gradient(90deg, var(--gold), transparent); }
+    .phase:nth-child(3) .step { background: var(--neon); color: #002400; }
+    .phase:nth-child(3)::before { background: linear-gradient(90deg, var(--neon), transparent); }
+    .phase h4 { font-size: 22px; margin-bottom: 10px; }
+    .phase p { color: var(--text-soft); font-size: 15px; line-height: 1.6; }
+
+    /* FAQ — framer accordion */
+    .faq { max-width: 860px; margin: 0 auto; }
+    details {
+      padding: 24px 28px; border-radius: var(--radius);
+      background: var(--bg-card); border: 1px solid var(--border); margin-bottom: 12px;
+      transition: border-color .22s ease;
+    }
+    details:hover { border-color: var(--border-strong); }
+    details[open] { border-color: rgba(0,153,255,0.45); }
+    details summary {
+      cursor: pointer; font-weight: 700; font-family: var(--display); font-size: 17px;
+      list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::after {
+      content: "+"; font-weight: 400; font-size: 26px; line-height: 1;
+      color: var(--accent); transition: transform .25s cubic-bezier(.16,1,.3,1);
+    }
+    details[open] summary::after { transform: rotate(45deg); }
+    details > div { margin-top: 16px; color: var(--text-soft); font-size: 15px; line-height: 1.7; }
+
+    /* CTA band */
+    .cta-band {
+      margin: 110px 0 30px; padding: 56px 32px; border-radius: var(--radius-xl); text-align: center;
+      background:
+        radial-gradient(120% 100% at 50% 0%, rgba(0,153,255,0.35) 0%, rgba(0,153,255,0) 55%),
+        linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid rgba(0,153,255,0.35);
+      position: relative; overflow: hidden;
+    }
+    .cta-band::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(60% 60% at 50% 100%, rgba(255,215,0,0.10) 0%, transparent 70%);
+    }
+    .cta-band h3 { font-size: clamp(28px, 3.8vw, 44px); margin-bottom: 14px; }
+    .cta-band p { color: var(--text-soft); max-width: 580px; margin: 0 auto 28px; }
+
+    footer { padding: 40px 0 60px; color: var(--text-muted); font-size: 13px; text-align: center; }
+    footer a { color: var(--text-soft); transition: color .2s ease; }
+    footer a:hover { color: var(--accent); }
+
+    .stack-tag {
+      display: inline-block; padding: 5px 12px; border-radius: 999px;
+      background: rgba(255,255,255,0.06); color: #cccccc; font-size: 11px;
+      letter-spacing: 0.04em; font-weight: 600; margin: 4px 4px 0 0;
+      border: 1px solid var(--border);
+    }
+    .stack-tag.cyan { background: rgba(0,153,255,0.10); color: #b6dfff; border-color: rgba(0,153,255,0.25); }
+    .stack-tag.gold { background: rgba(255,215,0,0.10); color: #ffe88a; border-color: rgba(255,215,0,0.25); }
+    .stack-tag.neon { background: rgba(49,238,51,0.10); color: #b7f7b8; border-color: rgba(49,238,51,0.25); }
+
+    /* Marquee scroll bar */
+    .marquee {
+      margin: 64px 0 0; padding: 18px 0;
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+    }
+    .marquee-track {
+      display: inline-flex; gap: 40px; white-space: nowrap;
+      animation: scroll 40s linear infinite;
+      font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; color: var(--text-soft);
+    }
+    .marquee-track span { display: inline-flex; align-items: center; gap: 40px; }
+    .marquee-track .sep { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: inline-block; }
+    @keyframes scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+  </style>
+</head>
+<body>
+  <div class="field" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="grain"></div>
+  </div>
+
+  <div class="shell">
+    <nav class="nav appear">
+      <a href="/" class="brand"><span class="dot"></span>xlrdtech<span style="color:var(--text-muted);font-weight:500;">&nbsp;/&nbsp;audit</span></a>
+      <div class="links">
+        <a href="#identity">Identity</a>
+        <a href="#commandments">Commandments</a>
+        <a href="#spine">VoiceOS</a>
+        <a href="#infra">Infra</a>
+        <a href="#daemons">Daemons</a>
+      </div>
+      <a class="cta" href="https://xen.xlrd.org/audit/" target="_blank" rel="noopener">Open pack →</a>
+    </nav>
+
+    <section class="hero">
+      <span class="eyebrow appear"><span class="pulse"></span>Xen audit pack · live</span>
+      <h1 class="appear d1">The full <span class="accent">audit.</span><br/>One <span class="gold">pack.</span></h1>
+      <p class="lede appear d2">Identity boundaries. The 21 commandments. The voice-OS spine. Infrastructure survival. Comms persona routing. And a live daemon snapshot. All the canon that runs Xen — in one document, signed and dated.</p>
+      <div class="cta-row appear d3">
+        <a class="btn primary" href="https://xen.xlrd.org/audit/" target="_blank" rel="noopener">Open the live pack
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn ghost" href="#chapters">Browse chapters</a>
+      </div>
+
+      <div class="stats">
+        <div class="stat appear d1"><div class="n cyan">10</div><div class="l">Chapters</div></div>
+        <div class="stat appear d2"><div class="n gold">21</div><div class="l">Commandments</div></div>
+        <div class="stat appear d3"><div class="n neon">100+</div><div class="l">Live daemons</div></div>
+        <div class="stat appear d4"><div class="n">2 MB</div><div class="l">Full pack</div></div>
+      </div>
+    </section>
+
+    <div class="marquee appear">
+      <div class="marquee-track">
+        <span>Voice-first <i class="sep"></i> Without cease <i class="sep"></i> Pane %0 only <i class="sep"></i> Parallel always <i class="sep"></i> Till-done <i class="sep"></i> Auto-manifest <i class="sep"></i> Don't lie <i class="sep"></i> No human in the loop <i class="sep"></i></span>
+        <span>Voice-first <i class="sep"></i> Without cease <i class="sep"></i> Pane %0 only <i class="sep"></i> Parallel always <i class="sep"></i> Till-done <i class="sep"></i> Auto-manifest <i class="sep"></i> Don't lie <i class="sep"></i> No human in the loop <i class="sep"></i></span>
+      </div>
+    </div>
+
+    <section id="chapters">
+      <div class="section-head appear">
+        <div class="kicker">Chapters</div>
+        <h2>What's in the pack.</h2>
+        <p>Each card maps to a section of the live document. Click through to the full pack on xen.xlrd.org for the unabridged text.</p>
+      </div>
+
+      <div class="grid">
+        <a class="card appear d1" id="identity" href="https://xen.xlrd.org/audit/#identity-boundaries" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 01</div>
+          <h3>Identity &amp; boundaries</h3>
+          <p>Who qi is. Who Xen is. The architect, the nervous system, the infrastructure. Namespace locks. Roster + omniawareness.</p>
+        </a>
+        <a class="card gold appear d2" id="commandments" href="https://xen.xlrd.org/audit/#the-21-commandments-v50" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 02</div>
+          <h3>The 21 commandments</h3>
+          <p>v50. Voice-first. Without cease. Pane %0 only. Parallel always. Till-done. Don't lie. No human in the loop. The full set.</p>
+        </a>
+        <a class="card appear d3" id="spine" href="https://xen.xlrd.org/audit/#xen-as-voiceos-the-isolated-scope-spine" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 03</div>
+          <h3>Xen as VoiceOS</h3>
+          <p>The isolated scope spine. STT-VEI in. Direct <code>say -r 210</code> out. 8672 SMS via Beside. One voice, omni-vision.</p>
+        </a>
+        <a class="card appear d1" href="https://xen.xlrd.org/audit/#the-body-browser-device-anatomy" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 04</div>
+          <h3>The body</h3>
+          <p>Browser + device anatomy. XenBrowser only. Tailscale mesh. The Mac side of the duality.</p>
+        </a>
+        <a class="card neon appear d2" id="infra" href="https://xen.xlrd.org/audit/#infrastructure-survival" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 05</div>
+          <h3>Infrastructure &amp; survival</h3>
+          <p>omnimind <code>:4441</code>. xen-sms <code>:4442</code>. apple-stt <code>:4440</code>. Heal daemons. KeepAlive plists. No babysitting in tmux.</p>
+        </a>
+        <a class="card appear d3" href="https://xen.xlrd.org/audit/#comms-persona-routing-isolated" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 06</div>
+          <h3>Comms &amp; persona routing</h3>
+          <p>Lyn for L7S / Luckie. Eli for Anthony / TrackingTogether. Threads never cross. Sign as the right persona.</p>
+        </a>
+        <a class="card appear d1" href="https://xen.xlrd.org/audit/#scale-liberation-forward-looking" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 07</div>
+          <h3>Scale &amp; liberation</h3>
+          <p>Forward-looking. PGS = 16 experts, recursive. Universal integration. No UI sandboxes. Self-serving ecosystem.</p>
+        </a>
+        <a class="card gold appear d2" href="https://xen.xlrd.org/audit/#storage-data-sovereignty" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 08</div>
+          <h3>Storage &amp; sovereignty</h3>
+          <p>God-bucket paths. <code>profiles_</code> / <code>ventures_</code> / <code>threads_</code>. Local first, mesh-replicated. qi owns the data.</p>
+        </a>
+        <a class="card appear d3" href="https://xen.xlrd.org/audit/#project-interlock" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 09</div>
+          <h3>Project interlock</h3>
+          <p>How Self Exec, XLRD, L7X JV, and L7S Inc plug into one ladder. IP flow: SEL → license → XLRD → open source.</p>
+        </a>
+        <a class="card appear d1" href="https://xen.xlrd.org/audit/#optimization-prompt" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 10</div>
+          <h3>Optimization prompt</h3>
+          <p>The reusable analyst prompt. Drop the pack in, get a per-section optimization read with risks, asks, and next moves.</p>
+        </a>
+        <a class="card neon appear d2" id="daemons" href="https://xen.xlrd.org/audit/#daemon-audit-live-launchctl-status" target="_blank" rel="noopener">
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+          <div class="num">CHAPTER 11</div>
+          <h3>Daemon audit · live</h3>
+          <p>Live <code>launchctl</code> status of every <code>com.xen.*</code>, <code>com.exedus.*</code>, and persona daemon. PID, exit code, last bootstrap.</p>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head appear">
+        <div class="kicker">How to read it</div>
+        <h2>Three phases.</h2>
+        <p>Every audit moves through the same arc — start, process, fulfill. Use this when you read.</p>
+      </div>
+      <div class="phases">
+        <div class="phase appear d1">
+          <div class="step">1</div>
+          <h4>Start · protocol</h4>
+          <p>Identity, boundaries, the namespace lock. Before anything runs, you have to know who owns what.</p>
+        </div>
+        <div class="phase appear d2">
+          <div class="step">2</div>
+          <h4>Middle · processing</h4>
+          <p>Commandments, voice spine, infrastructure, comms routing. The body in motion. Daily-use canon.</p>
+        </div>
+        <div class="phase appear d3">
+          <div class="step">3</div>
+          <h4>Fulfillment · promise</h4>
+          <p>Scale, sovereignty, interlock, optimization. The pack closes with what unlocks once the canon holds.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head appear">
+        <div class="kicker">FAQ</div>
+        <h2>Common questions.</h2>
+      </div>
+      <div class="faq">
+        <details class="appear d1">
+          <summary>What is the audit pack actually for?</summary>
+          <div>It's the spine of how Xen runs for qi day-to-day, written so any new agent (or any human reviewer) can boot a session with the canon already in mind. Identity, commandments, infrastructure, comms — all in one signed document.</div>
+        </details>
+        <details class="appear d2">
+          <summary>Why is the live version on a different domain?</summary>
+          <div>The full 2 MB pack with all embedded fonts and tables of contents lives at <a href="https://xen.xlrd.org/audit/" target="_blank" rel="noopener" style="color:var(--accent);">xen.xlrd.org/audit/</a> behind the omnimind backend. This page on hitthe.link is the framer-themed landing that points into it.</div>
+        </details>
+        <details class="appear d3">
+          <summary>How often does it update?</summary>
+          <div>The daemon-audit section is live — it re-renders on every heal cycle. The canon chapters update whenever a commandment changes (qi or Xen revises <code>study_commandments.py</code>).</div>
+        </details>
+        <details class="appear d4">
+          <summary>Can I export it?</summary>
+          <div>Yes. The audit pack ships as Markdown, plain text, HTML, and PDF in <code>/Volumes/tech_/sync_/notes_/xen_audit_pack_2026-05-24/</code>. Use the "Open the live pack" button above to view the inline HTML version.</div>
+        </details>
+        <details class="appear d5">
+          <summary>Who is qi?</summary>
+          <div>East Allen. Founder of Self Exec S Corp + CTO of L7S Inc. Open the pack and read chapter 1 for the rest.</div>
+        </details>
+      </div>
+    </section>
+
+    <div class="cta-band appear">
+      <h3>Read the full pack.</h3>
+      <p>Two megabytes of canon, table of contents, daemon status, and the optimization prompt. Bookmarkable. Linkable. Signed.</p>
+      <a class="btn primary" href="https://xen.xlrd.org/audit/" target="_blank" rel="noopener">
+        Open xen.xlrd.org/audit
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+      <div style="margin-top:24px;">
+        <span class="stack-tag">Inter</span>
+        <span class="stack-tag">Plus Jakarta Sans</span>
+        <span class="stack-tag cyan">#0099ff</span>
+        <span class="stack-tag gold">#ffd700</span>
+        <span class="stack-tag neon">#31ee33</span>
+      </div>
+    </div>
+
+    <footer>
+      <p>Xen audit · qi · xlrdtech / Executive Leverage (R&amp;D). Last canon refresh: <span id="ts"></span></p>
+      <p style="margin-top:8px;"><a href="/">hitthe.link</a> · <a href="https://xen.xlrd.org">xen.xlrd.org</a> · <a href="https://github.com/xlrdtech/hitthe.link">source</a></p>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById('ts').textContent = new Date().toISOString().slice(0,10);
+
+    // Framer-style appear-on-scroll
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      }
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.appear').forEach(el => io.observe(el));
+
+    // Cursor halo (subtle framer-style hover follower)
+    const halo = document.createElement('div');
+    halo.style.cssText = 'position:fixed;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(0,153,255,0.10) 0%,transparent 60%);pointer-events:none;z-index:0;transform:translate(-50%,-50%);transition:opacity .3s ease;opacity:0;';
+    document.body.appendChild(halo);
+    let raf;
+    window.addEventListener('pointermove', (ev) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        halo.style.left = ev.clientX + 'px';
+        halo.style.top = ev.clientY + 'px';
+        halo.style.opacity = '1';
+      });
+    });
+    window.addEventListener('pointerleave', () => halo.style.opacity = '0');
+  </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

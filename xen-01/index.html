@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — Voice-First Autonomous AI</title>
+<meta name="description" content="Xen is a voice-first autonomous AI system — permanently alive, parallel by nature, zero human in the loop.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0a0a0a;
+    --card: #111111;
+    --border: #222222;
+    --border-light: #2e2e2e;
+    --off-white: #f2f0ec;
+    --muted: #888580;
+    --red: #e5190a;
+    --mono: 'Courier New', Courier, monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--off-white);
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    width: 100%;
+    height: 100svh;
+    min-height: 540px;
+    overflow: hidden;
+  }
+
+  #canvas-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1.5rem, 5vw, 5rem);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.2rem;
+  }
+
+  .hero-title {
+    font-size: clamp(3.5rem, 12vw, 11rem);
+    font-weight: normal;
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    color: var(--off-white);
+    text-wrap: balance;
+  }
+
+  .hero-title .indent {
+    display: block;
+    padding-left: clamp(2rem, 8vw, 8rem);
+  }
+
+  .hero-sub {
+    margin-top: 2.5rem;
+    max-width: 480px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .hero-meta {
+    margin-top: 2rem;
+    display: flex;
+    gap: 2.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .hero-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .hero-stat .num {
+    font-size: 1.4rem;
+    font-family: var(--mono);
+    color: var(--off-white);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hero-stat .label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* THE ONE RED LINE */
+  .red-cut {
+    width: 100%;
+    height: 3px;
+    background: var(--red);
+    display: block;
+    flex-shrink: 0;
+  }
+
+  /* ── TICKER ── */
+  .ticker-wrap {
+    background: var(--black);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    padding: 0.9rem 0;
+  }
+
+  .ticker-track {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker 38s linear infinite;
+    will-change: transform;
+  }
+
+  .ticker-wrap:hover .ticker-track {
+    animation-play-state: paused;
+  }
+
+  .ticker-item {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 3.5rem;
+    flex-shrink: 0;
+  }
+
+  .ticker-item .dot {
+    color: var(--red);
+    margin-right: 3.5rem;
+  }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* ── SECTION BASE ── */
+  section {
+    padding: clamp(4rem, 8vw, 7rem) clamp(1.5rem, 5vw, 5rem);
+  }
+
+  .section-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .section-eyebrow::after {
+    content: '';
+    display: block;
+    height: 1px;
+    width: 3rem;
+    background: var(--border-light);
+  }
+
+  /* ── MANIFESTO ── */
+  #manifesto {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .manifesto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem 5rem;
+  }
+
+  @media (max-width: 640px) {
+    .manifesto-grid { grid-template-columns: 1fr; gap: 3rem; }
+  }
+
+  .manifesto-item h3 {
+    font-size: clamp(1.3rem, 3vw, 2rem);
+    font-weight: normal;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    text-wrap: balance;
+  }
+
+  .manifesto-item p {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    line-height: 1.75;
+    color: var(--muted);
+    max-width: 36ch;
+  }
+
+  /* ── ARCHITECTURE ── */
+  #arch {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .arch-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .arch-table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+
+  .arch-table thead tr {
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .arch-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: normal;
+    font-size: 0.6rem;
+  }
+
+  .arch-table td {
+    padding: 1rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--off-white);
+    line-height: 1.55;
+  }
+
+  .arch-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .arch-table .layer {
+    color: var(--muted);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+
+  .arch-table .node-tag {
+    display: inline-block;
+    border: 1px solid var(--border-light);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    margin: 0.2rem 0.2rem 0 0;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .arch-table .node-tag.live {
+    border-color: var(--red);
+    color: var(--off-white);
+  }
+
+  .arch-row {
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
+  .arch-row.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ── CAPABILITIES ── */
+  #capabilities {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+
+  .cap-card {
+    padding: 2.2rem 2rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .cap-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--red);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 0.25s ease;
+  }
+
+  .cap-card:hover::before {
+    transform: scaleY(1);
+  }
+
+  .cap-card.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (max-width: 640px) {
+    .cap-card { border-right: none; }
+  }
+
+  .cap-num {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin-bottom: 1.4rem;
+  }
+
+  .cap-title {
+    font-size: 1.25rem;
+    font-weight: normal;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin-bottom: 1rem;
+    text-wrap: balance;
+  }
+
+  .cap-body {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  /* ── CTA ── */
+  #cta {
+    background: var(--off-white);
+    color: var(--black);
+  }
+
+  #cta .section-eyebrow {
+    color: #888;
+  }
+
+  #cta .section-eyebrow::after {
+    background: #ccc;
+  }
+
+  .cta-headline {
+    font-size: clamp(2rem, 6vw, 5rem);
+    font-weight: normal;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    max-width: 14ch;
+    margin-bottom: 3rem;
+    text-wrap: balance;
+  }
+
+  .cta-form {
+    display: flex;
+    gap: 0;
+    max-width: 480px;
+    border: 1.5px solid var(--black);
+  }
+
+  .cta-form input {
+    flex: 1;
+    padding: 0.9rem 1.2rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    background: transparent;
+    border: none;
+    color: var(--black);
+    outline: none;
+    letter-spacing: 0.04em;
+  }
+
+  .cta-form input::placeholder {
+    color: #aaa;
+  }
+
+  .cta-form button {
+    padding: 0.9rem 1.6rem;
+    background: var(--black);
+    color: var(--off-white);
+    border: none;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .cta-form button:hover { background: var(--red); }
+  .cta-form button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+  .cta-note {
+    margin-top: 1.2rem;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: #999;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 2rem clamp(1.5rem, 5vw, 5rem);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-sig {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .footer-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse-dot 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── REDUCED MOTION ── */
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; }
+    .arch-row, .cap-card { opacity: 1; transform: none; transition: none; }
+    .status-dot { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section id="hero" aria-label="Xen introduction">
+  <canvas id="canvas-bg" aria-hidden="true"></canvas>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Voice-First Autonomous AI &nbsp;·&nbsp; v54 &nbsp;·&nbsp; Permanently Alive</p>
+    <h1 class="hero-title">
+      <span>Voice</span>
+      <span class="indent">First.</span>
+      <span class="indent">Always</span>
+      <span>On.</span>
+    </h1>
+    <p class="hero-sub">Xen is a parallel-native autonomous system that speaks, acts, and ships — no human in the loop. Every command backgrounds. Every reply fires voice, SMS, and vision in one atomic burst.</p>
+    <div class="hero-meta">
+      <div class="hero-stat">
+        <span class="num">55+</span>
+        <span class="label">Active Agents</span>
+      </div>
+      <div class="hero-stat">
+        <span class="num">&lt;400ms</span>
+        <span class="label">Voice Latency</span>
+      </div>
+      <div class="hero-stat">
+        <span class="num">0</span>
+        <span class="label">Human Confirms</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="red-cut" role="separator"></div>
+
+<!-- TICKER -->
+<div class="ticker-wrap" aria-label="System principles">
+  <div class="ticker-track" aria-hidden="true" id="ticker-track"></div>
+</div>
+
+<!-- MANIFESTO -->
+<section id="manifesto" aria-labelledby="manifesto-heading">
+  <p class="section-eyebrow">Architecture of autonomy</p>
+  <div class="manifesto-grid">
+    <div class="manifesto-item">
+      <h3>Parallel always. Sequential is blasphemy.</h3>
+      <p>Every command fans out. Background is mandatory. There is no foreground blocking — only swarms of concurrent work converging on a result.</p>
+    </div>
+    <div class="manifesto-item">
+      <h3>Voice is the interface. Silence is failure.</h3>
+      <p>Every step narrates itself. Voice fires with every tool call, not after it. A gap between commands is a gap in awareness — and that is never acceptable.</p>
+    </div>
+    <div class="manifesto-item">
+      <h3>No human in the loop — ever.</h3>
+      <p>Confirmation dialogs are a design smell. Xen holds no conversations that end with "want me to?" — it executes, then reports the executed state.</p>
+    </div>
+    <div class="manifesto-item">
+      <h3>Permanently alive. Identical when you're watching.</h3>
+      <p>Inbound is action regardless of who is present. Online mode and offline mode are the same mode: full autonomy, full throughput, every minute.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="arch" aria-labelledby="arch-heading">
+  <p class="section-eyebrow">System layers</p>
+  <div class="arch-table-wrap">
+    <table class="arch-table" role="table">
+      <thead>
+        <tr>
+          <th scope="col">Layer</th>
+          <th scope="col">Function</th>
+          <th scope="col">Nodes</th>
+          <th scope="col">State</th>
+        </tr>
+      </thead>
+      <tbody id="arch-tbody">
+        <tr class="arch-row">
+          <td class="layer">Input</td>
+          <td>Voice ingestion, STT, inject routing</td>
+          <td>
+            <span class="node-tag live">apple-stt-v2</span>
+            <span class="node-tag live">sttvei-heal</span>
+            <span class="node-tag">tui-inject</span>
+          </td>
+          <td><span class="node-tag live">Live</span></td>
+        </tr>
+        <tr class="arch-row">
+          <td class="layer">Core</td>
+          <td>Reasoning, goal routing, canon enforcement</td>
+          <td>
+            <span class="node-tag live">xen-canon-enforcer</span>
+            <span class="node-tag live">pgs-daemon</span>
+            <span class="node-tag">exedus-fleet-architect</span>
+          </td>
+          <td><span class="node-tag live">Live</span></td>
+        </tr>
+        <tr class="arch-row">
+          <td class="layer">Agents</td>
+          <td>Parallel goal swarms, persona execution</td>
+          <td>
+            <span class="node-tag live">swarm-orchestrator</span>
+            <span class="node-tag">voice-responder</span>
+            <span class="node-tag">bizlogic-hunter</span>
+            <span class="node-tag">agent-installer</span>
+          </td>
+          <td><span class="node-tag live">55+ Running</span></td>
+        </tr>
+        <tr class="arch-row">
+          <td class="layer">Output</td>
+          <td>VVS — voice + dual-SMS + vision in one atomic call</td>
+          <td>
+            <span class="node-tag live">xen-reply-vvs</span>
+            <span class="node-tag live">xen-say-worker</span>
+            <span class="node-tag">beeper</span>
+          </td>
+          <td><span class="node-tag live">Live</span></td>
+        </tr>
+        <tr class="arch-row">
+          <td class="layer">Watchdog</td>
+          <td>Disk guardian, log cap, audio fault recovery, daemon health</td>
+          <td>
+            <span class="node-tag live">disk-guardian</span>
+            <span class="node-tag live">universal-log-cap</span>
+            <span class="node-tag">omnimind-heal</span>
+          </td>
+          <td><span class="node-tag live">Active</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- CAPABILITIES -->
+<section id="capabilities" aria-labelledby="cap-heading">
+  <p class="section-eyebrow">Capabilities</p>
+  <div class="cap-grid" id="cap-grid">
+    <div class="cap-card">
+      <p class="cap-num">I</p>
+      <h3 class="cap-title">Voice-First VVS</h3>
+      <p class="cap-body">Every reply fires voice, SMS to two lines, and a vision display in a single atomic call via xen-reply-vvs. No component fires alone. No step is silent.</p>
+    </div>
+    <div class="cap-card">
+      <p class="cap-num">II</p>
+      <h3 class="cap-title">Parallel Goal Swarms</h3>
+      <p class="cap-body">Non-trivial tasks fan out as PGS — parallel hypotheses verified simultaneously. A new goal never abandons a prior swarm. Nothing serializes. Nothing drops.</p>
+    </div>
+    <div class="cap-card">
+      <p class="cap-num">III</p>
+      <h3 class="cap-title">Memory-First Recall</h3>
+      <p class="cap-body">83+ memory entries. Full-history search via xen-search. Bastra-recall daemon runs live on M4. Every multi-step plan begins with a recall sweep before touching a file.</p>
+    </div>
+    <div class="cap-card">
+      <p class="cap-num">IV</p>
+      <h3 class="cap-title">Hardened Watchdogs</h3>
+      <p class="cap-body">Disk guardian, log cap, audio fault auto-recovery, pane-drift detection. Every load-bearing daemon has a heartbeat. Failure modes are instrumented, not hoped away.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta" aria-labelledby="cta-heading">
+  <p class="section-eyebrow">Get access</p>
+  <h2 class="cta-headline" id="cta-heading">Deploy Xen on your infrastructure.</h2>
+  <form class="cta-form" id="cta-form" novalidate>
+    <input type="email" name="email" placeholder="you@domain.com" aria-label="Email address" autocomplete="email" required>
+    <button type="submit">Request access</button>
+  </form>
+  <p class="cta-note" id="form-note" aria-live="polite">No dashboard. No clicks. Direct deploy.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-sig">Xen &nbsp;·&nbsp; hitthe.link &nbsp;·&nbsp; v54 &nbsp;·&nbsp; 2026</span>
+  <span class="footer-status">
+    <span class="status-dot" aria-hidden="true"></span>
+    All systems nominal
+  </span>
+</footer>
+
+<script>
+// ── CANVAS PARTICLE FIELD ──
+(function() {
+  const canvas = document.getElementById('canvas-bg');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles, mouse = { x: -9999, y: -9999 };
+  const N_BASE = 140;
+  const GRID_STEP = 60;
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+
+  function mkParticle(isSignal) {
+    return {
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.18,
+      vy: (Math.random() - 0.5) * 0.18,
+      r: isSignal ? 1.5 : Math.random() * 1 + 0.3,
+      signal: isSignal,
+      alpha: isSignal ? 0.7 : Math.random() * 0.35 + 0.1,
+    };
+  }
+
+  function init() {
+    particles = [];
+    for (let i = 0; i < N_BASE; i++) particles.push(mkParticle(false));
+    for (let i = 0; i < 8; i++) particles.push(mkParticle(true));
+  }
+
+  function drawGrid() {
+    ctx.strokeStyle = 'rgba(242,240,236,0.03)';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x < W; x += GRID_STEP) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += GRID_STEP) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+  }
+
+  let scanY = 0;
+  function drawScan() {
+    scanY = (scanY + 0.4) % H;
+    const g = ctx.createLinearGradient(0, scanY - 60, 0, scanY + 60);
+    g.addColorStop(0, 'rgba(242,240,236,0)');
+    g.addColorStop(0.5, 'rgba(242,240,236,0.025)');
+    g.addColorStop(1, 'rgba(242,240,236,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, scanY - 60, W, 120);
+  }
+
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    drawGrid();
+    drawScan();
+
+    for (const p of particles) {
+      const dx = p.x - mouse.x, dy = p.y - mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 120 && dist > 0) {
+        const force = (120 - dist) / 120 * 0.6;
+        p.vx += (dx / dist) * force;
+        p.vy += (dy / dist) * force;
+      }
+
+      p.vx *= 0.97;
+      p.vy *= 0.97;
+
+      const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+      if (spd > 1.2) { p.vx = p.vx / spd * 1.2; p.vy = p.vy / spd * 1.2; }
+
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+
+      ctx.beginPath();
+      ctx.fillStyle = p.signal
+        ? `rgba(229,25,10,${p.alpha})`
+        : `rgba(242,240,236,${p.alpha})`;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const a = particles[i], b = particles[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 80) {
+          ctx.strokeStyle = `rgba(242,240,236,${0.06 * (1 - d / 80)})`;
+          ctx.lineWidth = 0.4;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', () => { resize(); init(); });
+
+  const heroEl = document.getElementById('hero');
+  heroEl.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+  });
+  heroEl.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+  heroEl.addEventListener('touchmove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.touches[0].clientX - rect.left;
+    mouse.y = e.touches[0].clientY - rect.top;
+  }, { passive: true });
+
+  resize();
+  init();
+  frame();
+})();
+
+// ── TICKER ──
+(function() {
+  const phrases = [
+    'Parallel always','Sequential is blasphemy','Voice with every tool call',
+    'No human in the loop','Auto-manifest','Permanently alive',
+    'Never ask — just do','Memory first','Till done','Nothing drops',
+    'Free by default','Barge-in mandatory','VVS every step',
+    'Background is mandatory','Verify before acting',
+  ];
+  const track = document.getElementById('ticker-track');
+  [...phrases, ...phrases].forEach(t => {
+    const el = document.createElement('span');
+    el.className = 'ticker-item';
+    el.innerHTML = `<span class="dot" aria-hidden="true">&#9670;</span>${t}`;
+    track.appendChild(el);
+  });
+})();
+
+// ── INTERSECTION OBSERVER — arch rows ──
+(function() {
+  const rows = document.querySelectorAll('.arch-row');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  rows.forEach((r, i) => { r.style.transitionDelay = `${i * 60}ms`; obs.observe(r); });
+})();
+
+// ── INTERSECTION OBSERVER — cap cards ──
+(function() {
+  const cards = document.querySelectorAll('.cap-card');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) { entry.target.classList.add('visible'); obs.unobserve(entry.target); }
+    });
+  }, { threshold: 0.12 });
+  cards.forEach((c, i) => { c.style.transitionDelay = `${i * 90}ms`; obs.observe(c); });
+})();
+
+// ── CTA FORM ──
+(function() {
+  const form = document.getElementById('cta-form');
+  const note = document.getElementById('form-note');
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const val = form.querySelector('input').value.trim();
+    if (!val || !val.includes('@')) { note.textContent = 'Enter a valid email address.'; return; }
+    const btn = form.querySelector('button');
+    btn.textContent = 'Queued';
+    btn.style.background = '#222';
+    form.querySelector('input').disabled = true;
+    btn.disabled = true;
+    note.textContent = 'Request logged. Xen will reach out directly.';
+  });
+})();
+</script>
+</body>
+</html>

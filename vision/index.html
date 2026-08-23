@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Private device-screen wall. Never index. The unguessable per-device room ids
+     in devices.json are the access gate (speed-over-security til GTM). -->
+<meta name="robots" content="noindex, nofollow">
+<title>Xen · Omni Vision Wall</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#04070a">
+<style>
+  :root {
+    --bg: #04070a;
+    --panel: #0a0f14;
+    --edge: #18222b;
+    --chrome: linear-gradient(135deg,#cfd8e0 0%,#8a97a3 38%,#eef3f7 55%,#7e8b97 100%);
+    --green: #16d989;
+    --amber: #f5b53d;
+    --red: #ff5466;
+    --ink: #e8eef3;
+    --muted: #6b7a87;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--mono); overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+
+  /* ── top chrome bar ───────────────────────────────────────────── */
+  header {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 14px;
+    padding: 10px clamp(12px, 2vw, 26px);
+    border-bottom: 1px solid var(--edge);
+    background: linear-gradient(180deg, #0b1116 0%, #06090d 100%);
+    user-select: none;
+  }
+  .brand {
+    font-weight: 700; letter-spacing: .14em; font-size: 13px; text-transform: uppercase;
+    background: var(--chrome); -webkit-background-clip: text; background-clip: text; color: transparent;
+    white-space: nowrap;
+  }
+  .brand b { color: var(--green); -webkit-text-fill-color: var(--green); }
+  .meta { font-size: 11px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .meta span b { color: var(--ink); font-weight: 600; }
+  .spacer { flex: 1 1 auto; }
+  .btn {
+    appearance: none; border: 1px solid var(--edge); background: var(--panel); color: var(--ink);
+    font-family: var(--mono); font-size: 12px; padding: 0 14px; height: 34px; min-width: 44px;
+    border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+    transition: border-color .15s, color .15s;
+  }
+  .btn:hover { border-color: var(--green); color: var(--green); }
+
+  /* ── the grid (orphan-proof: auto-fit + place-content:center) ──── */
+  main {
+    flex: 1 1 auto; overflow: auto; padding: clamp(8px, 1.4vw, 18px);
+    display: grid; gap: clamp(8px, 1.2vw, 16px);
+    grid-template-columns: repeat(auto-fit, minmax(clamp(280px, 32vw, 560px), 1fr));
+    place-content: center start; align-content: start;
+  }
+  /* When few tiles, center them so the last row never orphans hard-left. */
+  main.few { place-content: center; }
+
+  .tile {
+    position: relative; aspect-ratio: 16 / 9; background: #000;
+    border: 1px solid var(--edge); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5);
+  }
+  .tile iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background:#000; }
+  .tile .label {
+    position: absolute; left: 10px; top: 10px; z-index: 3;
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(4,7,10,.72); backdrop-filter: blur(8px);
+    border: 1px solid var(--edge); border-radius: 999px;
+    padding: 5px 11px; font-size: 11.5px; letter-spacing: .03em;
+    pointer-events: none; max-width: calc(100% - 20px);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: 0 0 auto;
+         box-shadow: 0 0 0 0 rgba(0,0,0,0); transition: background .2s, box-shadow .2s; }
+  .dot.live   { background: var(--green); box-shadow: 0 0 10px 1px rgba(22,217,137,.7); }
+  .dot.wait   { background: var(--amber); }
+  .dot.dead   { background: var(--red); }
+  .label .nm { color: var(--ink); font-weight: 600; white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .label .st { color: var(--muted); font-size: 10px; }
+
+  .tile .ctl {
+    position: absolute; right: 10px; top: 10px; z-index: 3; display: flex; gap: 6px;
+    opacity: 0; transition: opacity .15s;
+  }
+  .tile:hover .ctl { opacity: 1; }
+  .iconbtn {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--edge);
+    background: rgba(4,7,10,.72); color: var(--ink); cursor: pointer; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .iconbtn:hover { border-color: var(--green); color: var(--green); }
+
+  /* offline overlay shown over a tile whose publisher hasn't connected */
+  .tile .off {
+    position: absolute; inset: 0; z-index: 2; display: none;
+    align-items: center; justify-content: center; flex-direction: column; gap: 6px;
+    background: radial-gradient(ellipse at center, #0a0f14 0%, #04070a 100%); color: var(--muted);
+    font-size: 12px; text-align: center; padding: 16px;
+  }
+  .tile.is-off .off { display: flex; }
+  .off .big { font-size: 13px; color: var(--ink); letter-spacing: .05em; }
+
+  .empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 18vh 10px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">XEN · OMNI <b>VISION</b> WALL</div>
+  <div class="meta">
+    <span>nodes <b id="m-on">0</b>/<b id="m-total">0</b> live</span>
+    <span id="m-clock">—</span>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn" id="b-wake" title="Keep the wall awake">☀ wake</button>
+  <button class="btn" id="b-reload" title="Reconnect every tile">↻ all</button>
+  <button class="btn" id="b-full" title="Fullscreen the wall">⤢ full</button>
+</header>
+<main id="grid"><div class="empty">loading devices…</div></main>
+
+<script>
+// ─── Omni Vision Wall ─────────────────────────────────────────────────────
+// A vanilla, no-build static PWA (hitthe.link/vision). Reads devices.json and
+// renders ONE vdo.ninja viewer iframe per enabled device. vdo.ninja's own free
+// TURN/SFU does the realtime P2P fan-out (the in-stack transport proven by
+// vvsvei) — there is NO server here. Each device's autostarted kiosk publisher
+// (/vision/pub.html?dev=NAME) pushes its screen to the matching unguessable
+// room; this wall pulls it with view=ROOM. Liveness comes from vdo.ninja's
+// iframe stats API (postMessage); a silence-watchdog reloads any dead tile so
+// it self-heals the instant a publisher returns. Forked from vvsvei's vdo
+// convention (push/view), NOT cloned — per XenBrowser canon.
+const VDO = 'https://vdo.ninja/';
+const tiles = new Map();   // dev -> { el, iframe, dot, st, lastMsg, lastStream, off, reconnAt }
+const STALL_MS = 22000;    // no vdo message this long => reload the tile
+const STREAM_TTL = 13000;  // last inbound-video sighting older than this => not "live"
+
+function viewURL(room) {
+  // cleanoutput hides vdo UI; muted+autoplay lets video start with no gesture;
+  // controls off; no local cam/mic. cb is bumped on watchdog reloads.
+  return VDO + '?view=' + encodeURIComponent(room) +
+         '&cleanoutput&autoplay&muted&controls=0&webcam=0&label=0&cb=' + Date.now();
+}
+
+async function loadDevices() {
+  const r = await fetch('./devices.json?cb=' + Date.now(), { cache: 'no-store' });
+  const j = await r.json();
+  return (j.devices || []).filter(d => d.enabled !== false && d.room);
+}
+
+function makeTile(d) {
+  const el = document.createElement('div');
+  el.className = 'tile is-off';
+  el.dataset.dev = d.dev;
+  el.innerHTML =
+    '<div class="label"><span class="dot wait"></span>' +
+      '<span class="nm">' + d.label + '</span><span class="st">connecting…</span></div>' +
+    '<div class="ctl">' +
+      '<button class="iconbtn" data-act="reload" title="Reconnect">↻</button>' +
+      '<button class="iconbtn" data-act="full" title="Fullscreen this tile">⤢</button>' +
+    '</div>' +
+    '<div class="off"><div class="big">' + d.label + '</div><div>awaiting publisher…</div></div>';
+  const iframe = document.createElement('iframe');
+  iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+  iframe.src = viewURL(d.room);
+  el.insertBefore(iframe, el.firstChild);
+
+  const t = { dev: d.dev, room: d.room, label: d.label, el, iframe,
+              dot: el.querySelector('.dot'), st: el.querySelector('.st'),
+              off: el, lastMsg: 0, lastStream: 0, reconnAt: Date.now() };
+  tiles.set(d.dev, t);
+
+  el.querySelector('[data-act="reload"]').onclick = () => reloadTile(t);
+  el.querySelector('[data-act="full"]').onclick = () => {
+    if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  };
+  el.ondblclick = () => { if (el.requestFullscreen) el.requestFullscreen().catch(()=>{}); };
+  return el;
+}
+
+function reloadTile(t) {
+  t.reconnAt = Date.now();
+  t.lastStream = 0;
+  t.iframe.src = viewURL(t.room);
+  setStatus(t, 'wait', 'reconnecting…');
+}
+
+function setStatus(t, cls, text) {
+  t.dot.className = 'dot ' + cls;
+  t.st.textContent = text;
+  t.el.classList.toggle('is-off', cls !== 'live');
+}
+
+// vdo.ninja posts messages from each iframe. Match by event.source to learn
+// which tile it came from. ANY message => the iframe is alive; a stats payload
+// carrying a resolution/bitrate => an actual inbound stream (publisher online).
+window.addEventListener('message', (e) => {
+  for (const t of tiles.values()) {
+    if (e.source === t.iframe.contentWindow) {
+      t.lastMsg = Date.now();
+      const blob = (() => { try { return JSON.stringify(e.data); } catch { return String(e.data); } })();
+      if (/"?(resolution|video|width|inboundVideo|bitrate)"?/i.test(blob) &&
+          !/"value":\s*(0|false|null)/i.test(blob)) {
+        t.lastStream = Date.now();
+      }
+      break;
+    }
+  }
+});
+
+// Poll each iframe for stats + run the liveness/stall watchdog.
+function tick() {
+  const now = Date.now();
+  let live = 0;
+  for (const t of tiles.values()) {
+    try { t.iframe.contentWindow.postMessage({ getStats: true }, '*'); } catch {}
+    const streaming = (now - t.lastStream) < STREAM_TTL;
+    const heard = (now - t.lastMsg) < STALL_MS;
+    if (streaming) { setStatus(t, 'live', 'live'); live++; }
+    else if (heard) { setStatus(t, 'wait', 'no signal'); }
+    else {
+      setStatus(t, 'dead', 'offline');
+      // Stall watchdog with backoff: only reload if we haven't just reloaded.
+      if (now - t.reconnAt > STALL_MS) reloadTile(t);
+    }
+  }
+  document.getElementById('m-on').textContent = live;
+  const d = new Date(now);
+  document.getElementById('m-clock').textContent =
+    String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+// ── wake lock so the wall never sleeps (re-acquire after tab/visibility flap) ──
+let wakeLock = null;
+async function keepAwake() {
+  try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+
+async function boot() {
+  let devs = [];
+  try { devs = await loadDevices(); }
+  catch (e) { document.getElementById('grid').innerHTML =
+    '<div class="empty">devices.json failed to load — ' + e.message + '</div>'; return; }
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  if (!devs.length) { grid.innerHTML = '<div class="empty">no enabled devices in devices.json</div>'; return; }
+  grid.classList.toggle('few', devs.length <= 3);
+  document.getElementById('m-total').textContent = devs.length;
+  devs.forEach(d => grid.appendChild(makeTile(d)));
+
+  keepAwake();
+  tick(); setInterval(tick, 4000);
+}
+
+document.getElementById('b-reload').onclick = () => { keepAwake(); tiles.forEach(reloadTile); };
+document.getElementById('b-wake').onclick = keepAwake;
+document.getElementById('b-full').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen().catch(()=>{});
+};
+
+boot();
+// PWA shell (optional, ignored if sw absent)
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

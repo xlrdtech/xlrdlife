@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project BUILD Application</title>
+    
+    <!-- 1. DEPENDENCIES -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- OCR Library -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
+    <!-- 2. STYLES -->
+    <style>
+        /* BACKGROUND & ANIMATION */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #dcfce7 100%);
+            background-size: 200% 200%;
+            animation: gradientBG 15s ease infinite;
+            min-height: 100vh;
+        }
+
+        @keyframes gradientBG { 
+            0% { background-position: 0% 50%; } 
+            50% { background-position: 100% 50%; } 
+            100% { background-position: 0% 50%; } 
+        }
+
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .animate-fade-in { 
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+
+        /* GLASSMORPHISM UTILS */
+        .glass-panel { 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.9); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); 
+            border-radius: 24px; 
+            overflow: hidden; 
+        }
+
+        .header-green-glass { 
+            background: linear-gradient(135deg, rgba(22, 163, 74, 0.95) 0%, rgba(21, 128, 61, 0.98) 100%); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.2); 
+        }
+
+        .btn-liquid { 
+            background: linear-gradient(180deg, #16a34a 0%, #15803d 100%); 
+            transition: all 0.3s ease; 
+        }
+        .btn-liquid:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 10px 25px rgba(22, 163, 74, 0.5); 
+        }
+        .btn-liquid:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .legal-scroll-box {
+            max-height: 150px;
+            overflow-y: auto;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <!-- 3. REACT APPLICATION -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- CONFIGURATION ---
+        const CONFIG = {
+            web3forms: {
+                accessKey: 'd510a87a-4dae-4d48-a067-b3a500f0fa48', // Submits to info@projectbuildswfl.org
+            },
+            cloudinary: {
+                cloudName: 'dyozjvutz',
+                uploadPreset: 'project_build_ids'
+            }
+        };
+
+        // --- ICONS (Inline SVGs to remove external dependencies) ---
+        const IconBase = ({ d, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d={d} />
+            </svg>
+        );
+
+        const Icons = {
+            HardHat: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20M12 2a10 10 0 0 0-10 10v1.5h20V12a10 10 0 0 0-10-10zm-5.5 10v-1.5h3V12" /></svg>,
+            User: (p) => <IconBase {...p} d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />,
+            Check: (p) => <IconBase {...p} d="M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3" />,
+            File: (p) => <IconBase {...p} d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" />,
+            Shield: (p) => <IconBase {...p} d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+            Camera: (p) => <IconBase {...p} d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 13a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" />,
+            Upload: (p) => <IconBase {...p} d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12" />,
+            Briefcase: (p) => <IconBase {...p} d="M20 7h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z" />
+        };
+
+        // --- LEGAL TEXT ---
+        const LegalText = {
+            Workforce: `I, the undersigned (or legal guardian if under 18), give permission to participate in the Project BUILD’s Workforce Development Program. I understand that there are different aspects of this course, including but not limited to lessons through workbooks, computer programs, lectures, visual learning, and hands on projects where participants will build things on their own with instructor supervision. The Workforce Development Program’s duration is 6 to 9 months. When participants begin the Project BUILD’s Workforce Development Program, they will be issued steel toed work boots, tools, toolbox and tool belt which they keep once they have successfully completed the full course, along with their certificate of completion.`,
+            Forklift: `I, the undersigned (or legal guardian if under 18), give permission to participate in the Project BUILD Forklift Certification Program.`,
+            Liability: `Project BUILD Student Participation Waiver & Liability Release.\nAcknowledgment of Risk: I understand that participation in Project BUILD’s Workforce Development Program may include activities that involve physical labor, the use of hand or power tools, exposure to outdoor elements, and travel to and from various work or training sites. I acknowledge that these activities may carry inherent risks, including the possibility of personal injury, property damage, or unforeseen incidents.\nVoluntary Participation: I confirm that I am voluntarily participating in the program and its related activities. I understand that I am not required to perform any task that I do not feel comfortable with or capable of completing safely, and I agree to follow all safety protocols and staff instructions.\nWaiver of Liability: In consideration of being permitted to participate in this program, I, on behalf of myself, my heirs, executors, administrators, and assigns, hereby waive, release, and discharge Project BUILD, its officers, directors, staff, volunteers, program partners, and any affiliated site hosting training or service activities, from any and all liability for injury, loss, or damage arising from or in connection with my participation in the program. This includes, but is not limited to, liability for negligence, personal injury, medical expenses, emotional distress, or property loss.\nMedical Acknowledgment: I certify that I am in reasonably good health and able to participate in hands-on tasks and light to moderate physical activity. I authorize Project BUILD staff or instructors to seek appropriate emergency medical care and treatment on my behalf.`,
+            ROI: `Release of Information: Client acknowledges use of and gives permission to this agency to use their personal information in the CRN (Community Resource Network)/ data base. No unaccompanied youth shall have an ROI unless they are 18 years of age or have consent of a parent/guardian. This Release of Information will be used for purposes of accessing services throughout available counties. Client further testifies that all information given on this Intake Form is true and complete to the best of their knowledge. I authorize that a copy of this original will serve as an original for the purposes stated above. Unless I make a formal request to a CRN Member Agency that I no longer want to participate in the CRN, this release will remain enforce for 2 years from today signed date.`,
+            Media: `Please be advised that you may be photographed, videotaped, or interviewed throughout the course of the workforce program and/or at various program events. With your consent, the photograph, video and/or interview may be reproduced and released for use in the media, i.e., newspapers, brochures, videos, television, the internet, and social media platforms such as Facebook, LinkedIn, X (formerly known as Twitter) or Instagram.`
+        };
+
+        // --- HELPER COMPONENTS ---
+        const SectionHeader = ({ title, icon: IconComp }) => (
+            <div className="flex items-center gap-3 mb-6 mt-8 border-b border-slate-200 pb-2 md:mb-8 md:mt-10 md:pb-3">
+                <div className="bg-green-100 p-2 rounded-full shadow-sm md:p-3">
+                    {IconComp && <IconComp className="w-6 h-6 text-green-700 md:w-8 md:h-8" />}
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 uppercase tracking-wide md:text-2xl">{title}</h3>
+            </div>
+        );
+
+        const InputGroup = ({ label, name, value, onChange, type = "text", required, options, placeholder, width = "full", id }) => (
+            <div className={`mb-4 ${width === 'half' ? 'md:w-1/2' : 'w-full'} md:mb-6`}>
+                <label className="block text-sm font-bold text-slate-700 mb-1 md:text-base md:mb-2">{label} {required && <span className="text-red-500">*</span>}</label>
+                {options ? (
+                    <select id={id} name={name} value={value} onChange={onChange} className="w-full p-3 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-green-600 outline-none shadow-sm text-base md:p-4 md:text-lg md:rounded-xl">
+                        <option value="">Select...</option>
+                        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                ) : (
+                    <input id={id} type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} className="w-full p-3 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-green-600 outline-none shadow-sm text-base md:p-4 md:text-lg md:rounded-xl" required={required} />
+                )}
+            </div>
+        );
+
+        const LegalCheckbox = ({ label, name, checked, onChange, legalText }) => (
+            <div className="mb-8 bg-white p-4 rounded-xl shadow-sm border border-slate-100 md:mb-10 md:p-6 md:rounded-2xl md:shadow-md">
+                <h4 className="font-bold text-green-800 mb-2 text-md md:mb-3 md:text-lg">{label}</h4>
+                <div className="legal-scroll-box no-print">{legalText}</div>
+                <label className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-green-50 transition-all md:gap-4 md:p-4 md:rounded-xl mt-4">
+                    <input type="checkbox" name={name} checked={checked} onChange={(e) => onChange({ target: { name, checked: e.target.checked, type: 'checkbox' } })} className="w-5 h-5 text-green-600 rounded focus:ring-green-500 md:w-6 md:h-6" required />
+                    <span className="text-sm font-bold text-slate-800 md:text-base">I HAVE READ AND AGREE TO THESE TERMS</span>
+                </label>
+            </div>
+        );
+
+        // --- MAIN APP COMPONENT ---
+        function App() {
+            const [step, setStep] = useState(0);
+            const [isUnder18, setIsUnder18] = useState(null);
+            const [status, setStatus] = useState("");
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            const [scanProgress, setScanProgress] = useState(0);
+            
+            const [formData, setFormData] = useState({
+                firstName: '', middleName: '', lastName: '', dob: '', address: '', phone: '', email: '', 
+                ssn: '', raceEthnicity: '', isHispanic: '', gender: '', language: '',
+                guardianName: '', guardianPhone: '',
+                lastGrade: '', attendedCollege: '', disabilityExplain: '', hasDisability: '',
+                schoolStatusArrest: '', employStatusArrest: '', probationReleaseDate: '',
+                pregnant: '', children: '', childrenLocation: '', arrested: '', arrestOutcome: '', probation: '', 
+                registeredVoter: '', needVoterHelp: '', receiveSSI: '', receiveTANF: '', receiveSNAP: '',
+                inSchool: '', schoolName: '', graduated: '', gradYear: '',
+                takenConstClass: '', constExperience: '', constInterest: '', otherTrades: '', hobbies: '',
+                emergencyName1: '', emergencyPhone1: '', emergencyName2: '', emergencyPhone2: '',
+                job1Employer: '', job1Dates: '', job1Reason: '', job1Supervisor: '',
+                job2Employer: '', job2Dates: '', job2Reason: '', job2Supervisor: '',
+                job3Employer: '', job3Dates: '', job3Reason: '', job3Supervisor: '',
+                ref1Name: '', ref1Rel: '', ref1Phone: '',
+                ref2Name: '', ref2Rel: '', ref2Phone: '',
+                ref3Name: '', ref3Rel: '', ref3Phone: '',
+                programGoals: '', shirtSize: '', shoeSize: '', beltSize: '',
+                workforcePermit: false, forkliftPermit: false, liabilityWaiver: false, roi: false, mediaRelease: '',
+                applicantSignature: '', guardianSignature: '', signDate: new Date().toISOString().split('T')[0],
+                idFrontFile: null,
+                idBackFile: null
+            });
+
+            const handleChange = (e) => {
+                const { name, value, type, checked, files } = e.target;
+                if (type === 'file') {
+                    setFormData(prev => ({ ...prev, [name]: files[0] }));
+                } else {
+                    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+                }
+            };
+
+            // --- HELPER: Cloudinary Upload ---
+            const uploadToCloudinary = async (file) => {
+                if (!file) return '';
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', CONFIG.cloudinary.uploadPreset);
+                fd.append('cloud_name', CONFIG.cloudinary.cloudName);
+                
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${CONFIG.cloudinary.cloudName}/image/upload`, {
+                    method: 'POST',
+                    body: fd
+                });
+                
+                if (!res.ok) throw new Error('Failed to upload ID image to Cloudinary');
+                const data = await res.json();
+                return data.secure_url;
+            };
+
+            // --- LOGIC: ID SCANNING ---
+            const handleScanID = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (!window.Tesseract) {
+                    setStatus("OCR Library loading... please try again in a moment.");
+                    return;
+                }
+
+                setStatus("Scanning ID... Please wait.");
+                setScanProgress(10);
+                setFormData(prev => ({ ...prev, idFrontFile: file })); // Default scan to Front
+
+                try {
+                    const result = await window.Tesseract.recognize(file, 'eng', {
+                        logger: m => { if(m.status === 'recognizing text') setScanProgress(parseInt(m.progress * 100)); }
+                    });
+                    
+                    const text = result.data.text;
+                    const nameMatch = text.match(/(?:Name|LN|FN)[:\s]+([A-Z][a-z]+(?:\s[A-Z][a-z]+)+)/i);
+                    const dobMatch = text.match(/(?:DOB|Date of Birth|Birth)[:\s]+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+                    const addressMatch = text.match(/(\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd)[^\n]*)/i);
+
+                    setFormData(prev => ({
+                        ...prev,
+                        firstName: nameMatch ? nameMatch[1].split(' ')[0] : prev.firstName,
+                        lastName: nameMatch ? nameMatch[1].split(' ').pop() : prev.lastName,
+                        dob: dobMatch ? new Date(dobMatch[1]).toISOString().split('T')[0] : prev.dob,
+                        address: addressMatch ? addressMatch[1] : prev.address
+                    }));
+                    
+                    setStatus("ID Scanned! Please verify.");
+                    setTimeout(() => setStatus(""), 3000);
+                } catch (err) {
+                    console.error(err);
+                    setStatus("Could not read ID text. Please fill manually.");
+                }
+            };
+
+            // --- LOGIC: SUBMISSION ---
+            const handleFinalSubmit = async () => {
+                if (!formData.firstName || !formData.phone) { alert("Name and Phone are required."); return; }
+                
+                if (!isUnder18 && (!formData.idFrontFile || !formData.idBackFile)) {
+                    alert("Both Front and Back ID images are required.");
+                    return;
+                }
+                
+                setIsSubmitting(true);
+                setStatus("Uploading Images & Submitting...");
+                
+                try {
+                    let idFrontUrl = '';
+                    let idBackUrl = '';
+
+                    // 1. Upload to Cloudinary (Parallel)
+                    if (!isUnder18) {
+                        setStatus("Securely uploading IDs...");
+                        const [front, back] = await Promise.all([
+                            uploadToCloudinary(formData.idFrontFile),
+                            uploadToCloudinary(formData.idBackFile)
+                        ]);
+                        idFrontUrl = front;
+                        idBackUrl = back;
+                    }
+
+                    setStatus("Sending Application...");
+
+                    // 2. Prepare Web3Forms Payload
+                    const web3Data = new FormData();
+                    web3Data.append('access_key', CONFIG.web3forms.accessKey);
+                    web3Data.append('subject', `New Application: ${formData.firstName} ${formData.lastName}`);
+                    web3Data.append('from_name', 'Project BUILD App');
+                    
+                    web3Data.append('ID Front URL', idFrontUrl || 'N/A (Minor)');
+                    web3Data.append('ID Back URL', idBackUrl || 'N/A (Minor)');
+                    
+                    Object.keys(formData).forEach(key => {
+                        if (key !== 'idFrontFile' && key !== 'idBackFile' && key !== 'idFile') {
+                            const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                            web3Data.append(label, formData[key] || '');
+                        }
+                    });
+
+                    // 3. Submit to Web3Forms
+                    const response = await fetch('https://api.web3forms.com/submit', {
+                        method: 'POST',
+                        body: web3Data
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        setStatus("✅ Application Submitted Successfully!");
+                        alert("Application Submitted! We will contact you soon.");
+                        setStep(0);
+                        setFormData(prev => ({...prev, idFrontFile: null, idBackFile: null, ssn: ''})); 
+                    } else {
+                        throw new Error(result.message || 'Submission failed');
+                    }
+
+                } catch (err) {
+                    console.error(err);
+                    setStatus("❌ Error: " + err.message);
+                    alert("Error submitting: " + err.message);
+                } finally { setIsSubmitting(false); }
+            };
+
+            // --- RENDER ---
+            return (
+                <div className="flex justify-center items-start md:p-10 p-4 font-sans min-h-screen">
+                    
+                    {/* STEP 0: WELCOME */}
+                    {step === 0 && (
+                        <div className="glass-panel max-w-2xl w-full text-center animate-fade-in">
+                            <div className="header-green-glass p-8">
+                                <h2 className="text-xl font-bold tracking-widest uppercase opacity-90 text-green-100">Project BUILD</h2>
+                                <h1 className="text-4xl font-black mt-2 text-white">Workforce App</h1>
+                            </div>
+                            <div className="p-12">
+                                <div className="mb-10">
+                                    <div className="h-32 w-32 bg-green-100 rounded-full mx-auto flex items-center justify-center mb-6">
+                                        <Icons.HardHat className="w-16 h-16 text-green-700" />
+                                    </div>
+                                    <h3 className="text-sm font-bold tracking-wide uppercase text-slate-500">Building and Uplifting Individuals</h3>
+                                </div>
+                                <p className="text-slate-600 mb-10 text-xl font-medium">Select your applicant type to begin.</p>
+                                <div className="space-y-6">
+                                    <button onClick={() => { setIsUnder18(true); setStep(1); }} className="w-full p-8 rounded-2xl bg-white border border-slate-200 hover:border-green-500 hover:shadow-xl transition-all font-bold text-slate-700 text-left flex items-center gap-6 group transform hover:-translate-y-1">
+                                        <div className="bg-green-100 p-4 rounded-full group-hover:bg-green-600 group-hover:text-white transition-colors"><Icons.User className="w-8 h-8" /></div>
+                                        <div><div className="text-2xl text-slate-800 font-black mb-1">I am Under 18</div><div className="text-sm text-slate-400 font-normal">Requires Guardian Consent</div></div>
+                                    </button>
+                                    <button onClick={() => { setIsUnder18(false); setStep(1); }} className="w-full p-8 rounded-2xl bg-white border border-slate-200 hover:border-green-500 hover:shadow-xl transition-all font-bold text-slate-700 text-left flex items-center gap-6 group transform hover:-translate-y-1">
+                                        <div className="bg-slate-100 p-4 rounded-full group-hover:bg-slate-600 group-hover:text-white transition-colors"><Icons.Check className="w-8 h-8" /></div>
+                                        <div className="text-2xl text-slate-800 font-black">I am 18 or Older</div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP 1: FORM */}
+                    {step === 1 && (
+                        <div className="glass-panel w-full max-w-5xl">
+                            <div className="header-green-glass sticky top-0 z-50 flex justify-between items-center p-6 shadow-lg">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm"><Icons.HardHat className="w-8 h-8 text-white" /></div>
+                                    <div><h1 className="text-2xl font-black text-white tracking-tight leading-none">PROJECT BUILD</h1><p className="text-green-100 text-sm font-medium uppercase tracking-wider mt-1">Workforce Application</p></div>
+                                </div>
+                                <div className="text-sm font-bold bg-black/20 text-white px-4 py-2 rounded-full border border-white/20 tracking-wider">{isUnder18 ? "UNDER 18" : "ADULT"}</div>
+                            </div>
+
+                            <div className="p-8 pb-16 animate-fade-in max-h-[85vh] overflow-y-auto">
+                                
+                                <SectionHeader title="1. Personal Information" icon={Icons.User} />
+                                <div className="grid md:grid-cols-3 gap-6 mb-6">
+                                    <InputGroup id="firstName" label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} required />
+                                    <InputGroup label="Middle" name="middleName" value={formData.middleName} onChange={handleChange} />
+                                    <InputGroup label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} required />
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-6 mb-6">
+                                    <InputGroup id="dob" label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} required />
+                                    <InputGroup label="Phone Number" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+                                    <InputGroup label="Email Address" name="email" type="email" value={formData.email} onChange={handleChange} />
+                                </div>
+                                <InputGroup id="address" label="Full Address" name="address" value={formData.address} onChange={handleChange} placeholder="Street, City, State, Zip Code" />
+                                
+                                <div className="grid md:grid-cols-4 gap-6 bg-white/60 border border-slate-200 p-6 rounded-2xl mt-8 shadow-inner">
+                                    <InputGroup label="SSN" name="ssn" value={formData.ssn} onChange={handleChange} />
+                                    <InputGroup label="Race/Ethnicity" name="raceEthnicity" value={formData.raceEthnicity} onChange={handleChange} />
+                                    <InputGroup label="Hispanic/Latino?" name="isHispanic" value={formData.isHispanic} onChange={handleChange} options={['Yes', 'No']} />
+                                    <InputGroup label="Gender" name="gender" value={formData.gender} onChange={handleChange} options={['Male', 'Female', 'Non-Binary', 'Prefer Not to Say']} />
+                                    <InputGroup label="Primary Language" name="language" value={formData.language} onChange={handleChange} />
+                                </div>
+
+                                {isUnder18 && (
+                                    <div className="bg-amber-50/90 p-8 rounded-2xl border-l-8 border-amber-400 my-10 shadow-md">
+                                        <h4 className="font-bold text-amber-900 mb-6 flex items-center gap-3 text-xl"><Icons.User className="w-6 h-6"/> Guardian Information (Required)</h4>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <InputGroup label="Guardian Name" name="guardianName" value={formData.guardianName} onChange={handleChange} required />
+                                            <InputGroup label="Guardian Phone" name="guardianPhone" value={formData.guardianPhone} onChange={handleChange} required />
+                                        </div>
+                                    </div>
+                                )}
+
+                                <SectionHeader title="2. History & Status" icon={Icons.Shield} />
+                                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                    <InputGroup label="Currently in School?" name="inSchool" value={formData.inSchool} onChange={handleChange} options={['Yes', 'No']} />
+                                    <InputGroup label="School Name" name="schoolName" value={formData.schoolName} onChange={handleChange} />
+                                    <InputGroup label="Graduated/GED?" name="graduated" value={formData.graduated} onChange={handleChange} options={['Yes', 'No']} />
+                                    <InputGroup label="Grad Year" name="gradYear" value={formData.gradYear} onChange={handleChange} />
+                                    <InputGroup label="Last Grade Completed" name="lastGrade" value={formData.lastGrade} onChange={handleChange} />
+                                    <InputGroup label="Attended College?" name="attendedCollege" value={formData.attendedCollege} onChange={handleChange} options={['Yes', 'No']} />
+                                </div>
+                                <div className="bg-slate-50/80 p-6 rounded-2xl border border-slate-200 my-8">
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <InputGroup label="Pregnant?" name="pregnant" value={formData.pregnant} onChange={handleChange} options={['Yes', 'No', 'N/A']} />
+                                        <InputGroup label="Have Children?" name="children" value={formData.children} onChange={handleChange} options={['Yes', 'No']} />
+                                        {formData.children === 'Yes' && <InputGroup label="Children Location (Care/Relative)" name="childrenLocation" value={formData.childrenLocation} onChange={handleChange} width="full" />}
+                                    </div>
+                                </div>
+                                <div className="bg-red-50/80 p-8 rounded-2xl border border-red-100 my-8 shadow-sm">
+                                    <h4 className="font-bold text-red-900 mb-6 text-lg uppercase tracking-wide flex items-center gap-2"><Icons.Shield className="w-5 h-5"/> Legal History</h4>
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <InputGroup label="Ever Arrested?" name="arrested" value={formData.arrested} onChange={handleChange} options={['Yes', 'No']} />
+                                        {formData.arrested === 'Yes' && (
+                                            <div>
+                                                <InputGroup label="Outcome (Probation/etc)" name="arrestOutcome" value={formData.arrestOutcome} onChange={handleChange} />
+                                                <InputGroup label="School Status at Arrest" name="schoolStatusArrest" value={formData.schoolStatusArrest} onChange={handleChange} />
+                                                <InputGroup label="Employ. Status at Arrest" name="employStatusArrest" value={formData.employStatusArrest} onChange={handleChange} />
+                                            </div>
+                                        )}
+                                        <InputGroup label="Currently on Probation?" name="probation" value={formData.probation} onChange={handleChange} options={['Yes', 'No']} />
+                                        {formData.probation === 'Yes' && <InputGroup label="Probation Release Date" name="probationReleaseDate" value={formData.probationReleaseDate} onChange={handleChange} type="date" />}
+                                    </div>
+                                </div>
+                                <div className="bg-white/60 p-8 rounded-2xl mt-8 border border-slate-200 shadow-sm">
+                                    <h4 className="font-bold text-slate-800 mb-6 text-lg">Financial Assistance</h4>
+                                    <div className="grid md:grid-cols-3 gap-6">
+                                        <InputGroup label="Voter Reg?" name="registeredVoter" value={formData.registeredVoter} onChange={handleChange} options={['Yes', 'No']} />
+                                        <InputGroup label="Need Vote Help?" name="needVoterHelp" value={formData.needVoterHelp} onChange={handleChange} options={['Yes', 'No']} />
+                                        <InputGroup label="Receive SSI/SSDI?" name="receiveSSI" value={formData.receiveSSI} onChange={handleChange} options={['Yes', 'No']} />
+                                        <InputGroup label="Receive SNAP?" name="receiveSNAP" value={formData.receiveSNAP} onChange={handleChange} options={['Yes', 'No']} />
+                                        <InputGroup label="Receive TANF?" name="receiveTANF" value={formData.receiveTANF} onChange={handleChange} options={['Yes', 'No']} />
+                                        <div className="col-span-3 grid md:grid-cols-2 gap-6 mt-4 pt-6 border-t border-slate-200">
+                                            <InputGroup label="Disability?" name="hasDisability" value={formData.hasDisability} onChange={handleChange} options={['Yes', 'No']} />
+                                            {formData.hasDisability === 'Yes' && <InputGroup label="Explain Disability" name="disabilityExplain" value={formData.disabilityExplain} onChange={handleChange} />}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <SectionHeader title="3. Construction Background" icon={Icons.HardHat} />
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <InputGroup label="Taken Construction Classes?" name="takenConstClass" value={formData.takenConstClass} onChange={handleChange} options={['Yes', 'No']} />
+                                    <InputGroup label="Any Construction Experience?" name="constExperience" value={formData.constExperience} onChange={handleChange} options={['Yes', 'No']} />
+                                    <InputGroup label="Interest in Carpentry/Construction?" name="constInterest" value={formData.constInterest} onChange={handleChange} options={['Yes', 'No']} />
+                                </div>
+                                <div className="grid md:grid-cols-2 gap-6 mt-6">
+                                    <InputGroup label="Other Trades of Interest" name="otherTrades" value={formData.otherTrades} onChange={handleChange} />
+                                    <InputGroup label="Hobbies" name="hobbies" value={formData.hobbies} onChange={handleChange} />
+                                </div>
+
+                                <SectionHeader title="4. Employment History" icon={Icons.File} />
+                                <p className="text-sm text-slate-500 mb-6 font-medium">List previous jobs (Leave blank if none)</p>
+                                {[1,2,3].map(n => (
+                                    <div key={n} className="bg-white/50 p-6 rounded-xl mb-6 border border-slate-200 hover:shadow-md transition-shadow">
+                                        <h5 className="text-sm font-bold text-slate-400 uppercase mb-4 tracking-wider">Job {n}</h5>
+                                        <div className="grid md:grid-cols-4 gap-4">
+                                            <InputGroup label="Employer" name={`job${n}Employer`} value={formData[`job${n}Employer`]} onChange={handleChange} />
+                                            <InputGroup label="Dates" name={`job${n}Dates`} value={formData[`job${n}Dates`]} onChange={handleChange} />
+                                            <InputGroup label="Reason Left" name={`job${n}Reason`} value={formData[`job${n}Reason`]} onChange={handleChange} />
+                                            <InputGroup label="Supervisor" name={`job${n}Supervisor`} value={formData[`job${n}Supervisor`]} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <SectionHeader title="5. References" icon={Icons.User} />
+                                <div className="grid md:grid-cols-3 gap-6">
+                                    {[1,2,3].map(n => (
+                                        <div key={n} className="bg-white/50 p-6 rounded-xl border border-slate-200 hover:shadow-md transition-shadow">
+                                            <h5 className="text-sm font-bold text-slate-400 uppercase mb-4 tracking-wider">Reference {n}</h5>
+                                            <InputGroup label="Name" name={`ref${n}Name`} value={formData[`ref${n}Name`]} onChange={handleChange} />
+                                            <InputGroup label="Relationship" name={`ref${n}Rel`} value={formData[`ref${n}Rel`]} onChange={handleChange} />
+                                            <InputGroup label="Phone" name={`ref${n}Phone`} value={formData[`ref${n}Phone`]} onChange={handleChange} />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <SectionHeader title="6. Gear & Goals" icon={Icons.HardHat} />
+                                <div className="grid md:grid-cols-3 gap-6">
+                                    <InputGroup label="Shirt Size" name="shirtSize" value={formData.shirtSize} onChange={handleChange} />
+                                    <InputGroup label="Shoe Size" name="shoeSize" value={formData.shoeSize} onChange={handleChange} />
+                                    <InputGroup label="Belt Size" name="beltSize" value={formData.beltSize} onChange={handleChange} />
+                                </div>
+                                <div className="mt-6">
+                                    <label className="block text-base font-bold text-slate-700 mb-3">What would you like to receive from this program?</label>
+                                    <textarea name="programGoals" value={formData.programGoals} onChange={handleChange} className="w-full p-4 border border-slate-300 rounded-xl bg-white/80 backdrop-blur-sm h-32 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none shadow-sm transition-all text-lg"></textarea>
+                                </div>
+
+                                <SectionHeader title="7. Emergency Contacts" icon={Icons.Shield} />
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <InputGroup label="Primary Name" name="emergencyName1" value={formData.emergencyName1} onChange={handleChange} required />
+                                    <InputGroup label="Primary Phone" name="emergencyPhone1" value={formData.emergencyPhone1} onChange={handleChange} required />
+                                    <InputGroup label="Secondary Name" name="emergencyName2" value={formData.emergencyName2} onChange={handleChange} placeholder="If none, enter 'None' or Case Worker" />
+                                    <InputGroup label="Secondary Phone" name="emergencyPhone2" value={formData.emergencyPhone2} onChange={handleChange} placeholder="If none, enter 'N/A'" />
+                                </div>
+                                <p className="text-xs text-slate-500 mt-2 italic">
+                                    * If you do not have an emergency contact, please enter "None" or provide the contact information for a case manager or social worker.
+                                </p>
+
+                                <SectionHeader title={`8. Verification Uploads ${!isUnder18 ? '(Required)' : '(Optional)'}`} icon={Icons.Upload} />
+                                
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {/* FRONT ID UPLOAD */}
+                                    <div className="bg-blue-50/80 p-6 rounded-2xl border border-blue-200 shadow-sm text-center flex flex-col justify-center items-center hover:shadow-md transition-shadow relative overflow-hidden">
+                                        {!isUnder18 && !formData.idFrontFile && <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">REQUIRED</div>}
+                                        {formData.idFrontFile && <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">ATTACHED</div>}
+                                        <div className="bg-blue-100 p-4 rounded-full mb-4 text-blue-600"><Icons.Camera className="w-8 h-8" /></div>
+                                        <h4 className="text-lg text-blue-900 mb-2 font-bold">Front of ID</h4>
+                                        <p className="text-sm text-blue-600/80 mb-6 px-4">Upload or scan the FRONT of your ID card.</p>
+                                        <input type="file" accept="image/*" capture="environment" id="cameraInputFront" className="hidden" onChange={handleScanID} />
+                                        <button onClick={() => document.getElementById('cameraInputFront').click()} className="btn-liquid px-6 py-3 rounded-xl font-bold text-white mb-3 inline-flex items-center gap-3 w-full justify-center text-lg shadow-lg">
+                                            {formData.idFrontFile ? 'Retake Front' : 'Scan Front'} <Icons.Camera className="w-5 h-5"/>
+                                        </button>
+                                    </div>
+
+                                    {/* BACK ID UPLOAD */}
+                                    <div className="bg-blue-50/80 p-6 rounded-2xl border border-blue-200 shadow-sm text-center flex flex-col justify-center items-center hover:shadow-md transition-shadow relative overflow-hidden">
+                                        {!isUnder18 && !formData.idBackFile && <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">REQUIRED</div>}
+                                        {formData.idBackFile && <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">ATTACHED</div>}
+                                        <div className="bg-blue-100 p-4 rounded-full mb-4 text-blue-600"><Icons.Camera className="w-8 h-8" /></div>
+                                        <h4 className="text-lg text-blue-900 mb-2 font-bold">Back of ID</h4>
+                                        <p className="text-sm text-blue-600/80 mb-6 px-4">Upload or scan the BACK of your ID card.</p>
+                                        <input type="file" accept="image/*" capture="environment" id="cameraInputBack" className="hidden" name="idBackFile" onChange={handleChange} />
+                                        <button onClick={() => document.getElementById('cameraInputBack').click()} className="btn-liquid px-6 py-3 rounded-xl font-bold text-white mb-3 inline-flex items-center gap-3 w-full justify-center text-lg shadow-lg">
+                                            {formData.idBackFile ? 'Retake Back' : 'Scan Back'} <Icons.Camera className="w-5 h-5"/>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                {status && <div className="mt-4 text-center text-sm font-bold text-blue-700 bg-blue-100 px-3 py-2 rounded-xl animate-pulse">{status}</div>}
+                                {scanProgress > 0 && scanProgress < 100 && <div className="w-full bg-gray-200 rounded-full h-3 mt-4 overflow-hidden"><div className="bg-blue-600 h-3 rounded-full transition-all duration-300" style={{width: `${scanProgress}%`}}></div></div>}
+
+                                <SectionHeader title="9. Waivers & Permissions" icon={Icons.File} />
+                                <div className="space-y-8">
+                                    <LegalCheckbox label="1. Workforce Permission" name="workforcePermit" checked={formData.workforcePermit} onChange={handleChange} legalText={LegalText.Workforce} />
+                                    <LegalCheckbox label="2. Forklift Program Permission" name="forkliftPermit" checked={formData.forkliftPermit} onChange={handleChange} legalText={LegalText.Forklift} />
+                                    <LegalCheckbox label="3. Liability Waiver" name="liabilityWaiver" checked={formData.liabilityWaiver} onChange={handleChange} legalText={LegalText.Liability} />
+                                    <LegalCheckbox label="4. CRN Release (ROI)" name="roi" checked={formData.roi} onChange={handleChange} legalText={LegalText.ROI} />
+                                    
+                                    <div className="mb-10 bg-white p-6 rounded-2xl shadow-md border border-slate-100">
+                                        <h4 className="font-bold text-green-800 mb-3 text-lg">5. Media Release</h4>
+                                        <div className="legal-scroll-box no-print text-sm p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-40 overflow-y-auto mb-4 whitespace-pre-wrap">{LegalText.Media}</div>
+                                        <div className="flex flex-col md:flex-row gap-8 mt-6">
+                                            <label className="flex items-center gap-3 cursor-pointer p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors flex-1 border border-green-200 justify-center"><input type="radio" name="mediaRelease" value="Yes" onChange={handleChange} className="accent-green-600 w-6 h-6" /> <span className="font-bold text-green-800">Yes, I consent</span></label>
+                                            <label className="flex items-center gap-3 cursor-pointer p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors flex-1 border border-red-200 justify-center"><input type="radio" name="mediaRelease" value="No" onChange={handleChange} className="accent-green-600 w-6 h-6" /> <span className="font-bold text-red-800">No, I do not consent</span></label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-slate-800 text-white p-10 rounded-3xl shadow-2xl border border-slate-600">
+                                        <h4 className="font-bold text-white mb-4 uppercase tracking-widest text-xl flex items-center gap-3"><Icons.File className="w-6 h-6"/> Digital Signature</h4>
+                                        <p className="text-sm text-slate-400 mb-8 font-medium">By typing your name below, you certify that all information is true and agree to the terms above.</p>
+                                        <div className="grid md:grid-cols-2 gap-8">
+                                            <div>
+                                                <label className="block text-xs text-slate-400 mb-2 uppercase tracking-wider font-bold">Applicant Signature</label>
+                                                <input type="text" name="applicantSignature" value={formData.applicantSignature} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-500 focus:ring-2 focus:ring-green-500 outline-none text-lg font-serif italic" placeholder="Type Full Name" required />
+                                            </div>
+                                            {isUnder18 && (
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-2 uppercase tracking-wider font-bold">Guardian Signature</label>
+                                                    <input type="text" name="guardianSignature" value={formData.guardianSignature} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-500 focus:ring-2 focus:ring-green-500 outline-none text-lg font-serif italic" placeholder="Type Full Name" required />
+                                                </div>
+                                            )}
+                                            <div>
+                                                <label className="block text-xs text-slate-400 mb-2 uppercase tracking-wider font-bold">Date</label>
+                                                <input type="date" name="signDate" value={formData.signDate} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-700 border border-slate-600 text-white focus:ring-2 focus:ring-green-500 outline-none text-lg" required />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4 justify-between mt-16 pt-8 border-t border-slate-200 pb-12">
+                                    <button onClick={() => setStep(0)} className="px-8 py-4 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors font-bold text-lg" disabled={isSubmitting}>Back to Start</button>
+                                    
+                                    <button onClick={handleFinalSubmit} disabled={isSubmitting} className="btn-liquid px-16 py-5 rounded-2xl font-black text-white shadow-2xl text-2xl transform transition hover:-translate-y-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        {isSubmitting ? status || "Processing..." : "SUBMIT APPLICATION"}
+                                    </button>
+                                </div>
+                                {status && <div className="text-center mt-6 font-bold text-slate-700 animate-pulse bg-white/80 inline-block px-6 py-2 rounded-full mx-auto">{status}</div>}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

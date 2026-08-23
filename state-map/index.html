@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xen State Map — 2026-07-25</title>
+<style>
+  :root{--bg:#07070a;--card:#101018;--card2:#15151f;--line:#26263a;--ink:#f2f2f7;
+    --dim:#9a9ab0;--bad:#ff4d6d;--good:#3ddc97;--warn:#e8c46a;--ice:#7ad7ff;--vio:#b58cff}
+  *{box-sizing:border-box;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);padding:0 0 64px;
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif}
+  .wrap{max-width:820px;margin:0 auto;padding:0 16px}
+  header{padding:22px 0 14px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  h1{margin:6px 0 8px;font-size:26px;line-height:1.15;letter-spacing:-.02em;
+    background:linear-gradient(101deg,#fff,var(--ice) 40%,var(--vio) 70%,var(--warn));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{font-size:14px;color:var(--dim)}
+  h2{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);
+    margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .verdict{background:linear-gradient(180deg,#0b1a15,#101018);border:1px solid #1e5340;
+    border-radius:14px;padding:16px;margin:16px 0 0}
+  .verdict h3{margin:0 0 8px;font-size:19px}
+  .verdict p{margin:0;font-size:15px;color:#d6d6e2}
+  .verdict p+p{margin-top:8px}
+  .row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:10px}
+  .t{flex:1 1 150px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .t .n{font-size:22px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .t .l{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-top:2px}
+  .t.g .n{color:var(--good)} .t.b .n{color:var(--bad)} .t.w .n{color:var(--warn)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 10px}
+  .card.b{border-color:#5a2233;background:linear-gradient(180deg,#1a0d13,#101018)}
+  .card.g{border-color:#1e5340;background:linear-gradient(180deg,#0b1a15,#101018)}
+  .card.w{border-color:#4a3d1e;background:linear-gradient(180deg,#1a160b,#101018)}
+  .card h3{margin:0 0 6px;font-size:16px}
+  .card p{margin:0;font-size:14.5px;color:#d6d6e2}.card p+p{margin-top:7px}
+  .card .why{font-size:13px;color:var(--dim);margin-top:7px}
+  code{background:#1c1c28;border-radius:5px;padding:1.5px 6px;font-size:12.5px;color:var(--warn);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 0 10px}
+  table{border-collapse:collapse;width:100%;min-width:460px;font-size:14px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:600}
+  .ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.mid{color:var(--warn);font-weight:600}
+  .tag{display:inline-block;font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+    padding:3px 8px;border-radius:100px;border:1px solid var(--line);color:var(--dim);margin:0 6px 6px 0}
+  .tag.b{color:var(--bad);border-color:#5a2233}.tag.g{color:var(--good);border-color:#1e5340}
+  .tag.w{color:var(--warn);border-color:#4a3d1e}
+  ol,ul{margin:8px 0 0;padding-left:20px}li{font-size:14.5px;color:#d6d6e2;margin-bottom:7px}
+  li b{color:#fff}
+  footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Xen · System State Map</div>
+  <h1>What happened, and is it good or bad</h1>
+  <div class="sub">Snapshot <b>Sat Jul 25, 12:32 PM EDT</b> · Claude Code <b>2.1.220</b> · every value below read from live state, not remembered</div>
+</header>
+
+<div class="verdict">
+  <h3>Short answer: it's a real regression, it's now understood, and the root cause is fixed.</h3>
+  <p>The Claude update did <b>not</b> corrupt anything. It relaunched Claude into a brand-new tmux
+     pane. Every config file with an old pane number written in it was instantly pointing at a pane
+     that no longer existed. <b>The world moved; the notes didn't.</b></p>
+  <p>Underneath that sat a worse problem that had been bleeding for a while: your login was building
+     a <b>throwaway session every time</b> instead of joining your real one. That's what made your
+     voice land in one pane while your eyes were on another. One line, now fixed.</p>
+</div>
+
+<div class="row">
+  <div class="t g"><div class="n">FIXED</div><div class="l">inject lane</div></div>
+  <div class="t g"><div class="n">FIXED</div><div class="l">one-pane login</div></div>
+  <div class="t w"><div class="n">2</div><div class="l">ports still dead</div></div>
+  <div class="t b"><div class="n">1</div><div class="l">blocked on you</div></div>
+</div>
+
+<h2>The chain, in order</h2>
+<div class="card b">
+  <span class="tag b">root cause 1</span>
+  <h3>Login built a throwaway session every time</h3>
+  <p><code>~/.bash_profile</code> ran <code>tmux new-session -s "w-$$"</code>. <code>$$</code> is the
+     shell's own PID — so <b>every login minted a brand-new session and never attached</b> to
+     anything. Your real system, session <code>xen</code>, sat abandoned.</p>
+  <p class="why">This also <b>forked the inject target from your viewport</b>: injects landed in the
+     pane the sentinel named, while your screen was attached to a different session entirely. You
+     spoke into the correct lane and saw nothing come back. That's the "you can hear me but I can't
+     see you" effect exactly.</p>
+</div>
+
+<div class="card g">
+  <span class="tag g">fixed</span>
+  <h3>Now: one session, forever</h3>
+  <p>Changed to <code>tmux new-session -A -s xen</code>. <code>-A</code> means <i>attach if it
+     exists, create only if it doesn't</i>. Every login lands in <code>xen</code> — the same pane
+     that keeps the injects.</p>
+  <p class="why">Takes effect on your <b>next login</b>; nothing running was disturbed. The file now
+     lives on M4 with <code>~/.bash_profile</code> as a symlink, per M4-only canon. Revert copy kept
+     at <code>bash_profile.bak-onepane-20260725-1227</code>.</p>
+</div>
+
+<div class="card b">
+  <span class="tag b">root cause 2</span>
+  <h3>A hard pin to a pane that can never exist again</h3>
+  <p><code>pane-role-override.json</code> held <code>{"%0": "xen"}</code>. Pane <code>%0</code> was
+     destroyed, and <b>tmux never reissues a pane id</b> — only a fresh tmux server can mint
+     <code>%0</code>. The override is applied last and overrides correct detection, so every 60
+     seconds it clobbered a working answer with a dead one.</p>
+  <p class="why">Repinned to the live pane. The real lesson: with a new session per login, pane ids
+     climb forever, so <b>any</b> pinned pane id is a time bomb fused to your next login. The only
+     durable selector is "which session is attached".</p>
+</div>
+
+<div class="card w">
+  <span class="tag w">my error, reverted</span>
+  <h3>I enabled 6 disabled daemons. That caused your socket restart.</h3>
+  <p>I found <code>autoagent</code>, <code>auto-commit</code>, <code>ensure</code>,
+     <code>unified-loop</code>, <code>bee-context</code>, <code>claude-keepalive</code> disabled,
+     assumed rot, and turned them on. <code>xen-ensure</code> runs
+     <code>pkill</code> on the Claude wrapper and then loops <code>while true; do xen-c; done</code>
+     — it kills and relaunches your live session.</p>
+  <p class="why">All six are <b>booted out and disabled again</b>, verified. Written into memory as a
+     hard rule: a disabled daemon is a deliberate containment decision, not rot. Not everything that
+     looks stale is stale.</p>
+</div>
+
+<h2>Live state right now</h2>
+<div class="scroll">
+<table>
+<tr><th>tmux session</th><th>pane</th><th>running</th><th>attached</th></tr>
+<tr><td>xen</td><td>%8</td><td>bash</td><td class="no">0</td></tr>
+<tr><td>w-89251</td><td>%1</td><td>2.1.220 (me)</td><td class="no">0</td></tr>
+<tr><td>w-54168</td><td>%3</td><td>2.1.220</td><td class="no">0</td></tr>
+<tr><td>w-83733</td><td>%9</td><td>bash</td><td class="no">0</td></tr>
+</table>
+</div>
+<div class="card">
+  <p><b>Nothing is attached at the moment</b> — you're away from the terminal, which is expected and
+     harmless. Note the pane ids already changed since 12:26 (<code>%8</code> and <code>%9</code> are
+     new; <code>%2</code>&ndash;<code>%7</code> are gone). That churn <i>is</i> the phenomenon — and
+     it's exactly what the <code>-A</code> fix stops.</p>
+  <p class="why">Sentinel and my actual pane agree: both <code>%1</code>. Inject test at 12:12
+     round-tripped — landed in my pane and came back. That lane is proven, not assumed.</p>
+</div>
+
+<h2>Services — deliberately NOT shown here</h2>
+<div class="card b">
+  <span class="tag b">removed on purpose</span>
+  <h3>This page will not tell you what's up or down</h3>
+  <p>It used to. It listed eight ports as UP or DOWN — frozen at 12:32 PM. So when a service came
+     back, this page kept saying DOWN. <b>A frozen status badge is a lie with a timestamp on it</b>,
+     and qi's rule is exact: <i>"if you say something's up or something's down, it better be live.
+     100%. True, real-time fact."</i></p>
+  <p>A static page on GitHub Pages physically cannot know the state of a service on the Mac. So it
+     no longer pretends to. Live state moved somewhere that re-measures:</p>
+  <p><b>→ <a href="http://100.97.145.50:4493/" style="color:var(--ice)">100.97.145.50:4493</a></b>
+     — SSE, re-probes every 2 seconds with a real TCP connect and a live tmux query. If its stream
+     dies the heartbeat turns red and it says <code>STALE</code> instead of showing old numbers.
+     <code>/state</code> serves the same as raw JSON.</p>
+  <p class="why">What stays on this page is <b>history</b> — what happened today and why. History is
+     safe to freeze; status is not. That's the line.</p>
+</div>
+
+<h2>Blocked on you — one thing</h2>
+<div class="card b">
+  <span class="tag b">needs a token</span>
+  <h3>Todoist: 22 tasks built and staged, can't send them</h3>
+  <p>Both sections are written and ready — 14 for Diamond Cutz, 8 for First Care, priorities and
+     due-today flags set, idempotent so re-runs never duplicate.</p>
+  <p>There is <b>no Todoist API token anywhere</b>: not in either cred store, not in any
+     <code>~/.xen/*.env</code>, not in any of the <b>479</b> items in the 1Password Xen vault, and
+     Todoist isn't in the authed browser sessions.</p>
+  <p class="why">Get it from Todoist → Settings → Integrations → Developer and say it out loud.
+     Both sections fill instantly. Also worth knowing: Todoist retired <code>rest/v2</code> and
+     <code>sync/v9</code> (both return 410) — only <code>api/v1</code> works now.</p>
+</div>
+
+<h2>Still good — the client work</h2>
+<div class="card g">
+  <h3>DCZ + First Care brief is live</h3>
+  <p><a href="https://hitthe.link/dcz-call/" style="color:var(--ice)">hitthe.link/dcz-call</a> —
+     verified by screenshot on the S26, not just an HTTP code. <b>$161</b> to collect, the
+     <b>GoDaddy login</b> flagged as the hard blocker, and the <b>404-443-9813</b> forwarding test
+     called out before that number touches a flyer.</p>
+  <p class="why">I did initially report it live when it was serving a 404 — my check counted bytes but
+     not the status code, and GitHub's 404 page is 9,378 clean bytes. That gate now asserts a real
+     200 plus a string unique to the page.</p>
+</div>
+
+<footer>
+  Every figure here was read from live state at 12:32 PM. Four separate false readings earlier today
+  came from grepping formatted output with the wrong pattern — <code>launchctl list</code> is
+  tab-separated, <code>print-disabled</code> prints "=&gt; disabled" not "=&gt; true". Those are
+  written into memory so the same mistakes aren't repeatable.
+</footer>
+
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EGBOps · Closer's Deck</title>
+<meta name="description" content="EGBOps — Self Exec / XLRD client-acquisition closer deck. EGBO (East) local + XGBO (Xen) remote.">
+<meta name="theme-color" content="#030304">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/logo.png">
+<link rel="apple-touch-icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ob:#030304; --ob2:#0a0b0f; --panel:#0d0f15; --glass:rgba(16,18,26,.6);
+  --plat:#dfe6ee; --plat-hi:#ffffff; --plat-lo:#9aa6b6; --steel:#5a6478;
+  --ruby:#ff2249; --ruby-deep:#7c0a1f; --ruby-hi:#ff6c86;
+  --text:#ffffff; --soft:#cdd4e0; --mute:#8b93a4; --line:rgba(223,230,238,.11);
+  --g-New:#e9eef6; --g-Called:#4d86ff; --g-NoAnswer:#ffc23d; --g-Interested:#c07bff; --g-Sent:#27ecff; --g-Closed:#2effa0;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ob);color:var(--text);font-family:'Manrope',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding-bottom:70px;overflow-x:hidden;position:relative}
+a{color:inherit;text-decoration:none}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* ====== CINEMATIC ATMOSPHERE ====== */
+.stage{position:fixed;inset:0;z-index:-5;overflow:hidden;background:
+  radial-gradient(140% 90% at 50% -8%,#15161d 0%,#08090c 42%,#030304 78%)}
+/* volumetric god-rays from the top */
+.rays{position:fixed;inset:0;z-index:-4;pointer-events:none;overflow:hidden}
+.rays::before{content:'';position:absolute;left:50%;top:-40vh;width:160vw;height:120vh;transform:translateX(-50%);
+  background:conic-gradient(from 180deg at 50% 0%,transparent 0deg,rgba(223,230,238,.05) 14deg,transparent 26deg,rgba(255,34,73,.05) 40deg,transparent 54deg,rgba(223,230,238,.045) 70deg,transparent 86deg,rgba(255,108,134,.04) 104deg,transparent 120deg,rgba(223,230,238,.05) 150deg,transparent 168deg,rgba(255,34,73,.045) 200deg,transparent 220deg,rgba(223,230,238,.05) 250deg,transparent 270deg,rgba(255,108,134,.04) 300deg,transparent 320deg,rgba(223,230,238,.05) 350deg,transparent 360deg);
+  filter:blur(8px);opacity:.85;animation:sweep 40s linear infinite;mix-blend-mode:screen}
+@keyframes sweep{to{transform:translateX(-50%) rotate(360deg)}}
+.amb{position:fixed;inset:0;z-index:-4;overflow:hidden}
+.amb i{position:absolute;border-radius:50%;filter:blur(100px);opacity:.5;will-change:transform}
+.amb .r1{width:60vw;height:60vw;left:-12vw;top:-18vw;background:radial-gradient(circle,#ff224933,transparent 70%);animation:drift1 26s ease-in-out infinite}
+.amb .r2{width:55vw;height:55vw;right:-18vw;top:34vh;background:radial-gradient(circle,#3a4a6633,transparent 70%);animation:drift2 32s ease-in-out infinite}
+.amb .r3{width:48vw;height:48vw;left:18vw;bottom:-22vw;background:radial-gradient(circle,#dfe6ee14,transparent 70%);animation:drift1 38s ease-in-out infinite reverse}
+@keyframes drift1{0%,100%{transform:translate(0,0)}50%{transform:translate(6vw,8vh)}}
+@keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-7vw,-6vh)}}
+/* drifting dust motes for cinema depth */
+.motes{position:fixed;inset:0;z-index:-3;pointer-events:none;overflow:hidden}
+.motes i{position:absolute;width:2px;height:2px;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 0 6px rgba(255,255,255,.5);opacity:0;animation:rise-mote linear infinite}
+@keyframes rise-mote{0%{transform:translateY(20px);opacity:0}10%{opacity:.7}90%{opacity:.5}100%{transform:translateY(-94vh);opacity:0}}
+.grain{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.045;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.vig{position:fixed;inset:0;z-index:-1;pointer-events:none;box-shadow:inset 0 0 200px 60px rgba(0,0,0,.9),inset 0 -120px 160px -40px rgba(0,0,0,.85)}
+
+/* ====== HERO — THE PLATINUM SIGIL MOMENT ====== */
+.hero{position:relative;min-height:74vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:calc(56px + env(safe-area-inset-top,0)) 18px 30px;overflow:hidden}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.52em;text-transform:uppercase;color:var(--plat-lo);font-weight:700;
+  opacity:0;animation:fadeUp .9s ease .15s forwards}
+.kicker b{color:var(--ruby-hi)}
+.sigil-stage{position:relative;width:min(74vw,288px);height:min(74vw,288px);margin:18px auto 4px;display:grid;place-items:center;
+  opacity:0;animation:sigilIn 1.5s cubic-bezier(.2,.8,.2,1) .2s forwards}
+@keyframes sigilIn{0%{opacity:0;transform:scale(.6) translateY(28px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+/* deep light pool beneath the sigil */
+.sigil-stage::before{content:'';position:absolute;inset:-22%;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,34,73,.5) 0%,rgba(255,34,73,.16) 34%,transparent 66%);
+  filter:blur(26px);animation:pulse 5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+/* slow orbiting platinum halo ring */
+.halo{position:absolute;inset:-4%;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0deg,rgba(223,230,238,.55) 30deg,transparent 70deg,transparent 180deg,rgba(255,108,134,.4) 210deg,transparent 250deg);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
+  filter:drop-shadow(0 0 10px rgba(223,230,238,.4));animation:spin 16s linear infinite;opacity:.9}
+.halo.two{inset:4%;animation:spin 24s linear infinite reverse;opacity:.55}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* faint engraved guide rings */
+.guide{position:absolute;border-radius:50%;border:1px solid rgba(223,230,238,.08)}
+.guide.g1{inset:-10%}.guide.g2{inset:10%;border-color:rgba(255,34,73,.12)}
+.sigil-img{position:relative;z-index:2;width:78%;height:78%;object-fit:contain;mix-blend-mode:screen;
+  filter:brightness(1.12) contrast(1.06) drop-shadow(0 0 22px rgba(255,255,255,.18));
+  animation:float 7s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotateZ(0)}50%{transform:translateY(-12px) rotateZ(1.6deg)}}
+/* sweeping specular glint across the emblem */
+.glint{position:absolute;z-index:3;inset:8%;border-radius:50%;pointer-events:none;mix-blend-mode:screen;overflow:hidden}
+.glint::after{content:'';position:absolute;top:-60%;left:-30%;width:55%;height:220%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);transform:rotate(22deg);
+  filter:blur(6px);animation:glintSweep 6.5s ease-in-out infinite}
+@keyframes glintSweep{0%{left:-40%}55%{left:120%}100%{left:120%}}
+
+.wordmark{font-family:'Cinzel',serif;font-weight:900;font-size:clamp(46px,17vw,108px);letter-spacing:.12em;line-height:.96;margin:14px 0 0;
+  background:linear-gradient(180deg,#ffffff 0%,#eef2f7 38%,#aab4c4 72%,#737d90 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 50px rgba(255,255,255,.12);
+  opacity:0;animation:fadeUp 1s ease .55s forwards;padding-left:.12em}
+.wm-glow{position:relative}
+.wm-glow::after{content:'PADRE';position:absolute;left:0;top:0;z-index:-1;color:transparent;
+  -webkit-text-stroke:1px rgba(255,34,73,.35);filter:blur(7px);letter-spacing:.12em;padding-left:.12em}
+.under{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px;
+  opacity:0;animation:fadeUp 1s ease .8s forwards}
+.under .line{height:1px;width:46px;background:linear-gradient(90deg,transparent,var(--plat-lo))}
+.under .line.r{background:linear-gradient(90deg,var(--plat-lo),transparent)}
+.tagline{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(16px,5vw,21px);letter-spacing:.04em;color:var(--soft);font-weight:500;white-space:nowrap}
+.subline{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.42em;text-transform:uppercase;color:var(--ruby-hi);margin-top:14px;font-weight:700;
+  opacity:0;animation:fadeUp 1s ease 1s forwards}
+.scrollcue{margin-top:26px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.34em;text-transform:uppercase;color:var(--mute);
+  display:flex;flex-direction:column;align-items:center;gap:7px;opacity:0;animation:fadeUp 1s ease 1.25s forwards}
+.scrollcue .dot{width:5px;height:5px;border-radius:50%;background:var(--ruby-hi);box-shadow:0 0 10px var(--ruby);animation:bob 1.8s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(7px);opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ====== STATUS RAIL ====== */
+.rail{display:flex;gap:9px;padding:6px 16px 6px;max-width:980px;margin:0 auto;justify-content:center;flex-wrap:wrap}
+.dial{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;padding:11px 12px;border-radius:16px;cursor:pointer;min-width:80px;
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.35));border:1px solid var(--line);backdrop-filter:blur(10px);transition:.22s}
+.dial:hover{border-color:var(--plat-lo);transform:translateY(-3px)}
+.dial.on{border-color:var(--glow);box-shadow:0 0 26px -5px var(--glow),0 0 0 1px var(--glow) inset}
+.dial img{width:36px;height:36px;border-radius:50%;object-fit:cover;mix-blend-mode:screen;filter:brightness(1.08) drop-shadow(0 0 9px var(--glow));animation:shimmer 5s ease-in-out infinite}
+.dial b{font-family:'JetBrains Mono',monospace;font-size:19px;color:#fff;line-height:1;text-shadow:0 0 12px var(--glow)}
+.dial span{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);font-weight:700}
+@keyframes shimmer{0%,100%{filter:brightness(1.08) drop-shadow(0 0 9px var(--glow))}50%{filter:brightness(1.4) drop-shadow(0 0 16px var(--glow))}}
+
+main{max-width:820px;margin:0 auto;padding:6px 16px 40px}
+.lbl{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);margin:26px 4px 16px;display:flex;align-items:center;gap:10px;font-weight:700}
+.lbl::before{content:'◆';color:var(--ruby-hi);font-size:9px}
+.lbl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+/* ====== PRICE MENU ====== */
+.price{margin:18px 0 6px;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(16px);box-shadow:0 16px 44px -26px #000,0 1px 0 rgba(255,255,255,.06) inset}
+.priceh{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:17px 18px;background:none;border:none;cursor:pointer;color:#fff;font-family:'Cinzel',serif;font-size:16px;font-weight:800;letter-spacing:.05em}
+.priceh .t{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ruby-hi)}
+.priceh .cv{transition:.3s;color:var(--mute)}.price.open .priceh .cv{transform:rotate(180deg)}
+.priceb{max-height:0;overflow:hidden;transition:max-height .4s ease,padding .4s ease;padding:0 18px}
+.price.open .priceb{max-height:780px;padding:0 18px 18px}
+.psub{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ruby-hi);margin:14px 0 2px;font-weight:700}
+.pr{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13.5px}
+.pr:last-child{border:none}.pr .n{color:#eef1f7;font-weight:600}.pr .n small{display:block;color:var(--mute);font-size:11px;font-weight:400;margin-top:2px}
+.pr .p{font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff;white-space:nowrap;text-shadow:0 0 10px #ff224966}
+.pay{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--soft);margin-top:12px;line-height:1.5}
+
+/* ====== PROSPECT CARDS ====== */
+.card{position:relative;margin-bottom:16px;border-radius:22px;overflow:hidden;opacity:0;transform:translateY(26px) scale(.985);animation:rise .7s cubic-bezier(.2,.8,.2,1) forwards;
+  background:var(--glass);backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 22px 54px -30px #000}
+@keyframes rise{to{opacity:1;transform:translateY(0) scale(1)}}
+.card::before{content:'';position:absolute;inset:0;border-radius:22px;pointer-events:none;
+  background:radial-gradient(120% 60% at 50% -10%,rgba(255,255,255,.06),transparent 60%)}
+.card.lead{border-color:rgba(255,34,73,.42);box-shadow:0 0 0 1px rgba(255,34,73,.28),0 24px 60px -30px rgba(255,34,73,.55),0 1px 0 rgba(255,255,255,.06) inset}
+.card.lead::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--ruby-hi),var(--ruby),var(--ruby-deep));box-shadow:0 0 16px var(--ruby)}
+.head{display:flex;gap:16px;align-items:center;padding:18px 17px;cursor:pointer;position:relative;z-index:1}
+
+/* THE GEM — close heat ring around a brilliant gem */
+.orb{position:relative;flex:0 0 auto;width:78px;height:78px;cursor:pointer}
+.orb .ring{position:absolute;inset:0;border-radius:50%;padding:4px;
+  background:conic-gradient(var(--hc) calc(var(--heat)*1%), rgba(255,255,255,.07) 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 4px));
+  filter:drop-shadow(0 0 9px var(--hc));transition:background .6s ease;animation:ringPulse 3.2s ease-in-out infinite}
+@keyframes ringPulse{0%,100%{filter:drop-shadow(0 0 8px var(--hc))}50%{filter:drop-shadow(0 0 16px var(--hc))}}
+/* second faint sweeping ring for motion */
+.orb .ring2{position:absolute;inset:-3px;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0deg,var(--hc) 24deg,transparent 60deg);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));
+  opacity:.5;animation:spin 7s linear infinite}
+.orb .gemwrap{position:absolute;inset:9px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 38% 28%,rgba(255,255,255,.1),#060608 74%);box-shadow:0 5px 12px rgba(0,0,0,.7) inset,0 0 0 1px rgba(255,255,255,.04)}
+.orb .gemwrap img{width:46px;height:46px;border-radius:50%;object-fit:cover;mix-blend-mode:screen;filter:brightness(1.12) drop-shadow(0 0 9px var(--glow));animation:gemShimmer 5s ease-in-out infinite}
+@keyframes gemShimmer{0%,100%{filter:brightness(1.1) drop-shadow(0 0 9px var(--glow));transform:rotate(0)}50%{filter:brightness(1.45) drop-shadow(0 0 16px var(--glow));transform:rotate(3deg)}}
+.orb:active .gemwrap img{transform:scale(.84)}
+.orb .hn{position:absolute;bottom:-4px;right:-4px;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;color:#060608;background:var(--hc);padding:2px 7px;border-radius:50px;box-shadow:0 0 14px -2px var(--hc)}
+
+.who{flex:1;min-width:0}
+.rk{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--hc);font-weight:700;text-shadow:0 0 12px var(--hc);display:flex;align-items:center;gap:7px}
+.rk .num{font-size:13px}
+.who h2{margin:4px 0 0;font-family:'Cinzel',serif;font-size:21px;font-weight:700;color:#fff;line-height:1.12;display:flex;align-items:center;gap:9px;flex-wrap:wrap;letter-spacing:.01em}
+.flag{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#fff;font-weight:700;border-radius:5px;padding:3px 8px;background:linear-gradient(180deg,var(--ruby),var(--ruby-deep));box-shadow:0 0 14px -1px var(--ruby)}
+.meta{font-size:13px;color:var(--soft);margin-top:6px;font-weight:500}
+.proof{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#7dffb8;margin-top:9px;display:inline-flex;gap:6px;background:rgba(34,224,122,.1);border:1px solid rgba(46,255,160,.32);padding:4px 9px;border-radius:7px;font-weight:700}
+.why{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mute);margin-top:8px;line-height:1.45}
+
+.acts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 17px 17px;position:relative;z-index:1}
+.act{display:flex;align-items:center;justify-content:center;gap:8px;padding:15px 8px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;transition:.15s;border:1px solid var(--line);color:#fff;background:rgba(255,255,255,.04);box-shadow:0 1px 0 rgba(255,255,255,.08) inset}
+.act:active{transform:translateY(1px)}.act svg{width:18px;height:18px}.act small{font-size:9px;display:block;opacity:.65;font-family:'JetBrains Mono',monospace;font-weight:500}
+.act.call{background:linear-gradient(180deg,var(--plat-hi),var(--plat) 55%,var(--plat-lo));color:#060608;border-color:#fff;box-shadow:0 0 20px -8px #fff,0 1px 0 rgba(255,255,255,.5) inset}
+.act.call small{opacity:.8}
+.act.sms{background:linear-gradient(180deg,var(--ruby-hi),var(--ruby) 55%,var(--ruby-deep));color:#fff;border-color:var(--ruby-hi);box-shadow:0 0 24px -7px var(--ruby),0 1px 0 rgba(255,255,255,.22) inset}
+
+.exp{border-top:1px solid var(--line);padding:0 17px;max-height:0;overflow:hidden;transition:max-height .5s ease,padding .5s ease;background:rgba(0,0,0,.34);position:relative;z-index:1}
+.card.open .exp{max-height:1800px;padding:17px}
+.kit h3{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ruby-hi);margin:0 0 8px;font-weight:700}
+.kit .b{margin-bottom:18px}.kit p{margin:0;font-size:14.5px;line-height:1.7;color:#eef1f7}
+.kit ul{margin:0;padding-left:18px}.kit li{font-size:14px;line-height:1.65;margin-bottom:6px;color:#e3e7f0}
+.obj{background:rgba(0,0,0,.42);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+.obj .q{font-weight:700;font-size:13.5px;color:#fff}.obj .a{font-size:13.5px;color:var(--soft);margin-top:5px;line-height:1.6}
+.note{font-size:13px;color:#ffd27a;background:rgba(255,194,61,.08);border:1px solid rgba(255,194,61,.28);border-radius:11px;padding:11px 13px;line-height:1.55;font-weight:500}
+.ask{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#fff;text-shadow:0 0 12px #ff224966}
+textarea{width:100%;background:rgba(0,0,0,.52);border:1px solid var(--line);border-radius:12px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:13.5px;padding:12px;resize:vertical;min-height:64px;margin-top:4px}
+textarea:focus{outline:none;border-color:var(--ruby);box-shadow:0 0 0 1px var(--ruby)}
+.tn{font-size:11px;color:var(--mute);text-align:center;padding:8px 0 2px;font-family:'JetBrains Mono',monospace}
+
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);font-weight:800;font-size:13px;padding:13px 24px;border-radius:50px;opacity:0;pointer-events:none;transition:.25s;z-index:99;background:linear-gradient(180deg,#fff,var(--plat));color:#060608;box-shadow:0 0 36px -6px var(--ruby)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{text-align:center;color:var(--mute);font-size:10px;font-family:'JetBrains Mono',monospace;padding:30px;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+footer .em{font-family:'Cormorant Garamond',serif;font-style:italic;text-transform:none;letter-spacing:.02em;font-size:14px;color:var(--soft);display:block;margin-bottom:10px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+
+/* ====== HYPERREALISTIC METAL SKIN (real forged surfaces, not gradients) ====== */
+:root{--mcard:url('assets/m-card.png');--mhero:url('assets/m-hero.png');--mgold:url('assets/m-gold.png')}
+/* fallback to existing real-metal plate until sharper m-* land */
+@supports not (background:image-set(url(x) 1x)){}
+/* cards: real brushed metal slab + dark scrim for legibility + machined bevel */
+.card{background:linear-gradient(168deg,rgba(6,7,11,.80),rgba(3,4,7,.90)),var(--mcard),#0a0b0f!important;background-size:cover!important;background-position:center!important;backdrop-filter:none!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.14) inset,0 -2px 8px rgba(0,0,0,.6) inset,0 22px 54px -30px #000,0 0 0 1px rgba(0,0,0,.5)!important}
+.card.lead{box-shadow:0 0 0 1px rgba(255,34,73,.5),0 24px 60px -28px rgba(255,34,73,.6),0 1px 0 rgba(255,255,255,.16) inset,0 -2px 8px rgba(0,0,0,.6) inset!important}
+.card::before{background:radial-gradient(120% 60% at 50% -10%,rgba(255,255,255,.12),transparent 58%)!important}
+/* price menu: same forged plate */
+.price{background:linear-gradient(168deg,rgba(6,7,11,.82),rgba(3,4,7,.92)),var(--mcard),#0a0b0f!important;background-size:cover!important;backdrop-filter:none!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 16px 44px -26px #000!important}
+/* dials: small machined metal chips */
+.dial{background:linear-gradient(180deg,rgba(20,22,30,.6),rgba(3,4,7,.85)),var(--mcard),#0a0b0f!important;background-size:cover!important;backdrop-filter:none!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.1) inset,0 -2px 6px rgba(0,0,0,.5) inset!important}
+/* action buttons: forged metal plates; call = bright platinum, sms = ruby-anodized over metal */
+.act{background:linear-gradient(180deg,rgba(26,28,38,.55),rgba(4,5,9,.8)),var(--mcard)!important;background-size:cover!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 -2px 6px rgba(0,0,0,.6) inset,0 8px 18px -10px #000!important}
+.act.call{background:linear-gradient(180deg,#ffffff,#dbe2ea 48%,#aab4c2 78%,#7c8696)!important;color:#060608!important;
+  box-shadow:0 0 22px -8px #fff,0 1px 0 rgba(255,255,255,.7) inset,0 -2px 5px rgba(0,0,0,.25) inset!important}
+.act.sms{background:linear-gradient(180deg,#ff6c86,#ff2249 52%,#7c0a1f),var(--mcard)!important;background-blend-mode:overlay,normal!important;background-size:cover!important;color:#fff!important;
+  box-shadow:0 0 26px -7px var(--ruby),0 1px 0 rgba(255,255,255,.28) inset!important}
+/* hero: forged-metal slab glows behind the sigil */
+.hero::after{content:'';position:absolute;inset:0;z-index:-1;background:var(--mhero);background-size:cover;background-position:center;opacity:.22;mix-blend-mode:screen;pointer-events:none}
+/* the orb bezel becomes a real machined ring */
+.orb .gemwrap{background:radial-gradient(circle at 38% 28%,rgba(255,255,255,.16),#060608 74%),var(--mcard)!important;background-size:cover!important;
+  box-shadow:0 5px 12px rgba(0,0,0,.75) inset,0 0 0 1px rgba(255,255,255,.12),0 2px 3px rgba(255,255,255,.1)!important}
+/* gold-bar accent on section label + lead stripe */
+.lbl::after{background:linear-gradient(90deg,rgba(210,172,71,.55),transparent)!important;height:2px!important}
+.toast{background:linear-gradient(180deg,#fff,#cdd4dc)!important}
+</style>
+</head>
+<body>
+<div class="stage"></div>
+<div class="rays"></div>
+<div class="amb"><i class="r1"></i><i class="r2"></i><i class="r3"></i></div>
+<div class="motes" id="motes"></div>
+<div class="grain"></div>
+<div class="vig"></div>
+
+<header class="hero">
+  <div class="kicker">Executive Leverage &nbsp;·&nbsp; <b>EGBOps — Self Exec</b></div>
+  <div class="sigil-stage">
+    <div class="guide g1"></div>
+    <div class="guide g2"></div>
+    <div class="halo"></div>
+    <div class="halo two"></div>
+    <img class="sigil-img" src="assets/logo.png" alt="EGBOps Sigil">
+    <div class="glint"></div>
+  </div>
+  <h1 class="wordmark wm-glow">EGBOPS</h1>
+  <div class="under"><span class="line"></span><span class="tagline">The Closer's Deck</span><span class="line r"></span></div>
+  <div class="subline">Obsidian · Platinum · Ruby</div>
+  <div class="scrollcue">The Pipeline<span class="dot"></span></div>
+</header>
+
+<div class="rail" id="rail"></div>
+<main>
+  <div class="price" id="price"><button class="priceh" onclick="document.getElementById('price').classList.toggle('open')"><span>Price Menu</span><span class="t">tap to quote</span><span class="cv">▾</span></button>
+    <div class="priceb">
+      <div class="psub">Core</div><div class="pr"><span class="n">Website Build<small>domain · mobile · call buttons · niche SEO · 1 free edit</small></span><span class="p">$2,222</span></div>
+      <div class="psub">Add-Ons · new functionality</div><div class="pr"><span class="n">Any add-on<small>AI chatbot · automation · custom email · extra page · integration</small></span><span class="p">$111</span></div>
+      <div class="psub">Edits · no subscription</div><div class="pr"><span class="n">Edit round<small>text / image / layout · 1st free, then per round</small></span><span class="p">$222</span></div>
+      <div class="psub">Logos &amp; Branding</div>
+      <div class="pr"><span class="n">Basic logo<small>with site · 1 concept</small></span><span class="p">$111</span></div>
+      <div class="pr"><span class="n">Standard logo<small>2 concepts · 2 revisions · PNG+vector</small></span><span class="p">$333</span></div>
+      <div class="pr"><span class="n">Mini brand pack<small>logo · palette · type · usage</small></span><span class="p">$555</span></div>
+      <div class="pay">Start: $2,222 full or 50% deposit ($1,111) · PayPal · Cash App · Venmo · Zelle</div>
+    </div>
+  </div>
+  <div class="lbl" id="lbl">Ranked by Close Heat · hottest first · EGBO local (East)</div>
+  <div id="list"></div>
+  <footer><span class="em">Forged in obsidian, platinum &amp; ruby.</span>EGBOps · Self Exec / XLRD · hitthe.link/egbops/close</footer>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const P=[
+ {slug:"charlies-angels-hair-salon-college-park",name:"Charlie's Angels Hair Salon",trade:"Hair Salon",city:"College Park, GA",owner:"",tel:"+14045148719",disp:"(404) 514-8719",lead:true,heat:82,proof:"4.8 stars from 208 verified reviews on Birdeye (confirmed live 2026-05-31)",
+  why:"UENI-default web presence + no real brand site, but 4.8★/208 verified Birdeye reviews and active GlossGenius booking spend = clear gap, proven demand, reachable, already buys tools.",
+  opener:"Hi, this is East Allen — I build premium brand+booking sites for College Park salons. I saw Charlie's Angels is sitting on a 4.8-star, 208-review reputation but only a default UENI page online. I already built you a real one — can I send the link?",
+  bullets:["Your 4.8★/208-review reputation deserves a real branded site, not a UENI default template — work this good needs a brand to match.","Silk-press / sew-in / natural-hair artistry presented in a luxury plum-and-gold experience with a real grok hero video, not stock clip-art.","Tap-to-call and request-appointment built in, feeding the GlossGenius booking you already pay for — turns Google searches into booked chairs."],
+  objs:[{q:"I already have a website / booking page.",a:"You have a GlossGenius booking link and a UENI default page — those take payments, but neither sells the brand. This is the storefront that makes a first-time client choose you before they ever tap 'book.' It feeds the same GlossGenius you already use."},{q:"Why $2,222 — that's a lot for a website.",a:"It's not a template; it's a Self Exec rebuild — custom brand, hero video, the booking experience, and the proof layer wired to your real 4.8-star reputation. It's already built and live for you to see. One extra sew-in client a week covers it."}]},
+ {slug:"undeniable-healthcare-fairburn",name:"Undeniable Healthcare — Fairburn",trade:"Wellness clinic & urgent/primary care with med-spa arm",city:"Fairburn",owner:"",tel:"+16782500323",disp:"(678) 250-0323",lead:true,heat:82,proof:"4.9 stars from 1,749 reviews (Solv, verified 2026-05-31); veteran-owned (undeniablehealthcare.com/veterans + public listings)",
+  why:"Dated GoDaddy site vs 4.9★/1,749-review multi-service, multi-location clinic — clear brand gap, massive verified demand, reachable phone, strong med-spa/weight-loss ad-spend signals.",
+  opener:"Fronted by EGBO (East Allen) — saw Undeniable Healthcare pulling 4.9 stars across 1,749 reviews in Fairburn while the GoDaddy site sells you short; built you a clinical-luxe rebuild to match.",
+  bullets:["Current GoDaddy site is dated and flat — the brand doesn't reflect a 4.9★/1,749-review veteran-owned clinic that does urgent care, primary care AND a full wellness med-spa under one roof.","New clinical-luxe site already built: hero video, three-service layout, verified proof strip, online appointment request, click-to-call everywhere, mobile-first, schema for Google.","Self Exec rebuild adds the AI front desk you're missing — booking, paperless intake, and automatic follow-up that cut no-shows and free your staff for care."],
+  objs:[{q:"We already have a website.",a:"You do — and it's costing you. A 4.9-star, 1,749-review veteran-owned clinic with a med-spa, weight-loss, and aesthetics arm should look the part; your GoDaddy page reads like a single urgent care. I rebuilt it clinical-luxe so the brand finally matches the reputation. Pull it up next to your current one and you'll see it in five seconds."},{q:"How much, and what do I actually get?",a:"$2,222 for the full Self Exec rebuild — the live premium site you're looking at, your three care lines presented right, schema so Google ranks the new pages, plus the AI booking/intake/follow-up layer that reduces no-shows. It's already built on your verified info; we just point your domain and you're live."}]},
+ {slug:"rl-ingram-construction-atlanta",name:"RL Ingram Construction",trade:"General / Remodeling Contractor",city:"Atlanta, GA",owner:"Rodney Ingram",tel:"+14042723603",disp:"(404) 272-3603",lead:true,heat:82,proof:"4.64/5 Porch (39 reviews), 5.0 Angi, BuildZoom top 1% of 84,062 GA licensed contractors (score 181), A+ BBB rating, HomeAdvisor Screened & Approved",
+  why:"Top-1% BuildZoom + 4.64/39 Porch verified, dated current site = clear brand gap, reachable direct line, $$$ remodeler with active multi-directory spend — high close-fast likelihood.",
+  opener:"Mr. Ingram, this is East Allen — I build premium sites for top-1% Atlanta contractors, and I already put one together for RL Ingram. You're ranked top 1% of 84,062 Georgia contractors on BuildZoom with a 4.64 on Porch, but your current site doesn't show it. I rebuilt it the way your work deserves — got two minutes to look?",
+  bullets:["Verified top 1% of 84,062 licensed GA contractors on BuildZoom (score 181) — proof most Cascade-corridor competitors can't claim","4.64/5 across 39 Porch reviews, 5.0 on Angi, A+ BBB rating and HomeAdvisor Screened & Approved — all surfaced as independent, clickable proof","Heirloom-grade Fraunces/Sora design with hero video, click-to-call everywhere, and a consultation form that routes leads straight to your inbox"],
+  objs:[{q:"I already have a website.",a:"You do — and it's why I rebuilt it instead of starting cold. The current one is dated and buries the fact that you're top 1% in the whole state. Let me text you the new live version side by side; if it doesn't out-sell the old one on sight, you owe me nothing."},{q:"How much and how long?",a:"It's a flat $2,222 Self Exec rebuild — already designed, already live, no retainer. I built it on spec so you're approving a finished product, not paying for a promise. We can have it on your domain this week."}]},
+ {slug:"cranford-homes-realty-hapeville",name:"Cranford Homes & Realty Co.",trade:"Real Estate Broker / Agency",city:"Hapeville, GA",owner:"Sherry Cranford (broker, GA-182621)",tel:"+14047666223",disp:"(404) 766-6223",lead:true,heat:78,proof:"Verified live on cranfordhomesrealty.com + Georgia MLS office listing (CHRC01): name, Real Estate Broker category, 617 N Central Ave Hapeville GA 30354, phone (404) 766-6223, email info@cranfordhomesrealty.com; HomeLight (Sherry Cranford GA-182621), Nextdoor, Yellow Pages corroborate. 290+ closings / ~29 yrs reflect GA MLS office track record. No public rating/review/testimonial found — none claimed on asset.",
+  why:"Stark gap between a ~29-yr/290+-closing brokerage and its dated live site; verified office phone+email reachability and fixed-cost spend signals make a $2,222 wire plausible — held below 80 only for no found online review/rating presence.",
+  opener:"Hi, is this Cranford Homes & Realty? This is East Allen with EGBO (East Allen) — I build for established Hapeville brokerages. I saw you've worked the Tri-Cities by the airport since the '90s with 290-plus closings, but your site doesn't carry that weight online. I already built a premium emerald-and-gold version for Cranford — can I send the link?",
+  bullets:["Already-built cinematic emerald-and-gold brokerage site (hero video, 290+ closings + ~29-yr track record, working lead form to info@cranfordhomesrealty.com) replacing the dated current template","AI booking, intake and automated follow-up so buyer/seller/landlord leads get an instant on-brand reply 24/7 — no after-hours inquiry slips","Built to rank locally for Hapeville / College Park / East Point and convert mobile traffic — one captured closing dwarfs the $2,222 build"],
+  objs:[{q:"I already have a website.",a:"You do, and it's why I called — it's a dated template that doesn't signal a 29-year, 290-closing brokerage. Mine is already built and live to view; you compare them side by side and only move if the new one obviously wins more listings."},{q:"How much and what's the catch?",a:"$2,222 one-time for the full rebuild — premium brand, fast modern site, and the AI booking/intake/follow-up wired in. No catch: the site's already done, it posts to your real info@ inbox, and you see it before you decide."}]},
+ {slug:"south-fulton-event-hall-south-fulton",name:"South Fulton Event Hall",trade:"Event / Entertainment Venue",city:"South Fulton, GA",owner:"",tel:"+14044316835",disp:"(404) 431-6835",lead:true,heat:74,proof:"4.3 stars across 55 verified reviews (Birdeye); throne-chair, mobile photo-booth, and delivery pricing confirmed on owner's own site; open 7 days/week",
+  why:"Owner has only a Wix microsite + aggregator listings (clear branded-web gap), verified 4.3 stars/55 reviews with repeat customers, a direct cell that takes calls and texts, and proven equipment spend (throne chairs, mobile photo booth, delivery) — capital-equipped and reachable for a fast close.",
+  opener:"Hi, this is East Allen with Self Exec — I build premium branded sites for South Fulton event venues. I just put one together for South Fulton Event Hall and wanted you to see it before anything goes further.",
+  bullets:["Your 4.3-star, 55-review reputation deserves a site that looks as elegant as your hall — right now you only have a Wix microsite and aggregator listings doing the talking.","Live luxury site is already built: hero video, gold-on-ink design, your real reviews, click-to-call and a date-inquiry form that emails you directly.","One flat $2,222 Self Exec rebuild — you own the brand and the site, no monthly lock-in, and it ranks for 'event venue Union City / South Fulton.'"],
+  objs:[{q:"I already have a website (the Wix one).",a:"That microsite is fine for basics, but it doesn't match the premium look of your throne chairs and decor — this build puts your 4.3-star reviews front and center and converts callers, which a template page won't. Take 30 seconds to compare them side by side."},{q:"How much and what's the catch?",a:"$2,222 flat, one time — brand plus the live site you fully own, no monthly subscription. The site is already built and live; you're paying to keep it and point your domain at it, not to start from scratch."}]},
+ {slug:"the-barber-shop-lounge-college-park",name:"The Barber Shop Lounge",trade:"Barber Shop",city:"College Park",owner:"",tel:"+17063528339",disp:"(706) 352-8339",lead:true,heat:72,proof:"Rated 4.4–4.5★ across public directories (Birdeye 4.5 listing, NiceLocal 4.4)",
+  why:"Clear web/brand gap (presence is a bare Booksy subdomain), demand + NAP verified across multiple directories, live tel line for reachability; no hard ad-spend signal yet.",
+  opener:"Hi — this is East Allen with Self Exec. I built The Barber Shop Lounge a real lounge-tier website (not a Booksy subdomain) with online booking, smart intake and auto text reminders — it's already live. Want the link?",
+  bullets:["Replaces the bare Booksy subdomain with a premium lounge-tier site that ranks for College Park barber searches","Built-in online booking, smart intake and automated text reminders cut no-shows and lock standing appointments","Your real 4.4–4.5★ directory reputation surfaced honestly up top — no invented reviews, just verified proof"],
+  objs:[{q:"I already have Booksy, why pay for a site?",a:"Booksy is a booking tab inside someone else's marketplace next to your competitors — this is your own branded home that owns the search result and feeds bookings straight into Booksy or whatever you run. You keep the booking tool; you finally own the front door."},{q:"$2,222 is a lot for a barbershop.",a:"It's a one-time brand + site + automation build, not a monthly drip. One recovered no-show a week from auto-reminders covers it inside a season, and the site works the phones for you 24/7 — it's already live, you only pay once it's earning."}]},
+ {slug:"fortitude-educational-cultural-development-center-red-oak",name:"The Fortitude Educational and Cultural Development Center",trade:"Nonprofit / Community & Youth Development Organization",city:"Red Oak, GA",owner:"Minnie Miller (President)",tel:"+14045782532",disp:"(404) 578-2532",lead:true,heat:62,proof:"501(c)(3), EIN 58-2457664; 25 years of service celebrated at 2024 Pinnacle Awards Luncheon; verified on CauseIQ, Charity Navigator, GuideStar",
+  why:"Established 25-yr 501(c)(3) with recurring fundraising event (real $-spend) and a dated existing site = clear upgrade gap; reachable, but board-approval cycle slows a same-day wire.",
+  opener:"Hi Minnie, this is EGBO (East Allen) — I rebuilt Fortitude's web presence into a premium donor-and-volunteer engine and have it live to show you; can I send the link?",
+  bullets:["Premium animated rebuild that finally matches a 25-year mission — whole-children/whole-seniors story, Pinnacle Awards feature, real NGO schema with your EIN baked in for search","Donor + volunteer intake that captures every offer of help and auto-follows-up, so no supporter slips through the cracks before your next Pinnacle event","One flat $2,222 Self Exec build — no monthly agency retainer, you own the asset outright"],
+  objs:[{q:"We already have a website (fecdc-atl.org).",a:"You do — that's exactly why this is a rebuild, not a first site. The current one doesn't carry the weight of 25 years or convert donors the way this does. Compare them side by side; if mine doesn't lift giving and volunteer intake, you keep your money."},{q:"We're a nonprofit, budget has to go through the board.",a:"Understood — that's why it's one flat $2,222, not a recurring retainer the board has to re-approve every year. It's a capital asset you own forever, and I can have it fully live before the next board meeting so they're approving something they can already see working."}]}
+];
+const STATUSES=['New','Called','No answer','Interested','Sent site','Closed'];
+const GEM={'New':'gem-diamond','Called':'gem-sapphire','No answer':'gem-citrine','Interested':'gem-amethyst','Sent site':'gem-topaz','Closed':'gem-emerald'};
+const GLOW={'New':'#e9eef6','Called':'#4d86ff','No answer':'#ffc23d','Interested':'#c07bff','Sent site':'#27ecff','Closed':'#2effa0'};
+const HEAT={'t-and-g-plumbing-locust-grove':94,'coker-heating-air':88,'tobaz-towing-jonesboro':85,'promasters-automotive':82,'kdc-electrical-services-stockbridge':74,'warner-lawn-care-service-mcdonough':70,'jjs-painting':62,'bridges-fencing-locust-grove':58};
+const WHY={'t-and-g-plumbing-locust-grove':'Emergency trade · hard proof · clear no-site gap','coker-heating-air':'Emergency trade · answers day/night · summer urgency','tobaz-towing-jonesboro':'Emergency · broken site = visible pain · cash sales','promasters-automotive':'Strong proof (4.4/92) · no site','kdc-electrical-services-stockbridge':'Trust trade · reachable · license caveat slows','warner-lawn-care-service-mcdonough':'4.7 rated · recurring hook · lower urgency',"jjs-painting":'Solid rep, no hard numbers · project cycle','bridges-fencing-locust-grove':'30-yr trust but slowest cycle'};
+const hc=h=>h>=85?'#2effa0':h>=75?'#27ecff':h>=65?'#ffc23d':'#ff6c86';
+const url=s=>'https://hitthe.link/egbops/local/'+s+'/';const k=s=>'egbops_'+s;
+const gS=s=>{try{return JSON.parse(localStorage.getItem(k(s)))||{}}catch(e){return{}}};const sS=(s,o)=>localStorage.setItem(k(s),JSON.stringify(o));
+let filter=null;
+function smsb(p){return encodeURIComponent("Hi"+(p.owner?(" "+p.owner.split(' ')[0]):"")+" — this is East with Self Exec / Executive Leverage. I built a website for"+p.name+" — take a look: "+url(p.slug)+" — got 5 minutes for me to walk you through it? Reply YES.");}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
+function adv(s){const st=gS(s);const i=STATUSES.indexOf(st.status||'New');st.status=STATUSES[(i+1)%STATUSES.length];sS(s,st);render();}
+function cp(s){navigator.clipboard.writeText(url(s)).then(()=>toast('Link copied'));}
+function nt(s,v){const st=gS(s);st.note=v;sS(s,st);}
+function render(){
+  const c={};STATUSES.forEach(s=>c[s]=0);P.forEach(p=>c[gS(p.slug).status||'New']++);
+  document.getElementById('rail').innerHTML=STATUSES.map(s=>'<div class="dial'+(filter===s?' on':'')+'" style="--glow:'+GLOW[s]+'" onclick="filter=(filter===\''+s+'\'?null:\''+s+'\');render()"><img src="assets/'+GEM[s]+'.png" alt="'+s+'"><b>'+c[s]+'</b><span>'+s+'</span></div>').join('');
+  const sh=P.filter(p=>filter===null||(gS(p.slug).status||'New')===filter).sort((a,b)=>HEAT[b.slug]-HEAT[a.slug]);
+  document.getElementById('lbl').textContent=(filter?filter:'Ranked by Close Heat')+' · '+sh.length+(filter?' · tap a gem to clear':' · hottest first');
+  document.getElementById('list').innerHTML=sh.map((p,i)=>{const st=gS(p.slug);const s=st.status||'New';const g=GLOW[s];const h=HEAT[p.slug]||50;const C=hc(h);
+    return '<div class="card'+(p.lead?' lead':'')+'" id="c-'+p.slug+'" style="--hc:'+C+';animation-delay:'+(i*.07)+'s">'+
+     '<div class="head" onclick="tg(\''+p.slug+'\')">'+
+       '<div class="orb" style="--heat:'+h+';--glow:'+g+'" onclick="event.stopPropagation();adv(\''+p.slug+'\')" title="advance stage"><div class="ring"></div><div class="ring2"></div><div class="gemwrap"><img src="assets/'+GEM[s]+'.png" alt="'+s+'"></div><span class="hn">'+h+'</span></div>'+
+       '<div class="who"><div class="rk"><span class="num">#'+(i+1)+'</span> · '+s.toUpperCase()+'</div><h2>'+p.name+(p.lead?' <span class="flag">Top Lead</span>':'')+'</h2><div class="meta">'+p.trade+' · '+p.city+(p.owner?' · '+p.owner:'')+'</div>'+(p.proof?'<div class="proof">◆ '+p.proof+'</div>':'')+'<div class="why">'+(WHY[p.slug]||'')+'</div></div>'+
+     '</div>'+
+     '<div class="acts">'+
+       '<a class="act call" href="tel:'+p.tel+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>Call<small>'+p.disp+'</small></span></a>'+
+       '<a class="act sms" href="sms:'+p.tel+'?&body='+smsb(p)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Text<small>pre-filled</small></span></a>'+
+       '<button class="act" onclick="cp(\''+p.slug+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span>Link<small>copy</small></span></button>'+
+     '</div>'+
+     '<div class="exp"><div class="kit">'+
+       '<div class="b"><h3>Opener</h3><p>'+p.opener+'</p></div>'+
+       '<div class="b"><h3>Why they need it</h3><ul>'+p.bullets.map(b=>'<li>'+b+'</li>').join('')+'</ul></div>'+
+       '<div class="b"><h3>Objections</h3>'+p.objs.map(o=>'<div class="obj"><div class="q">“'+o.q+'”</div><div class="a">'+o.a+'</div></div>').join('')+'</div>'+
+       '<div class="b"><h3>The ask</h3><p class="ask">$2,222 — full upfront, or 50% ($1,111) to start, balance before go-live. First version in ~1 week.</p></div>'+
+       (p.note?'<div class="b"><h3>Confirm on call</h3><div class="note">'+p.note+'</div></div>':'')+
+       '<div class="b"><h3>Notes</h3><textarea placeholder="Log the call..." oninput="nt(\''+p.slug+'\',this.value)">'+(st.note||'')+'</textarea></div>'+
+       '<div class="tn">tap the header to collapse</div>'+
+     '</div></div></div>';
+  }).join('');
+}
+function tg(s){document.getElementById('c-'+s).classList.toggle('open');}
+/* cinematic dust motes */
+(function(){var m=document.getElementById('motes');if(!m)return;var n=18,h='';for(var i=0;i<n;i++){var l=Math.random()*100,d=(8+Math.random()*14).toFixed(1),de=(Math.random()*16).toFixed(1),sz=(1+Math.random()*2.4).toFixed(1);h+='<i style="left:'+l.toFixed(1)+'%;bottom:-10px;width:'+sz+'px;height:'+sz+'px;animation-duration:'+d+'s;animation-delay:-'+de+'s"></i>';}m.innerHTML=h;})();
+render();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

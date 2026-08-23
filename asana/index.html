@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A1F12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Asana Progress — hitthe.link</title>
+<meta name="description" content="Live Asana task + project progress for L7S, SEL, XLRD work. Inline-HTML single-file dashboard, polled live.">
+<style>
+:root{
+  /* VEI canon v2 (2026-05-27 14:08 PT) — 3D hyperrealistic, deeper contrast,
+     blurred glassmorphism, touch-responsive. */
+  --bg:#050C08;--bg-deep:#020604;--bg-glow:rgba(11,166,96,.06);
+  --ink:#FFFFFF;--ink-soft:#F0EAD6;--mute:#6B8B72;
+  --gold:#0BA660;--gold-soft:#3FCB85;--gold-glow:rgba(11,166,96,.55);
+  --line:rgba(176, 255, 200, .16);--line-glow:rgba(63,203,133,.35);
+  --card:rgba(8, 24, 14, .55);--card-hi:rgba(11, 36, 22, .75);
+  --shadow-3d:0 8px 32px -8px rgba(0,0,0,.6), 0 2px 0 rgba(255,255,255,.04) inset;
+  --shadow-3d-hi:0 16px 48px -12px rgba(0,0,0,.7), 0 0 0 1px var(--line-glow) inset, 0 2px 0 rgba(255,255,255,.06) inset;
+  --green:#0BA660;--yellow:#F5C842;--red:#FF6B5A;
+}
+body::before{
+  content:"";position:fixed;inset:-20vmax;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 30%, var(--bg-glow), transparent 70%),
+    radial-gradient(ellipse 70% 60% at 80% 80%, rgba(63,203,133,.04), transparent 70%),
+    var(--bg-deep);
+  filter:blur(20px) saturate(1.2);
+}
+body{position:relative}
+main{position:relative;z-index:1}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+/* Mobile-first base — per canon 2026-05-27 14:05 PT. */
+main{max-width:100%;margin:0 auto;padding:24px 16px max(48px,env(safe-area-inset-bottom))}
+header{text-align:center;margin-bottom:32px}
+@media(min-width:640px){main{max-width:1200px;padding:48px 24px 96px}header{margin-bottom:48px}}
+.brand{font-size:14px;letter-spacing:.4em;color:var(--gold);text-transform:uppercase;font-weight:600;margin-bottom:16px}
+h1{font-size:clamp(40px,7vw,72px);font-weight:800;letter-spacing:-.03em;line-height:1.05;background:linear-gradient(135deg,var(--ink) 0%,var(--gold-soft) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:18px}
+.sub{color:var(--mute);font-size:18px;max-width:640px;margin:0 auto}
+.status-strip{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:32px 0 32px}
+.status-pill{background:var(--card);border:1px solid var(--line);padding:8px 18px;border-radius:999px;font-size:13px;color:var(--mute);font-weight:500}
+.status-pill.active{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:700}
+.status-pill.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);margin-right:8px;vertical-align:middle}
+.status-pill.stale::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--yellow);margin-right:8px;vertical-align:middle}
+.status-pill.dead::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:8px;vertical-align:middle}
+section{margin-bottom:48px}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;padding-left:4px}
+.section-title h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.section-title .meta{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:640px){.grid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}}
+.task{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;min-height:140px;backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);box-shadow:var(--shadow-3d);transition:transform .18s cubic-bezier(.2,.7,.2,1),box-shadow .25s ease,background .25s ease,border-color .25s ease}
+.task:hover{background:var(--card-hi);border-color:var(--gold);box-shadow:var(--shadow-3d-hi);transform:translateY(-2px)}
+.task:active{transform:scale(.985);transition:transform .08s ease}
+.task-meta{font-size:11px;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;font-weight:600;margin-bottom:8px}
+.task-title{font-size:16px;font-weight:700;margin-bottom:10px;letter-spacing:-.01em}
+.task-body{font-size:13px;color:var(--mute);flex:1;margin-bottom:14px}
+.task-foot{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mute)}
+.task-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.task-status .dot{width:7px;height:7px;border-radius:50%}
+.task-status.done .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+.task-status.done{color:var(--green)}
+.task-status.progress .dot{background:var(--gold)}
+.task-status.progress{color:var(--gold)}
+.task-status.queued .dot{background:var(--yellow)}
+.task-status.queued{color:var(--yellow)}
+.task-status.blocked .dot{background:var(--red)}
+.task-status.blocked{color:var(--red)}
+.task-progress-bar{height:4px;background:rgba(212,175,55,.12);border-radius:2px;overflow:hidden;margin:8px 0 12px}
+.task-progress-bar .fill{height:100%;background:linear-gradient(90deg,var(--gold) 0%,var(--gold-soft) 100%);transition:width .4s ease}
+.empty{padding:64px 24px;text-align:center;color:var(--mute);background:var(--card);border:1px dashed var(--line);border-radius:14px}
+.empty strong{color:var(--gold);display:block;margin-bottom:8px;font-size:14px;letter-spacing:.2em;text-transform:uppercase}
+footer{text-align:center;margin-top:80px;padding-top:32px;border-top:1px solid var(--line);color:var(--mute);font-size:13px}
+footer a{color:var(--gold);text-decoration:none}
+.totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:32px}
+.totals .t{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;backdrop-filter:blur(14px) saturate(1.1);-webkit-backdrop-filter:blur(14px) saturate(1.1);box-shadow:var(--shadow-3d);transition:transform .18s ease,box-shadow .25s ease}
+.totals .t:hover{box-shadow:var(--shadow-3d-hi);transform:translateY(-1px)}
+.totals .t .n{font-size:32px;font-weight:800;letter-spacing:-.02em;color:var(--gold)}
+.totals .t .l{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);font-weight:600;margin-top:4px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">L7S · SEL · XLRD</div>
+    <h1>Asana Progress</h1>
+    <p class="sub">Live task + project progress. Polled from xen.xlrd.org every 30s. Asana is Luckie's brain — this dashboard is the read surface.</p>
+  </header>
+
+  <div class="status-strip" id="status-strip">
+    <div class="status-pill stale" id="conn-pill">— connecting</div>
+    <div class="status-pill" id="updated-pill">last update: —</div>
+    <div class="status-pill" id="source-pill">source: xen.xlrd.org/api/asana</div>
+  </div>
+
+  <div class="totals" id="totals">
+    <div class="t"><div class="n" id="cnt-total">—</div><div class="l">Tasks total</div></div>
+    <div class="t"><div class="n" id="cnt-done">—</div><div class="l">Done</div></div>
+    <div class="t"><div class="n" id="cnt-progress">—</div><div class="l">In progress</div></div>
+    <div class="t"><div class="n" id="cnt-queued">—</div><div class="l">Queued</div></div>
+    <div class="t"><div class="n" id="cnt-blocked">—</div><div class="l">Blocked</div></div>
+  </div>
+
+  <section>
+    <div class="section-title"><h2>Active</h2><div class="meta" id="active-meta">—</div></div>
+    <div class="grid" id="active-grid">
+      <div class="empty">
+        <strong>fetching…</strong>
+        Reading from <code>xen.xlrd.org/api/asana/progress</code>. If this stays empty, the endpoint isn't wired up yet — xensync asana from a terminal to seed the local cache.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><h2>Recent activity</h2><div class="meta">last 24h</div></div>
+    <div class="grid" id="recent-grid"></div>
+  </section>
+
+  <footer>
+    <div><a href="/">hitthe.link</a> · <a href="/calculators/">calculators</a> · <a href="/commandments/">commandments</a> · <a href="/nblm/">nblm</a></div>
+    <div style="margin-top:8px;font-size:11px;opacity:.7">Asana progress · live every 30s · per qi 2026-05-27 13:50 PT</div>
+  </footer>
+</main>
+
+<script>
+const CANDIDATE_ENDPOINTS = [
+  'https://xen.xlrd.org/api/asana/progress',
+  'https://api.xlrd.org/asana/progress',
+  'http://127.0.0.1:4441/api/asana/progress'
+];
+const POLL_MS = 30000;
+const STATUS_CLASS = { done:'done', completed:'done', in_progress:'progress', progress:'progress', queued:'queued', open:'queued', blocked:'blocked' };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function setConn(state, label) {
+  const p = $('conn-pill');
+  p.className = 'status-pill ' + state;
+  p.textContent = label;
+}
+
+async function tryEndpoint(url) {
+  try {
+    const r = await fetch(url, { method:'GET', headers:{accept:'application/json'}, mode:'cors' });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (_) { return null; }
+}
+
+async function fetchAsana() {
+  for (const url of CANDIDATE_ENDPOINTS) {
+    const data = await tryEndpoint(url);
+    if (data) {
+      $('source-pill').textContent = 'source: ' + new URL(url).host;
+      return data;
+    }
+  }
+  return null;
+}
+
+function renderTask(t) {
+  const statusKey = STATUS_CLASS[(t.status || '').toLowerCase()] || 'queued';
+  const pct = Math.max(0, Math.min(100, t.percent_complete ?? 0));
+  return `<div class="task">
+    <div class="task-meta">${esc(t.project || 'L7S')} ${t.due ? '· due ' + esc(t.due) : ''}</div>
+    <div class="task-title">${esc(t.title || 'Untitled')}</div>
+    <div class="task-body">${esc(t.notes || t.description || '').slice(0, 200)}</div>
+    <div class="task-progress-bar"><div class="fill" style="width:${pct}%"></div></div>
+    <div class="task-foot">
+      <span class="task-status ${statusKey}"><span class="dot"></span>${esc(t.status || 'queued')}</span>
+      <span>${esc(t.assignee || '—')}</span>
+    </div>
+  </div>`;
+}
+
+function renderEmpty(msg) {
+  return `<div class="empty"><strong>no data</strong>${esc(msg)}</div>`;
+}
+
+function update(data) {
+  if (!data) {
+    setConn('dead', '— offline · no endpoint reachable');
+    $('active-grid').innerHTML = renderEmpty('All endpoints returned nothing. Wire up xen.xlrd.org/api/asana/progress on omnimind, or run xensync asana to seed local cache.');
+    $('recent-grid').innerHTML = '';
+    return;
+  }
+  setConn('live', '— live');
+  $('updated-pill').textContent = 'updated: ' + new Date().toLocaleTimeString();
+
+  const tasks = Array.isArray(data.tasks) ? data.tasks : (data.items || []);
+  const counts = { total: tasks.length, done: 0, progress: 0, queued: 0, blocked: 0 };
+  for (const t of tasks) {
+    const sk = STATUS_CLASS[(t.status || '').toLowerCase()] || 'queued';
+    counts[sk] = (counts[sk] || 0) + 1;
+  }
+  $('cnt-total').textContent = counts.total;
+  $('cnt-done').textContent = counts.done;
+  $('cnt-progress').textContent = counts.progress;
+  $('cnt-queued').textContent = counts.queued;
+  $('cnt-blocked').textContent = counts.blocked;
+
+  const active = tasks.filter(t => {
+    const sk = STATUS_CLASS[(t.status || '').toLowerCase()] || 'queued';
+    return sk !== 'done';
+  });
+  $('active-meta').textContent = active.length + ' active';
+  $('active-grid').innerHTML = active.length ? active.map(renderTask).join('') : renderEmpty('Nothing active.');
+
+  const recent = (data.recent || []).slice(0, 12);
+  $('recent-grid').innerHTML = recent.map(renderTask).join('');
+}
+
+async function tick() {
+  const data = await fetchAsana();
+  update(data);
+}
+
+tick();
+setInterval(tick, POLL_MS);
+window.addEventListener('online', tick);
+window.addEventListener('focus', tick);
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SPOG · Single Pane of Glass · v1</title>
+<meta name="description" content="Single Pane of Glass · operational dashboard for Exedus Xen architecture · Goals · swarms · widgets · actions.">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --ink:#050d1f;
+  --deep:#081628;
+  --card:rgba(13,20,36,.72);
+  --line:rgba(255,255,255,.08);
+  --off:#f0f5fa;
+  --bone:#dde6f0;
+  --mute:#5a6878;
+  --buff:#b8c8d8;
+  --cyan:#5ab8e8;
+  --cyan-soft:#a8d8ff;
+  --gold:#c9962b;
+  --gold-pale:#e8c97a;
+  --gold-bright:#f4dc8a;
+  --green:#5cd6a0;
+  --red:#ff6b6b;
+  --orange:#ffa552;
+}
+html{scroll-behavior:smooth}
+html,body{background:var(--ink);color:var(--off);font-family:"Inter",sans-serif;overflow-x:hidden;min-height:100vh}
+body{background:radial-gradient(ellipse at top,#0a1a3a 0%,#050d1f 60%,#020610 100%) fixed}
+a{color:inherit;text-decoration:none}
+::selection{background:rgba(90,184,232,.25);color:var(--cyan-soft)}
+
+/* Header */
+.hdr{position:sticky;top:0;z-index:50;backdrop-filter:blur(20px);background:rgba(5,13,31,.6);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+.hdr .logo{font-size:14px;font-weight:700;letter-spacing:.04em;color:var(--gold-pale)}
+.hdr .meta{display:flex;gap:14px;font-size:12px;font-weight:500;color:var(--buff)}
+.hdr .meta span{display:inline-flex;align-items:center;gap:6px}
+.hdr .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.hdr .dot.warn{background:var(--orange);box-shadow:0 0 8px var(--orange)}
+.hdr .dot.err{background:var(--red);box-shadow:0 0 8px var(--red)}
+
+/* Main grid */
+.wrap{max-width:1400px;margin:0 auto;padding:24px 14px 100px}
+
+/* Time-grouped sections */
+.group{margin-bottom:32px}
+.group-title{font-size:13px;font-weight:700;color:var(--gold-pale);letter-spacing:.06em;margin-bottom:14px;padding-left:8px}
+
+/* Stacked cards · iOS NC style */
+.cards{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--card);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--line);border-radius:14px;padding:16px;transition:transform .3s,border-color .3s,box-shadow .3s;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-2px);border-color:rgba(201,150,43,.3);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.card.priority::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold-bright)}
+.card.critical::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red)}
+.card.complete::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green)}
+
+.card-hdr{display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;gap:14px}
+.card-title{font-size:14px;font-weight:600;letter-spacing:-.01em;color:var(--off);flex:1}
+.card-id{font-size:11px;font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.card-meta{font-size:11px;font-weight:500;color:var(--buff);margin-bottom:10px}
+
+/* Progress bar */
+.bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin:10px 0}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--gold-bright));border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1);position:relative}
+.bar-fill::after{content:"";position:absolute;top:0;right:0;bottom:0;width:30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3));animation:shimmer 2s linear infinite}
+@keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.bar-stats{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--buff);font-variant-numeric:tabular-nums}
+.bar-stats .pct{color:var(--gold-bright);font-weight:600}
+.bar-stats .etc{color:var(--mute)}
+
+/* Sub-swarm nested */
+.swarm{margin-top:10px;padding-left:14px;border-left:1px solid var(--line)}
+.swarm-item{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--buff);padding:6px 0;gap:14px}
+.swarm-item .label{flex:1;color:var(--buff)}
+.swarm-item .mini-bar{flex:0 0 80px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.swarm-item .mini-fill{height:100%;background:var(--cyan);border-radius:2px}
+.swarm-item .pct{flex:0 0 36px;text-align:right;color:var(--cyan-soft);font-size:10px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* Action buttons */
+.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.act{font-size:11px;font-weight:600;padding:6px 12px;background:rgba(90,184,232,.15);color:var(--cyan-soft);border:1px solid rgba(90,184,232,.25);border-radius:8px;cursor:pointer;transition:background .3s,transform .2s;letter-spacing:.02em}
+.act:hover{background:rgba(90,184,232,.25);transform:translateY(-1px)}
+.act.gold{background:rgba(201,150,43,.15);color:var(--gold-bright);border-color:rgba(201,150,43,.3)}
+.act.gold:hover{background:rgba(201,150,43,.25)}
+.act.danger{background:rgba(255,107,107,.1);color:var(--red);border-color:rgba(255,107,107,.25)}
+.act.danger:hover{background:rgba(255,107,107,.2)}
+
+/* Widget variants */
+.widget-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.metric{background:rgba(255,255,255,.03);border-radius:8px;padding:10px;text-align:center}
+.metric-val{font-size:18px;font-weight:700;color:var(--gold-bright);font-variant-numeric:tabular-nums}
+.metric-lbl{font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+/* Lane count strip */
+.lane-strip{display:flex;justify-content:space-around;gap:14px;padding:14px;background:rgba(255,255,255,.03);border-radius:14px;margin-bottom:24px;border:1px solid var(--line)}
+.lane-strip .stat{text-align:center}
+.lane-strip .val{font-size:22px;font-weight:700;color:var(--gold-bright);font-variant-numeric:tabular-nums}
+.lane-strip .lbl{font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+
+/* EQ pulse for "live" indicator */
+.live-eq{display:inline-flex;gap:2px;align-items:end;height:10px;margin-left:4px}
+.live-eq span{width:2px;background:var(--green);border-radius:1px;animation:eq 1s ease-in-out infinite}
+.live-eq span:nth-child(1){height:40%;animation-delay:0s}
+.live-eq span:nth-child(2){height:80%;animation-delay:.15s}
+.live-eq span:nth-child(3){height:60%;animation-delay:.3s}
+@keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+
+/* Footer */
+.foot{text-align:center;padding:24px;font-size:11px;color:var(--mute);letter-spacing:.04em}
+
+@media (max-width:809px){
+  .hdr{padding:12px 14px}
+  .wrap{padding:14px 8px 100px}
+  .card{padding:12px}
+  .lane-strip{padding:10px}
+}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="logo">SPOG · v1</div>
+  <div class="meta">
+    <span><span class="dot"></span>Live<span class="live-eq"><span></span><span></span><span></span></span></span>
+    <span id="lane-count">31 Goals</span>
+    <span id="ts"></span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="lane-strip">
+    <div class="stat"><div class="val">31</div><div class="lbl">Goals</div></div>
+    <div class="stat"><div class="val">7</div><div class="lbl">Shipped</div></div>
+    <div class="stat"><div class="val">18</div><div class="lbl">In Flight</div></div>
+    <div class="stat"><div class="val">6</div><div class="lbl">qi-Gated</div></div>
+    <div class="stat"><div class="val">3</div><div class="lbl">P0</div></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">SHIPPED · TODAY</div>
+    <div class="cards">
+
+      <article class="card complete">
+        <div class="card-hdr">
+          <div class="card-title">mbv4 OVERHAUL · canvas particle field + cursor glow + magnetic CTAs</div>
+          <div class="card-id">Goal-mbv4</div>
+        </div>
+        <div class="card-meta">hitthe.link/mbv4/ · 372s directive-to-live · last-mod 17:08:59 GMT</div>
+        <div class="bar"><div class="bar-fill" style="width:100%"></div></div>
+        <div class="bar-stats"><span class="pct">100%</span><span class="etc">complete · 41,564 bytes</span></div>
+        <div class="actions">
+          <button class="act">Open Live</button>
+          <button class="act">Curl Verify</button>
+          <button class="act">View Source</button>
+        </div>
+      </article>
+
+      <article class="card complete">
+        <div class="card-hdr">
+          <div class="card-title">L7S product taxonomy + persona-clones spec scaffolded</div>
+          <div class="card-id">Goal-spec</div>
+        </div>
+        <div class="card-meta">internal · ~/.xen/notebooks/ · 2 notebooks · 67s + 56s</div>
+        <div class="bar"><div class="bar-fill" style="width:100%"></div></div>
+        <div class="bar-stats"><span class="pct">100%</span><span class="etc">scaffold-complete · awaits qi-fill</span></div>
+        <div class="actions">
+          <button class="act">Open Notebook</button>
+          <button class="act gold">Mark Reviewed</button>
+        </div>
+      </article>
+
+      <article class="card complete">
+        <div class="card-hdr">
+          <div class="card-title">SPOG v1 · this surface · single pane of glass</div>
+          <div class="card-id">Goal-spog</div>
+        </div>
+        <div class="card-meta">hitthe.link/spog/v1/ · versioned per canon</div>
+        <div class="bar"><div class="bar-fill" style="width:100%"></div></div>
+        <div class="bar-stats"><span class="pct">100%</span><span class="etc">v1 scaffold live</span></div>
+        <div class="actions">
+          <button class="act">Open Live</button>
+          <button class="act">Ship v2</button>
+        </div>
+      </article>
+
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">IN FLIGHT · ACTIVE GOALS</div>
+    <div class="cards">
+
+      <article class="card priority">
+        <div class="card-hdr">
+          <div class="card-title">XOS2 · 3-pane VEI clone + persona-clone surface</div>
+          <div class="card-id">Goal-xos2</div>
+        </div>
+        <div class="card-meta">design inherited from XOS · functional delta awaiting trigger</div>
+        <div class="bar"><div class="bar-fill" style="width:35%"></div></div>
+        <div class="bar-stats"><span class="pct">35%</span><span class="etc">ETC pending first-clone target</span></div>
+        <div class="swarm">
+          <div class="swarm-item"><span class="label">3-pane design (inherited)</span><div class="mini-bar"><div class="mini-fill" style="width:100%"></div></div><span class="pct">100%</span></div>
+          <div class="swarm-item"><span class="label">Functional delta spec</span><div class="mini-bar"><div class="mini-fill" style="width:60%"></div></div><span class="pct">60%</span></div>
+          <div class="swarm-item"><span class="label">First persona-clone target</span><div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div><span class="pct">0%</span></div>
+          <div class="swarm-item"><span class="label">XenBrowser overlay</span><div class="mini-bar"><div class="mini-fill" style="width:40%"></div></div><span class="pct">40%</span></div>
+        </div>
+        <div class="actions">
+          <button class="act">Open Spec</button>
+          <button class="act gold">Ship v1 Placeholder</button>
+          <button class="act danger">Block on qi</button>
+        </div>
+      </article>
+
+      <article class="card priority">
+        <div class="card-hdr">
+          <div class="card-title">VEI Notification Center · iOS-style stacked cards + widgets + actions</div>
+          <div class="card-id">Goal-29</div>
+        </div>
+        <div class="card-meta">progress + action layers blended · top-LEFT downswipe</div>
+        <div class="bar"><div class="bar-fill" style="width:55%"></div></div>
+        <div class="bar-stats"><span class="pct">55%</span><span class="etc">spec locked · implementation in flight</span></div>
+        <div class="swarm">
+          <div class="swarm-item"><span class="label">iOS NC visual pattern</span><div class="mini-bar"><div class="mini-fill" style="width:100%"></div></div><span class="pct">100%</span></div>
+          <div class="swarm-item"><span class="label">Progress cards (passive)</span><div class="mini-bar"><div class="mini-fill" style="width:80%"></div></div><span class="pct">80%</span></div>
+          <div class="swarm-item"><span class="label">Action widgets (interactive)</span><div class="mini-bar"><div class="mini-fill" style="width:30%"></div></div><span class="pct">30%</span></div>
+          <div class="swarm-item"><span class="label">iOS Shortcuts integration</span><div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div><span class="pct">0%</span></div>
+        </div>
+        <div class="actions">
+          <button class="act">Open Spec</button>
+          <button class="act gold">Continue Build</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">Web Speech failover N=2 watchdog · stall-driven swap</div>
+          <div class="card-id">Goal-31</div>
+        </div>
+        <div class="card-meta">primary + warm-standby · sub-second swap on stall</div>
+        <div class="bar"><div class="bar-fill" style="width:25%"></div></div>
+        <div class="bar-stats"><span class="pct">25%</span><span class="etc">spec locked · awaits implementation</span></div>
+        <div class="actions">
+          <button class="act">Open Spec</button>
+          <button class="act gold">Ship v1</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">CellBrowser grounding-trio · Perplexity + Grok + Gemini live cells</div>
+          <div class="card-id">Goal-32</div>
+        </div>
+        <div class="card-meta">Pro-account web sessions · canon-6 paid-as-bridge</div>
+        <div class="bar"><div class="bar-fill" style="width:20%"></div></div>
+        <div class="bar-stats"><span class="pct">20%</span><span class="etc">spec locked · canon-6 bridge confirmed</span></div>
+        <div class="actions">
+          <button class="act">Open Spec</button>
+          <button class="act gold">Ship v1</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">Beside AI outbound dual-mode · self-call trigger + 600s cap</div>
+          <div class="card-id">Goal-25</div>
+        </div>
+        <div class="card-meta">vendor: Beside-tier-upgrade OR Vapi/Retell/Bland · awaiting decision</div>
+        <div class="bar"><div class="bar-fill" style="width:40%"></div></div>
+        <div class="bar-stats"><span class="pct">40%</span><span class="etc">architecture specced · vendor TBD</span></div>
+        <div class="actions">
+          <button class="act">Open Spec</button>
+          <button class="act gold">Evaluate Vendors</button>
+        </div>
+      </article>
+
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">qi-GATED · DECISION PENDING</div>
+    <div class="cards">
+
+      <article class="card priority">
+        <div class="card-hdr">
+          <div class="card-title">Lane 5 named-enrollment ratification · xlrdtech CTO seat</div>
+          <div class="card-id">Goal-lane5</div>
+        </div>
+        <div class="card-meta">canon_luckie_enrolls_xlrdtech_cto_lane_5_2026-05-24 · proposed</div>
+        <div class="bar"><div class="bar-fill" style="width:90%"></div></div>
+        <div class="bar-stats"><span class="pct">90%</span><span class="etc">awaits qi-direct ratification</span></div>
+        <div class="actions">
+          <button class="act gold">Ratify</button>
+          <button class="act">Open Taxonomy</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">BJR mark concept pick · 3 SVGs at hitthe.link/mb/bjr/</div>
+          <div class="card-id">Goal-bjr</div>
+        </div>
+        <div class="card-meta">qi-touch · select winning SVG</div>
+        <div class="bar"><div class="bar-fill" style="width:75%"></div></div>
+        <div class="bar-stats"><span class="pct">75%</span><span class="etc">3 candidates live · awaits pick</span></div>
+        <div class="actions">
+          <button class="act">Open Candidates</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">Spacemail IMAP app-password · drop into ~/.xen/secrets.env</div>
+          <div class="card-id">Goal-imap</div>
+        </div>
+        <div class="card-meta">qi-touch · XLRDTECH_IMAP_PASS + SELFEXEC_IMAP_PASS</div>
+        <div class="bar"><div class="bar-fill" style="width:50%"></div></div>
+        <div class="bar-stats"><span class="pct">50%</span><span class="etc">infra ready · awaits credentials</span></div>
+      </article>
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">cal.com canonical link / username · for persona-clone lead routing</div>
+          <div class="card-id">Goal-cal</div>
+        </div>
+        <div class="card-meta">qi-touch · per-clone routing if multi-link</div>
+        <div class="bar"><div class="bar-fill" style="width:30%"></div></div>
+        <div class="bar-stats"><span class="pct">30%</span><span class="etc">architecture specced · awaits cal.com handle(s)</span></div>
+      </article>
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">Spline.design sub · cancel or fix payment ($30 declined twice)</div>
+          <div class="card-id">Goal-spline</div>
+        </div>
+        <div class="card-meta">qi-touch · usage zero in recent builds</div>
+        <div class="bar"><div class="bar-fill" style="width:50%"></div></div>
+        <div class="bar-stats"><span class="pct">50%</span><span class="etc">decision pending</span></div>
+        <div class="actions">
+          <button class="act">Cancel</button>
+          <button class="act gold">Fix Payment</button>
+        </div>
+      </article>
+
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">SYSTEM · LIVE STATUS</div>
+    <div class="cards">
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">VVS Pipeline · Win-side mirror</div>
+          <div class="card-id">sys-vvs</div>
+        </div>
+        <div class="widget-row">
+          <div class="metric"><div class="metric-val">3</div><div class="metric-lbl">Legs Active</div></div>
+          <div class="metric"><div class="metric-val">8672</div><div class="metric-lbl">Target ChatID</div></div>
+          <div class="metric"><div class="metric-val">Ava</div><div class="metric-lbl">Voice ID</div></div>
+        </div>
+        <div class="actions">
+          <button class="act">Fire Test</button>
+          <button class="act danger">Stop VVS</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">Spelling Discipline Registry · 16 terms locked</div>
+          <div class="card-id">sys-spell</div>
+        </div>
+        <div class="card-meta">Exedus Xen · Web TUI · Beeper · XenBrowser · CellBrowser · Web Speech · Grok · Perplexity · Gemini · Goals · PGS · ParallelGoalSwarms · VEI Notification Center · canon-6 · Whisper · Phound</div>
+        <div class="bar"><div class="bar-fill" style="width:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright))"></div></div>
+      </article>
+
+      <article class="card">
+        <div class="card-hdr">
+          <div class="card-title">Last-Night Recap · session summary</div>
+          <div class="card-id">sys-recap</div>
+        </div>
+        <div class="card-meta">tap to expand · full log of session deliveries</div>
+        <div class="widget-row">
+          <div class="metric"><div class="metric-val">3</div><div class="metric-lbl">Ships</div></div>
+          <div class="metric"><div class="metric-val">2</div><div class="metric-lbl">Scaffolds</div></div>
+          <div class="metric"><div class="metric-val">31+</div><div class="metric-lbl">Canon Locks</div></div>
+        </div>
+        <div class="actions">
+          <button class="act">Expand</button>
+        </div>
+      </article>
+
+    </div>
+  </div>
+
+</main>
+
+<footer class="foot">
+  SPOG v1 · Single Pane of Glass · Operational dashboard for Exedus Xen architecture · Versioned per canon_versioning_by_default · No-auth public per feedback_noauth_default
+</footer>
+
+<script>
+// Live timestamp
+function ts(){
+  const d=new Date();
+  document.getElementById('ts').textContent=d.toLocaleTimeString('en-US',{hour12:false})+' ET';
+}
+ts();setInterval(ts,1000);
+
+// Action button stubs (v1 placeholders · actions land in v2)
+document.querySelectorAll('.act').forEach(b=>{
+  b.addEventListener('click',e=>{
+    e.stopPropagation();
+    const t=b.textContent;
+    b.textContent=t+' ✓';
+    setTimeout(()=>b.textContent=t,1000);
+  });
+});
+
+// Tap-to-expand stubs · placeholders for v2 detail view
+document.querySelectorAll('.card').forEach(c=>{
+  c.addEventListener('click',()=>{
+    c.style.background='rgba(13,20,36,.85)';
+    setTimeout(()=>c.style.background='',300);
+  });
+});
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

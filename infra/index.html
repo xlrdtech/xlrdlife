@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INFRA MAP — Xen Architecture Single Source of Truth</title>
+<meta name="description" content="Precise hosts, ports, services, commands, mesh subjects, personas, and scopes for qi's Xen stack. A living reference.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/xen/icon.png">
+<meta name="theme-color" content="#050507">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Spline+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════
+   INFRA MAP — same design system as /xen/ and /life/ (verbatim tokens).
+   Fraunces + Spline Sans + JetBrains Mono, neon-green on obsidian.
+   Living reference: edit the data in the tables; structure stays.
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  --obsidian:#050507;
+  --coal:#0b0c0e;
+  --slate:#111318;
+  --ng:#39FF14;
+  --ng-hi:#a8ff7a;
+  --ng-deep:#1a7308;
+  --ng-leaf:#5eff30;
+  --ng-glow:rgba(57,255,20,.45);
+  --ng-faint:rgba(57,255,20,.12);
+  --ng-line:rgba(57,255,20,.18);
+  --bone:#f0ede6;
+  --muted:#7a7870;
+  --faint:#3e3c37;
+  --amber:#ffc24a;
+  --ox:#c25b4a;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --body:'Spline Sans',system-ui,sans-serif;
+  --disp:'Fraunces',Georgia,serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--obsidian);
+  color:var(--bone);
+  font-family:var(--body);
+  font-weight:300;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  background-image:
+    radial-gradient(900px 500px at 50% -6%, rgba(57,255,20,.10), transparent 60%),
+    radial-gradient(600px 400px at 85% 8%, rgba(30,140,10,.07), transparent 55%),
+    radial-gradient(800px 800px at 50% 118%, rgba(57,255,20,.035), transparent 60%);
+}
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.022;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px;position:relative;z-index:1}
+a{color:inherit}
+
+/* ── NAV / PLATE ── */
+.plate{
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;backdrop-filter:blur(18px) saturate(140%);
+  background:linear-gradient(180deg,rgba(5,5,7,.94),rgba(5,5,7,.5));
+  border-bottom:1px solid var(--ng-line);
+}
+.plate .mk{font-family:var(--disp);font-weight:600;font-size:1rem;color:var(--bone);display:flex;align-items:center;gap:10px}
+.ember{width:7px;height:7px;border-radius:50%;background:var(--ng);box-shadow:0 0 12px var(--ng),0 0 28px rgba(57,255,20,.6);animation:ember 2.4s ease-in-out infinite}
+@keyframes ember{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.plate nav{display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.plate a.nlink{color:var(--muted);text-decoration:none;font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;transition:color .2s;white-space:nowrap}
+.plate a.nlink:hover,.plate a.nlink.active{color:var(--ng-leaf);text-shadow:0 0 10px var(--ng-glow)}
+
+/* ── HERO ── */
+.hero{padding:64px 0 30px}
+.eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.34em;text-transform:uppercase;color:var(--ng-leaf);margin-bottom:18px}
+h1{font-family:var(--disp);font-weight:600;font-size:clamp(2.4rem,6vw,4.4rem);line-height:.98;letter-spacing:-.02em}
+h1 em{font-style:italic;color:var(--ng-leaf);text-shadow:0 0 30px var(--ng-glow)}
+.lede{max-width:680px;margin-top:18px;color:#cfccc4;font-size:1.04rem;line-height:1.6;font-weight:300}
+.lede b{color:var(--bone);font-weight:500}
+.stamp{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.stamp .chip{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;color:var(--muted);border:1px solid var(--faint);border-radius:20px;padding:5px 12px}
+.stamp .chip b{color:var(--ng-leaf);font-weight:500}
+
+/* ── SECTION ── */
+section{padding:38px 0;border-top:1px solid rgba(255,255,255,.05)}
+.sechead{display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap}
+.sechead .ix{font-family:var(--mono);font-size:.72rem;color:var(--ng-deep);letter-spacing:.2em}
+.sechead h2{font-family:var(--disp);font-weight:600;font-size:clamp(1.5rem,3.4vw,2.2rem);letter-spacing:-.01em}
+.secsub{color:var(--muted);font-size:.92rem;line-height:1.55;max-width:760px;margin-bottom:22px}
+
+/* ── TABLE ── */
+.tablewrap{overflow-x:auto;border:1px solid var(--ng-line);border-radius:12px;background:linear-gradient(180deg,rgba(17,19,24,.7),rgba(11,12,14,.6));box-shadow:0 1px 0 rgba(255,255,255,.03) inset}
+table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px}
+thead th{
+  text-align:left;font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ng-leaf);
+  padding:13px 16px;border-bottom:1px solid var(--ng-line);background:rgba(57,255,20,.04);white-space:nowrap;
+}
+tbody td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:top;line-height:1.5;color:#d7d4cc}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(57,255,20,.035)}
+td .name{color:var(--bone);font-weight:500}
+td .sub{display:block;color:var(--muted);font-size:.78rem;margin-top:3px}
+code,.mono{font-family:var(--mono);font-size:.82em;color:var(--ng-hi);background:rgba(57,255,20,.07);border:1px solid var(--ng-line);border-radius:5px;padding:1px 6px;white-space:nowrap}
+td code{display:inline-block}
+
+/* status tags */
+.tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;white-space:nowrap;display:inline-block}
+.t-live{color:#bdffb0;background:rgba(57,255,20,.13);border:1px solid var(--ng-line)}
+.t-verify{color:var(--amber);background:rgba(255,194,74,.1);border:1px solid rgba(255,194,74,.25)}
+.t-need{color:var(--ox);background:rgba(194,91,74,.12);border:1px solid rgba(194,91,74,.28)}
+.t-muted{color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--faint)}
+
+/* host cards */
+.hostgrid{display:flex;flex-wrap:wrap;gap:16px}
+.hostcard{flex:1 1 300px;min-width:280px;border:1px solid var(--ng-line);border-radius:12px;padding:18px 20px;background:linear-gradient(180deg,rgba(17,19,24,.6),rgba(11,12,14,.5))}
+.hostcard h3{font-family:var(--disp);font-weight:600;font-size:1.15rem;display:flex;align-items:center;gap:9px}
+.hostcard .role{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ng-leaf);margin:6px 0 12px}
+.hostcard dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.82rem}
+.hostcard dt{color:var(--muted);font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;padding-top:2px}
+.hostcard dd{color:#d7d4cc;line-height:1.45;word-break:break-word}
+
+/* copyable code block */
+.cb{position:relative;margin-top:14px;border:1px solid var(--ng-line);border-radius:10px;background:#07080a;overflow:hidden}
+.cb-head{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid rgba(57,255,20,.1);background:rgba(57,255,20,.03)}
+.cb-head .lbl{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ng-leaf)}
+.cb-copy{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid var(--faint);border-radius:5px;padding:4px 10px;cursor:pointer;transition:.15s}
+.cb-copy:hover{color:var(--ng-leaf);border-color:var(--ng-line)}
+.cb pre{padding:14px;overflow-x:auto;font-family:var(--mono);font-size:.8rem;line-height:1.65;color:#cfe9c4}
+.cb pre .cmt{color:var(--ng-deep)}
+.cb pre .fl{color:var(--ng-hi)}
+
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:18px 0 4px;font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:7px}
+
+/* persona pills */
+.pgrid{display:flex;flex-wrap:wrap;gap:12px}
+.pcard{flex:1 1 240px;min-width:230px;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;background:rgba(17,19,24,.45)}
+.pcard .pt{font-family:var(--disp);font-weight:600;font-size:1rem;color:var(--bone);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pcard .ptag{font-family:var(--mono);font-size:.62rem;color:var(--ng-leaf);background:rgba(57,255,20,.08);border:1px solid var(--ng-line);border-radius:4px;padding:1px 6px}
+.pcard p{margin-top:7px;color:var(--muted);font-size:.8rem;line-height:1.5}
+
+.note{margin-top:18px;border-left:2px solid var(--ng-line);padding:10px 0 10px 16px;color:var(--muted);font-size:.85rem;line-height:1.6}
+.note b{color:var(--ng-leaf);font-weight:500}
+
+footer{padding:48px 0 60px;border-top:1px solid rgba(255,255,255,.05);color:var(--faint);font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;line-height:1.8}
+footer b{color:var(--muted)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ng);color:#020d01;font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:10px 18px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 0 24px var(--ng-glow)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:640px){.hero{padding:44px 0 24px}.hostcard dl{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="plate">
+  <div class="mk"><span class="ember"></span>INFRA MAP</div>
+  <nav>
+    <a class="nlink" href="#hosts">Hosts</a>
+    <a class="nlink" href="#services">Services</a>
+    <a class="nlink" href="#mesh">Mesh</a>
+    <a class="nlink" href="#voice">Voice</a>
+    <a class="nlink" href="#commands">Commands</a>
+    <a class="nlink" href="#personas">Personas</a>
+    <a class="nlink" href="#scopes">Scopes</a>
+    <a class="nlink" href="#public">Endpoints</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">Single Source of Truth · Living Document</div>
+    <h1>The <em>infra map.</em></h1>
+    <p class="lede">Precise architecture, ports, and commands for the Xen stack — <b>one brain, one voice, omnipresent</b>. Three layers: a persistent supervised brain + transport + auth, a rehydrating Opus router, and disposable clients. This page is the reference you reach for when something is dark and you need the exact port, the exact command, the exact host.</p>
+    <div class="stamp">
+      <span class="chip">verified <b>2026-06-18</b></span>
+      <span class="chip">via <b>SELmcp xen_shell</b> on M4</span>
+      <span class="chip"><b>lsof</b> + live HTTP checks</span>
+    </div>
+    <div class="legend">
+      <span><span class="tag t-live">live</span> confirmed running this sweep</span>
+      <span><span class="tag t-verify">verify</span> from memory, not re-checked</span>
+      <span><span class="tag t-need">need</span> planned / not yet built</span>
+      <span><span class="tag t-muted">passive</span> on-demand / muted</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════ HOSTS ═══════════════ -->
+  <section id="hosts">
+    <div class="sechead"><span class="ix">01</span><h2>Hosts</h2></div>
+    <p class="secsub">Three machines carry the stack. The Mac M4 is the always-on brain + voice + mesh hub; the Windows box runs the durable 24/7 scope-watch loop and the SuperMCP router; Railway carries the WebRTC voice transport.</p>
+    <div class="hostgrid">
+
+      <div class="hostcard">
+        <h3><span class="ember"></span>Mac M4</h3>
+        <div class="role">Brain · Voice · Mesh hub</div>
+        <dl>
+          <dt>Hostname</dt><dd><code>qi.local</code> · MagicDNS <code>m4.salmon-alkaline.ts.net</code></dd>
+          <dt>Tailscale</dt><dd><code>100.97.145.50</code> · LAN <code>10.13.92.100</code></dd>
+          <dt>Runs</dt><dd>omnimind, xen daemon, fast-twin, say-worker, STT, NATS, SELmcp, FreeSWITCH receiver</dd>
+          <dt>Code root</dt><dd><code>/Volumes/M4/sync_/exedus/dev_</code></dd>
+          <dt>Reach</dt><dd>SELmcp <code>xen_shell</code> · <code>ssh qi@100.97.145.50</code></dd>
+          <dt>Status</dt><dd><span class="tag t-live">live</span> disk 18% used</dd>
+        </dl>
+      </div>
+
+      <div class="hostcard">
+        <h3><span class="ember"></span>Windows nitro</h3>
+        <div class="role">Durable loop · SuperMCP · ship</div>
+        <dl>
+          <dt>User</dt><dd><code>C:\Users\selfe</code></dd>
+          <dt>Runs</dt><dd>scope-watch loop, SuperMCP router :3000, NATS subscriber, hitthe.link ship</dd>
+          <dt>Scope-watch</dt><dd><code>E:\scope-watch</code></dd>
+          <dt>SuperMCP</dt><dd><code>C:\Users\selfe\mcp-server</code></dd>
+          <dt>Claude CLI</dt><dd><code>C:\Users\selfe\.local\bin\claude.exe</code></dd>
+          <dt>Status</dt><dd><span class="tag t-live">live</span> while qi logged in</dd>
+        </dl>
+      </div>
+
+      <div class="hostcard">
+        <h3><span class="ember"></span>Railway</h3>
+        <div class="role">WebRTC voice transport</div>
+        <dl>
+          <dt>Account</dt><dd><code>agent@xlrd.org</code></dd>
+          <dt>Runs</dt><dd>LiveKit voice-agent stack (replaces flaky browser Web Speech)</dd>
+          <dt>Preferred</dt><dd>Railway for DX · Render is rejected, never propose it</dd>
+          <dt>Status</dt><dd><span class="tag t-verify">verify</span> see livekit-railway-deploy</dd>
+        </dl>
+      </div>
+
+    </div>
+    <p class="note"><b>The invariant:</b> brain + transport + auth are persistent and supervised; the client is disposable. A restart / shell-switch / overhaul drops only a client — never the brain, context, voice line, or auth. A new client <b>attaches</b> (0-start), never boots. <code>xen</code> = attach.</p>
+  </section>
+
+  <!-- ═══════════════ SERVICES / PORTS ═══════════════ -->
+  <section id="services">
+    <div class="sechead"><span class="ix">02</span><h2>Services &amp; ports</h2></div>
+    <p class="secsub">Port-to-process map verified live on M4 via <code>lsof</code> this sweep. omnimind is the Beeper monitor and OTLP emitter; the 444x band is the voice / mirror stack.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Port</th><th>Service</th><th>Process</th><th>Host</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><code>:4441</code></td><td><span class="name">omnimind</span><span class="sub">Beeper monitor · @xen tag-detect · OTLP emit · live.json feed</span></td><td><code>node omnimind.js</code><br><span class="sub">PID 5302</span></td><td>M4</td><td><span class="tag t-live">live</span></td></tr>
+          <tr><td><code>:4442</code></td><td><span class="name">xen daemon</span><span class="sub">core xen runtime</span></td><td><code>node xen.js daemon</code><br><span class="sub">PID 1041</span></td><td>M4</td><td><span class="tag t-live">live</span></td></tr>
+          <tr><td><code>:4445</code></td><td><span class="name">xen-mirror-server</span><span class="sub">terminal-mirrors-to-chat surface</span></td><td><code>xen-mirror-server.py</code><br><span class="sub">PID 904</span></td><td>M4</td><td><span class="tag t-live">live</span></td></tr>
+          <tr><td><code>:4446</code></td><td><span class="name">xen-vm-proxy</span><span class="sub">VM / pane proxy</span></td><td><code>xen-vm-proxy.js</code><br><span class="sub">PID 918</span></td><td>M4</td><td><span class="tag t-live">live</span></td></tr>
+          <tr><td><code>:4447</code></td><td><span class="name">apple-stt / voice py</span><span class="sub">speech-to-text path</span></td><td><code>python (PID 903)</code><br><span class="sub">cmd not exposed</span></td><td>M4</td><td><span class="tag t-verify">verify</span></td></tr>
+          <tr><td><code>:4448</code></td><td><span class="name">audio-route-server</span><span class="sub">canonical audio route → out loopback only</span></td><td><code>audio-route-server.py</code><br><span class="sub">PID 1035</span></td><td>M4</td><td><span class="tag t-live">live</span></td></tr>
+          <tr><td><code>:4451</code></td><td><span class="name">call-receiver</span><span class="sub">FreeSWITCH stream sink → pane %4</span></td><td><code>call receiver</code></td><td>M4</td><td><span class="tag t-verify">verify</span></td></tr>
+          <tr><td><code>:4455</code></td><td><span class="name">xen-call-transcript</span><span class="sub">live call SSE viewer (read-only on log)</span></td><td><code>xen-call-transcript.js</code></td><td>M4</td><td><span class="tag t-verify">verify</span></td></tr>
+          <tr><td><code>:4222</code></td><td><span class="name">NATS server</span><span class="sub">mesh broker · omni.event · xql.*</span></td><td><code>nats-server</code><br><span class="sub">PID 908</span></td><td>M4</td><td><span class="tag t-live">live</span></td></tr>
+          <tr><td><code>/tmp/xen-fast.sock</code></td><td><span class="name">fast-twin</span><span class="sub">persistent omni.event consumer · instant ack · scope-aware</span></td><td><code>xen-claude-wrapper.js</code><br><span class="sub">PID 42332 · Sonnet 4.6 · effort low</span></td><td>M4</td><td><span class="tag t-live">live</span></td></tr>
+          <tr><td><code>(bash)</code></td><td><span class="name">say-worker</span><span class="sub">canonical VVS TTS → out loopback</span></td><td><code>bin/xen-say-worker</code><br><span class="sub">PID 41901</span></td><td>M4</td><td><span class="tag t-live">live</span></td></tr>
+          <tr><td><code>:23375</code></td><td><span class="name">SELmcp hub</span><span class="sub">no-auth JSON-RPC · Beeper 12 + Godmode 29 tools</span></td><td><code>SELmcp</code></td><td>M4</td><td><span class="tag t-verify">verify</span></td></tr>
+          <tr><td><code>:3000</code></td><td><span class="name">SuperMCP router</span><span class="sub">config-driven aggregator · ~66 tools · child servers :3001–:3014</span></td><td><code>start-all-windows.mjs</code></td><td>nitro</td><td><span class="tag t-verify">verify</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>444x band note:</b> port 4447's process is a bare Python framework binary that does not expose its script name via <code>ps</code> — labeled <span class="tag t-verify">verify</span> rather than guessed. <b>Never speak to physical speakers and never switch audio devices</b> — voice goes through the canonical say-worker → <code>out</code> loopback only.</p>
+  </section>
+
+  <!-- ═══════════════ MESH ═══════════════ -->
+  <section id="mesh">
+    <div class="sechead"><span class="ix">03</span><h2>Mesh &amp; subjects</h2></div>
+    <p class="secsub">NATS is the nervous system. <code>omni.event</code> is the single OTLP super-log + chat-mirror bus — one brain consumes it (dedupe on <code>(threadID,eventID)</code> + per-scope lock = never double, never sequential). The <code>xql.*</code> channel is the dedicated Mac→Windows leg.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Subject</th><th>Purpose</th><th>Producer → Consumer</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><code>omni.event</code></td><td>OTLP super-logs + chat mirror; every inject + terminal line + sweep</td><td>omnimind / scope-watch / panes → fast-twin (the one brain)</td><td><span class="tag t-live">live</span></td></tr>
+          <tr><td><code>xql.join</code></td><td>Mac → Windows: join signal</td><td>M4 nats → <code>xql-sub.mjs</code> (nitro)</td><td><span class="tag t-verify">verify</span></td></tr>
+          <tr><td><code>xql.start</code></td><td>Mac → Windows: start signal</td><td>M4 nats → <code>xql-sub.mjs</code></td><td><span class="tag t-verify">verify</span></td></tr>
+          <tr><td><code>win.pane</code></td><td>Pane targeting across the bridge</td><td>M4 nats → <code>xql-sub.mjs</code></td><td><span class="tag t-verify">verify</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cb">
+      <div class="cb-head"><span class="lbl">Windows NATS subscriber</span><button class="cb-copy" data-cb>copy</button></div>
+<pre><span class="cmt"># connects nitro to the Mac mesh over Tailscale</span>
+node <span class="fl">C:\Users\selfe\.xen\nats-bridge\xql-sub.mjs</span>
+<span class="cmt"># nats://100.97.145.50:4222 · subscribes xql.&gt; + win.pane</span></pre>
+    </div>
+  </section>
+
+  <!-- ═══════════════ VOICE LINE ═══════════════ -->
+  <section id="voice">
+    <div class="sechead"><span class="ix">04</span><h2>Voice line</h2></div>
+    <p class="secsub">Medical-grade. If Xen is not speaking, assume total system failure. The unified phone path: PSTN → Telnyx DID → FreeSWITCH on exedus → M4 call receiver → the one brain in pane <code>%4</code>.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Element</th><th>Value</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="name">Inbound DID</span></td><td><code>470-369-6463</code> · <code>+14703696463</code></td><td>Telnyx credential conn "east" id <code>2983712745033041433</code></td></tr>
+          <tr><td><span class="name">Brain pane</span></td><td><code>%4</code></td><td>verified live this sweep</td></tr>
+          <tr><td><span class="name">Receiver</span></td><td><code>:4451</code></td><td>FreeSWITCH stream → pane %4</td></tr>
+          <tr><td><span class="name">Live transcript</span></td><td><a href="https://m4.salmon-alkaline.ts.net/" style="color:var(--ng-leaf)">m4.salmon-alkaline.ts.net</a></td><td>SSE viewer on <code>:4455</code> · text stays live when audio garbles</td></tr>
+          <tr><td><span class="name">Conference line</span></td><td><code>678-345-2142</code> · room <code>xlrdtech</code></td><td>Phound · code 159-799-408 if prompted</td></tr>
+          <tr><td><span class="name">VVS rule</span></td><td>rate <b>210</b>, identity.json only</td><td>never pass <code>-v</code>; never vocalize the agent tag</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>Phone registry:</b> the <b>9983 line = <code>+1 470-615-9983</code></b> is qi's main consolidation line (Beeper account <code>local-gvoice_ba_5lhd6cHaH6KbOA…</code>). Xen agent lines: GVoice <code>9934</code> / <code>8672</code>.</p>
+  </section>
+
+  <!-- ═══════════════ COMMANDS ═══════════════ -->
+  <section id="commands">
+    <div class="sechead"><span class="ix">05</span><h2>Commands</h2></div>
+    <p class="secsub">The hard-won runbook. The 24/7 watcher is a persistent interactive-session loop — <b>NOT Task Scheduler</b>, because <code>claude.exe</code> hangs on startup with no console (verified across every logon type incl. S4U and conhost --headless).</p>
+
+    <div class="cb">
+      <div class="cb-head"><span class="lbl">Scope-watch — one manual sweep (nitro)</span><button class="cb-copy" data-cb>copy</button></div>
+<pre><span class="cmt"># loop.ps1 auto-launches at logon via Startup shortcut Xen-ScopeWatch.lnk</span>
+<span class="cmt"># single-instance via Global\XenScopeWatchLoop mutex; sweeps every 10 min</span>
+powershell -WindowStyle Minimized -File <span class="fl">E:\scope-watch\loop.ps1</span>
+
+<span class="cmt"># one sweep by hand (run.ps1 reads scope-watch-prompt.md):</span>
+powershell -File <span class="fl">E:\scope-watch\run.ps1</span></pre>
+    </div>
+
+    <div class="cb">
+      <div class="cb-head"><span class="lbl">Live verify — ports on M4 (via SELmcp xen_shell)</span><button class="cb-copy" data-cb>copy</button></div>
+<pre><span class="cmt"># which proc owns the omnimind port</span>
+lsof -nP -iTCP:4441 -sTCP:LISTEN
+
+<span class="cmt"># is the fast-twin socket up?</span>
+test -S /tmp/xen-fast.sock &amp;&amp; echo present || echo absent
+pgrep -f xen-claude-wrapper</pre>
+    </div>
+
+    <div class="cb">
+      <div class="cb-head"><span class="lbl">Reach the M4 brain</span><button class="cb-copy" data-cb>copy</button></div>
+<pre><span class="cmt"># attended attach over Tailscale</span>
+ssh -t qi@100.97.145.50 "bash -lc 'exec tmux attach -t exedus'"
+
+<span class="cmt"># public no-auth MCP, works any network</span>
+curl -s https://mcp.xlrd.org   <span class="cmt"># JSON-RPC tools/list, tools/call</span></pre>
+    </div>
+
+    <p class="note"><b>Scope-watch files</b> (<code>E:\scope-watch</code>): <code>loop.ps1</code> (driver) · <code>run.ps1</code> (one sweep) · <code>scope-watch-prompt.md</code> (router logic) · <code>scope-registry.json</code> (scopes-as-data) · <code>omni-router-spec.md</code> · <code>stable-ops-spec.md</code> · <code>update-live.js</code> (feeds <code>/xen/live.json</code>) · logs <code>scope-watch.log</code> + <code>loop-heartbeat.log</code>. <b>Symptom trap:</b> a Task-Scheduler run looks healthy (exit 0) but returns empty output — always log <code>claude exit=$LASTEXITCODE outLen=…</code>.</p>
+  </section>
+
+  <!-- ═══════════════ PERSONAS ═══════════════ -->
+  <section id="personas">
+    <div class="sechead"><span class="ix">06</span><h2>Personas</h2></div>
+    <p class="secsub">Persona-agents are the <b>ONE brain wearing an identity + folder</b> — never separate minds. Dual-tag: trailing underscore (<code>east_</code>) or hashtag (<code>#east</code>) both resolve to the same agent. Docs live at <code>brain_/personas/&lt;x&gt;</code> on M4.</p>
+    <div class="pgrid">
+      <div class="pcard"><div class="pt">Qi <span class="ptag">qi_ / #qi</span></div><p>The divine apex. Flows through all personas; the source, not a task-doer. qi-direct voice, exempt from signing.</p></div>
+      <div class="pcard"><div class="pt">East Allen <span class="ptag">east_ / #east</span></div><p>Executive Automation System Technician. The professional front — dev, design, automation, comms. Default business voice.</p></div>
+      <div class="pcard"><div class="pt">AEA <span class="ptag">aea_ / #aea</span></div><p>Arthur Eastman Allen. Executor of Order: legal, banking, insurance, official correspondence. Formal gatekeeper.</p></div>
+      <div class="pcard"><div class="pt">Auto <span class="ptag">auto_ / #auto</span></div><p>Creative / social / music / dating foundation: charisma, style, relationships. (Also the fleet "triggered" namespace.)</p></div>
+      <div class="pcard"><div class="pt">XLRD999 <span class="ptag">xlrd999_</span></div><p>The esoteric urban music artist. Owns the Purgatory album series → P6.5 (10.13.2026). The 999 brand.</p></div>
+      <div class="pcard"><div class="pt">X9 <span class="ptag">x9_ / #x9</span></div><p>XLRD999's autonomous AI music-generation engine. 158–178 BPM, no autotune, the Suno generation directive.</p></div>
+      <div class="pcard"><div class="pt">Self Exec <span class="ptag">selfexec_</span></div><p>The business: logo / web / app / AI automation, $0 overhead, open-source.</p></div>
+      <div class="pcard"><div class="pt">XLRDTECH <span class="ptag">xlrd_</span></div><p>Nonprofit, Executive Leverage R&amp;D — tech for cognitive challenges (ADHD / dementia / Alzheimer's).</p></div>
+      <div class="pcard"><div class="pt">TECHGOD <span class="ptag">techgod_</span></div><p>Architect of technological integrity. Lightly defined — scope to confirm.</p></div>
+    </div>
+    <p class="note"><b>Operational / thread personas:</b> Xen (root voice), Lyn (Luckie / L7S), Eli (Anthony / TTG), Genesis (voice pane), plus SEL / XLRD / RESEARCH / FACTCHECK / CONTEXT emoji-triggered modes.</p>
+  </section>
+
+  <!-- ═══════════════ SCOPES ═══════════════ -->
+  <section id="scopes">
+    <div class="sechead"><span class="ix">07</span><h2>Scopes</h2></div>
+    <p class="secsub">MAIN = the router. qi talks to main; main routes to the right scope. Each scope = <code>{ named fork agent + cron watcher + branded checklist + playbook }</code>. Crons are time-offset to avoid collision. Pulled from <code>scope-registry.json</code>.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Scope</th><th>Client</th><th>Thread(s)</th><th>Checklist · Cron</th><th>Mode</th></tr></thead>
+        <tbody>
+          <tr><td><span class="name">DCZ</span></td><td>Diamond Cutz Studios<span class="sub">LaTina McAllister (MAIN/payer) · Andre "Stal'lyon" (artist)</span></td><td>GVoice <code>#467</code> + <code>#396</code></td><td><code>/diamond-cut/checklist/</code><span class="sub">cron 1d9c7766</span></td><td><span class="tag t-live">active</span></td></tr>
+          <tr><td><span class="name">L7S</span></td><td>L7S Hero — Luckie Goggins <b>(he/him)</b></td><td>WhatsApp <code>#33</code> +L7X</td><td><code>/l7s/checklist/</code><span class="sub">cron fd869125</span></td><td><span class="tag t-live">active</span></td></tr>
+          <tr><td><span class="name">ELI</span></td><td>EliOS / Tracking Together — Anthony Vasquez</td><td>GVoice <code>#381</code></td><td><code>/eliops/checklist/</code><span class="sub">cron 5d086896</span></td><td><span class="tag t-live">active</span></td></tr>
+          <tr><td><span class="name">M_B</span></td><td>M_B — Southern Soul artist</td><td>GVoice <code>#473</code> (on 9983)</td><td>—</td><td><span class="tag t-live">active</span></td></tr>
+          <tr><td><span class="name">PADRE</span></td><td>Padre — lead-factory client chain</td><td>WhatsApp <code>#35</code></td><td>padre-lead-factory</td><td><span class="tag t-live">active</span></td></tr>
+          <tr><td><span class="name">TIBA</span></td><td>Tiba — 222church nonprofit chain</td><td>WhatsApp <code>#40</code></td><td>—</td><td><span class="tag t-muted">muted</span></td></tr>
+          <tr><td><span class="name">L7X</span></td><td>Sole-member workflow channels (trigger layers)</td><td>Telegram <code>#433</code>+ (Stripe / Asana / Otter / NotebookLM …)</td><td>auto-workflow</td><td><span class="tag t-muted">auto</span></td></tr>
+          <tr><td><span class="name">XEN-SYS</span></td><td>Xen's own lines + self-echoes</td><td>GVoice <code>9934</code> / <code>8672</code></td><td>drain / triage</td><td><span class="tag t-muted">muted</span></td></tr>
+          <tr><td><span class="name">CONF</span></td><td>Conference / Phound line</td><td><code>+16783452142</code> (2142)</td><td>—</td><td><span class="tag t-muted">muted</span></td></tr>
+          <tr><td><span class="name">PERSONAL</span></td><td>qi personal contacts (migrating to 9983)</td><td>9 contacts</td><td>soft-migrate</td><td><span class="tag t-muted">muted</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>Infra / ops scopes</b> (the machine itself): <b>STABLE-OPS</b> (<code>stable-ops-spec.md</code>) — VoiceOS un-droppable; <b>OMNI-XEN</b> (<code>scope-registry.json</code> + <code>omni-router-spec.md</code>) — @xen-from-any-thread, autoscope, persistent consumer = the fast-twin. One scope = one cron — main enforces it.</p>
+  </section>
+
+  <!-- ═══════════════ PUBLIC ENDPOINTS ═══════════════ -->
+  <section id="public">
+    <div class="sechead"><span class="ix">08</span><h2>Public endpoints</h2></div>
+    <p class="secsub">HTTP-checked live this sweep. The realtime panels on <a href="/life/" style="color:var(--ng-leaf)">/life</a> are fed from these.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>URL</th><th>Serves</th><th>Source host</th><th>Checked</th></tr></thead>
+        <tbody>
+          <tr><td><code>mcp.xlrd.org</code></td><td>SELmcp universal MCP (no-auth JSON-RPC)</td><td>M4</td><td><span class="tag t-live">200</span></td></tr>
+          <tr><td><code>hitthe.link/xen/live.json</code></td><td>Flow feed — daemon-fed, scope-watch durable</td><td>nitro</td><td><span class="tag t-live">fresh</span></td></tr>
+          <tr><td><code>xen.xlrd.org/api/xql</code></td><td>"four·live" panel (5s poll)</td><td>M4</td><td><span class="tag t-live">200</span></td></tr>
+          <tr><td><code>api.xlrd.org/api/suggestions</code></td><td>Steer panel</td><td>M4</td><td><span class="tag t-live">200</span></td></tr>
+          <tr><td><code>m4.salmon-alkaline.ts.net</code></td><td>Live call transcript (SSE)</td><td>M4 tailnet</td><td><span class="tag t-verify">verify</span></td></tr>
+          <tr><td><code>sel.xlrd.org/mcp</code></td><td>Windows SuperMCP router (Cloudflare tunnel)</td><td>nitro</td><td><span class="tag t-verify">verify</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>SELmcp endpoints:</b> <code>https://mcp.xlrd.org</code> (public) · <code>http://10.13.92.100:23375</code> (LAN, fastest) · <code>http://127.0.0.1:23375</code> (Mac-local). 0 auth. JSON-RPC 2.0 over HTTP POST.</p>
+  </section>
+
+  <footer>
+    INFRA MAP · <b>living single-source-of-truth</b> for the Xen stack<br>
+    Live data pulled via SELmcp <code>xen_shell</code> on M4 (lsof + HTTP) · memory sources: scope-watch-claude-needs-console, canon-omni-xen-presence, canon-stable-ops, scope-router-index, reference-selmcp, gvoice-9983-consolidation, canon-persona-constellation, live-call-transcript-view, xen-voiceline-ops<br>
+    <b>To update:</b> re-run the lsof / curl checks in §05, edit the table rows in place, re-stamp the hero date. Structure holds; only the data moves.<br>
+    Verified 2026-06-18
+  </footer>
+
+</div>
+
+<div class="toast" id="toast">copied</div>
+
+<script>
+// copy-to-clipboard on code blocks
+document.querySelectorAll('[data-cb]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var pre = btn.closest('.cb').querySelector('pre');
+    var text = pre.innerText;
+    navigator.clipboard.writeText(text).then(function(){
+      var t = document.getElementById('toast');
+      t.classList.add('show');
+      setTimeout(function(){ t.classList.remove('show'); }, 1400);
+      btn.textContent = 'copied';
+      setTimeout(function(){ btn.textContent = 'copy'; }, 1400);
+    });
+  });
+});
+// scrollspy on nav
+var links = document.querySelectorAll('.plate a.nlink');
+var secs = Array.from(links).map(function(a){ return document.querySelector(a.getAttribute('href')); });
+function spy(){
+  var y = window.scrollY + 120, cur = -1;
+  secs.forEach(function(s,i){ if(s && s.offsetTop <= y) cur = i; });
+  links.forEach(function(a,i){ a.classList.toggle('active', i===cur); });
+}
+window.addEventListener('scroll', spy, {passive:true}); spy();
+</script>
+
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

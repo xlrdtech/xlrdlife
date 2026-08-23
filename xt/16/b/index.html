@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>xt/16b — igloo standard, candidate B</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+  :root{
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "DejaVu Sans Mono", Consolas, monospace;
+    --ink: rgba(255,255,255,0.94);
+    --ink-dim: rgba(255,255,255,0.62);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#aeb6c2;}
+  body{height:520vh;}
+  #stage{position:fixed;inset:0;z-index:0;}
+  canvas{display:block;width:100%;height:100%;}
+
+  /* ---------- overlay UI ---------- */
+  #ui{position:fixed;inset:0;z-index:3;pointer-events:none;
+      font-family:var(--mono);color:var(--ink);
+      -webkit-font-smoothing:antialiased;
+      text-shadow:0 1px 2px rgba(30,40,55,0.28);}
+  .pad{position:absolute;}
+  #brandwrap{top:34px;left:38px;}
+  #wordmark{
+    font-family:var(--mono);
+    font-size:44px;line-height:0.9;font-weight:800;
+    letter-spacing:-0.005em;
+    display:flex;align-items:baseline;gap:1px;
+  }
+  #wordmark .i{ position:relative; }
+  #wordmark .i::after{
+    content:"";position:absolute;top:-0.30em;left:50%;transform:translateX(-50%);
+    width:0.20em;height:0.20em;border-radius:50%;background:var(--ink);
+  }
+  #legal{margin-top:16px;font-size:11.5px;line-height:1.62;letter-spacing:0.055em;color:var(--ink);}
+  #manifesto{top:36px;right:38px;text-align:right;max-width:225px;}
+  #manifesto .tag{font-size:11.5px;letter-spacing:0.10em;margin-bottom:14px;}
+  #manifesto p{margin:0;font-size:11.5px;line-height:1.62;letter-spacing:0.045em;}
+  #bl{left:38px;bottom:38px;}
+  #scrollhint{font-size:11.5px;line-height:1.62;letter-spacing:0.055em;max-width:150px;}
+  #sound{margin-top:26px;display:flex;align-items:center;gap:9px;font-size:11.5px;
+         letter-spacing:0.055em;pointer-events:auto;cursor:pointer;user-select:none;opacity:.95;}
+  #sound:hover{opacity:1;}
+  #sound svg{width:13px;height:13px;flex:none;display:block;}
+  #meta{right:38px;bottom:38px;text-align:right;font-size:10.5px;letter-spacing:0.10em;color:var(--ink-dim);}
+
+  /* numeral / hairline data layer */
+  #dataviz{position:fixed;inset:0;z-index:2;pointer-events:none;}
+  #dataviz text{font-family:var(--mono);font-size:12px;letter-spacing:0.07em;
+    fill:rgba(255,255,255,0.88);}
+  #dataviz .link{stroke:rgba(255,255,255,0.52);stroke-width:0.75;fill:none;}
+  #dataviz .tick{stroke:rgba(255,255,255,0.8);stroke-width:0.9;}
+
+  /* progress rail */
+  #rail{position:fixed;right:0;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.14);z-index:3;}
+  #railfill{position:absolute;top:0;left:0;width:100%;height:0%;background:rgba(255,255,255,0.6);}
+
+  /* loader */
+  #boot{position:fixed;inset:0;z-index:9;background:#aeb6c2;display:flex;
+        align-items:center;justify-content:center;font-family:var(--mono);
+        font-size:11.5px;letter-spacing:0.16em;color:rgba(255,255,255,0.9);
+        transition:opacity .9s ease;}
+  #boot.done{opacity:0;pointer-events:none;}
+  @media (max-width:760px){
+    #wordmark{font-size:30px;}
+    #brandwrap{top:22px;left:20px;}
+    #manifesto{top:24px;right:20px;max-width:170px;}
+    #bl{left:20px;bottom:26px;}
+    #meta{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+
+<svg id="dataviz" preserveAspectRatio="none"></svg>
+
+<div id="ui">
+  <div class="pad" id="brandwrap">
+    <div id="wordmark"><span class="i">i</span><span>GLOO</span></div>
+    <div id="legal">// Copyright &copy; 2026<br/>hitthe.link<br/>XT series.</div>
+  </div>
+
+  <div class="pad" id="manifesto">
+    <div class="tag">////// Manifesto</div>
+    <p>Procedural terrain. Wind-scoured sastrugi, drifts and three ridge planes receding into haze.</p>
+  </div>
+
+  <div class="pad" id="bl">
+    <div id="scrollhint">Scroll down to discover.</div>
+    <div id="sound">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9v6h4l5 4V5L7 9H3z"/><path id="sx1" d="M17 9l4 6"/><path id="sx2" d="M21 9l-4 6"/>
+      </svg>
+      <span id="soundlabel">Sound: Off</span>
+    </div>
+  </div>
+
+  <div class="pad" id="meta">xt16-B / procedural terrain / webgl</div>
+</div>
+
+<div id="rail"><div id="railfill"></div></div>
+<div id="boot">BUILDING TERRAIN&nbsp;&nbsp;<span id="bootpct">00</span>%</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry }  from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { EffectComposer }      from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }          from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass }     from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass }          from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass }          from 'three/addons/postprocessing/OutputPass.js';
+
+const T0 = performance.now();
+window.__XT_STATUS = { stage: 'boot' };
+window.__xt16 = { ready: ()=> false, blocks: -1, frames: 0 };
+
+/* =====================================================================
+   0. PALETTE  (cool blue-grey, near monochrome — sampled off reference)
+   ===================================================================== */
+const C = {
+  skyTop   : new THREE.Color('#6f7987'),
+  skyMid   : new THREE.Color('#9aa4b1'),
+  skyHaze  : new THREE.Color('#cdd3da'),
+  fog      : new THREE.Color('#c2c9d2'),
+  snow     : new THREE.Color('#e8eef4'),
+  ice      : new THREE.Color('#d9e3ed'),
+  ridgeFar : new THREE.Color('#6f7a89'),
+  sun      : new THREE.Color('#f4f7ff'),
+  skyFill  : new THREE.Color('#aec0d4'),
+  gndFill  : new THREE.Color('#5d6875')
+};
+
+/* =====================================================================
+   1. NOISE  — classic 2D perlin + fbm + ridged, seeded
+   ===================================================================== */
+const perm = new Uint8Array(512);
+(function seedPerm(seed){
+  const p = new Uint8Array(256);
+  for (let i=0;i<256;i++) p[i]=i;
+  let s = seed>>>0;
+  const rnd = ()=> (s = (s*1664525 + 1013904223)>>>0) / 4294967296;
+  for (let i=255;i>0;i--){ const j = (rnd()*(i+1))|0; const t=p[i]; p[i]=p[j]; p[j]=t; }
+  for (let i=0;i<512;i++) perm[i]=p[i&255];
+})(20260811);
+
+function fade(t){ return t*t*t*(t*(t*6-15)+10); }
+function grad2(h,x,y){
+  switch(h&7){
+    case 0: return  x+y; case 1: return  x-y; case 2: return -x+y; case 3: return -x-y;
+    case 4: return  x  ; case 5: return -x  ; case 6: return  y  ; default: return -y;
+  }
+}
+function perlin(x,y){
+  const X = Math.floor(x)&255, Y = Math.floor(y)&255;
+  const xf = x-Math.floor(x), yf = y-Math.floor(y);
+  const u = fade(xf), v = fade(yf);
+  const aa = perm[perm[X]+Y], ab = perm[perm[X]+Y+1];
+  const ba = perm[perm[X+1]+Y], bb = perm[perm[X+1]+Y+1];
+  const x1 = grad2(aa,xf,yf)      + u*(grad2(ba,xf-1,yf)      - grad2(aa,xf,yf));
+  const x2 = grad2(ab,xf,yf-1)    + u*(grad2(bb,xf-1,yf-1)    - grad2(ab,xf,yf-1));
+  return (x1 + v*(x2-x1)) * 0.70710678;   // ~[-1,1]
+}
+// rotated-octave fbm (kills axis-aligned banding)
+const CR = Math.cos(0.51), SR = Math.sin(0.51);
+function fbm(x,y,oct,gain){
+  gain = gain===undefined ? 0.5 : gain;
+  let a=1, f=1, sum=0, norm=0;
+  for(let i=0;i<oct;i++){
+    sum  += a*perlin(x*f, y*f);
+    norm += a;
+    a*=gain; f*=2.017;
+    const nx = x*CR - y*SR, ny = x*SR + y*CR; x=nx; y=ny;
+  }
+  return sum/norm;
+}
+function ridged(x,y,oct,gain){
+  gain = gain===undefined ? 0.5 : gain;
+  let a=1, f=1, sum=0, norm=0;
+  for(let i=0;i<oct;i++){
+    let n = 1 - Math.abs(perlin(x*f,y*f));
+    n = n*n;
+    sum += a*n; norm += a;
+    a*=gain; f*=2.037;
+    const nx = x*CR - y*SR, ny = x*SR + y*CR; x=nx; y=ny;
+  }
+  return sum/norm;                      // [0,1]
+}
+const clamp = (v,a,b)=> v<a?a:(v>b?b:v);
+function smoothstep(e0,e1,x){ const t = clamp((x-e0)/(e1-e0),0,1); return t*t*(3-2*t); }
+const mix = (a,b,t)=> a+(b-a)*t;
+
+/* =====================================================================
+   2. WORLD CONSTANTS
+   ===================================================================== */
+const IGLOO_R   = 9.0;      // horizontal radius of the dome
+const IGLOO_RY  = 15.0;     // vertical radius (tall beehive dome, matches reference proportion)
+const BLOCK_T   = 1.75;     // ice block thickness
+const IX = 0, IZ = 0;       // igloo position on the terrain
+
+const TERR_SIZE = 660;
+const TERR_SEG  = 700;      // 491k verts
+const TERR_CZ   = -160;     // terrain centre pushed away from camera
+
+/* ---- raw terrain height (no igloo pad) ---- */
+function rawHeight(x,z){
+  let h = 0;
+
+  // domain warp — makes the drift field sinuous instead of corduroy-regular
+  const wq = fbm(x*0.0034, z*0.0034, 3);
+  const wr = fbm(x*0.0034 + 31.7, z*0.0034 - 17.3, 3);
+  const xw = x + wq*38.0, zw = z + wr*24.0;
+
+  // broad dune field — anisotropic: wind runs along +X so features stretch in X
+  h += fbm(xw*0.0062, zw*0.0115, 5) * 12.0;
+
+  // long wind-scoured drifts, parallel to the wind
+  h += (ridged(xw*0.0060, zw*0.0300, 4) - 0.42) * 5.6;
+
+  // secondary scour lips
+  h += (ridged(xw*0.0160, zw*0.0700, 3) - 0.42) * 1.9;
+
+  // sastrugi micro-ridges
+  h += (ridged(xw*0.0300, zw*0.2000, 2) - 0.45) * 0.5;
+
+  // fine crystalline grain
+  h += fbm(x*0.085, z*0.085, 3) * 0.16;
+
+  // ---- distance: the ground climbs into mountain ridges toward the horizon
+  const r  = Math.hypot(x - IX, z - (IZ - 30));
+  const far  = smoothstep(95, 390, r);
+  const far2 = smoothstep(240, 620, r);
+  if (far > 0){
+    const m = ridged(x*0.0028, z*0.0028, 5, 0.52);
+    h += far  * (Math.pow(m, 1.30) * 56 - 6);
+    h += far  * fbm(x*0.0060, z*0.0060, 4) * 13;
+    h += far2 * (ridged(x*0.0014, z*0.0014, 3) * 40 - 11);
+  }
+
+  // ---- the crest the igloo stands on
+  const dI = Math.hypot(x-IX, z-IZ);
+  h += 7.0 * Math.exp(-(dI*dI)/(2*62*62));
+
+  // ---- foreground drift banks that close the bottom corners of frame
+  const d1 = Math.hypot(x+30, z-44);
+  h += 7.5 * Math.exp(-(d1*d1)/(2*26*26));
+  const d2 = Math.hypot(x-36, z-48);
+  h += 5.5 * Math.exp(-(d2*d2)/(2*24*24));
+
+  return h;
+}
+const H0 = rawHeight(IX, IZ);           // pad height under the igloo
+
+function heightAt(x,z){
+  const dI = Math.hypot(x-IX, z-IZ);
+  if (dI > 34) return rawHeight(x,z);
+  const t = smoothstep(11.5, 34, dI);
+  const pad = H0 + fbm(x*0.09, z*0.09, 2) * 0.28;   // near-flat, faintly textured pad
+  return mix(pad, rawHeight(x,z), t);
+}
+
+/* =====================================================================
+   3. RENDERER / SCENE / CAMERA
+   ===================================================================== */
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace   = THREE.SRGBColorSpace;
+renderer.toneMapping        = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure= 0.98;
+renderer.shadowMap.enabled  = true;
+renderer.shadowMap.type     = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const BG_OBJS = [];          // everything that is NOT the subject (hidden while measuring)
+const FOG_D0 = 0.00178;
+scene.fog = new THREE.FogExp2(C.fog.getHex(), FOG_D0);
+
+const camera = new THREE.PerspectiveCamera(30, innerWidth/innerHeight, 0.5, 2600);
+
+/* ---- camera rig: eye 9 above the pad, 62 back, pitched ~3.9deg down.
+        Puts igloo apex at ~14% of frame, base at ~64%, horizon at ~37%. ---- */
+const CAM_KEYS = [
+  { p:new THREE.Vector3( 2.6, H0+9.5,  70.0), t:new THREE.Vector3(-0.4, H0+4.05, 0.0), fov:30 },
+  { p:new THREE.Vector3(-4.0, H0+16.0, 26.0), t:new THREE.Vector3( 2.0, H0+7.0, -34.0), fov:34 },
+  { p:new THREE.Vector3( 9.0, H0+31.0,-26.0), t:new THREE.Vector3(-6.0, H0+9.0,-108.0), fov:40 },
+  { p:new THREE.Vector3(-14.0,H0+54.0,-96.0), t:new THREE.Vector3( 8.0, H0+18.0,-210.0),fov:46 }
+];
+camera.position.copy(CAM_KEYS[0].p);
+camera.lookAt(CAM_KEYS[0].t);
+
+/* =====================================================================
+   4. SKY DOME — vertical gradient, horizon exactly the fog value
+   ===================================================================== */
+const sky = new THREE.Mesh(
+  new THREE.SphereGeometry(2000, 48, 24),
+  new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite:false, fog:false,
+    uniforms:{
+      cTop:{value:C.skyTop}, cMid:{value:C.skyMid}, cHaze:{value:C.skyHaze}
+    },
+    vertexShader:`varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+    fragmentShader:`
+      varying vec3 vP; uniform vec3 cTop,cMid,cHaze;
+      void main(){
+        float h = normalize(vP).y;                      // -1..1
+        float a = smoothstep(-0.03, 0.34, h);
+        vec3 c  = mix(cHaze, cMid, a);
+        c       = mix(c, cTop, smoothstep(0.22, 0.85, h));
+        // haze thickens right at the horizon line
+        c       = mix(c, cHaze, smoothstep(0.10, -0.10, h));
+        gl_FragColor = vec4(c, 1.0);
+      }`
+  })
+);
+sky.frustumCulled = false;
+scene.add(sky); BG_OBJS.push(sky);
+
+/* =====================================================================
+   5. LIGHTING — low raking back-sun + cool sky hemisphere fill
+   ===================================================================== */
+const sun = new THREE.DirectionalLight(C.sun, 3.70);
+const SUN_EL = 15.0 * Math.PI/180;         // low sun => long raking shadows
+const SUN_AZ = -64  * Math.PI/180;         // behind & to camera-right
+const SUN_D  = 170;
+sun.position.set(
+  IX + Math.cos(SUN_EL)*Math.cos(SUN_AZ)*SUN_D,
+  H0 + Math.sin(SUN_EL)*SUN_D,
+  IZ + Math.cos(SUN_EL)*Math.sin(SUN_AZ)*SUN_D
+);
+sun.target.position.set(IX, H0+4, IZ+18);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+const SH = 105;
+sun.shadow.camera.left=-SH; sun.shadow.camera.right=SH;
+sun.shadow.camera.top=SH;   sun.shadow.camera.bottom=-SH;
+sun.shadow.camera.near=40;  sun.shadow.camera.far=420;
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.28;
+sun.shadow.radius = 2.2;
+scene.add(sun); scene.add(sun.target);
+
+scene.add(new THREE.HemisphereLight(C.skyFill, C.gndFill, 0.74));
+scene.add(new THREE.AmbientLight(0xb9c6d6, 0.10));
+
+/* a faint bounce from the snow onto the igloo's shadow side */
+const bounce = new THREE.DirectionalLight(0xc6d4e4, 0.55);
+bounce.position.set(IX-40, H0+14, IZ+70);
+bounce.target.position.set(IX, H0+6, IZ);
+scene.add(bounce); scene.add(bounce.target);
+
+/* =====================================================================
+   6. PROCEDURAL TEXTURES (canvas -> DataTexture normal map)
+   ===================================================================== */
+function makeNormalMap(size, scale, strength, octaves){
+  const h = new Float32Array(size*size);
+  for(let y=0;y<size;y++) for(let x=0;x<size;x++){
+    h[y*size+x] = fbm(x*scale, y*scale, octaves);
+  }
+  const data = new Uint8Array(size*size*4);
+  const at=(x,y)=> h[((y+size)%size)*size + ((x+size)%size)];
+  for(let y=0;y<size;y++) for(let x=0;x<size;x++){
+    const dx = (at(x+1,y)-at(x-1,y)) * strength;
+    const dy = (at(x,y+1)-at(x,y-1)) * strength;
+    let nx=-dx, ny=-dy, nz=1;
+    const l = Math.hypot(nx,ny,nz); nx/=l; ny/=l; nz/=l;
+    const i=(y*size+x)*4;
+    data[i  ] = (nx*0.5+0.5)*255;
+    data[i+1] = (ny*0.5+0.5)*255;
+    data[i+2] = (nz*0.5+0.5)*255;
+    data[i+3] = 255;
+  }
+  const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.needsUpdate = true;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
+  return tex;
+}
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+const snowNormal = makeNormalMap(512, 0.035, 26, 5);
+snowNormal.repeat.set(150,150);
+snowNormal.anisotropy = maxAniso;
+
+const iceNormal = makeNormalMap(256, 0.055, 16, 4);
+iceNormal.repeat.set(2.2,2.2);
+
+/* soft radial contact-shadow decal */
+function makeContactTex(){
+  const s=256, cv=document.createElement('canvas'); cv.width=cv.height=s;
+  const g=cv.getContext('2d');
+  const rg=g.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  rg.addColorStop(0.00,'#6d7785');
+  rg.addColorStop(0.30,'#8b95a1');
+  rg.addColorStop(0.60,'#bcc4cd');
+  rg.addColorStop(1.00,'#ffffff');
+  g.fillStyle='#ffffff'; g.fillRect(0,0,s,s);
+  g.fillStyle=rg; g.fillRect(0,0,s,s);
+  const t=new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/* =====================================================================
+   7. TERRAIN
+   ===================================================================== */
+const terrGeo = new THREE.PlaneGeometry(TERR_SIZE, TERR_SIZE, TERR_SEG, TERR_SEG);
+terrGeo.rotateX(-Math.PI/2);
+{
+  const pos = terrGeo.attributes.position;
+  const N   = TERR_SEG+1;
+  const H   = new Float32Array(N*N);
+
+  for(let iy=0; iy<N; iy++){
+    for(let ix=0; ix<N; ix++){
+      const i = iy*N+ix;
+      const x = pos.getX(i), z = pos.getZ(i)+TERR_CZ;
+      const h = heightAt(x,z);
+      H[i] = h;
+      pos.setY(i, h);
+    }
+  }
+
+  // vertex colours: curvature AO (troughs sink & go blue, crests polish out)
+  const col = new Float32Array(N*N*3);
+  const K = 5;
+  for(let iy=0; iy<N; iy++){
+    for(let ix=0; ix<N; ix++){
+      const i = iy*N+ix;
+      const xm = Math.max(0,ix-K), xp = Math.min(N-1,ix+K);
+      const ym = Math.max(0,iy-K), yp = Math.min(N-1,iy+K);
+      const avg = (H[iy*N+xm]+H[iy*N+xp]+H[ym*N+ix]+H[yp*N+ix])*0.25;
+      const curv = H[i]-avg;                       // + = crest, - = trough
+      const t = clamp(0.5 + curv*0.52, 0, 1);
+
+      const x = pos.getX(i), z = pos.getZ(i)+TERR_CZ;
+      const patch = 0.90 + 0.20*(fbm(x*0.035, z*0.035, 2)*0.5+0.5);
+      let shade = (0.55 + 0.45*t) * patch;
+      shade = clamp(shade, 0.30, 1.18);
+
+      const j=i*3;
+      col[j  ] = shade * (0.905 + 0.095*t);
+      col[j+1] = shade * (0.950 + 0.050*t);
+      col[j+2] = shade * 1.0;
+    }
+  }
+  terrGeo.setAttribute('color', new THREE.BufferAttribute(col,3));
+  terrGeo.computeVertexNormals();
+}
+const terrain = new THREE.Mesh(
+  terrGeo,
+  new THREE.MeshStandardMaterial({
+    color: C.snow, vertexColors:true, roughness:0.86, metalness:0.0,
+    normalMap: snowNormal, normalScale: new THREE.Vector2(0.27,0.27),
+    dithering:true
+  })
+);
+terrain.position.z = TERR_CZ;
+terrain.receiveShadow = true;
+terrain.castShadow = true;
+scene.add(terrain); BG_OBJS.push(terrain);
+
+/* =====================================================================
+   8. DISTANT RIDGE SILHOUETTES — the far atmospheric planes
+   ===================================================================== */
+function ridgeBand(zPos, width, baseY, amp, seed, topCol, botCol, freq){
+  const N = 520;
+  const pos = new Float32Array((N+1)*2*3);
+  const col = new Float32Array((N+1)*2*3);
+  const idx = [];
+  const bottom = baseY - 260;
+  for(let i=0;i<=N;i++){
+    const x = -width/2 + width*(i/N);
+    let p = ridged(x*freq + seed*13.7, seed*7.3, 5, 0.5);
+    p = Math.pow(p, 1.45);
+    p += fbm(x*freq*2.4 + seed*3.1, seed*2.2, 3)*0.14;
+    const hTop = baseY + p*amp;
+    const a=i*2*3, b=a+3;
+    pos[a]=x; pos[a+1]=hTop;  pos[a+2]=0;
+    pos[b]=x; pos[b+1]=bottom;pos[b+2]=0;
+    col[a]=topCol.r; col[a+1]=topCol.g; col[a+2]=topCol.b;
+    col[b]=botCol.r; col[b+1]=botCol.g; col[b+2]=botCol.b;
+    if(i<N){ const v=i*2; idx.push(v,v+1,v+2, v+1,v+3,v+2); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  g.setAttribute('color',    new THREE.BufferAttribute(col,3));
+  g.setIndex(idx);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({
+    vertexColors:true, fog:true, side:THREE.DoubleSide, depthWrite:true
+  }));
+  m.position.z = zPos;
+  m.frustumCulled = false;
+  scene.add(m); BG_OBJS.push(m);
+  return m;
+}
+// haze pools in the valleys => each band's base is lighter than its crest
+const bandTop = C.ridgeFar.clone();
+const bandBot = C.ridgeFar.clone().lerp(C.fog, 0.70);
+ridgeBand(-520, 1900, 16,  62, 1.0, bandTop, bandBot, 0.0050);
+ridgeBand(-620, 2300, 28,  80, 2.0, bandTop.clone().lerp(C.fog,0.14), bandBot, 0.0037);
+ridgeBand(-740, 2800, 42, 100, 3.0, bandTop.clone().lerp(C.fog,0.28), bandBot, 0.0028);
+
+/* =====================================================================
+   9. THE IGLOO — rounded ice blocks laid in courses on an ellipsoid
+   ===================================================================== */
+const igloo = new THREE.Group();
+igloo.position.set(IX, H0, IZ);
+scene.add(igloo);
+
+let rndState = 987654321;
+function rnd(){ rndState = (rndState*1664525 + 1013904223)>>>0; return rndState/4294967296; }
+const rr = (a,b)=> a + (b-a)*rnd();
+
+const iceMats = [];
+for(let i=0;i<7;i++){
+  const c = C.ice.clone().multiplyScalar(0.56 + i*0.083);
+  iceMats.push(new THREE.MeshStandardMaterial({
+    color:c, roughness: 0.50 + rnd()*0.22, metalness:0.0,
+    normalMap: iceNormal, normalScale:new THREE.Vector2(0.55,0.55),
+    dithering:true
+  }));
+}
+// bright, near-white blocks for the sun-struck crown
+const iceBright = new THREE.MeshStandardMaterial({
+  color:0xf3f8ff, roughness:0.42, metalness:0.0,
+  normalMap:iceNormal, normalScale:new THREE.Vector2(0.42,0.42)
+});
+
+const DOOR_A = 0.60;          // azimuth of the doorway (camera-right, front)
+const DOOR_HALF = 0.34;
+
+function addBlock(w,h,d, pos, quat, mat){
+  const g = new RoundedBoxGeometry(w,h,d, 3, Math.min(w,h,d)*0.30);
+  const m = new THREE.Mesh(g, mat);
+  m.position.copy(pos); m.quaternion.copy(quat);
+  m.castShadow = true; m.receiveShadow = true;
+  igloo.add(m);
+  return m;
+}
+
+const NCOURSE = 10;
+const T_MIN = 2.0*Math.PI/180, T_MAX = 84.0*Math.PI/180;
+const dT = (T_MAX-T_MIN)/NCOURSE;
+let blockCount = 0;
+
+const _n = new THREE.Vector3(), _t = new THREE.Vector3(), _b = new THREE.Vector3();
+const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3();
+
+for(let k=0;k<NCOURSE;k++){
+  const t0 = T_MIN + k*dT, tm = t0 + dT*0.5;
+  const ringR = IGLOO_R*Math.cos(tm);
+  const yy    = IGLOO_RY*Math.sin(tm);
+  const circ  = 2*Math.PI*ringR;
+  const count = Math.max(5, Math.round(circ/5.6));
+  const bw    = (circ/count)*1.06;
+  const merid = Math.hypot(IGLOO_R*Math.sin(tm), IGLOO_RY*Math.cos(tm));
+  const bh    = merid*dT*1.18;
+  const stagger = (k%2)*Math.PI/count + rr(-0.05,0.05);
+
+  for(let i=0;i<count;i++){
+    const a = i*(2*Math.PI/count) + stagger;
+
+    // doorway: knock out the lowest two courses across the door arc
+    let da = Math.atan2(Math.sin(a-DOOR_A), Math.cos(a-DOOR_A));
+    if (k<2 && Math.abs(da) < DOOR_HALF) continue;
+    if (k===2 && Math.abs(da) < DOOR_HALF*0.42) continue;
+
+    const ca = Math.cos(a), sa = Math.sin(a);
+    // ellipsoid surface point + outward normal
+    const sx = IGLOO_R*Math.cos(tm)*ca, sy = yy, sz = IGLOO_R*Math.cos(tm)*sa;
+    _n.set(Math.cos(tm)*ca/(IGLOO_R), Math.sin(tm)/(IGLOO_RY), Math.cos(tm)*sa/(IGLOO_R)).normalize();
+    _t.set(-sa, 0, ca).normalize();
+    _b.crossVectors(_n,_t).normalize();
+    _t.crossVectors(_b,_n).normalize();
+    _m.makeBasis(_t,_b,_n);
+    _q.setFromRotationMatrix(_m);
+    // hand-laid jitter — a couple of degrees only; the courses must stay legible
+    _q.multiply(new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(rr(-0.026,0.026), rr(-0.022,0.022), rr(-0.034,0.034))));
+
+    const push = BLOCK_T*0.5 + rr(-0.04, 0.09);
+    _p.set(sx + _n.x*push, sy + _n.y*push, sz + _n.z*push);
+    _p.x += rr(-0.05,0.05); _p.y += rr(-0.04,0.04); _p.z += rr(-0.05,0.05);
+
+    // sun is behind: crown + back blocks read bright, front courses read dark
+    const facingSun = Math.cos(a - (-64*Math.PI/180));
+    const lift = clamp(0.5 + facingSun*0.5, 0, 1) * 0.55 + (k/NCOURSE)*0.45;
+    let mat;
+    if (rnd() < 0.08 + lift*0.30) mat = iceBright;
+    else mat = iceMats[clamp(Math.floor(lift*iceMats.length + rr(-1.4,1.4)), 0, iceMats.length-1)];
+
+    addBlock(bw*rr(0.96,1.05), bh*rr(0.96,1.06), BLOCK_T*rr(0.92,1.15), _p, _q, mat);
+    blockCount++;
+  }
+}
+/* crown block closing the apex */
+{
+  const capY = IGLOO_RY*Math.sin(T_MAX) + 0.5;
+  _q.setFromEuler(new THREE.Euler(rr(-0.1,0.1), rr(0,6.28), rr(-0.1,0.1)));
+  addBlock(4.6, 2.0, 3.8, _p.set(rr(-0.4,0.4), capY-0.3, rr(-0.4,0.4)), _q, iceBright);
+  _q.setFromEuler(new THREE.Euler(rr(-0.08,0.08), rr(0,6.28), rr(-0.08,0.08)));
+  addBlock(3.4, 1.7, 2.9, _p.set(rr(-1.0,1.0), capY+1.2, rr(-1.0,1.0)), _q, iceBright);
+  blockCount += 2;
+}
+
+/* ---- entrance tunnel: short vault of arch blocks running out of the doorway ---- */
+{
+  const ax  = new THREE.Vector3(Math.cos(DOOR_A), 0, Math.sin(DOOR_A)).normalize(); // tunnel axis
+  const side= new THREE.Vector3(-Math.sin(DOOR_A), 0, Math.cos(DOOR_A)).normalize();
+  const tunR = 3.70, ARCH = 9, RINGS = 3, RING_STEP = 2.35;
+  const arcW = (Math.PI*tunR)/(ARCH-1) * 1.10;      // tangential block width
+
+  for(let ring=0; ring<RINGS; ring++){
+    const out = IGLOO_R*0.86 + 1.4 + ring*RING_STEP;
+    // the vault tapers slightly as it runs out from the dome
+    const rr_ = tunR * (1.0 - ring*0.055);
+    for(let j=0;j<ARCH;j++){
+      const ang = Math.PI*(j/(ARCH-1));             // 0 = right springer .. pi = left
+      if (Math.sin(ang) < 0.14) continue;           // skip the two blocks buried at ground level
+
+      // radial direction in the arch plane (perpendicular to the tunnel axis)
+      const radial = new THREE.Vector3()
+        .addScaledVector(side, -Math.cos(ang))
+        .addScaledVector(new THREE.Vector3(0,1,0), Math.sin(ang))
+        .normalize();
+      const tang = new THREE.Vector3().crossVectors(ax, radial).normalize();
+      _m.makeBasis(ax, radial, tang);
+      _q.setFromRotationMatrix(_m);
+      _q.multiply(new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(rr(-0.025,0.025), rr(-0.025,0.025), rr(-0.025,0.025))));
+
+      const rad = rr_ + BLOCK_T*0.5;
+      _p.copy(ax).multiplyScalar(out).addScaledVector(radial, rad);
+      _p.y *= 0.98;
+      _p.x += rr(-0.04,0.04); _p.y += rr(-0.04,0.04); _p.z += rr(-0.04,0.04);
+
+      const lift = 0.30 + Math.sin(ang)*0.45;
+      const mat = (rnd() < 0.06 + lift*0.26)
+        ? iceBright
+        : iceMats[clamp(Math.floor(lift*iceMats.length + rr(-1.3,1.3)),0,iceMats.length-1)];
+      // x = along tunnel, y = radial thickness, z = tangential width
+      addBlock(RING_STEP*1.02*rr(0.95,1.05), BLOCK_T*rr(0.95,1.1), arcW*rr(0.94,1.04), _p, _q, mat);
+      blockCount++;
+    }
+  }
+
+  /* dark bore inside the vault so the mouth reads as a genuine opening */
+  const boreMat = new THREE.MeshBasicMaterial({ color:0x161d27, fog:true, side:THREE.DoubleSide });
+  const upV = new THREE.Vector3(0,1,0);
+  for(let s=0; s<2; s++){
+    const bore = new THREE.Mesh(new THREE.CircleGeometry(tunR*(1.0 - s*0.16), 26, 0, Math.PI), boreMat);
+    _m.makeBasis(side, upV, ax);
+    bore.quaternion.setFromRotationMatrix(_m);
+    bore.position.copy(ax).multiplyScalar(IGLOO_R*0.86 + 1.4 + (RINGS-1)*RING_STEP - s*2.6);
+    bore.position.y = 0.05;
+    igloo.add(bore);
+  }
+}
+
+/* ---- a few loose blocks resting on the snow at the base ---- */
+for(let i=0;i<5;i++){
+  const a = rr(0,Math.PI*2), d = rr(IGLOO_R+2.0, IGLOO_R+8.0);
+  const px = Math.cos(a)*d, pz = Math.sin(a)*d;
+  const gy = heightAt(IX+px, IZ+pz) - H0;
+  _q.setFromEuler(new THREE.Euler(rr(-0.14,0.14), rr(0,6.28), rr(-0.14,0.14)));
+  addBlock(rr(3.4,5.6), rr(1.5,2.3), rr(2.0,3.0),
+           _p.set(px, gy+rr(0.6,1.0), pz), _q,
+           (rnd()<0.4)?iceBright:iceMats[(rnd()*iceMats.length)|0]);
+  blockCount++;
+}
+
+/* ---- interior glow: bright shell seen through the joints, + inner lamp ---- */
+{
+  const glow = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 40, 28),
+    new THREE.MeshBasicMaterial({ color:0xc9dcf0, fog:true })
+  );
+  glow.scale.set(IGLOO_R-0.45, IGLOO_RY-3.4, IGLOO_R-0.45);
+  glow.position.y = 2.6;
+  igloo.add(glow);
+
+  const lamp = new THREE.PointLight(0xd9e9ff, 150, 55, 2);
+  lamp.position.set(0, IGLOO_RY*0.30, 0);
+  igloo.add(lamp);
+}
+
+/* ---- soft contact shadow decal on the snow ---- */
+{
+  const dec = new THREE.Mesh(
+    new THREE.PlaneGeometry(40, 40),
+    new THREE.MeshBasicMaterial({
+      map: makeContactTex(), transparent:true, opacity:1.0,
+      blending: THREE.MultiplyBlending, depthWrite:false, fog:true
+    })
+  );
+  dec.rotation.x = -Math.PI/2;
+  dec.position.set(IX, H0+0.10, IZ);
+  dec.renderOrder = 1;
+  scene.add(dec); BG_OBJS.push(dec);
+}
+
+/* =====================================================================
+   10. DRIFTING SPINDRIFT
+   ===================================================================== */
+let drift;
+{
+  const N=2400, p=new Float32Array(N*3), sp=new Float32Array(N);
+  for(let i=0;i<N;i++){
+    p[i*3  ] = rr(-180,180);
+    p[i*3+1] = H0 + rr(-2, 46);
+    p[i*3+2] = rr(-230, 90);
+    sp[i] = rr(0.35,1.5);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(p,3));
+  drift = new THREE.Points(g, new THREE.PointsMaterial({
+    color:0xffffff, size:0.42, sizeAttenuation:true,
+    transparent:true, opacity:0.34, depthWrite:false, fog:true
+  }));
+  drift.userData.sp = sp;
+  drift.frustumCulled = false;
+  scene.add(drift); BG_OBJS.push(drift);
+}
+
+/* =====================================================================
+   11. POST — bloom on the brightest snow + grade / grain / aberration
+   ===================================================================== */
+const composer = new EffectComposer(renderer);
+composer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+composer.setSize(innerWidth, innerHeight);
+composer.addPass(new RenderPass(scene, camera));
+
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.40, 0.80, 0.84);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+const GradeShader = {
+  uniforms:{ tDiffuse:{value:null}, uTime:{value:0}, uAberr:{value:1.0}, uVig:{value:0.82} },
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+  fragmentShader:`
+    uniform sampler2D tDiffuse; uniform float uTime, uAberr, uVig; varying vec2 vUv;
+    void main(){
+      vec2 c = vUv - 0.5;
+      float r2 = dot(c,c);
+      float ab = uAberr * (0.0009 + r2*0.0042);
+      vec3 col;
+      col.r = texture2D(tDiffuse, vUv + c*ab).r;
+      col.g = texture2D(tDiffuse, vUv).g;
+      col.b = texture2D(tDiffuse, vUv - c*ab).b;
+      float vig = smoothstep(1.15, 0.22, length(c)*1.28);
+      col *= mix(uVig, 1.0, vig);
+      col = clamp((col - 0.5)*1.075 + 0.5 + 0.004, 0.0, 1.0);
+      float g = fract(sin(dot(gl_FragCoord.xy + uTime*11.0, vec2(12.9898,78.233)))*43758.5453);
+      col += (g - 0.5)*0.020;
+      gl_FragColor = vec4(col, 1.0);
+    }`
+};
+const grade = new ShaderPass(GradeShader);
+composer.addPass(grade);
+
+/* =====================================================================
+   12. NUMERAL / HAIRLINE DATA OVERLAY (anchored to real 3D points)
+   ===================================================================== */
+const NODES = [
+  { v:'32', p:new THREE.Vector3(-6.2, H0+ 8.6,  5.4) },
+  { v:'29', p:new THREE.Vector3( 1.4, H0+ 9.8,  8.2) },
+  { v:'49', p:new THREE.Vector3( 7.4, H0+11.2,  2.2) },
+  { v:'21', p:new THREE.Vector3(-4.6, H0+ 3.4,  7.6) },
+  { v:'29', p:new THREE.Vector3( 3.6, H0+ 3.0,  7.9) }
+];
+const LINKS = [[0,1],[1,2],[0,3],[3,4],[4,2],[1,4]];
+const svg = document.getElementById('dataviz');
+const NS = 'http://www.w3.org/2000/svg';
+const linkEls = LINKS.map(()=>{ const l=document.createElementNS(NS,'line'); l.setAttribute('class','link'); svg.appendChild(l); return l; });
+const tickEls = [], textEls = [];
+NODES.forEach(n=>{
+  const g = document.createElementNS(NS,'g');
+  const h = document.createElementNS(NS,'line'); h.setAttribute('class','tick');
+  const v = document.createElementNS(NS,'line'); v.setAttribute('class','tick');
+  const t = document.createElementNS(NS,'text'); t.textContent = n.v;
+  g.appendChild(h); g.appendChild(v); g.appendChild(t);
+  svg.appendChild(g);
+  tickEls.push([h,v]); textEls.push(t);
+});
+
+/* =====================================================================
+   13. SCROLL + LOOP
+   ===================================================================== */
+let scrollP = 0, scrollTarget = 0;
+function readScroll(){
+  const max = Math.max(1, document.body.scrollHeight - innerHeight);
+  scrollTarget = clamp(window.scrollY / max, 0, 1);
+}
+window.addEventListener('scroll', readScroll, {passive:true});
+readScroll();
+
+function catmull(keys, u, key){
+  const n = keys.length-1;
+  const s = clamp(u,0,1)*n;
+  const i = Math.min(Math.floor(s), n-1);
+  const f = s-i;
+  const p0 = keys[Math.max(0,i-1)][key], p1 = keys[i][key],
+        p2 = keys[i+1][key], p3 = keys[Math.min(n,i+2)][key];
+  if (typeof p1 === 'number'){
+    return 0.5*((2*p1)+(-p0+p2)*f+(2*p0-5*p1+4*p2-p3)*f*f+(-p0+3*p1-3*p2+p3)*f*f*f);
+  }
+  const out = new THREE.Vector3();
+  out.x = 0.5*((2*p1.x)+(-p0.x+p2.x)*f+(2*p0.x-5*p1.x+4*p2.x-p3.x)*f*f+(-p0.x+3*p1.x-3*p2.x+p3.x)*f*f*f);
+  out.y = 0.5*((2*p1.y)+(-p0.y+p2.y)*f+(2*p0.y-5*p1.y+4*p2.y-p3.y)*f*f+(-p0.y+3*p1.y-3*p2.y+p3.y)*f*f*f);
+  out.z = 0.5*((2*p1.z)+(-p0.z+p2.z)*f+(2*p0.z-5*p1.z+4*p2.z-p3.z)*f*f+(-p0.z+3*p1.z-3*p2.z+p3.z)*f*f*f);
+  return out;
+}
+
+const _proj = new THREE.Vector3();
+const uiEl   = document.getElementById('ui');
+const railEl = document.getElementById('railfill');
+let frames = 0;
+
+function resize(){
+  const w = innerWidth, h = innerHeight;
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+  composer.setSize(w,h);
+  bloom.setSize(w,h);
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('width', w); svg.setAttribute('height', h);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* =====================================================================
+   13b. FRAMING GATE — measured from RENDERED PIXELS, not a projected AABB.
+   The subject is rendered white-on-black to an offscreen target with every
+   background object hidden; the bounding box of lit pixels drives the camera.
+   ===================================================================== */
+const MW = 384, MH = 240;
+const _measRT  = new THREE.WebGLRenderTarget(MW, MH);
+const _measBuf = new Uint8Array(MW*MH*4);
+const _flatMat = new THREE.MeshBasicMaterial({ color:0xffffff, fog:false });
+
+function measureSubject(){
+  const vis = BG_OBJS.map(o=>o.visible);
+  BG_OBJS.forEach(o=> o.visible = false);
+  const prevFog = scene.fog, prevOv = scene.overrideMaterial;
+  scene.fog = null;
+  scene.overrideMaterial = _flatMat;
+  renderer.setClearColor(0x000000, 1);
+  renderer.setRenderTarget(_measRT);
+  renderer.render(scene, camera);
+  renderer.readRenderTargetPixels(_measRT, 0, 0, MW, MH, _measBuf);
+  renderer.setRenderTarget(null);
+  scene.fog = prevFog;
+  scene.overrideMaterial = prevOv;
+  BG_OBJS.forEach((o,i)=> o.visible = vis[i]);
+
+  let minX=1e9, maxX=-1e9, minY=1e9, maxY=-1e9, n=0;
+  for(let y=0; y<MH; y++){
+    for(let x=0; x<MW; x++){
+      if (_measBuf[(y*MW+x)*4] > 40){
+        n++;
+        if(x<minX)minX=x; if(x>maxX)maxX=x;
+        if(y<minY)minY=y; if(y>maxY)maxY=y;
+      }
+    }
+  }
+  if(!n) return null;
+  // readRenderTargetPixels is bottom-up -> convert to top-down fractions
+  return {
+    px:n,
+    widthFrac : (maxX+1-minX)/MW,
+    heightFrac: (maxY+1-minY)/MH,
+    cx        : ((minX+maxX+1)*0.5)/MW,
+    cy        : 1 - ((minY+maxY+1)*0.5)/MH,
+    topFrac   : 1 - (maxY+1)/MH,
+    baseFrac  : 1 - minY/MH
+  };
+}
+
+/* reference-derived targets: subject ~45% of frame width, centred at 47% x,
+   39% y (apex ~15%, base ~63% => anchored in the lower third) */
+const FIT = { widthFrac:0.36, cx:0.45, cy:0.39 };
+const EYE_H = 9.5;
+
+function fitFraming(iters){
+  const key = CAM_KEYS[0];
+  const off   = new THREE.Vector3();
+  const fwd   = new THREE.Vector3();
+  const right = new THREE.Vector3();
+  let m = null;
+  for(let it=0; it<iters; it++){
+    camera.position.copy(key.p);
+    camera.lookAt(key.t);
+    camera.fov = key.fov;
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld(true);
+
+    m = measureSubject();
+    if(!m) break;
+
+    // (1) distance sets apparent width  (width ~ 1/d)
+    off.subVectors(key.p, key.t);
+    const d0 = off.length();
+    off.multiplyScalar(clamp(m.widthFrac/FIT.widthFrac, 0.55, 1.9));
+    key.p.copy(key.t).add(off);
+    key.p.y = H0 + EYE_H;                       // eye height pinned => horizon stays on the subject's midline
+
+    off.subVectors(key.p, key.t);
+    const d  = off.length();
+    const fh = 2*d*Math.tan(camera.fov*Math.PI/360);   // world height of the frame at the subject
+    const fw = fh * camera.aspect;
+
+    // (2) pitch sets vertical placement: aim lower => subject rises in frame
+    key.t.y -= (m.cy - FIT.cy) * fh;
+
+    // (3) lateral translation sets horizontal placement
+    fwd.subVectors(key.t, key.p).normalize();
+    right.crossVectors(fwd, new THREE.Vector3(0,1,0)).normalize();
+    const dx = (m.cx - FIT.cx) * fw;
+    key.p.addScaledVector(right, dx);
+    key.t.addScaledVector(right, dx);
+    key.p.y = H0 + EYE_H;
+
+    if (Math.abs(m.widthFrac-FIT.widthFrac) < 0.004 &&
+        Math.abs(m.cy-FIT.cy) < 0.004 && Math.abs(m.cx-FIT.cx) < 0.004 && it>0) break;
+  }
+  camera.position.copy(key.p);
+  camera.lookAt(key.t);
+  camera.updateProjectionMatrix();
+  camera.updateMatrixWorld(true);
+  return measureSubject();
+}
+
+const FRAME_MEASURED = fitFraming(9);
+
+/* The flight keys must be rebuilt RELATIVE to the solved hero camera, otherwise
+   the solver moves key 0 and the path drives straight through the igloo. */
+(function buildFlightPath(){
+  const p0 = CAM_KEYS[0].p.clone(), t0 = CAM_KEYS[0].t.clone();
+  const d0 = p0.distanceTo(t0);
+  const fwd = new THREE.Vector3().subVectors(t0, p0).normalize();
+  const up  = new THREE.Vector3(0,1,0);
+  const rgt = new THREE.Vector3().crossVectors(fwd, up).normalize();
+  const key = (fp, uy, rx, ft, ty)=>({
+    p: p0.clone().addScaledVector(fwd, fp*d0).addScaledVector(up, uy*d0).addScaledVector(rgt, rx*d0),
+    t: t0.clone().addScaledVector(fwd, ft*d0).addScaledVector(up, ty*d0)
+  });
+  const ks = [
+    key(0.42, 0.17, -0.09, 0.95, 0.00),   // rise and swing wide of the dome
+    key(1.28, 0.55,  0.11, 2.45, 0.06),   // over the top, terrain opening out
+    key(2.45, 1.08, -0.17, 4.45, 0.26)    // high flyover into the far ridges
+  ];
+  for(let i=0;i<3;i++){
+    CAM_KEYS[i+1].p.copy(ks[i].p);
+    CAM_KEYS[i+1].t.copy(ks[i].t);
+  }
+})();
+
+const clock = new THREE.Clock();
+function tick(){
+  requestAnimationFrame(tick);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const el = clock.elapsedTime;
+
+  scrollP += (scrollTarget - scrollP) * (1 - Math.pow(0.001, dt));
+
+  // camera flight over the terrain
+  const p = catmull(CAM_KEYS, scrollP, 'p');
+  const t = catmull(CAM_KEYS, scrollP, 't');
+  const fov = catmull(CAM_KEYS, scrollP, 'fov');
+  // slow breathing drift so a still frame never feels dead
+  p.x += Math.sin(el*0.11)*0.55;
+  p.y += Math.sin(el*0.147)*0.30;
+  camera.position.copy(p);
+  camera.lookAt(t);
+  camera.rotation.z += Math.sin(el*0.09)*0.0025 + scrollP*0.03;
+  if (Math.abs(camera.fov - fov) > 0.01){ camera.fov = fov; camera.updateProjectionMatrix(); }
+
+  // spindrift
+  {
+    const a = drift.geometry.attributes.position, sp = drift.userData.sp;
+    for(let i=0;i<a.count;i++){
+      let x = a.getX(i) + sp[i]*7.5*dt;
+      let y = a.getY(i) + Math.sin(el*0.7 + i)*0.9*dt;
+      if (x > 190) x -= 380;
+      a.setX(i,x); a.setY(i,y);
+    }
+    a.needsUpdate = true;
+  }
+
+  grade.uniforms.uTime.value = el;
+  grade.uniforms.uAberr.value = 0.32 + scrollP*1.7;
+  scene.fog.density = FOG_D0 + scrollP*0.0011;
+
+  composer.render();
+
+  // ---- overlay projection ----
+  const w = innerWidth, h = innerHeight;
+  const pts = NODES.map(n=>{
+    _proj.copy(n.p).project(camera);
+    return { x:(_proj.x*0.5+0.5)*w, y:(-_proj.y*0.5+0.5)*h, z:_proj.z };
+  });
+  const fade = clamp(1 - scrollP*3.2, 0, 1);
+  svg.style.opacity = fade;
+  if (fade > 0.01){
+    LINKS.forEach((L,i)=>{
+      const a=pts[L[0]], b=pts[L[1]];
+      linkEls[i].setAttribute('x1',a.x); linkEls[i].setAttribute('y1',a.y);
+      linkEls[i].setAttribute('x2',b.x); linkEls[i].setAttribute('y2',b.y);
+    });
+    pts.forEach((q,i)=>{
+      const [hl,vl] = tickEls[i];
+      hl.setAttribute('x1',q.x-4.5); hl.setAttribute('y1',q.y);
+      hl.setAttribute('x2',q.x+4.5); hl.setAttribute('y2',q.y);
+      vl.setAttribute('x1',q.x); vl.setAttribute('y1',q.y-4.5);
+      vl.setAttribute('x2',q.x); vl.setAttribute('y2',q.y+4.5);
+      textEls[i].setAttribute('x', q.x-26);
+      textEls[i].setAttribute('y', q.y+4);
+    });
+  }
+  uiEl.style.opacity = clamp(1 - scrollP*2.4, 0, 1);
+  railEl.style.height = (scrollP*100).toFixed(2)+'%';
+
+  frames++;
+  window.__xt16.frames = frames;
+  if (frames === 2){
+    document.getElementById('boot').classList.add('done');
+    window.__xt16 = {
+      ready: ()=> true, blocks: blockCount, frames: frames,
+      frame: FRAME_MEASURED,
+      remeasure: ()=> measureSubject()
+    };
+    window.__XT_STATUS = {
+      stage:'ready', three:THREE.REVISION, blocks:blockCount,
+      terrainVerts: terrGeo.attributes.position.count,
+      buildMs: Math.round(performance.now()-T0),
+      H0: +H0.toFixed(2)
+    };
+  }
+}
+
+/* sound toggle (visual only — no audio asset shipped) */
+let soundOn=false;
+document.getElementById('sound').addEventListener('click', ()=>{
+  soundOn=!soundOn;
+  document.getElementById('soundlabel').textContent = 'Sound: ' + (soundOn?'On':'Off');
+  document.getElementById('sx1').style.display = soundOn?'none':'';
+  document.getElementById('sx2').style.display = soundOn?'none':'';
+});
+
+document.getElementById('bootpct').textContent = '99';
+tick();
+
+window.addEventListener('error', e=>{ window.__XT_ERR = String(e.message||e); });
+</script>
+</body>
+</html>

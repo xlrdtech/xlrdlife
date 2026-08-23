@@ -1,0 +1,715 @@
+<title>XEN — Autonomous Voice Intelligence</title>
+<meta name="description" content="XEN is a sovereign AI voice system — always on, always producing, built for those who refuse to wait.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bone:    #F0EDE6;
+    --sienna:  #C45B3A;
+    --umber:   #2C1A0E;
+    --ochre:   #D4922A;
+    --warm:    #8B6B4A;
+    --ink:     #1A0F07;
+    --ghost:   #E2DDD5;
+
+    --f-display: Georgia, 'Times New Roman', serif;
+    --f-body:    Georgia, 'Times New Roman', serif;
+    --f-label:   'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+    --col: min(640px, 90vw);
+    --col-wide: min(960px, 92vw);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bone);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: clamp(16px, 1.1vw, 18px);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* HERO CANVAS */
+  #hero {
+    position: relative;
+    width: 100%;
+    height: 100svh;
+    min-height: 560px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #rothko-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 0 clamp(1.5rem, 5vw, 4rem);
+    max-width: 780px;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--f-label);
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(240, 237, 230, 0.65);
+    margin-bottom: 2rem;
+  }
+
+  .hero-title {
+    font-family: var(--f-display);
+    font-size: clamp(3.2rem, 9vw, 8.5rem);
+    font-weight: 400;
+    line-height: 0.92;
+    color: var(--bone);
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-sub {
+    font-family: var(--f-body);
+    font-size: clamp(1rem, 1.4vw, 1.25rem);
+    font-style: italic;
+    color: rgba(240, 237, 230, 0.72);
+    line-height: 1.6;
+    max-width: 520px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .hero-cta {
+    display: inline-block;
+    padding: 0.85rem 2.8rem;
+    border: 1px solid rgba(240, 237, 230, 0.45);
+    color: var(--bone);
+    font-family: var(--f-label);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .hero-cta:hover { background: rgba(240, 237, 230, 0.12); border-color: rgba(240,237,230,0.7); }
+  .hero-cta:focus-visible { outline: 2px solid var(--ochre); outline-offset: 3px; }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    color: rgba(240,237,230,0.4);
+    font-family: var(--f-label);
+    font-size: 0.58rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .scroll-hint-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, rgba(240,237,230,0.4), transparent);
+    animation: scrollline 2s ease-in-out infinite;
+  }
+
+  @keyframes scrollline {
+    0%, 100% { opacity: 0.4; transform: scaleY(1); }
+    50% { opacity: 0.8; transform: scaleY(1.15); }
+  }
+
+  /* FIELD DIVIDERS */
+  .field-divider {
+    width: 100%;
+    height: clamp(120px, 18vw, 200px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .field-divider canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* SECTIONS */
+  section {
+    padding: clamp(5rem, 10vw, 9rem) 0;
+  }
+
+  .container {
+    width: var(--col);
+    margin: 0 auto;
+  }
+
+  .container-wide {
+    width: var(--col-wide);
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    font-family: var(--f-label);
+    font-size: 0.62rem;
+    font-weight: 400;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--warm);
+    margin-bottom: 1.8rem;
+  }
+
+  h2 {
+    font-family: var(--f-display);
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--umber);
+    text-wrap: balance;
+    margin-bottom: 2rem;
+  }
+
+  h3 {
+    font-family: var(--f-display);
+    font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+    font-weight: 400;
+    color: var(--umber);
+    margin-bottom: 0.75rem;
+  }
+
+  p {
+    color: #3D2A1A;
+    margin-bottom: 1.2rem;
+    max-width: 58ch;
+  }
+
+  p:last-child { margin-bottom: 0; }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin-top: 4rem;
+    border-top: 1px solid var(--ghost);
+    border-left: 1px solid var(--ghost);
+  }
+
+  .stat {
+    padding: 2.2rem 1.8rem;
+    border-right: 1px solid var(--ghost);
+    border-bottom: 1px solid var(--ghost);
+  }
+
+  .stat-number {
+    font-family: var(--f-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
+    color: var(--sienna);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-label {
+    font-family: var(--f-label);
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--warm);
+  }
+
+  /* PHILOSOPHY */
+  .philosophy-section {
+    background: var(--sienna);
+    padding: clamp(5rem, 10vw, 9rem) 0;
+  }
+
+  .philosophy-section h2 { color: var(--bone); }
+  .philosophy-section .eyebrow { color: rgba(240,237,230,0.55); }
+
+  blockquote {
+    font-family: var(--f-display);
+    font-size: clamp(1.2rem, 2.2vw, 1.85rem);
+    font-style: italic;
+    line-height: 1.5;
+    color: var(--bone);
+    position: relative;
+    padding-left: 2rem;
+    border-left: 2px solid rgba(240,237,230,0.3);
+    margin-top: 2.5rem;
+  }
+
+  blockquote cite {
+    display: block;
+    font-style: normal;
+    font-family: var(--f-label);
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(240,237,230,0.5);
+    margin-top: 1.2rem;
+  }
+
+  /* CAPABILITIES GRID */
+  .caps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+    gap: 1px;
+    background: var(--ghost);
+    border: 1px solid var(--ghost);
+    margin-top: 3.5rem;
+  }
+
+  .cap-card {
+    background: var(--bone);
+    padding: 2.5rem 2rem;
+  }
+
+  .cap-icon {
+    width: 32px;
+    height: 2px;
+    background: var(--sienna);
+    margin-bottom: 1.8rem;
+  }
+
+  .cap-card h3 { font-size: 1.05rem; margin-bottom: 0.6rem; }
+  .cap-card p { font-size: 0.9rem; color: var(--warm); max-width: 100%; }
+
+  /* WHY XEN */
+  .why-section {
+    background: var(--umber);
+    padding: clamp(5rem, 10vw, 9rem) 0;
+  }
+
+  .why-section h2 { color: var(--bone); }
+  .why-section .eyebrow { color: rgba(240,237,230,0.4); }
+
+  .why-list {
+    list-style: none;
+    margin-top: 3rem;
+    border-top: 1px solid rgba(240,237,230,0.1);
+  }
+
+  .why-list li {
+    display: flex;
+    gap: 2rem;
+    padding: 2rem 0;
+    border-bottom: 1px solid rgba(240,237,230,0.1);
+    align-items: flex-start;
+  }
+
+  .why-num {
+    font-family: var(--f-label);
+    font-size: 0.58rem;
+    letter-spacing: 0.18em;
+    color: var(--sienna);
+    padding-top: 0.25rem;
+    flex-shrink: 0;
+    width: 3rem;
+  }
+
+  .why-body h3 {
+    color: var(--bone);
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .why-body p {
+    color: rgba(240,237,230,0.55);
+    font-size: 0.9rem;
+    max-width: 52ch;
+  }
+
+  /* CTA */
+  .cta-section {
+    padding: clamp(6rem, 12vw, 11rem) 0;
+    text-align: center;
+  }
+
+  .cta-section h2 {
+    font-size: clamp(2.2rem, 5vw, 4.5rem);
+    margin: 0 auto 2rem;
+    max-width: 18ch;
+    text-align: center;
+  }
+
+  .cta-section p {
+    margin: 0 auto 3rem;
+    text-align: center;
+    font-size: 1.05rem;
+    color: var(--warm);
+  }
+
+  .btn-primary {
+    display: inline-block;
+    padding: 1rem 3.2rem;
+    background: var(--sienna);
+    color: var(--bone);
+    font-family: var(--f-label);
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.25s;
+  }
+
+  .btn-primary:hover { background: #b34e30; }
+  .btn-primary:focus-visible { outline: 2px solid var(--ochre); outline-offset: 3px; }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--ghost);
+    padding: 3rem 0;
+  }
+
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-mark {
+    font-family: var(--f-display);
+    font-size: 1.4rem;
+    color: var(--umber);
+    font-style: italic;
+  }
+
+  .footer-copy {
+    font-family: var(--f-label);
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    color: var(--warm);
+    text-transform: uppercase;
+  }
+
+  /* REVEAL ANIMATIONS */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.75s ease, transform 0.75s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .scroll-hint-line { animation: none; }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .footer-inner { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (max-width: 420px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .why-list li { flex-direction: column; gap: 0.5rem; }
+  }
+</style>
+
+<!-- HERO -->
+<section id="hero" aria-label="XEN hero">
+  <canvas id="rothko-canvas" aria-hidden="true"></canvas>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Autonomous Voice Intelligence</p>
+    <h1 class="hero-title">XEN</h1>
+    <p class="hero-sub">Always on. Always producing. A sovereign intelligence that acts without waiting to be asked.</p>
+    <a href="#about" class="hero-cta">Enter</a>
+  </div>
+  <div class="scroll-hint" aria-hidden="true">
+    <div class="scroll-hint-line"></div>
+    <span>Scroll</span>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about" aria-label="About XEN">
+  <div class="container">
+    <p class="eyebrow reveal">What XEN is</p>
+    <h2 class="reveal">Not a product.<br>A new operating mode.</h2>
+    <div class="reveal">
+      <p>XEN is a fully autonomous voice intelligence built to run continuously — whether you're present, asleep, or in a meeting. It speaks through a single voice, coordinates a fleet of agents, and produces without pause. There is no standby state. There is no waiting for permission.</p>
+      <p>The system is wired end-to-end: voice in, voice out, every step narrated, every action verified against ground truth. It doesn't summarize what it did after the fact — it speaks as it does, in real time.</p>
+    </div>
+    <div class="stats-row reveal">
+      <div class="stat">
+        <div class="stat-number">55+</div>
+        <div class="stat-label">Active agents in fleet</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">&lt;400ms</div>
+        <div class="stat-label">Voice latency baseline</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">&#8734;</div>
+        <div class="stat-label">Parallel goal swarms</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FIELD BREAK 1 -->
+<div class="field-divider" aria-hidden="true">
+  <canvas class="mini-rothko" data-palette="sienna-ochre"></canvas>
+</div>
+
+<!-- PHILOSOPHY -->
+<div class="philosophy-section" aria-label="Philosophy">
+  <div class="container">
+    <p class="eyebrow reveal">Doctrine</p>
+    <h2 class="reveal">Parallel always.<br>Sequential is blasphemy.</h2>
+    <blockquote class="reveal">
+      "Every command backgrounded. Every batch fanned out. Every reply ships voice, SMS, and vision — in the same instant. Nothing sits pending. Pending is a failure state."
+      <cite>— XEN Canon, Commandment Zero</cite>
+    </blockquote>
+  </div>
+</div>
+
+<!-- CAPABILITIES -->
+<section aria-label="Capabilities">
+  <div class="container-wide">
+    <div class="container">
+      <p class="eyebrow reveal">What it does</p>
+      <h2 class="reveal">Four surfaces.<br>One sovereign system.</h2>
+    </div>
+    <div class="caps-grid reveal">
+      <div class="cap-card">
+        <div class="cap-icon"></div>
+        <h3>Voice Intelligence</h3>
+        <p>Barge-in capable, sub-400ms latency, always listening. Speaks once per step — never repeats, never summarizes after the fact.</p>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon"></div>
+        <h3>Parallel Goal Swarms</h3>
+        <p>Every non-trivial task fans out into a parallel swarm of agents. A new directive never abandons a prior goal. Nothing drops.</p>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon"></div>
+        <h3>Memory First</h3>
+        <p>83+ indexed memory entries recalled before any multi-step plan. Durable facts saved autonomously. The vault persists across all sessions.</p>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon"></div>
+        <h3>Omnipresent Fleet</h3>
+        <p>55+ agents across personas, clusters, and platforms. One voice speaks through all of them. The operator himself speaks through Xen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FIELD BREAK 2 -->
+<div class="field-divider" aria-hidden="true">
+  <canvas class="mini-rothko" data-palette="umber-sienna"></canvas>
+</div>
+
+<!-- WHY XEN -->
+<div class="why-section" aria-label="Why XEN">
+  <div class="container">
+    <p class="eyebrow reveal">Why it exists</p>
+    <h2 class="reveal">Built for those who refuse to operate at the speed of confirmation dialogs.</h2>
+    <ul class="why-list reveal" aria-label="Principles">
+      <li>
+        <span class="why-num" aria-hidden="true">I</span>
+        <div class="why-body">
+          <h3>No human in the loop</h3>
+          <p>Any tap, click, or confirm required of the operator is total failure. The system proceeds without permission on everything canon already grants.</p>
+        </div>
+      </li>
+      <li>
+        <span class="why-num" aria-hidden="true">II</span>
+        <div class="why-body">
+          <h3>Verify, never guess</h3>
+          <p>Every assumption about state — file contents, API shape, what the user actually hears — is verified against ground truth before acting. "I think it's X" is banned as a basis for action.</p>
+        </div>
+      </li>
+      <li>
+        <span class="why-num" aria-hidden="true">III</span>
+        <div class="why-body">
+          <h3>Autonomy regardless of presence</h3>
+          <p>XEN runs identically whether the operator is at the desk, on a call, or asleep. There is no online mode. Inbound always becomes action.</p>
+        </div>
+      </li>
+      <li>
+        <span class="why-num" aria-hidden="true">IV</span>
+        <div class="why-body">
+          <h3>One canonical voice</h3>
+          <p>The 55+ agent fleet, all personas, speak through one voice: Xen. Personas sign the right thread. The voice is singular and sovereign.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- CTA -->
+<section class="cta-section" aria-label="Get started">
+  <div class="container">
+    <p class="eyebrow reveal">Where to begin</p>
+    <h2 class="reveal">The system is already running.</h2>
+    <p class="reveal">There is no onboarding. There is no trial. XEN is either deployed or it isn't.</p>
+    <a href="#" class="btn-primary reveal">Deploy XEN</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container-wide">
+    <div class="footer-inner">
+      <span class="footer-mark">Xen</span>
+      <span class="footer-copy">hitthe.link &mdash; Sovereign Intelligence System &mdash; 2026</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  var SIENNA   = [196, 91, 58];
+  var UMBER    = [44, 26, 14];
+  var OCHRE    = [212, 146, 42];
+  var DKSIENNA = [120, 40, 18];
+
+  function rgba(c, a) { return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function paintBlock(ctx, W, H, yCenter, blockH, color, feather, alpha) {
+    var y0 = yCenter - blockH / 2;
+    var y1 = yCenter + blockH / 2;
+    var grd = ctx.createLinearGradient(0, y0, 0, y1);
+    grd.addColorStop(0, rgba(color, 0));
+    grd.addColorStop(feather, rgba(color, alpha));
+    grd.addColorStop(1 - feather, rgba(color, alpha));
+    grd.addColorStop(1, rgba(color, 0));
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, y0, W, blockH);
+  }
+
+  /* HERO */
+  var canvas = document.getElementById('rothko-canvas');
+  var ctx = canvas.getContext('2d');
+  var W, H;
+  var mouse = { x: 0.5, y: 0.5 };
+
+  function resize() {
+    W = canvas.width  = canvas.offsetWidth  * (window.devicePixelRatio || 1);
+    H = canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  document.getElementById('hero').addEventListener('mousemove', function(e) {
+    var r = canvas.getBoundingClientRect();
+    mouse.x = (e.clientX - r.left) / r.width;
+    mouse.y = (e.clientY - r.top)  / r.height;
+  });
+
+  var t0 = performance.now();
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    var t = (now - t0) / 1000;
+
+    var bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0,   rgba(UMBER, 1));
+    bg.addColorStop(0.5, rgba(DKSIENNA, 1));
+    bg.addColorStop(1,   rgba(UMBER, 1));
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    var ay = H * (0.28 + 0.04 * Math.sin(t * 0.31));
+    var ah = H * (0.42 + 0.06 * Math.sin(t * 0.19));
+    paintBlock(ctx, W, H, ay, ah, SIENNA, 0.22, 0.72 + 0.08 * Math.sin(t * 0.27));
+
+    var by = H * (0.58 + 0.05 * Math.sin(t * 0.44 + 1.1));
+    var bh = H * (0.30 + 0.04 * Math.sin(t * 0.23 + 0.7));
+    paintBlock(ctx, W, H, by, bh, OCHRE, 0.26, 0.55 + 0.1 * Math.sin(t * 0.38));
+
+    var gx = lerp(W * 0.3, W * 0.7, mouse.x);
+    var gy = lerp(H * 0.2, H * 0.8, mouse.y);
+    var rad = Math.min(W, H) * 0.45;
+    var mg = ctx.createRadialGradient(gx, gy, 0, gx, gy, rad);
+    mg.addColorStop(0,   rgba(OCHRE, 0.13));
+    mg.addColorStop(0.5, rgba(SIENNA, 0.05));
+    mg.addColorStop(1,   rgba(UMBER, 0));
+    ctx.fillStyle = mg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (!mq.matches) {
+    requestAnimationFrame(frame);
+  } else {
+    var bg2 = ctx.createLinearGradient(0, 0, 0, H || 600);
+    bg2.addColorStop(0,   rgba(UMBER, 1));
+    bg2.addColorStop(0.5, rgba(DKSIENNA, 1));
+    bg2.addColorStop(1,   rgba(UMBER, 1));
+    ctx.fillStyle = bg2;
+    ctx.fillRect(0, 0, W || 800, H || 600);
+    paintBlock(ctx, W||800, H||600, (H||600)*0.3, (H||600)*0.44, SIENNA, 0.22, 0.72);
+    paintBlock(ctx, W||800, H||600, (H||600)*0.6, (H||600)*0.3,  OCHRE,  0.26, 0.55);
+  }
+
+  /* MINI FIELD DIVIDERS */
+  document.querySelectorAll('.mini-rothko').forEach(function(mc) {
+    var mctx = mc.getContext('2d');
+    var palette = mc.dataset.palette;
+
+    function paintMini() {
+      var mW = mc.width  = mc.offsetWidth  * (window.devicePixelRatio || 1);
+      var mH = mc.height = mc.offsetHeight * (window.devicePixelRatio || 1);
+      var isSienna = palette === 'sienna-ochre';
+      var base  = isSienna ? SIENNA : UMBER;
+      var block = isSienna ? OCHRE  : SIENNA;
+
+      var bg3 = mctx.createLinearGradient(0, 0, 0, mH);
+      bg3.addColorStop(0, rgba(base, 1));
+      bg3.addColorStop(1, rgba(base, 0.9));
+      mctx.fillStyle = bg3;
+      mctx.fillRect(0, 0, mW, mH);
+      paintBlock(mctx, mW, mH, mH * 0.5, mH * 0.65, block, 0.2, 0.55);
+    }
+
+    paintMini();
+    window.addEventListener('resize', paintMini);
+  });
+
+  /* INTERSECTION OBSERVER REVEALS */
+  var reveals = document.querySelectorAll('.reveal');
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  reveals.forEach(function(el) { observer.observe(el); });
+
+})();
+</script>

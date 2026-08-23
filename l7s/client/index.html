@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L7S Client Portal</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome (Replacing Lucide icons for inline compatibility) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body { font-family: 'Roboto', sans-serif; }
+        h1, h2, h3, h4, .brand-font { font-family: 'Montserrat', sans-serif; }
+        
+        /* Animation for the red ticker */
+        .animate-marquee { animation: marquee 25s linear infinite; }
+        @keyframes marquee { 
+            0% { transform: translateX(0); } 
+            100% { transform: translateX(-50%); } 
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // --- MOCK DATA ---
+        const MOCK_CLIENT = {
+            name: 'MatechPower UK',
+            rep: 'Authorized Signatory',
+            project: 'ERC-20 M1 Execution',
+            status: 'Action Required',
+            nextStep: 'Sign Master Agreement',
+            deadline: 'Jan 5, 2026'
+        };
+
+        const SERVICES = [
+            {
+                id: 'execution',
+                title: 'Execution & Infrastructure',
+                icon: 'fa-bolt',
+                desc: 'High-value asset transfer coordination, hosting, and API execution environments.'
+            },
+            {
+                id: 'hero-sos',
+                title: 'Hero SOS (Credit)',
+                icon: 'fa-shield-alt',
+                desc: 'Credit repair, compliance, and financial freedom factors. Powered by Credit Hero.'
+            },
+            {
+                id: 'consulting',
+                title: 'Strategic Consulting',
+                icon: 'fa-chart-line',
+                desc: 'Business development frameworks and strategic partnership structuring.'
+            }
+        ];
+
+        // --- COMPONENTS ---
+
+        const Header = ({ activeTab, setActiveTab, setLoginModalOpen }) => (
+            <header className="bg-black text-white sticky top-0 z-50 shadow-md">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-20">
+                        {/* Logo */}
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
+                            <div className="w-10 h-10 bg-red-600 rounded flex items-center justify-center font-black text-xl text-white">
+                                L7
+                            </div>
+                            <div>
+                                <h1 className="font-black text-xl tracking-tight leading-none brand-font">L7S INC.</h1>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Client Portal</p>
+                            </div>
+                        </div>
+
+                        {/* Desktop Nav */}
+                        <nav className="hidden md:flex items-center gap-8">
+                            <button 
+                                onClick={() => setActiveTab('home')} 
+                                className={`text-sm font-bold uppercase tracking-wider hover:text-red-500 transition-colors ${activeTab === 'home' ? 'text-red-500' : 'text-gray-300'}`}
+                            >
+                                Home
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('status')} 
+                                className={`text-sm font-bold uppercase tracking-wider hover:text-red-500 transition-colors ${activeTab === 'status' ? 'text-red-500' : 'text-gray-300'}`}
+                            >
+                                My Status
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('booking')} 
+                                className={`text-sm font-bold uppercase tracking-wider hover:text-red-500 transition-colors ${activeTab === 'booking' ? 'text-red-500' : 'text-gray-300'}`}
+                            >
+                                Book Appointment
+                            </button>
+                            <button 
+                                onClick={() => setLoginModalOpen(true)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded font-bold text-sm transition-all"
+                            >
+                                Client Login
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </header>
+        );
+
+        const HeroSection = ({ setActiveTab }) => (
+            <div className="relative bg-black overflow-hidden">
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-30"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent"></div>
+                
+                <div className="relative max-w-7xl mx-auto px-4 py-24 sm:px-6 lg:px-8 flex flex-col justify-center min-h-[600px]">
+                    <div className="max-w-3xl">
+                        <div className="inline-flex items-center gap-2 bg-red-600/20 border border-red-600/50 rounded-full px-4 py-1 mb-6 backdrop-blur-sm">
+                            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                            <span className="text-red-400 text-xs font-bold uppercase tracking-widest">Accepting New Clients for Q1 2026</span>
+                        </div>
+                        <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-tight brand-font">
+                            Take the <span className="text-red-600">Guesswork</span><br/>
+                            From Your <span className="text-white">Framework</span>.
+                        </h1>
+                        <p className="text-xl text-gray-400 mb-8 max-w-2xl leading-relaxed">
+                            L7S provides the execution infrastructure, strategic frameworks, and credit solutions you need to A.I.M. for the S.T.A.R.S.™
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <button 
+                                onClick={() => setActiveTab('booking')}
+                                className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-lg font-black uppercase tracking-wider text-sm flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-red-900/50"
+                            >
+                                <i className="fas fa-calendar-alt"></i> Schedule Consultation
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('status')}
+                                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-8 py-4 rounded-lg font-black uppercase tracking-wider text-sm flex items-center justify-center gap-2 transition-all backdrop-blur-sm"
+                            >
+                                <i className="fas fa-user"></i> Client Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Ticker */}
+                <div className="bg-red-600 py-3 overflow-hidden">
+                    <div className="flex gap-8 whitespace-nowrap animate-marquee text-white text-xs font-bold uppercase tracking-[0.2em]">
+                        <span>• A.B.C.S. Scheduling</span>
+                        <span>• Appointments</span>
+                        <span>• Bookings</span>
+                        <span>• Calendar</span>
+                        <span>• Schedule</span>
+                        <span>• Financial Freedom Factors</span>
+                        <span>• Hero SOS Solutions</span>
+                        <span>• L7S Inc.</span>
+                        <span>• A.B.C.S. Scheduling</span>
+                        <span>• Appointments</span>
+                        <span>• Bookings</span>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const ServicesSection = ({ setActiveTab }) => (
+            <div className="py-20 bg-gray-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl font-black text-black uppercase tracking-tight mb-4 brand-font">Our Solutions</h2>
+                        <div className="w-20 h-1 bg-red-600 mx-auto"></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {SERVICES.map((service) => (
+                            <div key={service.id} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-red-100 transition-all group">
+                                <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center text-white mb-6 group-hover:bg-red-600 transition-colors">
+                                    <i className={`fas ${service.icon} text-2xl`}></i>
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-3 brand-font">{service.title}</h3>
+                                <p className="text-gray-600 mb-6 leading-relaxed">{service.desc}</p>
+                                <button 
+                                    onClick={() => setActiveTab('booking')}
+                                    className="text-red-600 font-bold text-sm uppercase tracking-wider flex items-center gap-2 hover:gap-3 transition-all"
+                                >
+                                    Get Started <i className="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const StatusDashboard = ({ setActiveTab }) => (
+            <div className="min-h-screen bg-gray-50 py-12">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    
+                    {/* Welcome Banner */}
+                    <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200 mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                                <i className="fas fa-user text-3xl"></i>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Welcome Back</p>
+                                <h2 className="text-2xl font-black text-gray-900 brand-font">{MOCK_CLIENT.name}</h2>
+                                <p className="text-sm text-gray-500">{MOCK_CLIENT.rep}</p>
+                            </div>
+                        </div>
+                        <div className="bg-red-50 px-6 py-3 rounded-xl border border-red-100 text-center">
+                            <p className="text-xs font-bold text-red-600 uppercase mb-1">Current Status</p>
+                            <p className="text-lg font-black text-gray-900 flex items-center gap-2">
+                                <i className="fas fa-exclamation-circle text-red-600"></i>
+                                {MOCK_CLIENT.status}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Project Card */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="bg-black px-8 py-4 flex justify-between items-center">
+                            <h3 className="text-white font-bold text-lg brand-font">Active Project: {MOCK_CLIENT.project}</h3>
+                            <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">High Priority</span>
+                        </div>
+                        
+                        <div className="p-8">
+                            <div className="space-y-8">
+                                {/* Steps */}
+                                <div className="relative">
+                                    <div className="absolute left-4 top-0 h-full w-0.5 bg-gray-200"></div>
+                                    
+                                    <div className="relative pl-12 pb-8">
+                                        <div className="absolute left-0 top-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white border-4 border-white shadow-sm z-10">
+                                            <i className="fas fa-check text-xs"></i>
+                                        </div>
+                                        <h4 className="font-bold text-gray-900 brand-font">Initial Consultation</h4>
+                                        <p className="text-sm text-gray-500">Completed Dec 28, 2025</p>
+                                    </div>
+
+                                    <div className="relative pl-12 pb-8">
+                                        <div className="absolute left-0 top-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white border-4 border-white shadow-sm z-10">
+                                            <i className="fas fa-check text-xs"></i>
+                                        </div>
+                                        <h4 className="font-bold text-gray-900 brand-font">Infrastructure Setup</h4>
+                                        <p className="text-sm text-gray-500">Completed Jan 2, 2026</p>
+                                    </div>
+
+                                    <div className="relative pl-12">
+                                        <div className="absolute left-0 top-0 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white border-4 border-white shadow-sm z-10 animate-pulse">
+                                            <i className="fas fa-clock text-xs"></i>
+                                        </div>
+                                        <h4 className="font-bold text-gray-900 text-lg brand-font">Sign Master Agreement</h4>
+                                        <p className="text-red-600 font-bold text-sm mt-1">Deadline: {MOCK_CLIENT.deadline} - 5:00 PM EST</p>
+                                        <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-3 rounded border border-gray-100">
+                                            Action Required: Please review and sign the Master Execution Agreement sent via DocuSign to proceed with the asset release.
+                                        </p>
+                                        <div className="mt-4 flex gap-3">
+                                            <button className="bg-black text-white px-4 py-2 rounded font-bold text-sm hover:bg-gray-800">View Document</button>
+                                            <button onClick={() => setActiveTab('booking')} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded font-bold text-sm hover:bg-gray-50">Contact Support</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const BookingSection = () => (
+            <div className="min-h-screen bg-white">
+                {/* Header for Booking */}
+                <div className="bg-gray-50 py-12 text-center border-b border-gray-200">
+                    <h2 className="text-3xl font-black text-black uppercase mb-2 brand-font">A.B.C.S. Scheduling</h2>
+                    <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">Secure your time with Luckie Goggins</p>
+                </div>
+
+                <div className="max-w-6xl mx-auto px-4 py-12">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                        
+                        {/* Info Side */}
+                        <div className="lg:col-span-1 space-y-8">
+                            <div className="bg-black text-white p-8 rounded-2xl shadow-xl">
+                                <h3 className="text-2xl font-black mb-4 text-red-600 brand-font">Why Book?</h3>
+                                <ul className="space-y-4">
+                                    <li className="flex items-start gap-3">
+                                        <i className="fas fa-check-circle text-red-600 mt-1 shrink-0"></i>
+                                        <span className="text-sm font-medium">Discuss Strategic Execution Frameworks</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <i className="fas fa-check-circle text-red-600 mt-1 shrink-0"></i>
+                                        <span className="text-sm font-medium">Credit Repair & "Hero SOS" Solutions</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <i className="fas fa-check-circle text-red-600 mt-1 shrink-0"></i>
+                                        <span className="text-sm font-medium">Business Development Partnerships</span>
+                                    </li>
+                                </ul>
+                                
+                                <div className="mt-8 pt-8 border-t border-gray-800">
+                                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Direct Contact</p>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <i className="fas fa-envelope text-red-600"></i>
+                                        <span className="text-sm">hello@l7sinc.com</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <i className="fas fa-phone text-red-600"></i>
+                                        <span className="text-sm">+1 (555) 123-4567</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
+                                <h4 className="font-bold text-red-800 mb-2 flex items-center gap-2">
+                                    <i className="fas fa-exclamation-circle"></i> Urgent Inquiries?
+                                </h4>
+                                <p className="text-sm text-red-700 leading-relaxed">
+                                    For existing clients with critical deadlines (like Jan 5th), please use the priority support channel in the "My Status" tab or text the emergency line provided in your agreement.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Calendly Embed Side */}
+                        <div className="lg:col-span-2 h-[800px] bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden relative">
+                            <div className="absolute top-0 left-0 w-full h-12 bg-gray-100 flex items-center px-4 gap-2 border-b border-gray-200">
+                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <div className="ml-4 bg-white px-3 py-1 rounded text-xs text-gray-500 flex-1 text-center font-mono">
+                                    calendly.com/l7sinc
+                                </div>
+                            </div>
+                            {/* The Actual Iframe */}
+                            <iframe 
+                                src="https://calendly.com/l7sinc" 
+                                width="100%" 
+                                height="100%" 
+                                frameBorder="0" 
+                                title="L7S Scheduling"
+                                className="pt-12"
+                            ></iframe>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('home');
+            const [loginModalOpen, setLoginModalOpen] = useState(false);
+
+            return (
+                <div className="min-h-screen font-sans text-slate-800">
+                    <Header activeTab={activeTab} setActiveTab={setActiveTab} setLoginModalOpen={setLoginModalOpen} />
+                    
+                    {activeTab === 'home' && (
+                        <React.Fragment>
+                            <HeroSection setActiveTab={setActiveTab} />
+                            <ServicesSection setActiveTab={setActiveTab} />
+                        </React.Fragment>
+                    )}
+
+                    {activeTab === 'status' && <StatusDashboard setActiveTab={setActiveTab} />}
+                    
+                    {activeTab === 'booking' && <BookingSection />}
+
+                    {/* Footer */}
+                    <footer className="bg-black text-white py-12 border-t border-gray-900">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                            <div className="w-12 h-12 bg-red-600 rounded flex items-center justify-center font-black text-xl text-white mx-auto mb-6">
+                                L7
+                            </div>
+                            <p className="font-black text-2xl tracking-tighter mb-2 brand-font">L7S INC.</p>
+                            <p className="text-gray-500 uppercase tracking-widest text-xs mb-8">"Guesswork from your Framework"</p>
+                            <div className="flex justify-center gap-6 text-sm text-gray-400 mb-8">
+                                <button onClick={() => setActiveTab('home')} className="hover:text-white">Home</button>
+                                <button onClick={() => setActiveTab('booking')} className="hover:text-white">A.B.C.S. Booking</button>
+                            </div>
+                            <p className="text-gray-600 text-xs">© 2026 L7S, Inc. All Rights Reserved.</p>
+                        </div>
+                    </footer>
+
+                    {/* Login Modal */}
+                    {loginModalOpen && (
+                        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl w-full max-w-md p-8 relative">
+                                <button 
+                                    onClick={() => setLoginModalOpen(false)}
+                                    className="absolute top-4 right-4 text-gray-400 hover:text-black"
+                                >
+                                    <i className="fas fa-times text-xl"></i>
+                                </button>
+                                
+                                <div className="text-center mb-8">
+                                    <div className="w-12 h-12 bg-black rounded flex items-center justify-center font-black text-xl text-white mx-auto mb-4">L7</div>
+                                    <h3 className="text-2xl font-black text-gray-900 brand-font">Client Portal Access</h3>
+                                    <p className="text-gray-500 text-sm mt-2">Enter your credentials to view project status.</p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-gray-700 mb-1">Email Address</label>
+                                        <input type="email" placeholder="client@company.com" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-red-600 transition-colors" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-gray-700 mb-1">Access Code</label>
+                                        <input type="password" placeholder="••••••••" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-red-600 transition-colors" />
+                                    </div>
+                                    <button 
+                                        onClick={() => { setLoginModalOpen(false); setActiveTab('status'); }}
+                                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg uppercase tracking-wider transition-colors shadow-lg shadow-red-600/20"
+                                    >
+                                        Secure Login
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

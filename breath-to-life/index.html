@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breath to Life</title>
+<style>
+  :root{
+    --bg:#050608; --panel:rgba(14,18,26,.72); --line:rgba(255,255,255,.09);
+    --ink:#f2f4f8; --dim:#8b93a3; --live:#38e08a; --warm:#f0c4ad; --hot:#ff6b5a;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  body{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    padding:clamp(20px,5vw,54px) clamp(14px,4vw,28px) 64px;overflow-x:hidden}
+  /* ambient wash — motion where it fits, never distracting */
+  .orb{position:fixed;border-radius:50%;filter:blur(70px);opacity:.5;pointer-events:none;z-index:0;
+    animation:drift 26s ease-in-out infinite alternate}
+  .orb.a{top:-14%;left:-10%;width:52vw;height:52vw;
+    background:radial-gradient(circle,rgba(56,224,138,.16),transparent 68%)}
+  .orb.b{bottom:-18%;right:-12%;width:48vw;height:48vw;animation-delay:-13s;
+    background:radial-gradient(circle,rgba(240,196,173,.13),transparent 68%)}
+  @keyframes drift{to{transform:translate3d(3%,-4%,0) scale(1.09)}}
+  main{position:relative;z-index:1;width:100%;max-width:920px;
+    display:flex;flex-direction:column;align-items:center;text-align:center}
+
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--dim);display:flex;align-items:center;gap:10px;justify-content:center}
+  .dot{width:8px;height:8px;border-radius:50%;background:#3a4150;transition:background .3s,box-shadow .3s}
+  .dot.on{background:var(--live);box-shadow:0 0 12px rgba(56,224,138,.85)}
+  h1{margin:.5em 0 .1em;font-size:clamp(30px,7vw,52px);letter-spacing:-.03em;font-weight:800;line-height:1.04}
+  .def{max-width:44ch;color:var(--dim);font-size:clamp(13px,2.4vw,15px);line-height:1.6;margin:0 auto}
+
+  .hero{margin:clamp(30px,6vw,52px) 0 8px}
+  .hero .n{font-family:var(--mono);font-weight:800;letter-spacing:-.05em;line-height:.9;
+    font-size:clamp(60px,20vw,148px);
+    background:linear-gradient(180deg,#fff,rgba(255,255,255,.5));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);margin-top:12px}
+  .hero .ask{margin-top:14px;color:var(--warm);font-size:clamp(13px,2.6vw,16px);max-width:36ch;margin-inline:auto}
+
+  .stats{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;width:100%;margin:26px 0 8px}
+  .stat{flex:1 1 130px;min-width:120px;max-width:200px;padding:16px 12px;border:1px solid var(--line);
+    border-radius:14px;background:var(--panel);backdrop-filter:blur(8px)}
+  .stat b{display:block;font-family:var(--mono);font-size:clamp(19px,4.4vw,25px);letter-spacing:-.02em}
+  .stat span{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--dim);margin-top:7px}
+
+  .note{margin:20px auto 0;max-width:52ch;font-size:12.5px;line-height:1.65;color:var(--dim);
+    border-left:2px solid rgba(240,196,173,.4);padding-left:14px;text-align:left}
+  .note b{color:var(--warm);font-weight:600}
+
+  h2{margin:clamp(36px,7vw,56px) 0 16px;font-family:var(--mono);font-size:11px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--dim);font-weight:500}
+  ul{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:9px}
+  li{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);
+    border-radius:13px;background:var(--panel);text-align:left;
+    animation:rise .5s cubic-bezier(.16,1,.3,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}}
+  li .d{font-family:var(--mono);font-weight:700;font-size:15px;min-width:66px;text-align:right;flex:none}
+  li .body{flex:1;min-width:0}
+  /* both are <span>; without display:block they run together on one line */
+  li .who{display:block;font-size:12.5px;font-weight:600}
+  li .who i{font-style:normal;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim);margin-left:8px}
+  li .txt{display:block;font-size:12.5px;color:var(--dim);margin-top:3px;overflow-wrap:anywhere}
+  .fast{color:var(--live)} .mid{color:var(--warm)} .slow{color:var(--hot)}
+  .empty{color:var(--dim);font-size:13px;padding:26px}
+  @media (max-width:520px){
+    li{flex-direction:column;align-items:flex-start;gap:6px}
+    li .d{text-align:left;min-width:0}
+    .note{text-align:center;border-left:0;border-top:2px solid rgba(240,196,173,.4);padding:14px 0 0}
+  }
+</style>
+</head>
+<body>
+<div class="orb a"></div><div class="orb b"></div>
+<main>
+  <div class="eyebrow"><span class="dot" id="dot"></span><span id="conn">connecting</span></div>
+  <h1>Breath to Life</h1>
+  <p class="def">How long it takes to auto-manifest &mdash; from when it&rsquo;s spoken to when it&rsquo;s public and live.</p>
+
+  <div class="hero">
+    <div class="n" id="latest">&mdash;</div>
+    <div class="lbl">most recent</div>
+    <div class="ask" id="latestAsk"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="fastest">&mdash;</b><span>fastest</span></div>
+    <div class="stat"><b id="median">&mdash;</b><span>median</span></div>
+    <div class="stat"><b id="slowest">&mdash;</b><span>slowest</span></div>
+    <div class="stat"><b id="count">0</b><span>tracked</span></div>
+  </div>
+
+  <p class="note">Floor is the deploy, not the work. Edit&ndash;to&ndash;push runs about <b>40s</b>, but a
+  GitHub&nbsp;Pages build takes <b>60&ndash;180s</b> &mdash; so roughly <b>90s</b> is the hard floor here.
+  Getting under it needs a live&ndash;write surface, not a faster operator.</p>
+
+  <h2>Ledger</h2>
+  <ul id="rows"><li class="empty">no entries yet</li></ul>
+</main>
+<script>
+(function(){
+  var fmt = function(s){
+    if (s == null || !isFinite(s)) return '—';
+    if (s < 60) return s + 's';
+    var m = Math.floor(s/60), r = s%60;
+    if (m < 60) return r ? m+'m '+r+'s' : m+'m';
+    var h = Math.floor(m/60); return h+'h '+(m%60)+'m';
+  };
+  var cls = function(s){ return s <= 300 ? 'fast' : (s <= 1800 ? 'mid' : 'slow'); };
+  var esc = function(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); };
+
+  function paint(d){
+    var st = d.stats || {}, rows = d.rows || [];
+    var L = document.getElementById('latest');
+    L.textContent = fmt(st.latest);
+    L.className = 'n';
+    document.getElementById('latestAsk').textContent =
+      rows.length ? (rows[0].who || '') + ' — ' + (rows[0].ask || '') : '';
+    document.getElementById('fastest').textContent = fmt(st.fastest);
+    document.getElementById('median').textContent  = fmt(st.median);
+    document.getElementById('slowest').textContent = fmt(st.slowest);
+    document.getElementById('count').textContent   = st.count || 0;
+
+    var ul = document.getElementById('rows');
+    if (!rows.length){ ul.innerHTML = '<li class="empty">no entries yet</li>'; return; }
+    ul.innerHTML = rows.map(function(r,i){
+      var when = r.t1 ? new Date(r.t1*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+      return '<li style="animation-delay:' + (i*0.045) + 's">'
+        + '<span class="d ' + cls(r.delta) + '">' + fmt(r.delta) + '</span>'
+        + '<span class="body"><span class="who">' + esc(r.who)
+        + '<i>' + esc(r.scope || '') + (when ? ' · live ' + when : '') + '</i></span>'
+        + '<span class="txt">' + esc(r.ask) + '</span></span></li>';
+    }).join('');
+  }
+
+  function setConn(on, label){
+    document.getElementById('dot').className = 'dot' + (on ? ' on' : '');
+    document.getElementById('conn').textContent = label;
+  }
+
+  var es, retry = 0;
+  function connect(){
+    var LIVE = window.BTL_LIVE || null;
+    if (!LIVE) { setConn(false, 'snapshot'); return; }
+    try { es = new EventSource(LIVE + '/events'); } catch(e){ return setTimeout(connect, 2000); }
+    es.onopen = function(){ retry = 0; setConn(true, 'live'); };
+    es.onmessage = function(e){
+      try { paint(JSON.parse(e.data)); setConn(true, 'live'); } catch(_){}
+    };
+    es.onerror = function(){
+      setConn(false, 'reconnecting');
+      try { es.close(); } catch(_){}
+      retry = Math.min(retry + 1, 6);
+      setTimeout(connect, 600 * retry);   // backoff, but always comes back
+    };
+  }
+  // paint once immediately so the view is never blank while SSE opens
+  fetch('ledger.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(paint).catch(function(){});
+  connect();
+})();
+</script>
+</body>
+</html>

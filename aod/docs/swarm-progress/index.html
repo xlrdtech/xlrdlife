@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xen Swarm Progress — Live</title>
+<style>
+:root{--bg:#06100A;--ink:#d4f5e0;--gold:#d4af37;--accent:#00ff88;--mute:#4a7a5c;--card:#0a1f12;--line:rgba(0,255,136,.15);--red:#ff4d6d}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+body{display:grid;grid-template-rows:auto 1fr;max-width:1100px;margin:0 auto;padding:16px;gap:16px}
+header{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.pip{width:10px;height:10px;border-radius:50%;background:var(--mute);flex-shrink:0;transition:background .3s,box-shadow .3s}
+.pip.live{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+h1{font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.ts{margin-left:auto;font-family:ui-monospace,monospace;font-size:11px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.panel-head{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.panel-head .badge{margin-left:auto;background:rgba(0,255,136,.12);color:var(--accent);border:1px solid var(--line);border-radius:99px;padding:2px 8px;font-size:10px}
+#log{height:65vh;overflow-y:auto;display:flex;flex-direction:column;gap:0}
+.entry{padding:8px 14px;border-bottom:1px solid rgba(0,255,136,.06);display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:baseline;font-size:12px}
+.entry:last-child{border-bottom:none}
+.entry .ts2{font-family:ui-monospace,monospace;font-size:10px;color:var(--mute);flex-shrink:0}
+.entry .src{font-family:ui-monospace,monospace;font-size:10px;padding:1px 6px;border-radius:4px;flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry .txt{word-break:break-word;line-height:1.4}
+.src.tool{background:rgba(212,175,55,.12);color:var(--gold)}
+.src.reply{background:rgba(0,255,136,.12);color:var(--accent)}
+.src.qi{background:rgba(255,255,255,.08);color:#ddd}
+.src.sys{background:rgba(255,77,109,.1);color:var(--red)}
+.goals{padding:12px}
+.cluster{margin-bottom:10px}
+.cluster-name{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
+.cluster-bar{height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-bottom:2px}
+.cluster-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:99px;transition:width .4s}
+.cluster-count{font-size:10px;color:var(--mute)}
+.status-row{display:flex;gap:8px;flex-wrap:wrap;padding:12px;border-top:1px solid var(--line)}
+.chip{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(0,255,136,.08);border:1px solid var(--line);color:var(--accent)}
+.chip.red{background:rgba(255,77,109,.1);border-color:rgba(255,77,109,.3);color:var(--red)}
+</style>
+</head>
+<body>
+<header>
+  <div class="pip" id="pip"></div>
+  <h1>Xen · Swarm Progress</h1>
+  <span class="ts" id="ts">connecting…</span>
+</header>
+<div class="grid">
+  <div class="panel">
+    <div class="panel-head">Live Action Log <span class="badge" id="cnt">0</span></div>
+    <div id="log"></div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-head">Goal Registry</div>
+      <div class="goals" id="goals">loading…</div>
+      <div class="status-row" id="daemons"></div>
+    </div>
+  </div>
+</div>
+<script>
+const MAX=300;
+let count=0;
+const log=document.getElementById('log');
+const pip=document.getElementById('pip');
+const tsEl=document.getElementById('ts');
+const cntEl=document.getElementById('cnt');
+
+function fmt(d){const t=new Date(d);const h=t.getHours()%12||12;const m=String(t.getMinutes()).padStart(2,'0');const s=String(t.getSeconds()).padStart(2,'0');return h+':'+m+':'+s+(t.getHours()>=12?' PM':' AM');}
+
+function addEntry(ts,src,txt,cls){
+  if(!txt||!txt.trim())return;
+  const e=document.createElement('div');e.className='entry';
+  const t=document.createElement('span');t.className='ts2';t.textContent=fmt(ts);
+  const s=document.createElement('span');s.className='src '+cls;s.textContent=src.slice(0,12);
+  const b=document.createElement('span');b.className='txt';b.textContent=txt.slice(0,300);
+  e.appendChild(t);e.appendChild(b);e.appendChild(s);
+  log.appendChild(e);count++;cntEl.textContent=count;
+  if(log.children.length>MAX)log.removeChild(log.firstChild);
+  log.scrollTop=log.scrollHeight;
+}
+
+const es=new EventSource('https://xen.xlrd.org/events');
+es.onopen=()=>{pip.classList.add('live');tsEl.textContent='live · '+fmt(Date.now());};
+es.onerror=()=>{pip.classList.remove('live');tsEl.textContent='reconnecting…';};
+es.onmessage=ev=>{
+  tsEl.textContent=fmt(Date.now());
+  try{
+    let d=JSON.parse(ev.data);
+    if(d&&d.data&&typeof d.data==='object'&&(d.data.text||d.data.event))d=d.data;
+    const ev2=String(d.event||d.kind||'').toLowerCase();
+    const src=String(d.source||d.sender||'').toLowerCase();
+    const txt=String(d.text||d.body||d.message||d.tool_name||'').trim();
+    if(ev2==='xen-tool'||src.includes('xen-terminal')){
+      addEntry(d.ts||Date.now(),src||'tool',txt,'tool');
+    } else if(ev2==='xen-out'||src.includes('xen-primary')){
+      addEntry(d.ts||Date.now(),'xen',txt,'reply');
+    } else if(ev2.includes('dictate')||src.includes('vei')||src.includes('stt')||src.includes('apple')){
+      addEntry(d.ts||Date.now(),'qi',txt,'qi');
+    } else if(ev2&&txt){
+      addEntry(d.ts||Date.now(),ev2||src||'sys',txt,'sys');
+    }
+  }catch(_){}
+};
+
+// goal registry
+async function loadGoals(){
+  try{
+    const r=await fetch('https://xen.xlrd.org/api/health');
+    const h=await r.json();
+    const ds=document.getElementById('daemons');
+    const checks=h.checks||{};
+    ds.innerHTML='';
+    ['xen_say_worker','apple_stt','beside_inbox_poller','omnimind_core','beeper_android_bridge'].forEach(k=>{
+      const v=checks[k];if(v===undefined)return;
+      const c=document.createElement('span');c.className='chip'+(v?'':' red');c.textContent=k.replace(/_/g,' ');ds.appendChild(c);
+    });
+  }catch(_){}
+  // goal counts from static snapshot updated every 30s via fetch of a known endpoint
+  const clusters=[
+    {n:'voice-audio',c:31},{n:'omnimind-core',c:18},{n:'governance-canon',c:18},
+    {n:'tooling-xen-bin',c:11},{n:'comms-sms-beeper',c:11},{n:'infra',c:10},
+    {n:'l7s-business',c:8},{n:'browser-xb',c:8},{n:'personas',c:7},
+    {n:'pane-tmux',c:6},{n:'calculators',c:6},{n:'eli-anthony',c:5},
+    {n:'commandments',c:5},{n:'spark-email',c:4},{n:'life-ops',c:3}
+  ];
+  const max=31;
+  const g=document.getElementById('goals');
+  g.innerHTML=clusters.map(cl=>`
+    <div class="cluster">
+      <div class="cluster-name">${cl.n}</div>
+      <div class="cluster-bar"><div class="cluster-fill" style="width:${Math.round(cl.c/max*100)}%"></div></div>
+      <div class="cluster-count">${cl.c} open</div>
+    </div>`).join('');
+}
+loadGoals();
+setInterval(loadGoals,30000);
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

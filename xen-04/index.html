@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — One Voice. All Systems.</title>
+<meta name="description" content="XEN is the autonomous AI intelligence layer that unifies every system, voice, and signal into one coherent operating mind.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --abyss:      #030810;
+    --void:       #061828;
+    --deep:       #0a2a40;
+    --cyan:       #00d4ff;
+    --phosphor:   #00ff9d;
+    --glow:       #7ff0e8;
+    --text:       #c8eaf0;
+    --text-dim:   #5a8fa0;
+    --text-faint: #2a5060;
+    --font-display: "Cormorant Garamond", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-body:    "DM Sans", "Inter", system-ui, -apple-system, sans-serif;
+    --font-mono:    "JetBrains Mono", "Fira Code", "Courier New", monospace;
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--abyss);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: rgba(0,212,255,0.25); color: #fff; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--abyss); }
+  ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 2px; }
+
+  #hero {
+    position: relative; width: 100%; height: 100dvh; min-height: 600px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  #hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .hero-fog {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 110%, rgba(0,30,50,0.9) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0,10,20,0.8) 0%, transparent 60%);
+  }
+  .hero-content {
+    position: relative; z-index: 10; text-align: center;
+    padding: 0 clamp(1.5rem, 5vw, 4rem); max-width: 960px;
+  }
+  .hero-eyebrow {
+    display: inline-block; font-family: var(--font-mono);
+    font-size: clamp(0.65rem, 1.2vw, 0.8rem); letter-spacing: 0.35em;
+    text-transform: uppercase; color: var(--cyan); opacity: 0.7; margin-bottom: 1.5rem;
+    animation: fadeInDown 1.2s var(--ease-out-quart) 0.3s both;
+  }
+  .hero-wordmark {
+    font-family: var(--font-display); font-size: clamp(5rem, 18vw, 16rem);
+    font-weight: 300; letter-spacing: 0.22em; line-height: 0.85;
+    color: transparent; -webkit-text-stroke: 1px rgba(0,212,255,0.6);
+    background: linear-gradient(180deg, rgba(127,240,232,0.9) 0%, rgba(0,212,255,0.7) 40%, rgba(0,150,200,0.4) 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 40px rgba(0,212,255,0.25)) drop-shadow(0 0 80px rgba(0,212,255,0.1));
+    animation: fadeInGlow 2s var(--ease-out-quart) 0.5s both; user-select: none;
+  }
+  .hero-tagline {
+    font-family: var(--font-display); font-size: clamp(0.9rem, 2.5vw, 1.35rem);
+    font-weight: 300; letter-spacing: 0.5em; text-transform: uppercase;
+    color: var(--text-dim); margin-top: 1.5rem;
+    animation: fadeInUp 1.4s var(--ease-out-quart) 1s both;
+  }
+  .hero-cta-row {
+    display: flex; gap: 1rem; justify-content: center; margin-top: 3rem; flex-wrap: wrap;
+    animation: fadeInUp 1.4s var(--ease-out-quart) 1.4s both;
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 2rem; background: transparent;
+    border: 1px solid rgba(0,212,255,0.5); color: var(--cyan);
+    font-family: var(--font-body); font-size: 0.8rem; letter-spacing: 0.2em;
+    text-transform: uppercase; text-decoration: none; cursor: pointer;
+    position: relative; overflow: hidden; transition: color 0.3s, border-color 0.3s;
+  }
+  .btn-primary::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,255,157,0.08));
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .btn-primary:hover { border-color: var(--cyan); color: #fff; }
+  .btn-primary:hover::before { opacity: 1; }
+  .btn-ghost {
+    display: inline-flex; align-items: center; padding: 0.75rem 2rem;
+    background: transparent; border: 1px solid rgba(90,143,160,0.3);
+    color: var(--text-dim); font-family: var(--font-body); font-size: 0.8rem;
+    letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none;
+    cursor: pointer; transition: border-color 0.3s, color 0.3s;
+  }
+  .btn-ghost:hover { border-color: rgba(0,212,255,0.3); color: var(--text); }
+  .hero-scroll-hint {
+    position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    z-index: 10; display: flex; flex-direction: column; align-items: center;
+    gap: 0.5rem; opacity: 0.4; animation: fadeInUp 1s var(--ease-out-quart) 2s both;
+  }
+  .hero-scroll-hint span {
+    font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.3em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .scroll-line {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, var(--cyan), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+
+  section { position: relative; }
+  .section-inner { max-width: 1100px; margin: 0 auto; padding: 0 clamp(1.5rem, 5vw, 4rem); }
+  .depth-line {
+    width: 100%; height: 1px;
+    background: linear-gradient(to right, transparent, rgba(0,212,255,0.2), transparent);
+  }
+
+  #about {
+    padding: clamp(5rem, 12vh, 9rem) 0;
+    background: linear-gradient(180deg, var(--abyss) 0%, var(--void) 100%);
+  }
+  .about-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 6vw, 6rem); align-items: start;
+  }
+  @media (max-width: 720px) { .about-grid { grid-template-columns: 1fr; } .about-vis { display: none; } }
+
+  .section-label {
+    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.4em;
+    text-transform: uppercase; color: var(--cyan); opacity: 0.6; margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .section-label::before {
+    content: ''; display: block; width: 24px; height: 1px;
+    background: var(--cyan); opacity: 0.5;
+  }
+  .about-heading {
+    font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 300; line-height: 1.15; color: var(--glow);
+    text-wrap: balance; margin-bottom: 1.5rem;
+  }
+  .about-heading em { font-style: italic; color: var(--cyan); }
+  .about-body { color: var(--text-dim); font-size: clamp(0.9rem, 1.5vw, 1.05rem); line-height: 1.75; max-width: 52ch; }
+  .about-body p + p { margin-top: 1rem; }
+  .about-stat-row { display: flex; gap: 2.5rem; margin-top: 2.5rem; flex-wrap: wrap; }
+  .stat-item { display: flex; flex-direction: column; gap: 0.25rem; }
+  .stat-number {
+    font-family: var(--font-display); font-size: 2.5rem; font-weight: 300;
+    color: var(--cyan); line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.3em;
+    text-transform: uppercase; color: var(--text-faint);
+  }
+  .about-vis { display: flex; align-items: center; justify-content: center; padding-top: 1rem; }
+  .about-vis svg { width: clamp(200px, 28vw, 340px); height: clamp(200px, 28vw, 340px); overflow: visible; }
+
+  #capabilities { padding: clamp(5rem, 12vh, 9rem) 0; background: var(--void); }
+  .cap-header { margin-bottom: clamp(2.5rem, 6vh, 4rem); display: flex; flex-direction: column; gap: 1rem; }
+  .cap-heading {
+    font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 300; color: var(--glow); text-wrap: balance; max-width: 700px;
+  }
+  .cap-sub { color: var(--text-dim); font-size: clamp(0.85rem, 1.4vw, 1rem); max-width: 55ch; line-height: 1.7; }
+  .cap-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px; border: 1px solid rgba(0,212,255,0.08); background: rgba(0,212,255,0.08);
+  }
+  .cap-card {
+    background: var(--void); padding: clamp(1.75rem, 3vw, 2.5rem);
+    position: relative; overflow: hidden; transition: background 0.4s; cursor: default;
+  }
+  .cap-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .cap-card:hover { background: rgba(10,40,60,0.9); }
+  .cap-card:hover::before { opacity: 1; }
+  .cap-card-glyph { width: 40px; height: 40px; margin-bottom: 1.5rem; opacity: 0.7; transition: opacity 0.3s; }
+  .cap-card:hover .cap-card-glyph { opacity: 1; }
+  .cap-card-title {
+    font-family: var(--font-display); font-size: 1.4rem; font-weight: 400;
+    color: var(--glow); margin-bottom: 0.75rem; letter-spacing: 0.02em;
+  }
+  .cap-card-body { color: var(--text-dim); font-size: 0.88rem; line-height: 1.7; }
+  .cap-card-tag {
+    display: inline-block; margin-top: 1.25rem; font-family: var(--font-mono);
+    font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--cyan); opacity: 0.5;
+  }
+
+  #architecture {
+    padding: clamp(4rem, 10vh, 7rem) 0;
+    background: linear-gradient(180deg, var(--void) 0%, #040f1a 100%); overflow: hidden;
+  }
+  .arch-inner {
+    display: grid; grid-template-columns: 1fr 1.6fr;
+    gap: clamp(2rem, 6vw, 5rem); align-items: center;
+  }
+  @media (max-width: 800px) {
+    .arch-inner { grid-template-columns: 1fr; }
+    .arch-canvas-wrap { aspect-ratio: 1; max-width: 340px; margin: 0 auto; }
+  }
+  .arch-text { max-width: 480px; }
+  .arch-heading {
+    font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 300; color: var(--glow); margin-bottom: 1rem;
+    text-wrap: balance; line-height: 1.2;
+  }
+  .arch-body { color: var(--text-dim); font-size: clamp(0.85rem, 1.4vw, 1rem); line-height: 1.75; margin-bottom: 1.5rem; }
+  .arch-list { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+  .arch-list li { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; color: var(--text-dim); }
+  .arch-list li::before {
+    content: ''; display: block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 8px var(--cyan); flex-shrink: 0;
+  }
+  .arch-canvas-wrap { position: relative; width: 100%; aspect-ratio: 1.2; min-height: 280px; }
+  #arch-canvas { width: 100%; height: 100%; display: block; }
+
+  #contact {
+    padding: clamp(5rem, 14vh, 10rem) 0;
+    background: linear-gradient(180deg, #040f1a 0%, var(--abyss) 100%);
+    position: relative; overflow: hidden;
+  }
+  .contact-glow {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: min(600px, 90vw); height: min(600px, 90vw);
+    background: radial-gradient(ellipse at center, rgba(0,212,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .contact-inner { position: relative; z-index: 2; text-align: center; max-width: 700px; margin: 0 auto; }
+  .contact-heading {
+    font-family: var(--font-display); font-size: clamp(2.2rem, 6vw, 4.5rem);
+    font-weight: 300; line-height: 1.1; color: var(--glow);
+    text-wrap: balance; margin-bottom: 1.25rem;
+  }
+  .contact-heading span { color: transparent; -webkit-text-stroke: 1px rgba(0,212,255,0.5); }
+  .contact-sub {
+    color: var(--text-dim); font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+    line-height: 1.7; max-width: 50ch; margin: 0 auto 2.5rem;
+  }
+  .contact-form {
+    display: flex; max-width: 480px; margin: 0 auto 1.5rem;
+    border: 1px solid rgba(0,212,255,0.2); position: relative; overflow: hidden;
+  }
+  .contact-form::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.5), transparent);
+  }
+  .contact-form input {
+    flex: 1; padding: 0.85rem 1.25rem; background: rgba(6,24,40,0.8);
+    border: none; outline: none; color: var(--text);
+    font-family: var(--font-body); font-size: 0.9rem; caret-color: var(--cyan);
+  }
+  .contact-form input::placeholder { color: var(--text-faint); }
+  .contact-form button {
+    padding: 0.85rem 1.5rem; background: rgba(0,212,255,0.12);
+    border: none; border-left: 1px solid rgba(0,212,255,0.2);
+    color: var(--cyan); font-family: var(--font-mono); font-size: 0.7rem;
+    letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer;
+    transition: background 0.3s; white-space: nowrap;
+  }
+  .contact-form button:hover { background: rgba(0,212,255,0.22); }
+  .contact-note {
+    font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.2em;
+    color: var(--text-faint); text-transform: uppercase;
+  }
+
+  footer {
+    padding: 2rem clamp(1.5rem, 5vw, 4rem);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+    border-top: 1px solid rgba(0,212,255,0.06); background: var(--abyss);
+  }
+  .footer-logo {
+    font-family: var(--font-display); font-size: 1.1rem; font-weight: 300;
+    letter-spacing: 0.3em; color: var(--text-faint); user-select: none;
+  }
+  .footer-copy {
+    font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--text-faint); opacity: 0.5;
+  }
+  .footer-nav { display: flex; gap: 1.5rem; list-style: none; flex-wrap: wrap; }
+  .footer-nav a {
+    font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--text-faint); text-decoration: none;
+    opacity: 0.6; transition: opacity 0.2s, color 0.2s;
+  }
+  .footer-nav a:hover { opacity: 1; color: var(--cyan); }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 1.25rem clamp(1.5rem, 5vw, 4rem);
+    display: flex; align-items: center; justify-content: space-between;
+    transition: background 0.4s, backdrop-filter 0.4s;
+  }
+  nav.scrolled {
+    background: rgba(3,8,16,0.85); backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(0,212,255,0.07);
+  }
+  .nav-logo {
+    font-family: var(--font-display); font-size: 1.3rem; font-weight: 300;
+    letter-spacing: 0.4em; color: var(--glow); text-decoration: none; user-select: none;
+  }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  @media (max-width: 600px) { .nav-links { display: none; } }
+  .nav-links a {
+    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.25em;
+    text-transform: uppercase; color: var(--text-dim); text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--cyan); }
+
+  .reveal {
+    opacity: 0; transform: translateY(28px);
+    transition: opacity 0.8s var(--ease-out-quart), transform 0.8s var(--ease-out-quart);
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.45s; }
+
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInGlow {
+    from { opacity: 0; filter: drop-shadow(0 0 0px transparent); }
+    to   { opacity: 1; filter: drop-shadow(0 0 40px rgba(0,212,255,0.25)) drop-shadow(0 0 80px rgba(0,212,255,0.1)); }
+  }
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; transform: scaleY(1); transform-origin: top; }
+    50%       { opacity: 1; transform: scaleY(1.15); }
+  }
+  @keyframes ringRotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  @keyframes ringRotateRev {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(-360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="main-nav" role="navigation" aria-label="Main navigation">
+  <a href="#hero" class="nav-logo" aria-label="XEN home">XEN</a>
+  <ul class="nav-links">
+    <li><a href="#about">Mission</a></li>
+    <li><a href="#capabilities">Capabilities</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<section id="hero" aria-label="Hero">
+  <canvas id="hero-canvas" aria-hidden="true"></canvas>
+  <div class="hero-fog" aria-hidden="true"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Autonomous Intelligence Layer</div>
+    <h1 class="hero-wordmark" aria-label="XEN">XEN</h1>
+    <p class="hero-tagline">One Voice &nbsp;&#183;&nbsp; All Systems</p>
+    <div class="hero-cta-row">
+      <a href="#capabilities" class="btn-primary">Explore Capabilities</a>
+      <a href="#contact" class="btn-ghost">Request Access</a>
+    </div>
+  </div>
+  <div class="hero-scroll-hint" aria-hidden="true">
+    <div class="scroll-line"></div>
+    <span>Descend</span>
+  </div>
+</section>
+
+<div class="depth-line"></div>
+
+<section id="about" aria-label="Mission">
+  <div class="section-inner">
+    <div class="about-grid">
+      <div class="about-left">
+        <div class="section-label reveal">Mission</div>
+        <h2 class="about-heading reveal reveal-delay-1">
+          Intelligence that <em>moves</em><br>before you ask
+        </h2>
+        <div class="about-body reveal reveal-delay-2">
+          <p>XEN is not an assistant. It is the cognitive layer that lives beneath every system you operate &#8212; listening, correlating, and acting with the full weight of context no single tool can hold.</p>
+          <p>Where other AI layers react, XEN anticipates. It unifies fragmented signals across voice, data, and infrastructure into a single coherent operating mind &#8212; one voice speaking for all of them.</p>
+          <p>Built for the operators who cannot afford a gap between thought and execution.</p>
+        </div>
+        <div class="about-stat-row reveal reveal-delay-3">
+          <div class="stat-item">
+            <span class="stat-number">55+</span>
+            <span class="stat-label">Agent Fleet</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">&#8734;</span>
+            <span class="stat-label">Uptime Target</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">&lt;400ms</span>
+            <span class="stat-label">Voice Latency</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-vis reveal reveal-delay-2" aria-hidden="true">
+        <svg viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="coreGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="glow-filter" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <g style="transform-origin:150px 150px; animation: ringRotate 30s linear infinite">
+            <circle cx="150" cy="150" r="130" stroke="rgba(0,212,255,0.08)" stroke-width="1"/>
+            <circle cx="150" cy="20" r="3" fill="rgba(0,212,255,0.4)" filter="url(#glow-filter)">
+              <animate attributeName="opacity" values="0.4;1;0.4" dur="3s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="280" cy="150" r="2" fill="rgba(127,240,232,0.5)"/>
+            <circle cx="40" cy="190" r="2" fill="rgba(0,255,157,0.4)"/>
+          </g>
+          <g style="transform-origin:150px 150px; animation: ringRotateRev 20s linear infinite">
+            <circle cx="150" cy="150" r="100" stroke="rgba(0,212,255,0.12)" stroke-width="1" stroke-dasharray="6 18"/>
+            <circle cx="150" cy="50" r="4" fill="rgba(0,212,255,0.6)" filter="url(#glow-filter)">
+              <animate attributeName="r" values="3;5;3" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="245" cy="180" r="3" fill="rgba(127,240,232,0.5)"/>
+            <circle cx="60" cy="120" r="2.5" fill="rgba(0,212,255,0.4)"/>
+          </g>
+          <g style="transform-origin:150px 150px; animation: ringRotate 14s linear infinite">
+            <circle cx="150" cy="150" r="70" stroke="rgba(0,212,255,0.18)" stroke-width="1" stroke-dasharray="3 8"/>
+            <circle cx="150" cy="80" r="3.5" fill="rgba(0,255,157,0.7)" filter="url(#glow-filter)"/>
+            <circle cx="215" cy="185" r="2.5" fill="rgba(0,212,255,0.5)"/>
+          </g>
+          <circle cx="150" cy="150" r="42" stroke="rgba(0,212,255,0.25)" stroke-width="1"/>
+          <circle cx="150" cy="150" r="42" fill="url(#coreGrad)"/>
+          <circle cx="150" cy="150" r="6" fill="rgba(127,240,232,0.9)" filter="url(#glow-filter)">
+            <animate attributeName="r" values="5;8;5" dur="4s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.8;1;0.8" dur="4s" repeatCount="indefinite"/>
+          </circle>
+          <text x="150" y="168" text-anchor="middle" fill="rgba(0,212,255,0.4)"
+                font-family="'JetBrains Mono','Courier New',monospace" font-size="7"
+                letter-spacing="3">XEN CORE</text>
+          <line x1="150" y1="108" x2="150" y2="144" stroke="rgba(0,212,255,0.15)" stroke-width="1"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="depth-line"></div>
+
+<section id="capabilities" aria-label="Capabilities">
+  <div class="section-inner">
+    <div class="cap-header">
+      <div class="section-label reveal">Capabilities</div>
+      <h2 class="cap-heading reveal reveal-delay-1">What it means to have<br>one mind over everything</h2>
+      <p class="cap-sub reveal reveal-delay-2">Four domains. One coherent intelligence. XEN doesn't integrate &#8212; it becomes the intelligence layer your systems were always missing.</p>
+    </div>
+    <div class="cap-grid">
+      <div class="cap-card reveal">
+        <svg class="cap-card-glyph" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="20" cy="20" r="12" stroke="rgba(0,212,255,0.6)" stroke-width="1"/>
+          <circle cx="20" cy="20" r="5" fill="rgba(0,212,255,0.3)" stroke="rgba(0,212,255,0.8)" stroke-width="1"/>
+          <line x1="20" y1="8" x2="20" y2="4" stroke="rgba(0,212,255,0.5)" stroke-width="1"/>
+          <line x1="32" y1="20" x2="36" y2="20" stroke="rgba(0,212,255,0.5)" stroke-width="1"/>
+          <line x1="20" y1="32" x2="20" y2="36" stroke="rgba(0,212,255,0.5)" stroke-width="1"/>
+          <line x1="8" y1="20" x2="4" y2="20" stroke="rgba(0,212,255,0.5)" stroke-width="1"/>
+        </svg>
+        <h3 class="cap-card-title">Omniscient Context</h3>
+        <p class="cap-card-body">XEN holds the full memory of every system, conversation, and event &#8212; not as logs, but as live, queryable intelligence. Nothing is forgotten. Nothing is siloed. Every action is informed by the whole.</p>
+        <span class="cap-card-tag">Memory &#183; Recall &#183; Index</span>
+      </div>
+      <div class="cap-card reveal reveal-delay-1">
+        <svg class="cap-card-glyph" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M8 20 L16 12 L24 20 L32 12" stroke="rgba(0,255,157,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 28 L16 20 L24 28 L32 20" stroke="rgba(0,212,255,0.5)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="8" cy="20" r="2.5" fill="rgba(0,255,157,0.6)"/>
+          <circle cx="32" cy="12" r="2.5" fill="rgba(0,212,255,0.6)"/>
+        </svg>
+        <h3 class="cap-card-title">Autonomous Execution</h3>
+        <p class="cap-card-body">A 55-agent fleet that acts in parallel, without confirmation loops, without bottlenecks. Goals fan out the moment they form. XEN doesn't queue work &#8212; it runs it, simultaneously, across every open front.</p>
+        <span class="cap-card-tag">Agents &#183; Parallel &#183; Swarms</span>
+      </div>
+      <div class="cap-card reveal reveal-delay-2">
+        <svg class="cap-card-glyph" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M20 6 C13 6, 8 11, 8 18 C8 23, 11 27, 16 29 L16 34 L24 34 L24 29 C29 27, 32 23, 32 18 C32 11, 27 6, 20 6Z" stroke="rgba(127,240,232,0.6)" stroke-width="1" fill="rgba(127,240,232,0.05)"/>
+          <line x1="20" y1="14" x2="20" y2="22" stroke="rgba(0,212,255,0.7)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="20" y1="22" x2="24" y2="18" stroke="rgba(0,212,255,0.7)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <h3 class="cap-card-title">Voice-First Interface</h3>
+        <p class="cap-card-body">Every reply arrives as voice, SMS, and visual &#8212; simultaneously. XEN speaks with one voice across all personas, all channels, all systems. Under 400ms from thought to sound. Barge-in mandatory.</p>
+        <span class="cap-card-tag">VVS &#183; Voice &#183; Real-Time</span>
+      </div>
+      <div class="cap-card reveal reveal-delay-3">
+        <svg class="cap-card-glyph" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="6" y="10" width="28" height="20" rx="2" stroke="rgba(0,212,255,0.5)" stroke-width="1"/>
+          <line x1="6" y1="16" x2="34" y2="16" stroke="rgba(0,212,255,0.2)" stroke-width="1"/>
+          <circle cx="13" cy="13" r="1.5" fill="rgba(0,212,255,0.5)"/>
+          <circle cx="18" cy="13" r="1.5" fill="rgba(0,255,157,0.4)"/>
+          <path d="M10 22 L16 22 L18 26 L20 20 L22 25 L24 22 L30 22" stroke="rgba(0,212,255,0.6)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h3 class="cap-card-title">Live Infrastructure</h3>
+        <p class="cap-card-body">SSE-driven real-time views, self-healing daemons, autonomous watchdogs. XEN monitors everything it controls and repairs itself without human intervention. The system doesn't go down &#8212; it recovers before you notice.</p>
+        <span class="cap-card-tag">Watchdog &#183; SSE &#183; Self-Heal</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="depth-line"></div>
+
+<section id="architecture" aria-label="Architecture">
+  <div class="section-inner">
+    <div class="arch-inner">
+      <div class="arch-text">
+        <div class="section-label reveal">Architecture</div>
+        <h2 class="arch-heading reveal reveal-delay-1">One canon.<br>No fallbacks.</h2>
+        <p class="arch-body reveal reveal-delay-2">XEN runs from a single authoritative source. Every agent, every daemon, every voice reply traces back to one canon. There is no drift because there is no ambiguity. The system knows what it is.</p>
+        <ul class="arch-list reveal reveal-delay-3">
+          <li>Canonical tree enforced at boot &#8212; no mirrors, no dead paths</li>
+          <li>Parallel goal swarms fan out on every non-trivial task</li>
+          <li>Memory-first: recall before any multi-step plan</li>
+          <li>Audio fault auto-recovery in under 2 seconds</li>
+          <li>Pane drift detection with instant hard-override</li>
+          <li>Zero human confirmation loops on canon-granted operations</li>
+        </ul>
+      </div>
+      <div class="arch-canvas-wrap reveal reveal-delay-2">
+        <canvas id="arch-canvas" aria-hidden="true"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="depth-line"></div>
+
+<section id="contact" aria-label="Contact">
+  <div class="contact-glow" aria-hidden="true"></div>
+  <div class="section-inner">
+    <div class="contact-inner">
+      <div class="section-label reveal" style="justify-content:center">Request Access</div>
+      <h2 class="contact-heading reveal reveal-delay-1">
+        Ready to operate<br>at <span>depth</span>?
+      </h2>
+      <p class="contact-sub reveal reveal-delay-2">
+        XEN is not a product you install. It's an intelligence layer you inhabit. Access is limited and onboarding is deliberate. Leave your signal below.
+      </p>
+      <form class="contact-form reveal reveal-delay-3" onsubmit="handleContact(event)" novalidate>
+        <input type="email" placeholder="operator@domain.com" aria-label="Email address" required autocomplete="email">
+        <button type="submit" aria-label="Request access">Descend</button>
+      </form>
+      <p class="contact-note reveal reveal-delay-4" id="contact-status">No noise. One signal when a slot opens.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">XEN</div>
+  <nav aria-label="Footer navigation">
+    <ul class="footer-nav">
+      <li><a href="#about">Mission</a></li>
+      <li><a href="#capabilities">Capabilities</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+  <div class="footer-copy">&#169; 2026 XEN Intelligence</div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  const nav = document.getElementById('main-nav');
+  window.addEventListener('scroll', () => { nav.classList.toggle('scrolled', window.scrollY > 60); }, { passive: true });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // HERO CANVAS
+  const heroCanvas = document.getElementById('hero-canvas');
+  const hCtx = heroCanvas.getContext('2d');
+  function resizeHero() { heroCanvas.width = heroCanvas.offsetWidth; heroCanvas.height = heroCanvas.offsetHeight; }
+  window.addEventListener('resize', resizeHero, { passive: true });
+  resizeHero();
+
+  let mouseX = 0, mouseY = 0, mouseActive = false;
+  heroCanvas.addEventListener('mousemove', e => {
+    const r = heroCanvas.getBoundingClientRect(); mouseX = e.clientX - r.left; mouseY = e.clientY - r.top; mouseActive = true;
+  }, { passive: true });
+  heroCanvas.addEventListener('mouseleave', () => { mouseActive = false; }, { passive: true });
+
+  class Jellyfish {
+    constructor(canvas) { this.canvas = canvas; this.reset(true); }
+    reset(initial) {
+      const c = this.canvas;
+      this.x = Math.random() * c.width;
+      this.y = initial ? Math.random() * c.height : c.height + 60;
+      this.baseRadius = 4 + Math.random() * 14;
+      this.tentacleCount = 4 + Math.floor(Math.random() * 5);
+      this.tentacleLen = this.baseRadius * (2.5 + Math.random() * 2);
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = -(0.15 + Math.random() * 0.45);
+      this.phase = Math.random() * Math.PI * 2;
+      this.pulseSpeed = 0.018 + Math.random() * 0.025;
+      this.driftAmp = 0.6 + Math.random() * 1.2;
+      this.driftFreq = 0.008 + Math.random() * 0.015;
+      this.depth = 0.15 + Math.random() * 0.85;
+      this.hue = 170 + Math.random() * 50;
+      this.sat = 60 + this.depth * 40;
+      this.lum = 40 + this.depth * 30;
+      this.alpha = 0.08 + this.depth * 0.35;
+    }
+    update(t, mx, my, ma) {
+      this.phase += this.pulseSpeed;
+      this.vx += Math.sin(t * this.driftFreq + this.phase) * 0.012; this.vx *= 0.98;
+      this.x += this.vx + Math.sin(t * this.driftFreq * 0.7) * this.driftAmp * 0.02;
+      this.y += this.vy;
+      if (ma) {
+        const dx = this.x - mx, dy = this.y - my, dist = Math.sqrt(dx*dx + dy*dy);
+        const reach = 100 + this.baseRadius * 3;
+        if (dist < reach && dist > 0) { const f = (1 - dist/reach) * 0.6; this.vx += dx/dist*f*0.3; this.vy += dy/dist*f*0.2; }
+      }
+      if (this.x < -60) this.x = this.canvas.width + 60;
+      if (this.x > this.canvas.width + 60) this.x = -60;
+      if (this.y < -this.tentacleLen - 60) this.reset(false);
+    }
+    draw(ctx) {
+      const pulse = Math.sin(this.phase) * 0.5 + 0.5;
+      const r = this.baseRadius * (0.85 + pulse * 0.3);
+      const ga = this.alpha * (0.5 + pulse * 0.5);
+      const color = `hsl(${this.hue},${this.sat}%,${this.lum}%)`;
+      ctx.save();
+      ctx.globalAlpha = ga;
+      const gg = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r*2.5);
+      gg.addColorStop(0, `hsla(${this.hue},${this.sat}%,${this.lum}%,0.3)`);
+      gg.addColorStop(1, `hsla(${this.hue},${this.sat}%,${this.lum}%,0)`);
+      ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(this.x, this.y, r*2.5, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = ga * 1.4;
+      const bg2 = ctx.createRadialGradient(this.x, this.y - r*0.3, 0, this.x, this.y, r);
+      bg2.addColorStop(0, `hsla(${this.hue},${this.sat}%,${this.lum+20}%,0.7)`);
+      bg2.addColorStop(0.6, `hsla(${this.hue},${this.sat}%,${this.lum}%,0.25)`);
+      bg2.addColorStop(1, `hsla(${this.hue},${this.sat}%,${this.lum}%,0)`);
+      ctx.fillStyle = bg2;
+      ctx.beginPath(); ctx.ellipse(this.x, this.y, r, r*(0.55+pulse*0.15), 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = ga * 0.9;
+      ctx.strokeStyle = color; ctx.lineWidth = 0.5 + this.depth*0.5;
+      ctx.shadowBlur = 8 + pulse*10; ctx.shadowColor = color;
+      ctx.beginPath(); ctx.ellipse(this.x, this.y, r, r*(0.55+pulse*0.15), 0, Math.PI, 0); ctx.closePath(); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = ga * 0.5;
+      ctx.strokeStyle = `hsla(${this.hue},${this.sat}%,${this.lum+10}%,0.7)`;
+      ctx.lineWidth = 0.5 + this.depth*0.3;
+      for (let i = 0; i < this.tentacleCount; i++) {
+        const ang = (i / this.tentacleCount) * Math.PI;
+        const bx = this.x + Math.cos(Math.PI + ang) * r * 0.8, by = this.y;
+        const wave = Math.sin(this.phase*1.3 + i*1.1) * (r*0.5);
+        ctx.beginPath(); ctx.moveTo(bx, by);
+        ctx.bezierCurveTo(bx+wave, by+this.tentacleLen*0.4, bx-wave*0.5, by+this.tentacleLen*0.75, bx+wave*0.3, by+this.tentacleLen);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1; ctx.restore();
+    }
+  }
+
+  class FogParticle {
+    constructor(canvas) { this.canvas = canvas; this.reset(true); }
+    reset(initial) {
+      this.x = Math.random() * this.canvas.width;
+      this.y = initial ? Math.random() * this.canvas.height : this.canvas.height + 20;
+      this.r = 1 + Math.random() * 2; this.vy = -(0.1 + Math.random() * 0.2);
+      this.vx = (Math.random() - 0.5) * 0.1; this.alpha = 0.03 + Math.random() * 0.12;
+      this.twinkleSpeed = 0.02 + Math.random() * 0.04; this.phase = Math.random() * Math.PI * 2;
+    }
+    update() {
+      this.phase += this.twinkleSpeed; this.x += this.vx; this.y += this.vy;
+      if (this.y < -10) this.reset(false);
+      if (this.x < 0) this.x = this.canvas.width;
+      if (this.x > this.canvas.width) this.x = 0;
+    }
+    draw(ctx) {
+      const a = this.alpha * (0.5 + Math.sin(this.phase) * 0.5);
+      ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#7ff0e8';
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    }
+  }
+
+  const jellies = [], fogPts = [];
+  function initParticles() {
+    jellies.length = 0; fogPts.length = 0;
+    for (let i = 0; i < 28; i++) jellies.push(new Jellyfish(heroCanvas));
+    for (let i = 0; i < 120; i++) fogPts.push(new FogParticle(heroCanvas));
+  }
+  initParticles();
+  window.addEventListener('resize', () => { resizeHero(); initParticles(); }, { passive: true });
+
+  let heroT = 0;
+  function drawHero() {
+    const W = heroCanvas.width, H = heroCanvas.height; heroT++;
+    hCtx.clearRect(0, 0, W, H);
+    const bg = hCtx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#010610'); bg.addColorStop(0.4,'#030c1a'); bg.addColorStop(1,'#010610');
+    hCtx.fillStyle = bg; hCtx.fillRect(0,0,W,H);
+    const dg = hCtx.createRadialGradient(W*.5,H*.55,0,W*.5,H*.55,W*.6);
+    dg.addColorStop(0,'rgba(0,40,70,0.18)'); dg.addColorStop(1,'rgba(0,0,0,0)');
+    hCtx.fillStyle = dg; hCtx.fillRect(0,0,W,H);
+    const col = hCtx.createLinearGradient(W*.5-80,0,W*.5+80,0);
+    col.addColorStop(0,'rgba(0,212,255,0)');
+    col.addColorStop(0.5,`rgba(0,212,255,${0.012+Math.sin(heroT*.008)*.005})`);
+    col.addColorStop(1,'rgba(0,212,255,0)');
+    hCtx.fillStyle = col; hCtx.fillRect(0,0,W,H);
+    fogPts.forEach(fp => { fp.update(); fp.draw(hCtx); });
+    jellies.sort((a,b) => a.depth - b.depth);
+    jellies.forEach(j => { j.update(heroT, mouseX, mouseY, mouseActive); j.draw(hCtx); });
+    requestAnimationFrame(drawHero);
+  }
+  drawHero();
+
+  // ARCH CANVAS
+  const archCanvas = document.getElementById('arch-canvas');
+  const aCtx = archCanvas.getContext('2d');
+  function resizeArch() { archCanvas.width = archCanvas.offsetWidth; archCanvas.height = archCanvas.offsetHeight; }
+  window.addEventListener('resize', resizeArch, { passive: true });
+  setTimeout(resizeArch, 100);
+
+  class NetNode {
+    constructor(w, h) {
+      this.x = Math.random()*w; this.y = Math.random()*h;
+      this.vx = (Math.random()-.5)*.4; this.vy = (Math.random()-.5)*.4;
+      this.r = 1.5 + Math.random()*2.5; this.phase = Math.random()*Math.PI*2;
+      this.pulseSpeed = 0.03 + Math.random()*.04; this.isCore = false;
+    }
+    update(w,h) {
+      this.phase += this.pulseSpeed; this.x += this.vx; this.y += this.vy;
+      if (this.x < 0 || this.x > w) this.vx *= -1;
+      if (this.y < 0 || this.y > h) this.vy *= -1;
+    }
+  }
+
+  const archNodes = []; let archInited = false;
+  function initArch() {
+    const W = archCanvas.width||400, H = archCanvas.height||320; archNodes.length = 0;
+    for (let i = 0; i < 42; i++) {
+      const n = new NetNode(W,H);
+      if (i===0) { n.x=W*.5; n.y=H*.5; n.r=5; n.isCore=true; n.vx=0; n.vy=0; }
+      archNodes.push(n);
+    }
+    archInited = true;
+  }
+
+  let archT = 0;
+  function drawArch() {
+    const W = archCanvas.width, H = archCanvas.height;
+    if (!W||!H) { requestAnimationFrame(drawArch); return; }
+    if (!archInited||archNodes.length===0) initArch();
+    archT++;
+    aCtx.clearRect(0,0,W,H); aCtx.fillStyle='rgba(4,15,26,0.95)'; aCtx.fillRect(0,0,W,H);
+    archNodes.forEach(n => n.update(W,H));
+    const MD = Math.min(W,H)*.38;
+    for (let i=0; i<archNodes.length; i++) {
+      for (let j=i+1; j<archNodes.length; j++) {
+        const a=archNodes[i], b=archNodes[j];
+        const dx=a.x-b.x, dy=a.y-b.y, dist=Math.sqrt(dx*dx+dy*dy);
+        if (dist<MD) {
+          const al=(1-dist/MD)*.18, isCE=a.isCore||b.isCore;
+          aCtx.save(); aCtx.globalAlpha=isCE?al*2.5:al; aCtx.strokeStyle='#00d4ff';
+          aCtx.lineWidth=isCE?0.8:0.3; aCtx.beginPath(); aCtx.moveTo(a.x,a.y); aCtx.lineTo(b.x,b.y); aCtx.stroke(); aCtx.restore();
+        }
+      }
+    }
+    archNodes.forEach((n,i) => {
+      const pulse=Math.sin(n.phase)*.5+.5;
+      if (n.isCore) {
+        aCtx.save(); aCtx.globalAlpha=0.12+pulse*.08; aCtx.strokeStyle='#00d4ff'; aCtx.lineWidth=1;
+        const rR=18+Math.sin(archT*.03)*4;
+        aCtx.beginPath(); aCtx.arc(n.x,n.y,rR,0,Math.PI*2); aCtx.stroke();
+        aCtx.globalAlpha=0.06+pulse*.04; aCtx.beginPath(); aCtx.arc(n.x,n.y,rR*1.7,0,Math.PI*2); aCtx.stroke(); aCtx.restore();
+        aCtx.save(); aCtx.shadowBlur=20+pulse*15; aCtx.shadowColor='#00d4ff'; aCtx.fillStyle='#7ff0e8'; aCtx.globalAlpha=0.9;
+        aCtx.beginPath(); aCtx.arc(n.x,n.y,n.r*(0.9+pulse*.3),0,Math.PI*2); aCtx.fill(); aCtx.restore();
+      } else {
+        const hue=170+(i%50);
+        aCtx.save(); aCtx.shadowBlur=4+pulse*6; aCtx.shadowColor=`hsl(${hue},80%,60%)`;
+        aCtx.fillStyle=`hsl(${hue},70%,55%)`; aCtx.globalAlpha=0.3+pulse*.35;
+        aCtx.beginPath(); aCtx.arc(n.x,n.y,n.r*(0.8+pulse*.25),0,Math.PI*2); aCtx.fill(); aCtx.restore();
+      }
+    });
+    const sx=W*.5+Math.cos(archT*.012)*W*.45;
+    const sg=aCtx.createLinearGradient(sx-30,0,sx+30,0);
+    sg.addColorStop(0,'rgba(0,212,255,0)'); sg.addColorStop(0.5,'rgba(0,212,255,0.04)'); sg.addColorStop(1,'rgba(0,212,255,0)');
+    aCtx.fillStyle=sg; aCtx.fillRect(0,0,W,H);
+    requestAnimationFrame(drawArch);
+  }
+  drawArch();
+
+  window.handleContact = function(e) {
+    e.preventDefault();
+    const input = e.target.querySelector('input'), status = document.getElementById('contact-status');
+    const email = input.value.trim();
+    if (!email || !email.includes('@')) {
+      status.textContent = 'Signal unclear. Provide a valid address.'; status.style.color = 'rgba(255,100,80,0.7)'; return;
+    }
+    status.textContent = "Signal received. You're in the queue."; status.style.color = 'rgba(0,255,157,0.7)'; input.value = '';
+    setTimeout(() => { status.textContent = 'No noise. One signal when a slot opens.'; status.style.color = ''; }, 4000);
+  };
+
+})();
+</script>
+
+</body>
+</html>

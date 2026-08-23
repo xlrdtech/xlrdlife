@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOP Contract Generator</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        /* Document Preview Styling (Strict Arial for Docusign) */
+        .document-preview {
+            font-family: Arial, Helvetica, sans-serif !important;
+            color: #000;
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Print Styling - Hides the App, Shows the Doc */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .document-preview, .document-preview * {
+                visibility: visible;
+            }
+            .document-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 15mm;
+                box-shadow: none;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            /* Ensure backgrounds print */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icons Component Wrapper ---
+        const Icon = ({ name, size = 18, className = "" }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} width={size} height={size} className={className}></i>;
+        };
+
+        // --- Input Components ---
+        const InputGroup = ({ label, value, onChange, placeholder }) => (
+            <div className="mb-3">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{label}</label>
+                <input 
+                    type="text" 
+                    value={value} 
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full p-2 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+            </div>
+        );
+
+        const TextAreaGroup = ({ label, value, onChange, rows = 3 }) => (
+            <div className="mb-3">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{label}</label>
+                <textarea 
+                    value={value} 
+                    onChange={(e) => onChange(e.target.value)}
+                    rows={rows}
+                    className="w-full p-2 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none transition font-sans"
+                />
+            </div>
+        );
+
+        // --- Main App ---
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('config');
+
+            const [data, setData] = useState({
+                companyName: "L7 Solutions LLC",
+                companyShort: "L7S",
+                framework: "HERO™",
+                clientName: "Client",
+                clientContact: "",
+                effectiveDate: "",
+                pricing: [
+                    { code: "M1", name: "Momentum", focus: "Discovery & Advisory", desc: "Covers strategic consultations, needs assessments, and clarity sessions." },
+                    { code: "M2", name: "Insight", focus: "Blueprint Development", desc: "Includes detailed frameworks, architecture maps, and customized action roadmaps." },
+                    { code: "M3", name: "Action", focus: "Implementation", desc: "Applies to system setup, workflow integrations, and pilot execution." },
+                    { code: "M4", name: "Mastery", focus: "Automation", desc: "Focuses on continuous improvement, automation, and advanced performance tuning." },
+                    { code: "M5", name: "Infinity", focus: "Transformation", desc: "Reserved for full-scale optimization and partnership programs." }
+                ]
+            });
+
+            const handlePrint = () => window.print();
+
+            const updatePricing = (idx, field, val) => {
+                const newPricing = [...data.pricing];
+                newPricing[idx][field] = val;
+                setData({...data, pricing: newPricing});
+            };
+
+            useEffect(() => {
+                lucide.createIcons();
+            }, []);
+
+            return (
+                <div className="flex h-screen overflow-hidden">
+                    
+                    {/* SIDEBAR CONTROLS */}
+                    <div className="w-96 bg-white border-r border-slate-200 flex flex-col h-full z-20 shadow-xl no-print">
+                        <div className="p-5 bg-slate-900 text-white">
+                            <h1 className="font-bold text-xl flex items-center gap-2">
+                                <Icon name="file-text" className="text-blue-400" /> 
+                                SOP Generator
+                            </h1>
+                            <p className="text-slate-400 text-xs mt-1">White-Label Agreement Tool</p>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                            
+                            {/* Section 1: Identity */}
+                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2"><Icon name="settings" size={16}/> Company Identity</h3>
+                                <InputGroup label="Company Name" value={data.companyName} onChange={(v) => setData({...data, companyName: v})} />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <InputGroup label="Abbreviation" value={data.companyShort} onChange={(v) => setData({...data, companyShort: v})} />
+                                    <InputGroup label="Framework" value={data.framework} onChange={(v) => setData({...data, framework: v})} />
+                                </div>
+                            </div>
+
+                            {/* Section 2: Client */}
+                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2"><Icon name="user" size={16}/> Client Details</h3>
+                                <InputGroup label="Client Name" value={data.clientName} onChange={(v) => setData({...data, clientName: v})} />
+                                <InputGroup label="Contact Person" value={data.clientContact} onChange={(v) => setData({...data, clientContact: v})} />
+                                <InputGroup label="Effective Date" placeholder="Leave blank for Docusign" value={data.effectiveDate} onChange={(v) => setData({...data, effectiveDate: v})} />
+                            </div>
+
+                            {/* Section 3: Pricing */}
+                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2"><Icon name="dollar-sign" size={16}/> Service Tiers</h3>
+                                {data.pricing.map((tier, idx) => (
+                                    <div key={idx} className="mb-4 last:mb-0 border-l-2 border-blue-500 pl-3">
+                                        <div className="flex justify-between text-xs font-bold text-slate-400 mb-1">{tier.code}</div>
+                                        <input className="w-full text-sm font-semibold bg-transparent border-b border-slate-300 focus:border-blue-500 outline-none mb-1" value={tier.name} onChange={(e) => updatePricing(idx, 'name', e.target.value)} />
+                                        <input className="w-full text-xs text-blue-600 bg-transparent border-b border-slate-300 focus:border-blue-500 outline-none" value={tier.focus} onChange={(e) => updatePricing(idx, 'focus', e.target.value)} />
+                                    </div>
+                                ))}
+                            </div>
+
+                        </div>
+
+                        <div className="p-5 border-t border-slate-200 bg-slate-50">
+                            <button onClick={handlePrint} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded font-medium shadow flex items-center justify-center gap-2 transition transform active:scale-95">
+                                <Icon name="printer" /> Download PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* MAIN PREVIEW AREA */}
+                    <div className="flex-1 bg-slate-200 overflow-y-auto p-8 flex justify-center">
+                        
+                        {/* THE DOCUMENT */}
+                        <div className="document-preview">
+                            
+                            {/* --- PAGE 1 --- */}
+                            <header className="flex justify-between items-end border-b-4 border-slate-800 pb-4 mb-8">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight uppercase">{data.companyShort} {data.framework}</h1>
+                                    <p className="text-slate-500 text-sm uppercase tracking-widest font-bold mt-1">Pre-Sale Agreement</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm text-slate-600 mb-1">Effective Date</p>
+                                    <div className="border-b border-slate-400 min-w-[150px] h-6 text-sm text-slate-800">
+                                        {data.effectiveDate || ""}
+                                    </div>
+                                </div>
+                            </header>
+
+                            <section className="mb-6">
+                                <p className="text-sm text-slate-700 mb-4 font-bold">
+                                    BETWEEN: <span className="text-black">{data.companyName} (“{data.companyShort}”)</span> AND <span className="text-black">{data.clientName} {data.clientContact ? `(Attn: ${data.clientContact})` : ''}</span>
+                                </p>
+                            </section>
+
+                            <section className="mb-6">
+                                <h2 className="text-lg font-bold text-slate-800 mb-2">1 · What We Are and What We Are Not</h2>
+                                <p className="text-sm text-slate-600 leading-relaxed text-justify">
+                                    {data.companyShort} is a professional consulting and system-design firm specializing in business clarity, automation, and growth enablement. Operating under its proprietary frameworks, {data.companyShort} delivers structured advisory programs designed to help organizations analyze, plan, and optimize their operations. {data.companyShort} is not a financial institution, lender, broker, or law firm. This Pre-Sale Agreement establishes a confidential, exploratory relationship only and creates no purchase obligation.
+                                </p>
+                            </section>
+
+                            <section className="mb-6">
+                                <h2 className="text-lg font-bold text-slate-800 mb-3">2 · Deliverables Summary</h2>
+                                <table className="w-full text-sm border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-800 text-white text-xs uppercase">
+                                            <th className="p-2 text-left w-16">Phase</th>
+                                            <th className="p-2 text-left w-1/4">Deliverable</th>
+                                            <th className="p-2 text-left">Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr className="border-b border-slate-200">
+                                            <td className="p-2 text-center font-bold bg-slate-50">1</td>
+                                            <td className="p-2 font-bold text-slate-800 bg-slate-50">Analysis & Discovery</td>
+                                            <td className="p-2 bg-slate-50">Structured consultation to review the Client’s goals, assets, and existing workflows.</td>
+                                        </tr>
+                                        <tr className="border-b border-slate-200">
+                                            <td className="p-2 text-center font-bold">2</td>
+                                            <td className="p-2 font-bold text-slate-800">Blueprint Design</td>
+                                            <td className="p-2">Creation of a high-level {data.framework} system architecture aligned with growth objectives.</td>
+                                        </tr>
+                                        <tr className="border-b border-slate-200">
+                                            <td className="p-2 text-center font-bold bg-slate-50">3</td>
+                                            <td className="p-2 font-bold text-slate-800 bg-slate-50">Checklists & Tools</td>
+                                            <td className="p-2 bg-slate-50">Delivery of ready-to-use checklists and resource templates to prepare for implementation.</td>
+                                        </tr>
+                                        <tr className="border-b-2 border-slate-800">
+                                            <td className="p-2 text-center font-bold">4</td>
+                                            <td className="p-2 font-bold text-slate-800">Systems Preview</td>
+                                            <td className="p-2">Demonstration of recommended SaaS platforms and automation tools.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </section>
+
+                            <section className="mb-6">
+                                <h2 className="text-lg font-bold text-slate-800 mb-3">3 · Timeline Projections</h2>
+                                <table className="w-full text-sm border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-800 text-white text-xs uppercase">
+                                            <th className="p-2 text-left w-1/4">Stage</th>
+                                            <th className="p-2 text-left w-1/4">Duration</th>
+                                            <th className="p-2 text-left">Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr className="border-b border-slate-200">
+                                            <td className="p-2 font-bold text-slate-800">Onboarding</td>
+                                            <td className="p-2">7 Days</td>
+                                            <td className="p-2">Initial discovery session and data intake.</td>
+                                        </tr>
+                                        <tr className="border-b border-slate-200">
+                                            <td className="p-2 font-bold text-slate-800 bg-slate-50">Blueprinting</td>
+                                            <td className="p-2 bg-slate-50">Weeks 2–4</td>
+                                            <td className="p-2 bg-slate-50">Drafting of {data.framework} system design.</td>
+                                        </tr>
+                                        <tr className="border-b border-slate-200">
+                                            <td className="p-2 font-bold text-slate-800">System Preview</td>
+                                            <td className="p-2">Weeks 5–8</td>
+                                            <td className="p-2">Review of system recommendations.</td>
+                                        </tr>
+                                        <tr className="border-b-2 border-slate-800">
+                                            <td className="p-2 font-bold text-slate-800 bg-slate-50">Transition</td>
+                                            <td className="p-2 bg-slate-50">Weeks 9–12</td>
+                                            <td className="p-2 bg-slate-50">Conversion to Full PSA.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </section>
+
+                            {/* Footer Page 1 */}
+                            <div className="absolute bottom-10 left-0 w-full px-16 flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
+                                <span>{data.companyName}</span>
+                                <span>{data.framework}</span>
+                                <span>Page 1 of 2</span>
+                            </div>
+
+                            <div className="page-break h-12 print:h-0"></div>
+
+                            {/* --- PAGE 2 --- */}
+                             <header className="flex justify-between items-end border-b border-slate-300 pb-2 mb-8 opacity-50">
+                                <div className="text-xs uppercase tracking-widest font-bold">{data.companyShort} {data.framework} Agreement</div>
+                                <div className="text-xs uppercase tracking-widest">Continuation</div>
+                            </header>
+
+                            <section className="mb-6">
+                                <h2 className="text-lg font-bold text-slate-800 mb-3">4 · Pricing Overview</h2>
+                                <p className="text-xs text-slate-500 mb-3 italic">Does not constitute a financial commitment. Final pricing defined in Full PSA.</p>
+                                <table className="w-full text-sm border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-800 text-white text-xs uppercase">
+                                            <th className="p-2 text-left w-16">Tier</th>
+                                            <th className="p-2 text-left w-1/4">Focus</th>
+                                            <th className="p-2 text-left">Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {data.pricing.map((tier, idx) => (
+                                            <tr key={idx} className={`border-b border-slate-200 ${idx % 2 !== 0 ? 'bg-slate-50' : ''}`}>
+                                                <td className="p-2 font-bold text-slate-800 text-center">{tier.code}</td>
+                                                <td className="p-2 font-bold text-blue-800">{tier.name}</td>
+                                                <td className="p-2">{tier.desc}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </section>
+
+                             <div className="grid grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-800 mb-1">5 · MNCNDA</h2>
+                                    <p className="text-xs text-slate-600 text-justify">
+                                        Both parties agree that all information and contacts exchanged are confidential. Neither party shall circumvent the other to engage in direct business with introduced contacts without written consent. Binding for 3 years.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-800 mb-1">6 · Legal Status</h2>
+                                    <p className="text-xs text-slate-600 text-justify">
+                                        This Agreement establishes an exploratory, pre-contractual understanding. Confidentiality/MNCNDA sections are binding; others are non-binding until a Full PSA is executed.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <section className="mt-8 border-t-2 border-slate-800 pt-8">
+                                <h2 className="text-lg font-bold text-slate-800 mb-6 uppercase tracking-wide">7 · Signatures</h2>
+                                
+                                <div className="grid grid-cols-2 gap-12">
+                                    <div>
+                                        <p className="font-bold text-slate-800 mb-6">{data.companyName}</p>
+                                        <div className="mb-4"><span className="text-[10px] text-slate-500 block mb-1">NAME</span><div className="h-8 border-b border-slate-400"></div></div>
+                                        <div className="mb-4"><span className="text-[10px] text-slate-500 block mb-1">TITLE</span><div className="h-8 border-b border-slate-400"></div></div>
+                                        <div className="mb-4"><span className="text-[10px] text-slate-500 block mb-1">SIGNATURE</span><div className="h-10 border-b border-slate-400"></div></div>
+                                        <div><span className="text-[10px] text-slate-500 block mb-1">DATE</span><div className="h-8 border-b border-slate-400 w-2/3"></div></div>
+                                    </div>
+
+                                    <div>
+                                        <p className="font-bold text-slate-800 mb-6">Client / Participant</p>
+                                        <div className="mb-4"><span className="text-[10px] text-slate-500 block mb-1">NAME</span><div className="h-8 border-b border-slate-400"></div></div>
+                                        <div className="mb-4"><span className="text-[10px] text-slate-500 block mb-1">TITLE</span><div className="h-8 border-b border-slate-400"></div></div>
+                                        <div className="mb-4"><span className="text-[10px] text-slate-500 block mb-1">SIGNATURE</span><div className="h-10 border-b border-slate-400 bg-yellow-50/20 print:bg-transparent"></div></div>
+                                        <div><span className="text-[10px] text-slate-500 block mb-1">DATE</span><div className="h-8 border-b border-slate-400 w-2/3"></div></div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Footer Page 2 */}
+                            <div className="absolute bottom-10 left-0 w-full px-16 flex justify-between text-[10px] text-slate-400 uppercase tracking-wider">
+                                <span>{data.companyName}</span>
+                                <span>{data.framework}</span>
+                                <span>Page 2 of 2</span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

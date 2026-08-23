@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SUIC · IDE — Sovereign User Interface Cognition</title>
+<meta name="description" content="SUIC IDE: a cognitive operating system where written intentions in .self files become running processes. STAX executes, SEL_ interprets, SPHIX remembers — gitless, offline-first, multimodal.">
+<style>
+:root{
+  --bg:#06070a; --card:#0e1117; --card2:#0a0c11; --line:#1c212b;
+  --ink:#eaeef5; --dim:#8a94a6; --faint:#586274;
+  --steel:#8fb4d9; --steel2:#cfe2f5; --gold:#d8b45f; --gold2:#f4e0a4; --green:#7fd6a8;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{background:
+  radial-gradient(1200px 700px at 50% -220px,rgba(143,180,217,.12),transparent 62%),
+  radial-gradient(700px 440px at 90% 14%,rgba(216,180,95,.05),transparent 60%),
+  var(--bg); overflow-x:hidden}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px;text-align:center}
+.back{display:inline-block;margin:30px 0 0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--faint);text-decoration:none;transition:.16s}
+.back:hover{color:var(--gold2)}
+header{padding:24px 0 20px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--faint);margin:0 0 20px}
+h1{margin:0;font-size:clamp(38px,8vw,74px);line-height:.96;font-weight:800;letter-spacing:-.03em;
+  background:linear-gradient(174deg,#fff 4%,var(--steel2) 40%,var(--steel) 68%,#4d6d8c 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+h1 .dot{color:var(--steel);-webkit-text-fill-color:var(--steel);opacity:.45;font-weight:400;padding:0 .1em}
+.expand{margin:20px auto 0;max-width:640px;font-size:clamp(16px,2.6vw,22px);line-height:1.4;color:var(--steel2);font-weight:600}
+.sub{margin:16px auto 0;max-width:620px;font-size:15.5px;line-height:1.65;color:var(--dim)}
+.rule{width:56px;height:1px;margin:36px auto;background:linear-gradient(90deg,transparent,var(--steel),transparent)}
+h2{font-size:clamp(21px,4vw,30px);letter-spacing:-.02em;margin:0 0 14px;font-weight:750}
+h2 .n{font-family:var(--mono);font-size:.5em;color:var(--steel);vertical-align:middle;margin-right:12px;letter-spacing:.18em}
+section{padding:34px 0}
+p{line-height:1.68;color:var(--dim);max-width:650px;margin:0 auto 15px;font-size:15.5px}
+strong{color:var(--ink);font-weight:650}
+em{color:var(--steel2);font-style:normal}
+blockquote{margin:26px auto;max-width:650px;padding:22px 26px;text-align:left;
+  background:linear-gradient(168deg,rgba(143,180,217,.07),transparent);
+  border-left:2px solid var(--steel);border-radius:0 13px 13px 0}
+blockquote p{margin:0;max-width:none;color:var(--ink);font-size:16.5px;line-height:1.6}
+blockquote cite{display:block;margin-top:12px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--faint);font-style:normal}
+.decode{display:flex;flex-wrap:wrap;gap:13px;justify-content:center;margin:26px 0;text-align:left}
+.decode > div{flex:1 1 200px;max-width:270px;background:linear-gradient(168deg,var(--card),var(--card2));
+  border:1px solid var(--line);border-radius:14px;padding:19px}
+.decode .w{font-size:19px;font-weight:750;color:var(--steel2);margin-bottom:7px}
+.decode p{margin:0;max-width:none;font-size:13.5px}
+.flow{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin:24px 0}
+.flow div{background:#0b0e13;border:1px solid var(--line);border-radius:10px;padding:12px 15px;
+  font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.flow div b{color:var(--steel2);font-weight:700}
+.flow span{align-self:center;color:var(--faint);font-size:15px}
+table{width:100%;border-collapse:collapse;margin:22px 0;font-size:13.5px;text-align:left;display:block;overflow-x:auto}
+th,td{padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);font-weight:500}
+td{color:var(--dim)} td:first-child{color:var(--ink);font-weight:620}
+code{font-family:var(--mono);font-size:12.5px;color:var(--steel2);background:rgba(143,180,217,.09);padding:2px 6px;border-radius:5px}
+.note{max-width:650px;margin:24px auto;padding:18px 22px;text-align:left;
+  border-left:2px solid var(--gold);background:rgba(216,180,95,.05);border-radius:0 12px 12px 0}
+.note p{margin:0;max-width:none;font-size:14.5px}
+.note a{color:var(--gold2);text-decoration:none;border-bottom:1px solid rgba(244,224,164,.3)}
+.cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:30px 0}
+.cta a{background:#0c0f14;border:1px solid var(--line);color:var(--ink);text-decoration:none;
+  padding:14px 22px;border-radius:11px;font-family:var(--mono);font-size:12.5px;transition:.16s}
+.cta a:hover{border-color:var(--steel);color:var(--steel2);transform:translateY(-1px)}
+footer{padding:52px 0 64px;color:var(--faint);font-size:12px;font-family:var(--mono);letter-spacing:.1em}
+footer a{color:var(--steel);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a class="back" href="../">← Life Note</a>
+
+<header>
+  <p class="eyebrow">Self Exec · XLRDTECH</p>
+  <h1>SUIC<span class="dot">·</span>IDE</h1>
+  <p class="expand">Sovereign User Interface Cognition</p>
+  <p class="sub">Pronounced <em>"so-ik."</em> Not a coding tool — a cognitive operating system, where written intentions in <code>.self</code> files turn directly into running processes and coordinated actions.</p>
+  <div class="rule"></div>
+</header>
+
+<section>
+  <h2><span class="n">01</span>What it is</h2>
+  <blockquote>
+    <p>"A unified development and execution environment purpose-built for Self-Executing 'living' programs… essentially a cognitive operating system where the user's written intentions directly turn into running processes and coordinated actions."</p>
+    <cite>Formal definition · L7X System Architecture audit</cite>
+  </blockquote>
+  <p><strong>SUIC collapses the boundary between writing down an idea and having that idea executed.</strong> The interface and the execution are the same thing. That is why its tagline is also the definition of <a href="../" style="color:var(--gold2)">Life Note</a>: <em>"you don't run programs… you write Notes, and they run you."</em></p>
+</section>
+
+<section>
+  <h2><span class="n">02</span>The name decodes</h2>
+  <div class="decode">
+    <div><div class="w">Sovereign</div><p>Runs independently of external dependencies. The user is in full control — offline if needed. No cloud is required for it to work.</p></div>
+    <div><div class="w">Interface</div><p>Interaction at a cognitive level, through text, voice or visuals — <em>"keyboard, voice, and visual panes."</em></p></div>
+    <div><div class="w">Cognition</div><p>The environment itself has awareness of context and intent. It is not a passive editor holding your text.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>The components</h2>
+  <table>
+    <tr><th>Part</th><th>Role</th></tr>
+    <tr><td>SUIC Syntax</td><td>The declarative notation you write intentions in. Human-readable, high-level — <em>what</em> to do, not how — and deliberately terse.</td></tr>
+    <tr><td>IDE</td><td>The front end. Text editor, voice interface, or visual canvas — or all three. Can be hosted in a browser Code-Server under SGOS.</td></tr>
+    <tr><td><code>SEL_</code></td><td>The Self-Execution Lexicon — engine and vocabulary inside every <code>.self</code>. Creating a Note means implicitly using SEL_ to define what it does.</td></tr>
+    <tr><td>Agents</td><td>Scoped sub-programs or personas declared inside a <code>.self</code> — an emailer, a page monitor — running in that Note's container and talking to each other.</td></tr>
+    <tr><td>STAX</td><td>Watches for a saved <code>.self</code> and executes it immediately. No build step, no run command.</td></tr>
+    <tr><td>SPHIX</td><td>The invisible witness and memory logger. Records every significant change or decision — <strong>"gitless versioning, timeline-native memory, no commits."</strong></td></tr>
+    <tr><td>DRXVX</td><td>Sync. Work offline, reconcile later.</td></tr>
+    <tr><td>Partitions <code>9_</code>/<code>7_</code></td><td>Mode logic — <code>9_</code> for XLRDTECH execution, <code>7_</code> for business logic — so the same environment handles two scopes without bleeding between them.</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="n">04</span>The runtime, end to end</h2>
+  <div class="flow">
+    <div>save a <b>.self</b></div><span>→</span>
+    <div><b>STAX</b> notices</div><span>→</span>
+    <div><b>SEL_</b> interprets</div><span>→</span>
+    <div><b>agents</b> carry out</div><span>→</span>
+    <div><b>SPHIX</b> logs</div>
+  </div>
+  <p>A worked example from the source: a Note declares a <code>ReportGen</code> agent scheduled for 6 AM and an <code>Emailer</code> agent watching for a <code>morning</code> trigger. Saving the file is the entire deployment — at 6 AM ReportGen runs, fires the trigger, and Emailer sends. <em>"All of this happens without further human intervention."</em></p>
+  <p style="font-size:13.5px;color:var(--faint)">No external build tools, no cloud services, no manual triggers.</p>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Why a replacement, not a plugin</h2>
+  <p>SPHIX alone answers this. An editor that logs every decision to timeline-native memory and needs no commits is not a feature you can bolt onto a tool built around a commit graph — it is a different model of what history means.</p>
+  <table>
+    <tr><th>Assumption in every normal IDE</th><th>What SUIC does instead</th></tr>
+    <tr><td>You write code, then run it</td><td>Writing <em>is</em> running — STAX executes on save</td></tr>
+    <tr><td>Version control is explicit commits</td><td>SPHIX records continuously; no commits exist</td></tr>
+    <tr><td>The unit of work is a file</td><td>The unit is a Note containing agents</td></tr>
+    <tr><td>Manifests are <code>package.json</code></td><td><code>automanifests</code> — a different format entirely</td></tr>
+    <tr><td>Input is a keyboard</td><td>Keyboard, voice, and visual panes as equals</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Lineage</h2>
+  <table>
+    <tr><th>Stage</th><th>What it was, and why it ended</th></tr>
+    <tr><td>SEHD</td><td>Self-Executing Here Document — code embedded in text that ran itself when handed to a shell. Proved the idea.</td></tr>
+    <tr><td>SEHD v5</td><td>"Total Environment Dominator" — the last version. Bound to here-doc syntax and specific environments, which capped it.</td></tr>
+    <tr><td>SEL_</td><td>The break: a real execution lexicon instead of a syntax trick.</td></tr>
+    <tr><td>SUIC IDE</td><td>The environment built to host SEL_ — <em>"matured from a clever scripting hack into a full-fledged operating environment."</em></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="n">07</span>What it connects to</h2>
+  <p>SUIC is the central hub for creating, syncing and executing logic across the L7X ecosystem — both the workshop and the runtime.</p>
+  <table>
+    <tr><th>System</th><th>Relationship</th></tr>
+    <tr><td><code>ai_</code> — Amplified Intuition</td><td>The voice layer. Spoken instructions convert into <code>.self</code> logic capsules on the fly and drop into SUIC for immediate execution.</td></tr>
+    <tr><td>ESP_ — Executive Sacred Peak</td><td>Signal detection — emotional tone and sacred-spike detection — distinguishing casual speech from an actual command.</td></tr>
+    <tr><td>CMS — Conscious Mirror Stream</td><td>Reflective dialogue: the system holds an internal conversation to clarify intent before acting.</td></tr>
+    <tr><td>MAP · MMM</td><td>Timing and alignment, and multi-perspective reflection. MAP logs events to a Sacred Spike Queue.</td></tr>
+    <tr><td>AIOS</td><td>The wider Artificial Intelligence Operating System vision — browser-based, 3D, voice-first.</td></tr>
+  </table>
+  <div class="note">
+    <p><strong>On the name.</strong> Set as two tokens — <strong>SUIC</strong> + <strong>IDE</strong>. Run together the letters spell another word and the wordplay is deliberate, but the thing is an editor and the wordmark is always set split so it reads as one. Spoken aloud it is <em>"so-ik I-D-E."</em></p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">08</span>Sources</h2>
+  <table>
+    <tr><th>Claim</th><th>Source</th></tr>
+    <tr><td>Name, definition, components, lineage</td><td>L7X System Architecture and Frameworks Audit · <code>@selfexec</code> · 127,994 bytes · mod. Apr 29</td></tr>
+    <tr><td>SEL_ requirements</td><td><code>SEL_ Law</code>, Lark · East Allen · mod. 2025-07-07</td></tr>
+    <tr><td>Stack position</td><td><code>~/.xen/state/auto-fleet.txt</code> · qi 2026-05-31</td></tr>
+    <tr><td>ESP_ cross-reference</td><td>Teleport README + the same L7X audit, independently</td></tr>
+  </table>
+  <p style="font-size:13.5px;color:var(--faint)">The L7X audit is a dated source — architecture claims elsewhere in it are superseded. Used here only for definitions, which are corroborated by <code>SEL_ Law</code> and the Teleport README.</p>
+  <div class="cta">
+    <a href="../">← Life Note</a>
+    <a href="../life-note.md">RAW MARKDOWN</a>
+  </div>
+</section>
+
+<footer>
+  SUIC · IDE · SELF EXEC · <a href="../">← LIFE NOTE</a> · <a href="../life-note.md">RAW .MD</a><br>
+  BUILT BY EAST · XLRD TECH
+</footer>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

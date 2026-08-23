@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>L7S Hero · Freedom Number Calculator — Cashflow Hero</title>
+<meta name="description" content="L7S Cashflow Hero — calculate your Magic Number / Freedom Number: the monthly revenue you must hit to cover your cost of living, cost of doing business, and profit goal. Live, private, on-device.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#000;--abyss:#0a0a08;--card:#15140f;
+  --pearl:#f5f3ec;--bone:#cfc9b8;--mute:#8f897a;--dust:#5b5648;
+  --gold:#d4af37;--gold-hi:#f4e3a1;--gold-deep:#9a7b2e;--ember:#caa24a;
+  --green:#39d98a;--line:rgba(212,175,55,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--void);color:var(--pearl);font-family:'Inter',sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+body{background:radial-gradient(ellipse 1100px 560px at 50% -5%,rgba(212,175,55,.14),transparent 60%),var(--void);min-height:100vh;line-height:1.55;padding-bottom:130px}
+.bar-wrap{position:sticky;top:0;z-index:40;background:rgba(8,8,5,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.bar-inner{max-width:760px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:14px}
+.bar-mark{font-family:'Cinzel',serif;font-weight:600;font-size:12px;letter-spacing:.26em;color:var(--gold);white-space:nowrap}
+.bar-mn{flex:1;text-align:right;font-family:'Inter';font-weight:600;font-size:12px;color:var(--bone);white-space:nowrap}
+.bar-mn b{color:var(--gold-hi);font-weight:700;font-size:13.5px}
+.saved{font-size:11px;color:var(--green);min-height:14px;text-align:right;padding:0 18px 6px;max-width:760px;margin:0 auto;opacity:0;transition:opacity .3s}
+.saved.show{opacity:1}
+.wrap{max-width:760px;margin:0 auto;padding:0 18px}
+header.hero{padding:46px 0 22px;text-align:center}
+.kick{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.hero h1{font-family:'Cinzel',serif;font-weight:800;font-size:clamp(28px,6.5vw,48px);line-height:1.04;letter-spacing:.02em;background:linear-gradient(180deg,var(--gold-hi),var(--gold) 50%,var(--gold-deep) 78%,var(--gold-hi));-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:12px}
+.hero p{font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(16px,2.4vw,20px);color:var(--bone);max-width:600px;margin:0 auto}
+.note{max-width:640px;margin:18px auto 0;padding:14px 18px;background:rgba(212,175,55,.06);border:1px solid var(--line);border-radius:10px;font-size:13.5px;color:var(--bone)}
+.note b{color:var(--pearl)}
+section.card{background:linear-gradient(180deg,var(--card),rgba(21,20,15,.6));border:1px solid var(--line);border-radius:14px;padding:22px 20px;margin:18px 0}
+.sec-h{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.sec-n{font-family:'Cinzel',serif;font-weight:600;font-size:13px;color:var(--gold);letter-spacing:.1em}
+.sec-h h2{font-family:'Cinzel',serif;font-weight:600;font-size:clamp(17px,2.6vw,21px);color:var(--pearl)}
+.sec-sub{color:var(--mute);font-size:13px;margin:2px 0 16px}
+
+/* inputs */
+.field{display:block;margin:0 0 4px}
+.field .fl{font-size:13px;color:var(--bone);margin-bottom:6px;display:block;font-weight:400}
+.field .fl small{display:block;color:var(--mute);font-size:11.5px;margin-top:2px;line-height:1.4}
+.in-money,.in-num{position:relative}
+.in-money:before{content:"$";position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--gold-deep);font-size:15px;pointer-events:none;font-weight:500}
+.in-money input{padding-left:26px}
+input[type=text],input[type=email],input[type=number]{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:8px;color:var(--pearl);font-family:'Inter';font-size:15.5px;font-weight:500;padding:12px 13px;transition:border-color .2s,box-shadow .2s}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,175,55,.14)}
+input::placeholder{color:#5d5848}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:540px){.grid2{grid-template-columns:1fr}}
+.field-pad{margin-bottom:14px}
+
+/* results */
+.result-card{background:linear-gradient(180deg,rgba(212,175,55,.10),rgba(21,20,15,.6));border:1px solid rgba(212,175,55,.34);border-radius:14px;padding:24px 20px;margin:18px 0;box-shadow:0 10px 40px rgba(212,175,55,.08)}
+.hero-num{text-align:center;padding:6px 0 18px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.hero-num .hl{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.hero-num .big{font-family:'Cinzel',serif;font-weight:800;font-size:clamp(40px,12vw,76px);line-height:.98;background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,var(--gold-deep));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-num .per{font-size:13px;color:var(--bone);margin-top:6px;letter-spacing:.04em}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+@media(max-width:540px){.stats{grid-template-columns:1fr}}
+.stat{background:var(--abyss);padding:15px 16px}
+.stat .sl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+.stat .sv{font-family:'Cinzel',serif;font-weight:600;font-size:clamp(20px,4.5vw,26px);color:var(--gold-hi);line-height:1.05}
+.stat .sh{font-size:11.5px;color:var(--dust);margin-top:4px;line-height:1.4}
+.stat.wide{grid-column:1/-1}
+.bep-bar{margin-top:18px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;padding:15px 16px}
+.bep-bar .bl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline}
+.bep-bar .bl b{font-family:'Cinzel';color:var(--bone);font-weight:600;font-size:13px;letter-spacing:.02em;text-transform:none}
+.track{height:12px;background:rgba(212,175,55,.12);border-radius:999px;overflow:hidden;position:relative;display:flex}
+.seg-bep{height:100%;background:linear-gradient(90deg,var(--gold-deep),var(--ember));transition:width .4s cubic-bezier(.4,0,.2,1)}
+.seg-profit{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-hi));transition:width .4s cubic-bezier(.4,0,.2,1)}
+.legend{display:flex;gap:18px;margin-top:11px;font-size:11.5px;color:var(--bone);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:2px;flex:none}
+.dot.bep{background:var(--ember)}.dot.profit{background:var(--gold-hi)}
+
+/* anchor / explainer rows */
+.row{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid rgba(212,175,55,.09);font-size:14px}
+.row:first-of-type{border-top:0}
+.row .rk{color:var(--bone)}
+.row .rv{color:var(--pearl);font-weight:500;text-align:right}
+.row .rv b{color:var(--gold-hi)}
+
+/* know your numbers */
+.kpi{display:flex;gap:12px;padding:13px 0;border-top:1px solid rgba(212,175,55,.09)}
+.kpi:first-of-type{border-top:0}
+.kpi .kt{flex:none;width:62px;font-family:'Cinzel',serif;font-weight:600;font-size:13px;color:var(--gold);letter-spacing:.04em}
+.kpi .kb{flex:1;min-width:0}
+.kpi .kb .kn{font-weight:500;font-size:14px;color:var(--pearl)}
+.kpi .kb .kd{font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.5}
+
+/* capture */
+.cap-note{font-size:12.5px;color:var(--mute);margin-top:2px;margin-bottom:14px;line-height:1.5}
+
+.actions{position:fixed;bottom:0;left:0;right:0;z-index:45;background:rgba(8,8,5,.92);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:13px 18px}
+.actions-inner{max-width:760px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{flex:1;min-width:140px;text-align:center;padding:14px 18px;border-radius:9px;font-family:'Inter';font-weight:600;font-size:14.5px;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:transform .15s,box-shadow .2s}
+.btn.primary{background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep));color:#1a1405;box-shadow:0 6px 24px rgba(212,175,55,.32)}
+.btn.primary:hover{transform:translateY(-1px)}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--bone);flex:0 0 auto;min-width:0}
+.btn.ghost:hover{border-color:var(--gold);color:var(--pearl)}
+.tiny{font-size:11px;color:var(--mute);text-align:center;width:100%;margin-top:9px}
+footer{text-align:center;padding:30px 0 10px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:.45em;text-transform:uppercase;color:var(--dust)}
+footer a{color:var(--gold);text-decoration:none}
+
+@media print{
+  body{background:#fff;color:#111;padding:0}
+  .bar-wrap,.actions,footer .nop{display:none!important}
+  .hero p,.note,.cap-note{color:#333}
+  section.card,.result-card{border-color:#ccc;background:#fff;box-shadow:none;break-inside:avoid}
+  .hero h1,.hero-num .big,.stat .sv,.sec-h h2,.sec-n,.kick,.kpi .kt{-webkit-text-fill-color:#8a6d12;color:#8a6d12!important}
+  .hero-num .big{-webkit-background-clip:initial}
+  input{border:1px solid #bbb;color:#111}
+  .stat{background:#faf6e8}
+}
+</style>
+</head>
+<body>
+<div class="bar-wrap">
+  <div class="bar-inner"><span class="bar-mark">◆ L7S · CASHFLOW HERO</span><span class="bar-mn" id="barMN">Freedom Number <b id="barVal">—</b>/mo</span></div>
+  <div class="saved" id="saved"></div>
+</div>
+
+<div class="wrap">
+<header class="hero">
+  <div class="kick">◆  Freedom Number Calculator  ◆</div>
+  <h1>Know Your Magic Number</h1>
+  <p>The exact revenue you must hit to cover your life, run your business, and pay yourself a profit. Plug in your real numbers — it calculates live, right here, nothing leaves your device.</p>
+  <div class="note">This is the <b>Cashflow Hero</b> method (P.I.E.S Hero). Your <b>Freedom Number</b> is the monthly target that funds <b>Cost To Do You</b> + <b>Cost To Do Business</b> + the <b>profit you actually want to keep</b>. Hit it every month and you're free. — East 💎</div>
+</header>
+
+<!-- INPUTS -->
+<section class="card">
+  <div class="sec-h"><span class="sec-n">01</span><h2>Your Numbers</h2></div>
+  <div class="sec-sub">Use real, honest figures. You can edit any of them anytime — the results update instantly.</div>
+
+  <div class="grid2">
+    <label class="field field-pad"><span class="fl">Cost To Do You <small>Your true monthly personal cost of living — rent/mortgage, food, car, insurance, debt minimums, family.</small></span>
+      <span class="in-money"><input type="number" inputmode="decimal" id="i_personal" min="0" step="100" placeholder="4,000"></span></label>
+
+    <label class="field field-pad"><span class="fl">Cost To Do Business <small>Monthly business overhead — software, subscriptions, ads, contractors, fees, rent, tools.</small></span>
+      <span class="in-money"><input type="number" inputmode="decimal" id="i_business" min="0" step="100" placeholder="1,500"></span></label>
+
+    <label class="field field-pad"><span class="fl">Desired Monthly Profit <small>What you want to keep / save / reinvest on top of the bills. This is the goal, not a leftover.</small></span>
+      <span class="in-money"><input type="number" inputmode="decimal" id="i_profit" min="0" step="100" placeholder="4,500"></span></label>
+
+    <label class="field field-pad"><span class="fl">Avg Revenue Per Client <small>What one client/deal is worth to you on average (per month if recurring, per close if one-time).</small></span>
+      <span class="in-money"><input type="number" inputmode="decimal" id="i_perclient" min="0" step="100" placeholder="2,500"></span></label>
+  </div>
+
+  <label class="field"><span class="fl">Working Weeks Per Month <small>How many weeks you actually sell/produce in a typical month. Most use 4.</small></span>
+    <span class="in-num"><input type="number" inputmode="decimal" id="i_weeks" min="1" max="6" step="0.5" placeholder="4"></span></label>
+</section>
+
+<!-- RESULTS -->
+<section class="result-card" id="results">
+  <div class="hero-num">
+    <div class="hl">Your Freedom Number</div>
+    <div class="big" id="r_magic">$0</div>
+    <div class="per">per month · the target that covers everything + your profit</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="sl">Weekly Pace</div><div class="sv" id="r_weekly">$0</div><div class="sh">What you must bring in each working week.</div></div>
+    <div class="stat"><div class="sl">Clients Needed / mo</div><div class="sv" id="r_clients">0</div><div class="sh" id="r_clients_h">At your avg revenue per client.</div></div>
+    <div class="stat"><div class="sl">Break-Even Point (BEP)</div><div class="sv" id="r_bep">$0</div><div class="sh">Bills covered, $0 profit. Below this you're losing.</div></div>
+    <div class="stat"><div class="sl">Clients to Break Even</div><div class="sv" id="r_bepclients">0</div><div class="sh">The floor you can't drop under.</div></div>
+    <div class="stat wide"><div class="sl">Annual Projection</div><div class="sv" id="r_annual">$0</div><div class="sh" id="r_annual_h">Freedom Number × 12 — your yearly run rate at target.</div></div>
+  </div>
+
+  <div class="bep-bar">
+    <div class="bl"><span>The month, from $0 to Freedom</span><b id="r_split">—</b></div>
+    <div class="track"><div class="seg-bep" id="seg_bep"></div><div class="seg-profit" id="seg_profit"></div></div>
+    <div class="legend">
+      <span><i class="dot bep"></i> Break-even (covers all costs)</span>
+      <span><i class="dot profit"></i> Profit you keep</span>
+    </div>
+  </div>
+</section>
+
+<!-- ANCHOR EXAMPLE -->
+<section class="card">
+  <div class="sec-h"><span class="sec-n">02</span><h2>The Target, In Plain Numbers</h2></div>
+  <div class="sec-sub">A worked example of the Cashflow Hero math, so the model is obvious.</div>
+  <div class="row"><span class="rk">Monthly goal (Freedom Number)</span><span class="rv"><b>$10,000</b> / mo</span></div>
+  <div class="row"><span class="rk">Average revenue per client</span><span class="rv">$2,500 / mo</span></div>
+  <div class="row"><span class="rk">Clients needed ( $10,000 ÷ $2,500 )</span><span class="rv"><b>4 clients</b></span></div>
+  <div class="row"><span class="rk">Weekly pace ( $10,000 ÷ 4 weeks )</span><span class="rv">~$2,500 / wk</span></div>
+  <div class="row"><span class="rk">Annual projection ( $10,000 × 12 )</span><span class="rv"><b>$120,000</b> / yr</span></div>
+  <div class="note" style="margin-top:16px"><b>Read it like this:</b> "I need 4 good clients at $2,500 a month to hit $10,000. That's my Freedom Number. Everything below it is survival; everything above it is freedom."</div>
+</section>
+
+<!-- KNOW YOUR NUMBERS -->
+<section class="card">
+  <div class="sec-h"><span class="sec-n">03</span><h2>Know Your Numbers</h2></div>
+  <div class="sec-sub">The five KPIs every Cashflow Hero tracks. Master these and you run the business — it doesn't run you.</div>
+  <div class="kpi"><div class="kt">Freedom #</div><div class="kb"><div class="kn">Freedom Number</div><div class="kd">The monthly revenue that covers your cost of living + cost of business + profit goal. Your single north-star target.</div></div></div>
+  <div class="kpi"><div class="kt">BEP</div><div class="kb"><div class="kn">Break-Even Point</div><div class="kd">The revenue where total income equals total cost — $0 profit. The floor you must never fall below.</div></div></div>
+  <div class="kpi"><div class="kt">KPIs</div><div class="kb"><div class="kn">Key Performance Indicators</div><div class="kd">The handful of numbers you check weekly — clients closed, revenue, pace vs. target — so nothing drifts.</div></div></div>
+  <div class="kpi"><div class="kt">LTV</div><div class="kb"><div class="kn">Lifetime Value</div><div class="kd">Total revenue one client brings over the whole relationship. Higher LTV means fewer clients to hit Freedom.</div></div></div>
+  <div class="kpi"><div class="kt">CAC</div><div class="kb"><div class="kn">Customer Acquisition Cost</div><div class="kd">What it costs to win one client. Keep CAC well under LTV and every new client compounds your profit.</div></div></div>
+</section>
+
+<!-- CAPTURE -->
+<section class="card">
+  <div class="sec-h"><span class="sec-n">04</span><h2>Get My Freedom Number Plan</h2></div>
+  <div class="sec-sub">Want the path to actually hit this number — the offer, the pace, the client math built around you?</div>
+  <p class="cap-note">Drop your name and email. Tapping <b>Send to East</b> compiles your numbers + results into one message and ships it over. Nothing is stored on any server — it only fills your own email app.</p>
+  <div class="grid2">
+    <label class="field field-pad"><span class="fl">Your Name</span><input type="text" id="c_name" placeholder="First &amp; last name" autocomplete="name"></label>
+    <label class="field field-pad"><span class="fl">Your Email</span><input type="email" id="c_email" placeholder="you@email.com" autocomplete="email"></label>
+  </div>
+  <label class="field"><span class="fl">Anything we should know? <small>Optional — your business, your goal, a deadline.</small></span><input type="text" id="c_note" placeholder="e.g. credit-repair business, want to replace my W-2 by Q4"></label>
+</section>
+
+<footer>◆ L7S · CASHFLOW HERO · Freedom Number · East · Self Exec · 💎</footer>
+</div>
+
+<div class="actions"><div class="actions-inner">
+  <a class="btn primary" id="sendEmail" href="#">◆ Send to East</a>
+  <button class="btn ghost" id="copyBtn" type="button">Copy</button>
+  <button class="btn ghost" id="printBtn" type="button">Print</button>
+  <button class="btn ghost" id="resetBtn" type="button">Reset</button>
+  <div class="tiny" id="resetHint">Your numbers save automatically on this device. Private — nothing leaves it until you send.</div>
+</div></div>
+
+<script>
+(function(){
+  var KEY='l7s-magic-number-v1', EAST='east@xlrd.org';
+  var $=function(id){return document.getElementById(id);};
+  var saved=$('saved'),savedT;
+  var inputs={personal:$('i_personal'),business:$('i_business'),profit:$('i_profit'),perclient:$('i_perclient'),weeks:$('i_weeks'),
+              name:$('c_name'),email:$('c_email'),note:$('c_note')};
+
+  function num(el){var v=parseFloat((el.value||'').toString().replace(/[^0-9.\-]/g,''));return isFinite(v)?v:0;}
+  function usd(n){if(!isFinite(n))n=0;return '$'+Math.round(n).toLocaleString('en-US');}
+  function usd2(n){if(!isFinite(n))n=0;return '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:n<100?0:0});}
+
+  function stamp(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};saved.textContent='Saved ✓ '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());saved.classList.add('show');clearTimeout(savedT);savedT=setTimeout(function(){saved.classList.remove('show');},2200);}
+
+  function collect(){var s={};for(var k in inputs)s[k]=inputs[k].value;return s;}
+  function restore(){var s={};try{s=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){s={};}for(var k in inputs){if(k in s && s[k]!=null)inputs[k].value=s[k];}}
+  function save(){localStorage.setItem(KEY,JSON.stringify(collect()));stamp();}
+
+  function model(){
+    var personal=num(inputs.personal), business=num(inputs.business), profit=num(inputs.profit),
+        perClient=num(inputs.perclient), weeks=num(inputs.weeks)||4;
+    if(weeks<=0)weeks=4;
+    var bep=personal+business;                 // break-even: all costs, $0 profit
+    var magic=bep+profit;                       // Freedom Number: costs + profit goal
+    var weekly=magic/weeks;
+    var clients=perClient>0?magic/perClient:0;
+    var bepClients=perClient>0?bep/perClient:0;
+    var annual=magic*12;
+    return {personal:personal,business:business,profit:profit,perClient:perClient,weeks:weeks,
+            bep:bep,magic:magic,weekly:weekly,clients:clients,bepClients:bepClients,annual:annual};
+  }
+
+  function ceilClients(c){return c>0?Math.ceil(c-1e-9):0;}
+
+  function render(){
+    var m=model();
+    $('r_magic').textContent=usd(m.magic);
+    $('barVal').textContent=usd(m.magic);
+    $('r_weekly').textContent=usd(m.weekly);
+    $('r_bep').textContent=usd(m.bep);
+    $('r_annual').textContent=usd(m.annual);
+
+    if(m.perClient>0){
+      var c=ceilClients(m.clients), bc=ceilClients(m.bepClients);
+      $('r_clients').textContent=c;
+      $('r_clients_h').textContent='Round figure: '+(m.clients.toFixed(1))+' × '+usd(m.perClient)+' clients.';
+      $('r_bepclients').textContent=bc;
+    }else{
+      $('r_clients').textContent='—';
+      $('r_clients_h').textContent='Enter avg revenue per client to size your roster.';
+      $('r_bepclients').textContent='—';
+    }
+    $('r_annual_h').textContent=usd(m.magic)+' × 12 — your yearly run rate at target.';
+
+    // BEP vs profit split bar
+    var seg_bep=$('seg_bep'), seg_profit=$('seg_profit');
+    if(m.magic>0){
+      var bepPct=Math.max(0,Math.min(100,(m.bep/m.magic)*100));
+      seg_bep.style.width=bepPct+'%';
+      seg_profit.style.width=(100-bepPct)+'%';
+      $('r_split').textContent=usd(m.bep)+' to break even · '+usd(m.profit)+' profit';
+    }else{
+      seg_bep.style.width='0%';seg_profit.style.width='0%';
+      $('r_split').textContent='—';
+    }
+  }
+
+  function summary(){
+    var m=model();
+    var c=m.perClient>0?ceilClients(m.clients):null, bc=m.perClient>0?ceilClients(m.bepClients):null;
+    var nm=(inputs.name.value||'').trim(), em=(inputs.email.value||'').trim(), nt=(inputs.note.value||'').trim();
+    var out='L7S CASHFLOW HERO — Freedom Number\n(via hitthe.link/l7s/magic-number)\n';
+    if(nm||em){out+='\nWho:\n';if(nm)out+='  • Name: '+nm+'\n';if(em)out+='  • Email: '+em+'\n';if(nt)out+='  • Note: '+nt+'\n';}
+    out+='\nThe numbers:\n';
+    out+='  • Cost To Do You (personal): '+usd(m.personal)+' /mo\n';
+    out+='  • Cost To Do Business: '+usd(m.business)+' /mo\n';
+    out+='  • Desired Monthly Profit: '+usd(m.profit)+' /mo\n';
+    out+='  • Avg Revenue Per Client: '+usd(m.perClient)+'\n';
+    out+='  • Working Weeks / month: '+m.weeks+'\n';
+    out+='\nThe result:\n';
+    out+='  ★ FREEDOM NUMBER: '+usd(m.magic)+' /mo\n';
+    out+='  • Weekly pace: '+usd(m.weekly)+' /wk\n';
+    out+='  • Clients needed: '+(c!=null?c+' ('+m.clients.toFixed(1)+')':'—')+'\n';
+    out+='  • Break-Even Point: '+usd(m.bep)+' /mo'+(bc!=null?' ('+bc+' clients)':'')+'\n';
+    out+='  • Annual projection: '+usd(m.annual)+' /yr\n';
+    out+='\nWants the Freedom Number plan built around this. — sent from the calculator';
+    return out;
+  }
+
+  function links(){
+    $('sendEmail').href='mailto:'+EAST+'?subject='+encodeURIComponent('L7S Cashflow Hero — Freedom Number plan request')+'&body='+encodeURIComponent(summary());
+  }
+
+  function tick(){render();links();save();}
+
+  // wire inputs
+  for(var k in inputs){inputs[k].addEventListener('input',tick);}
+
+  $('copyBtn').addEventListener('click',function(){var t=summary(),self=this;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){self.textContent='Copied ✓';setTimeout(function(){self.textContent='Copy';},1600);});}});
+  $('printBtn').addEventListener('click',function(){window.print();});
+
+  var armed=false,rb=$('resetBtn'),rh=$('resetHint');
+  rb.addEventListener('click',function(){if(!armed){armed=true;this.textContent='Tap again to clear';rh.textContent='This wipes your numbers on this device.';setTimeout(function(){armed=false;rb.textContent='Reset';rh.textContent='Your numbers save automatically on this device. Private — nothing leaves it until you send.';},3500);return;}localStorage.removeItem(KEY);location.reload();});
+
+  restore();render();links();
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

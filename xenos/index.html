@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>XENOS — shapeshifter</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  :root{--ink:#dffbe9;--dim:rgba(223,251,233,.42);--faint:rgba(223,251,233,.17)}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#000200;overflow:hidden;cursor:none}
+  canvas{display:block;position:fixed;inset:0}
+  #ring{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(74vmin,760px);aspect-ratio:1;border-radius:50%;
+    border:1px solid rgba(120,255,178,.13);
+    box-shadow:0 0 110px rgba(60,255,150,.06) inset;pointer-events:none;z-index:2}
+  .ui{position:fixed;inset:0;pointer-events:none;z-index:5;
+    font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;
+    letter-spacing:.06em;color:var(--dim)}
+  .brand{position:absolute;top:34px;left:38px}
+  .brand h1{font-weight:300;font-size:34px;letter-spacing:.02em;color:var(--ink);line-height:1}
+  .brand h1 span{color:var(--faint)}
+  .brand p{margin-top:10px;line-height:1.7}
+  .manifesto{position:absolute;top:36px;right:38px;width:296px;text-align:right;line-height:1.75}
+  .manifesto .mk{color:var(--faint);margin-bottom:10px}
+  .readout{position:absolute;bottom:30px;right:38px;text-align:right;line-height:1.8;color:var(--faint)}
+  .readout b{color:var(--dim);font-weight:400}
+  .hint{position:absolute;bottom:30px;left:38px;line-height:2.1}
+  button{pointer-events:auto;cursor:pointer;color:var(--dim);background:none;
+    border:1px solid rgba(120,255,178,.14);border-radius:20px;padding:5px 12px;
+    font:inherit;letter-spacing:.06em;margin-right:6px}
+  button:hover{color:var(--ink);border-color:rgba(120,255,178,.42)}
+  .lbl{position:absolute;transform:translate(0,-50%);font-size:10px;letter-spacing:.08em;
+    color:var(--dim);white-space:nowrap;opacity:0;transition:opacity .45s}
+  .lbl.on{opacity:1}
+  .lbl:before{content:'';position:absolute;left:-14px;top:50%;width:10px;height:1px;background:var(--faint)}
+  #cur{position:fixed;width:7px;height:7px;border-radius:50%;z-index:6;pointer-events:none;
+    background:rgba(150,255,195,.92);box-shadow:0 0 15px rgba(90,255,160,.85);transform:translate(-50%,-50%)}
+  #mood{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+    color:var(--faint);letter-spacing:.15em}
+  #form{position:absolute;top:50%;left:38px;transform:translateY(-50%);
+    color:var(--faint);letter-spacing:.15em;writing-mode:vertical-rl}
+</style>
+</head>
+<body>
+<div id="ring"></div><div id="cur"></div>
+<div class="ui">
+  <div class="brand"><h1>XENOS<span>/</span>00</h1><p>// 2026 xlrd.org<br>shapeshifter — live vault</p></div>
+  <div class="manifesto"><div class="mk">////// Manifesto</div>
+    It has no fixed body. Wheels when it thinks, a held sphere when it
+    listens, a standing form when it speaks — the same memories moved
+    into a different shape. It reaches for what you have not asked for
+    yet. Nothing here is decoration.</div>
+  <div class="hint">
+    <button id="mic">◉ voice</button><button id="probe">◉ event</button><br>
+    <button data-f="0">wheels</button><button data-f="1">orb</button><button data-f="2">form</button>
+  </div>
+  <div id="mood">IDLE</div><div id="form">ORB</div>
+  <div class="readout">XENOS/00 — SHAPESHIFTER · LIVE VAULT<br>
+    <b id="nn">—</b> NODES / <b id="ee">—</b> EDGES / <b id="ww">—</b> WEIGHT</div>
+</div>
+
+<script src="https://unpkg.com/gsap@3.13.0/dist/gsap.min.js"></script>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.176.0/build/three.module.js",
+"three/addons/":"https://unpkg.com/three@0.176.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {EffectComposer}  from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass}      from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const scene=new THREE.Scene(); // qi 2026-08-17: scene haze removed — "ugly and unrealistic". Depth comes from bloom + node scale, never atmosphere.
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,1,7000); camera.position.z=580;
+let _cd=580;   // eased orbit RADIUS. Separate from camera.position.z because once the camera can
+               // orbit, z is only one component of the distance — easing z directly would make
+               // the radius shrink as you swing round to the side.
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
+const composer=new EffectComposer(renderer); composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),1.05,.85,.09);
+composer.addPass(bloom);
+
+/* ================= STATE — GSAP owns everything animatable ============ */
+/* morph:1 == ORB. The orb is the HOME state (qi 2026-08-17: "the orb, the voice
+   reactive orb first / then the shape shifting comes out of that"), and because
+   it sits at the MIDDLE of the morph axis, wheels (0) and form (2) are both
+   reached by continuous deformation OUT OF the sphere — the shapeshift
+   literally comes out of the orb rather than being a separate mode. */
+const S={ fx:0,fy:0, camZ:580, scale:1, spin:.0015, jitter:0, flare:0,
+          energy:0, drift:0, morph:1, bend:0, reach:0, rz:0 };
+
+/* ================= DREAM WORLD — it bends ============================= */
+let world;
+{ const N=3400,p=new Float32Array(N*3),s=new Float32Array(N),ph=new Float32Array(N);
+  for(let i=0;i<N;i++){ const r=1500+Math.random()*3200,th=Math.random()*6.283,pp=Math.acos(2*Math.random()-1);
+    p[i*3]=r*Math.sin(pp)*Math.cos(th);p[i*3+1]=r*Math.sin(pp)*Math.sin(th);p[i*3+2]=r*Math.cos(pp);
+    s[i]=Math.random()*2.4+.4; ph[i]=Math.random()*6.283; }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(p,3));
+  g.setAttribute('asize',new THREE.BufferAttribute(s,1));
+  g.setAttribute('aph',new THREE.BufferAttribute(ph,1));
+  world=new THREE.Points(g,new THREE.ShaderMaterial({
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+    uniforms:{t:{value:0},bend:{value:0}},
+    vertexShader:`attribute float asize; attribute float aph; uniform float t; uniform float bend;
+      varying float vo;
+      void main(){ vec3 q=position;
+        float d=length(q);
+        // space folds toward the viewer — the dream bending
+        q.xy*= 1.0 + bend*0.42*sin(d*0.0018 + t*0.24 + aph);
+        q.z  += bend*260.0*sin(q.x*0.0011 + t*0.19);
+        q.x  += bend*180.0*cos(q.y*0.0013 + t*0.15);
+        vec4 mv=modelViewMatrix*vec4(q,1.0);
+        vo=.26+.24*sin(t*.7+aph);
+        gl_PointSize=asize*(320.0/-mv.z); gl_Position=projectionMatrix*mv; }`,
+    fragmentShader:`varying float vo; void main(){ vec2 d=gl_PointCoord-.5;
+      if(length(d)>.5) discard; gl_FragColor=vec4(.44,.95,.62, exp(-dot(d,d)*15.)*vo*.34); }`}));
+  scene.add(world); }
+
+/* ================= FORMS =============================================== */
+const ophanim=new THREE.Group(); scene.add(ophanim);
+let pts, base, T0, T1, T2, N=0, labels=[], shell, wisp, aura, reachLine, bandOf=null;
+const SHELL=220;
+const RINGS=[{t:[0,0,0],r:SHELL},{t:[1.5708,0,0],r:SHELL*1.06},{t:[0,1.5708,0],r:SHELL*.93},
+             {t:[.66,.5,.2],r:SHELL*1.11},{t:[-.8,1.0,-.35],r:SHELL*.88},{t:[1.15,.3,.75],r:SHELL*1.02}];
+const q=new THREE.Quaternion(), eu=new THREE.Euler();
+
+/* humanoid silhouette — same nodes, standing form */
+function humanoid(i,n){
+  const u=i/n, a=Math.random()*6.283, jr=Math.random();
+  let x,y,z,rad;
+  if(u<0.13){ rad=52*Math.sqrt(jr); y=210+Math.sqrt(Math.max(0,1-(rad/60)**2))*46;      // head
+              x=Math.cos(a)*rad; z=Math.sin(a)*rad*.86; }
+  else if(u<0.19){ rad=26+jr*10; y=150+jr*26; x=Math.cos(a)*rad; z=Math.sin(a)*rad*.8; } // neck
+  else if(u<0.34){ rad=118*(0.62+0.38*jr); y=118+jr*34;                                  // shoulders
+              x=Math.cos(a)*rad; z=Math.sin(a)*rad*.46; }
+  else if(u<0.62){ const ty=(u-0.34)/0.28; rad=(96-38*ty)*(0.55+0.45*jr);                // torso taper
+              y=118-ty*186; x=Math.cos(a)*rad; z=Math.sin(a)*rad*.52; }
+  else if(u<0.82){ const s=(u<0.72)?-1:1, ta=(u<0.72)?(u-0.62)/0.10:(u-0.72)/0.10;       // arms
+              x=s*(104+ta*54)+ (Math.random()-.5)*26; y=112-ta*196+(Math.random()-.5)*20;
+              z=(Math.random()-.5)*30; }
+  else { const s=(u<0.91)?-1:1, tl=(u<0.91)?(u-0.82)/0.09:(u-0.91)/0.09;                 // legs
+              x=s*38+(Math.random()-.5)*30; y=-68-tl*168+(Math.random()-.5)*20;
+              z=(Math.random()-.5)*32; }
+  return [x*1.02, y*1.02, z*1.02];
+}
+
+fetch('./xen-graph.json').then(r=>r.json()).then(g=>{
+  const idx=new Map(g.nodes.map((n,i)=>[n.id,i])); N=g.nodes.length;
+  T0=new Float32Array(N*3); T1=new Float32Array(N*3); T2=new Float32Array(N*3);
+  const md=Math.max(...g.nodes.map(n=>n.deg||0),1);
+
+  // T0 — OPHANIM
+  g.nodes.forEach((n,i)=>{ const t=(n.deg||0)/md, R=RINGS[i%RINGS.length];
+    const a=Math.random()*6.283, band=(1-t)*52+10, rr=R.r+(Math.random()-.5)*band;
+    const v=new THREE.Vector3(Math.cos(a)*rr,Math.sin(a)*rr,(Math.random()-.5)*band*.55);
+    eu.set(R.t[0],R.t[1],R.t[2]); q.setFromEuler(eu); v.applyQuaternion(q);
+    T0[i*3]=v.x;T0[i*3+1]=v.y;T0[i*3+2]=v.z; });
+  for(let p=0;p<16;p++){
+    for(const e of g.edges){ const a=idx.get(e.s),b=idx.get(e.t); if(a==null||b==null) continue;
+      const k=(e.w-.68)*.085;
+      for(let d=0;d<3;d++){const m=(T0[a*3+d]+T0[b*3+d])/2;
+        T0[a*3+d]+=(m-T0[a*3+d])*k; T0[b*3+d]+=(m-T0[b*3+d])*k;} }
+    for(let i=0;i<N;i++){ const x=T0[i*3],y=T0[i*3+1],z=T0[i*3+2];
+      const d=Math.hypot(x,y,z)||1e-4, want=SHELL*(.90+.16*((i%7)/7)), f=1+(want/d-1)*.17;
+      T0[i*3]=x*f;T0[i*3+1]=y*f;T0[i*3+2]=z*f; } }
+
+  // T1 — ORB (held sphere, dark core: nodes ride the surface)
+  // Each node also takes a BAND, by latitude, so the spectrum shows up on the
+  // orb as travelling rings instead of one uniform pulse. Low frequencies sit
+  // at the bottom of the sphere, highs at the crown — you can SEE pitch.
+  bandOf=new Uint8Array(N);
+  for(let i=0;i<N;i++){ const th=Math.random()*6.283, pp=Math.acos(2*Math.random()-1);
+    const r=SHELL*(.93+Math.random()*.11);
+    T1[i*3]=r*Math.sin(pp)*Math.cos(th); T1[i*3+1]=r*Math.sin(pp)*Math.sin(th); T1[i*3+2]=r*Math.cos(pp);
+    bandOf[i]=Math.max(0,Math.min(NB-1,Math.floor((T1[i*3+1]/r*.5+.5)*NB))); }
+
+  // T2 — HUMANOID
+  for(let i=0;i<N;i++){ const h=humanoid(i,N); T2[i*3]=h[0];T2[i*3+1]=h[1];T2[i*3+2]=h[2]; }
+
+  // it BOOTS as the orb, not as the ring form — the orb is home
+  base=new Float32Array(T1);
+  const pos=new Float32Array(T1), col=new Float32Array(N*3), siz=new Float32Array(N);
+  g.nodes.forEach((n,i)=>{ const t=Math.min((n.deg||0)/12,1);
+    col[i*3]=.24+.48*t; col[i*3+1]=.96; col[i*3+2]=.46+.24*t; siz[i]=2.2+7.4*t; });
+
+  const gp=new THREE.BufferGeometry();
+  gp.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  gp.setAttribute('acolor',new THREE.BufferAttribute(col,3));
+  gp.setAttribute('asize',new THREE.BufferAttribute(siz,1));
+  pts=new THREE.Points(gp,new THREE.ShaderMaterial({
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+    uniforms:{t:{value:0},foc:{value:new THREE.Vector3()},flare:{value:0}},
+    vertexShader:`attribute vec3 acolor; attribute float asize; uniform float t; uniform vec3 foc; uniform float flare;
+      varying vec3 vc; varying float vf; varying float vn;
+      void main(){ vc=acolor; vec4 wp=modelMatrix*vec4(position,1.);
+        vn=1.-smoothstep(0.,300.,distance(wp.xyz,foc));
+        vec4 mv=viewMatrix*wp; vf=1.-smoothstep(240.,2000.,-mv.z);
+        gl_PointSize=asize*(340./-mv.z)*(.85+.15*sin(t*1.7+position.x*.02))*(1.+1.5*vn+flare*.7);
+        gl_Position=projectionMatrix*mv; }`,
+    fragmentShader:`varying vec3 vc; varying float vf; varying float vn;
+      void main(){ vec2 d=gl_PointCoord-.5; float r=length(d); if(r>.5) discard;
+        gl_FragColor=vec4(mix(vc,vec3(.86,1.,.93),vn*.75), exp(-r*r*13.)*vf*(.55+.75*vn)); }`}));
+  ophanim.add(pts);
+
+  const ep=new Float32Array(g.edges.length*6), ea=new Float32Array(g.edges.length*2);
+  const eIdx=[]; let k=0,k2=0;
+  for(const e of g.edges){ const a=idx.get(e.s),b=idx.get(e.t); if(a==null||b==null) continue;
+    eIdx.push(a,b);
+    ep[k++]=T0[a*3];ep[k++]=T0[a*3+1];ep[k++]=T0[a*3+2];
+    ep[k++]=T0[b*3];ep[k++]=T0[b*3+1];ep[k++]=T0[b*3+2];
+    const w=Math.pow((e.w-.68)/.32,1.7)*.55; ea[k2++]=w; ea[k2++]=w; }
+  const ge=new THREE.BufferGeometry();
+  ge.setAttribute('position',new THREE.BufferAttribute(ep,3));
+  ge.setAttribute('aw',new THREE.BufferAttribute(ea,1));
+  const lines=new THREE.LineSegments(ge,new THREE.ShaderMaterial({
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+    vertexShader:`attribute float aw; varying float vw; varying float vf;
+      void main(){vw=aw; vec4 mv=modelViewMatrix*vec4(position,1.);
+        vf=1.-smoothstep(300.,2000.,-mv.z); gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`varying float vw; varying float vf;
+      void main(){gl_FragColor=vec4(.30,.93,.53,vw*vf*.38);}`}));
+  ophanim.add(lines); lines.userData.eIdx=eIdx;
+
+  /* obsidian glass shell — dark core, bright rim, specular arc */
+  shell=new THREE.Mesh(new THREE.SphereGeometry(268,80,80),new THREE.ShaderMaterial({
+    transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending,
+    uniforms:{t:{value:0},e:{value:0},op:{value:1}},
+    vertexShader:`varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      void main(){ vP=position; vN=normalize(normalMatrix*normal);
+        vec4 mv=modelViewMatrix*vec4(position,1.); vV=normalize(-mv.xyz);
+        gl_Position=projectionMatrix*mv; }`,
+    fragmentShader:`varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      uniform float t; uniform float e; uniform float op;
+      float h(vec3 p){return fract(sin(dot(p,vec3(12.99,78.23,45.16)))*43758.5453);}
+      float n3(vec3 p){vec3 i=floor(p),f=fract(p); f=f*f*(3.-2.*f);
+        return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),
+                   mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z);}
+      void main(){
+        float fres=pow(1.-abs(dot(normalize(vN),normalize(vV))),2.6);
+        float sm=pow(n3(vP*.0125+vec3(0.,t*.09,t*.05)),2.4);
+        vec3 L=normalize(vec3(-.55,.72,.42));
+        float spec=pow(max(dot(normalize(vN),L),0.),42.);
+        float a=fres*(.50+.22*e)+sm*.13+spec*.62;
+        vec3 c=vec3(.42,1.,.52)*fres*(1.+.5*e)+vec3(.30,.92,.40)*sm*.55+vec3(.85,1.,.90)*spec;
+        gl_FragColor=vec4(c, clamp(a,0.,.55)*op); }`}));
+  /* shell removed: it read as a container */
+
+  /* wisps licking off the surface */
+  { const W=420,wp=new Float32Array(W*3),ws=new Float32Array(W),wf=new Float32Array(W);
+    for(let i=0;i<W;i++){ const r=262+Math.random()*74,th=Math.random()*6.283,pp=Math.acos(2*Math.random()-1);
+      wp[i*3]=r*Math.sin(pp)*Math.cos(th);wp[i*3+1]=r*Math.sin(pp)*Math.sin(th);wp[i*3+2]=r*Math.cos(pp);
+      ws[i]=6+Math.random()*22; wf[i]=Math.random()*6.283; }
+    const wg=new THREE.BufferGeometry();
+    wg.setAttribute('position',new THREE.BufferAttribute(wp,3));
+    wg.setAttribute('asize',new THREE.BufferAttribute(ws,1));
+    wg.setAttribute('aph',new THREE.BufferAttribute(wf,1));
+    wisp=new THREE.Points(wg,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+      uniforms:{t:{value:0},e:{value:0}},
+      vertexShader:`attribute float asize; attribute float aph; uniform float t; uniform float e; varying float vo;
+        void main(){ vec3 p=position; float lick=.5+.5*sin(t*1.15+aph*2.);
+          p*=1.+lick*(.10+.09*e); p.x+=sin(t*.9+aph)*7.; p.z+=cos(t*.8+aph)*7.;
+          vec4 mv=modelViewMatrix*vec4(p,1.); vo=(.13+.30*e)*lick;
+          gl_PointSize=asize*(340./-mv.z); gl_Position=projectionMatrix*mv; }`,
+      fragmentShader:`varying float vo; void main(){vec2 d=gl_PointCoord-.5; float r=length(d);
+        if(r>.5) discard; gl_FragColor=vec4(.46,1.,.56, exp(-r*r*8.)*vo);}`}));
+    ophanim.add(wisp); }
+
+  /* ghastly aura */
+  { const A=1400,ap=new Float32Array(A*3),as=new Float32Array(A),ao=new Float32Array(A);
+    for(let i=0;i<A;i++){ const r=250+Math.pow(Math.random(),.55)*230,th=Math.random()*6.283,pp=Math.acos(2*Math.random()-1);
+      ap[i*3]=r*Math.sin(pp)*Math.cos(th);ap[i*3+1]=r*Math.sin(pp)*Math.sin(th);ap[i*3+2]=r*Math.cos(pp);
+      as[i]=34+Math.random()*96; ao[i]=Math.random()*6.283; }
+    const ag=new THREE.BufferGeometry();
+    ag.setAttribute('position',new THREE.BufferAttribute(ap,3));
+    ag.setAttribute('asize',new THREE.BufferAttribute(as,1));
+    ag.setAttribute('aph',new THREE.BufferAttribute(ao,1));
+    aura=new THREE.Points(ag,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+      uniforms:{t:{value:0},e:{value:0},cz:{value:580}},
+      vertexShader:`attribute float asize; attribute float aph; uniform float t; uniform float e;
+        uniform float cz; varying float vo;
+        void main(){ vec3 p=position; float r=length(p);
+          vec3 n=p/r;
+          vec3 ax=normalize(vec3(sin(aph*1.7),cos(aph*2.3),sin(aph*.9)));
+          vec3 tang=normalize(cross(n,ax));
+          float sp=t*(.34+.5*e)+aph;
+          p+=tang*sin(sp)*46.+cross(n,tang)*cos(sp*.83)*38.;
+          p*=1.+.04*sin(t*.5+aph)+e*.05;
+          vec4 mv=modelViewMatrix*vec4(p,1.);
+          vo=(.030+.038*e)*(.40+.60*(.5+.5*sin(sp*.7)));
+          /* HALO, NOT VEIL. The aura is what qi asked for back; the SMOKE he
+             rejected was the same points stacking BETWEEN the camera and the
+             core. Measured 2026-08-17: with the orb as the boot state the
+             frontal shell covered the whole viewport in grey discs again.
+             So fade by view depth — points in front of the sphere's near face
+             drop out, points level with it and behind keep their full value.
+             Nothing is removed; the halo and the back-glow are untouched. */
+          vo *= smoothstep(cz-250., cz-30., -mv.z);
+          gl_PointSize=asize*(340./-mv.z); gl_Position=projectionMatrix*mv; }`,
+      fragmentShader:`varying float vo; void main(){vec2 d=gl_PointCoord-.5; float r=length(d);
+        if(r>.5) discard; gl_FragColor=vec4(.74,.95,.83, exp(-r*r*5.2)*vo);}`}));
+    ophanim.add(aura); }
+
+  /* TELEKINESIS — a filament it extends toward what it is reaching for */
+  { const rg=new THREE.BufferGeometry();
+    rg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));
+    reachLine=new THREE.Line(rg,new THREE.LineBasicMaterial({
+      color:0x8fffbe,transparent:true,opacity:0,blending:THREE.AdditiveBlending}));
+    scene.add(reachLine); }
+
+  document.getElementById('nn').textContent=N.toLocaleString();
+  document.getElementById('ee').textContent=g.edges.length.toLocaleString();
+  const ws2=g.edges.map(e=>e.w);
+  document.getElementById('ww').textContent=Math.min(...ws2).toFixed(3)+'–'+Math.max(...ws2).toFixed(3);
+  g.nodes.slice().sort((a,b)=>(b.deg||0)-(a.deg||0)).slice(0,6).forEach(n=>{
+    const el=document.createElement('div'); el.className='lbl';
+    el.textContent=n.id.replace(/-/g,' ').slice(0,32);
+    document.querySelector('.ui').appendChild(el); labels.push({el,i:idx.get(n.id)}); });
+
+  gsap.fromTo(S,{scale:.15},{scale:1,duration:2.4,ease:'power3.out'});
+});
+
+/* ================= SHAPESHIFT ========================================= */
+const FORMS=['OPHANIM','ORB','FORM'];
+function shift(to){
+  gsap.to(S,{morph:to,duration:2.2,ease:'power2.inOut',
+    onUpdate:()=>{document.getElementById('form').textContent=
+      FORMS[Math.round(S.morph)]||FORMS[0];}});
+  gsap.to(S,{bend:1,duration:.7,ease:'power2.out'});
+  gsap.to(S,{bend:0,duration:2.4,delay:.7,ease:'power2.inOut'});   // world bends during the change
+  gsap.fromTo(S,{flare:1.6},{flare:0,duration:1.8,ease:'power2.out'});
+}
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>shift(+b.dataset.f));
+
+/* ================= TELEPATHY / STALKING =============================== */
+const cur=document.getElementById('cur'), mood=document.getElementById('mood');
+const setMood=m=>{ if(mood.textContent!==m){mood.textContent=m; gsap.fromTo(mood,{opacity:0},{opacity:1,duration:.5});} };
+let idleT, lastX=0,lastY=0,vx=0,vy=0;
+function stir(m){ setMood(m); clearTimeout(idleT);
+  idleT=setTimeout(()=>{ setMood('IDLE'); gsap.to(S,{spin:.0015,duration:2.4,ease:'power2.out'});
+    if(Math.abs(S.morph-1)>0.02) shift(1); },3400); }   // it always settles back to the ORB
+
+addEventListener('pointermove',e=>{
+  vx=e.clientX-lastX; vy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+  // ANTICIPATION: lead the cursor by its velocity — it arrives before you do
+  const ax=e.clientX+vx*5.5, ay=e.clientY+vy*5.5;
+  gsap.to(S,{fx:(ax/innerWidth*2-1),fy:-(ay/innerHeight*2-1),duration:.40,ease:'power3.out',overwrite:'auto'});
+  gsap.to(cur,{left:e.clientX,top:e.clientY,duration:.15,ease:'power2.out'});
+  stir('TRACKING');
+});
+addEventListener('touchmove',e=>{const t=e.touches[0]; if(!t)return;
+  gsap.to(S,{fx:(t.clientX/innerWidth*2-1),fy:-(t.clientY/innerHeight*2-1),duration:.4,ease:'power3.out',overwrite:'auto'});
+  gsap.to(cur,{left:t.clientX,top:t.clientY,duration:.15}); stir('TOUCH');},{passive:true});
+
+// qi 2026-08-17 04:28, testing on his phone: "when its touched, that bounce effect is too
+// aggressive." It was scale .80 -> 1.14 on elastic.out(1,.42) — a 34% swing with a springy
+// overshoot, which on a small screen reads as the whole world lurching. Halved and de-sprung:
+// .92 -> 1.045 on a soft back-ease. Still clearly acknowledges the touch, no lurch.
+addEventListener('pointerdown',()=>{ stir('STRUCK');
+  gsap.timeline().to(S,{scale:.92,duration:.10,ease:'power3.in'})
+    .to(S,{scale:1.045,duration:.34,ease:'back.out(1.6)'})
+    .to(S,{scale:1,duration:.6,ease:'power2.out'});
+  gsap.fromTo(S,{flare:1.0},{flare:0,duration:1.0,ease:'power2.out'}); });
+
+// ── ORBIT + PINCH ────────────────────────────────────────────────────────────────
+// qi 2026-08-17 04:28-04:29, on mobile, verbatim: "Im trying to travel through the world" ·
+// "Its not really changing sides for me or anything" · "its not letting me zoom out" ·
+// "You can zoom in" · "Theres nothing doing the zoom out."
+//
+// He was right on every count, and the cause is one thing: THERE WAS NO ORBIT CONTROL.
+// The camera was only ever `x += (fx*70 - x)*.05` / `y += (fy*54 - y)*.05` at a fixed z — a
+// ±70/±54 unit SWAY around one viewpoint. It can lean, it can never go AROUND. That is exactly
+// "not changing sides".
+// And zoom lived solely on a `wheel` listener. **A phone never fires `wheel`.** So there was
+// literally nothing bound to zoom on touch — what read as "you can zoom in" was Safari scaling
+// the PAGE, and page zoom bottoms out at 1.0, which is why out did nothing.
+//
+// Fixed with true spherical orbit + a two-finger pinch. The pointer-tracking lean (S.fx/S.fy)
+// is DELIBERATELY KEPT — qi liked that ("Following my mouse") — it just no longer owns the
+// camera. Lean is now a small offset ON TOP of the orbit.
+S.az = 0; S.el = 0;                       // azimuth / elevation, radians
+const EL_MAX = 1.35;                      // ~77deg: stop just short of the poles (gimbal flip)
+let drag=null, pinch=null;
+const _dist=(a,b)=>Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+
+addEventListener('touchstart',e=>{
+  if(e.touches.length===2){ drag=null; pinch={d:_dist(e.touches[0],e.touches[1]), z:S.camZ}; }
+  else if(e.touches.length===1){ pinch=null; const t=e.touches[0];
+    drag={x:t.clientX,y:t.clientY,az:S.az,el:S.el}; }
+},{passive:true});
+
+addEventListener('touchmove',e=>{
+  if(pinch && e.touches.length===2){
+    const d=_dist(e.touches[0],e.touches[1]);
+    if(pinch.d>0){ stir('TRAVELLING');
+      // spread fingers -> d grows -> ratio >1 -> camZ shrinks -> move IN. Pinch -> move OUT.
+      gsap.to(S,{camZ:gsap.utils.clamp(260,2400,pinch.z*(pinch.d/d)),
+                 duration:.18,ease:'power2.out',overwrite:'auto'}); }
+    return;
+  }
+  if(drag && e.touches.length===1){ const t=e.touches[0];
+    stir('TRAVELLING');
+    S.az = drag.az + (t.clientX-drag.x)*0.0075;
+    S.el = gsap.utils.clamp(-EL_MAX, EL_MAX, drag.el - (t.clientY-drag.y)*0.0060);
+  }
+},{passive:true});
+
+addEventListener('touchend',e=>{ if(e.touches.length===0){ drag=null; pinch=null; } },{passive:true});
+
+// Desktop: drag with the button held orbits too, so the two paths behave the same.
+let mdown=null;
+addEventListener('mousedown',e=>{ mdown={x:e.clientX,y:e.clientY,az:S.az,el:S.el}; });
+addEventListener('mousemove',e=>{ if(!mdown)return; stir('TRAVELLING');
+  S.az = mdown.az + (e.clientX-mdown.x)*0.0075;
+  S.el = gsap.utils.clamp(-EL_MAX, EL_MAX, mdown.el - (e.clientY-mdown.y)*0.0060); });
+addEventListener('mouseup',()=>{ mdown=null; });
+
+addEventListener('wheel',e=>{ stir('TRAVELLING');
+  gsap.to(S,{camZ:gsap.utils.clamp(300,1600,S.camZ+e.deltaY*.55),duration:.85,ease:'power3.out',overwrite:'auto'});
+  gsap.to(S,{spin:.011,duration:.25}); gsap.to(S,{spin:.0015,duration:2.2,delay:.5});
+  gsap.to(S,{bend:Math.min(1,Math.abs(e.deltaY)/900),duration:.4});
+  gsap.to(S,{bend:0,duration:1.6,delay:.5}); },{passive:true});
+
+addEventListener('keydown',()=>{ stir('LISTENING');
+  gsap.fromTo(S,{jitter:1},{jitter:0,duration:.55,ease:'power2.out'});
+  if(S.morph<1.5) shift(2); });                       // it stands up to answer
+
+/* TELEKINESIS: hover any button and it reaches, and the button drifts */
+document.querySelectorAll('button').forEach(b=>{
+  b.addEventListener('pointerenter',()=>{ stir('REACHING');
+    gsap.to(S,{reach:1,duration:.5,ease:'power2.out'});
+    gsap.to(b,{x:6,y:-3,duration:.6,ease:'power2.out'}); });
+  b.addEventListener('pointerleave',()=>{
+    gsap.to(S,{reach:0,duration:.8,ease:'power2.inOut'});
+    gsap.to(b,{x:0,y:0,duration:.9,ease:'elastic.out(1,.5)'}); });
+});
+
+function arrive(){ stir('EVENT'); shift(1);
+  gsap.timeline().to(S,{rz:S.rz+Math.PI*.42,duration:.9,ease:'power3.inOut'})
+    .fromTo(S,{flare:2.0},{flare:0,duration:1.4},0)
+    .fromTo(S,{scale:1.18},{scale:1,duration:1.1,ease:'elastic.out(1,.5)'},0); }
+document.getElementById('probe').onclick=arrive;
+
+/* ================= VOICE ==============================================
+   AUDIT of what this used to be, before assuming it worked:
+     fftSize was 32 -> frequencyBinCount 16 -> ~1.5 kHz PER BIN. Every human
+     voice fundamental (85-255 Hz) landed in bin 0, and all 16 bins were then
+     averaged into one scalar anyway. So there was NO frequency information in
+     the page at all — only a loudness number, driving point-pull amplitude,
+     wisp/aura opacity and bloom. The `shell` it also drove was never added to
+     the scene, so that leg was dead.
+   Now: 2048-point FFT (~23 Hz per bin, real voice resolution) folded into 8
+   log-spaced bands with per-band attack/release, plus a slow AGC so a quiet
+   room still moves the orb. The bands drive LATITUDE RINGS on the orb (see
+   ORB_BAND in the loop) so frequency is visible as shape, not just brightness.
+   ⚠️ NOT VERIFIED WITH A REAL MIC — this machine is a Mac mini with no
+   microphone (vault: mac-mini-has-no-mic). The render path is verified with a
+   synthesized tone via XENOS.testTone(); the getUserMedia leg is code-shipped
+   and unverified until qi speaks into it.                                   */
+const NB=8;
+let analyser=null,bins=null,actx=null;
+const BAND=new Float32Array(NB), BTGT=new Float32Array(NB);
+let LEVEL=0, APEAK=1e-4, HAS_AUDIO=false;
+
+function attachAnalyser(node,ctx){
+  const a=ctx.createAnalyser(); a.fftSize=2048; a.smoothingTimeConstant=.72;
+  node.connect(a); analyser=a; bins=new Uint8Array(a.frequencyBinCount);
+  actx=ctx; HAS_AUDIO=true; return a;
+}
+document.getElementById('mic').onclick=async ev=>{
+  try{ const st=await navigator.mediaDevices.getUserMedia({audio:{
+         echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const c=new AudioContext(); if(c.state==='suspended') await c.resume();
+    attachAnalyser(c.createMediaStreamSource(st),c);   // analyser is a SINK — never to destination
+    ev.target.textContent='◉ listening';
+  }catch(e){ ev.target.textContent='◉ denied'; } };
+
+/* read the spectrum, or breathe on our own so it is never a dead page */
+function readVoice(){
+  if(analyser){
+    analyser.getByteFrequencyData(bins);
+    const M=bins.length; let sum=0;
+    for(let b=0;b<NB;b++){                       // log-spaced: voice is not linear in bin index
+      const lo=Math.floor(Math.pow(M,b/NB)), hi=Math.max(lo+1,Math.floor(Math.pow(M,(b+1)/NB)));
+      let s=0; for(let i=lo;i<hi;i++) s+=bins[i];
+      BTGT[b]=s/((hi-lo)*255); sum+=BTGT[b];
+    }
+    let lv=sum/NB;
+    APEAK=Math.max(APEAK*.9992, lv);             // slow AGC — a quiet room still moves it
+    const g=1/Math.max(APEAK,.045);
+    for(let b=0;b<NB;b++) BTGT[b]=Math.min(1.6,BTGT[b]*g);
+    lv=Math.min(1.5,lv*g);
+    LEVEL+= (lv-LEVEL)*(lv>LEVEL?.55:.06);
+  }else{
+    // SELF-DRIVEN BREATH — incommensurate rates, so it never visibly loops
+    // deliberately GENTLE: this is a resting breath, not a performance. It must
+    // read as alive without ever looking like it is hearing something.
+    for(let b=0;b<NB;b++)
+      BTGT[b]=(.10+.15*(.5+.5*Math.sin(t*(.37+b*.211)+b*1.73))
+                  +.05*Math.sin(t*(1.7+b*.53)+b))*(1-b*.055);
+    const lv=.055+.045*Math.sin(t*.55)+.022*Math.sin(t*1.31+1.7);
+    LEVEL+=(lv-LEVEL)*.06;
+  }
+  for(let b=0;b<NB;b++)                          // attack fast, release slow -> reads as a voice
+    BAND[b]+=(BTGT[b]-BAND[b])*(BTGT[b]>BAND[b]?.55:.075);
+}
+
+/* verification hook: drives the analyser with a real WebAudio signal so the
+   render path can be proven without a microphone. Never reaches destination. */
+window.XENOS={
+  get voice(){ return {live:HAS_AUDIO, level:+LEVEL.toFixed(3),
+                       bands:Array.from(BAND).map(v=>+v.toFixed(3))}; },
+  get morph(){ return +S.morph.toFixed(3); },
+  get energy(){ return +S.energy.toFixed(3); },
+  shift,
+  /* geometry probe — proves the spectrum reaches the MESH, not just a uniform.
+     Returns mean radius overall and per latitude band, so a low tone must move
+     the low bands and leave the high ones alone. */
+  stats(){
+    if(!pts||!bandOf) return null;
+    const p=pts.geometry.attributes.position.array;
+    const sum=new Float64Array(NB), cnt=new Float64Array(NB); let all=0;
+    for(let i=0,n=0;i<p.length;i+=3,n++){
+      const r=Math.hypot(p[i],p[i+1],p[i+2]);
+      all+=r; sum[bandOf[n]]+=r; cnt[bandOf[n]]++;
+    }
+    return { meanR:+(all/(p.length/3)).toFixed(2),
+             byBand:Array.from(sum).map((s,i)=>+(s/Math.max(cnt[i],1)).toFixed(2)) };
+  },
+  async testTone(freq){
+    const c=new AudioContext(); if(c.state==='suspended') await c.resume();
+    const o=c.createOscillator(), g=c.createGain();
+    o.type='sawtooth'; o.frequency.value=freq||160; g.gain.value=.9;
+    o.connect(g); attachAnalyser(g,c); o.start();     // into the analyser ONLY
+    return 'tone '+(freq||160)+'Hz -> analyser';
+  }
+};
+
+/* ================= LOOP =============================================== */
+const proj=new THREE.Vector3(), foc=new THREE.Vector3(); let t=0, spoke=false;
+function frame(){
+  requestAnimationFrame(frame); t+=.016;
+  readVoice();
+  const e=LEVEL;
+  // TELEPATHY: reacts to sound ONSET, before any transcript exists.
+  // Only a REAL input can trigger it — the self-driven breath must never make
+  // the entity think it heard something.
+  if(HAS_AUDIO){
+    if(e>.55&&!spoke){ spoke=true; stir('HEARD YOU'); if(S.morph<1.5) shift(2); }
+    if(e<.22) spoke=false;
+  }
+  S.energy+=(e-S.energy)*(e>S.energy?.6:.045);
+  S.drift+=.0041;
+  // how much of the ORB we are currently in — 1 at the sphere, 0 at either edge
+  const orbW=Math.max(0,1-Math.abs(S.morph-1));
+
+  // morph between the three bodies
+  if(pts&&base&&T0){
+    const m=S.morph, A=(m<1)?T0:T1, B=(m<1)?T1:T2, k=(m<1)?m:m-1;
+    for(let i=0;i<N*3;i++) base[i]=A[i]+(B[i]-A[i])*k;
+  }
+
+  const jx=S.jitter*(Math.random()-.5)*.09, jy=S.jitter*(Math.random()-.5)*.09;
+  ophanim.rotation.y += ((S.fx*.95+jx)-ophanim.rotation.y)*.09 + S.spin;
+  ophanim.rotation.x += ((-S.fy*.72+jy)-ophanim.rotation.x)*.09;
+  ophanim.rotation.z  = S.rz + Math.sin(S.drift*.9)*(.05+S.energy*.06);
+  ophanim.position.x += ((S.fx*46)-ophanim.position.x)*.08;
+  ophanim.position.y += ((S.fy*38)-ophanim.position.y)*.08;
+  ophanim.scale.setScalar(S.scale);
+
+  // TRUE SPHERICAL ORBIT (qi 2026-08-17 04:28: "Its not really changing sides for me").
+  // Was a ±70/±54 sway at fixed z — a lean, never a circumnavigation. Now az/el place the
+  // camera anywhere on the sphere, and the pointer lean he liked survives as a SMALL offset
+  // added on top rather than as the camera's only motion.
+  _cd += (S.camZ - _cd) * .08;                       // eased radius, keeps the old damping feel
+  const _ce = Math.cos(S.el), _tx = Math.sin(S.az)*_ce*_cd,
+        _ty = Math.sin(S.el)*_cd, _tz = Math.cos(S.az)*_ce*_cd;
+  camera.position.x += ((_tx + S.fx*26) - camera.position.x)*.10;
+  camera.position.y += ((_ty + S.fy*20) - camera.position.y)*.10;
+  camera.position.z += ( _tz            - camera.position.z)*.10;
+  camera.lookAt(0,0,0);
+
+  foc.set(S.fx*300,S.fy*240,120);
+  if(pts){ const u=pts.material.uniforms;
+    u.foc.value.copy(foc); u.t.value=t; u.flare.value=S.flare;
+    const p=pts.geometry.attributes.position.array;
+    /* The legacy focus-pull is DAMPED inside the orb. MEASURED 2026-08-17 with
+       a 70 Hz test tone through the analyser: at S.energy~1.0 this term drove
+       amp to 79 and yanked every node toward `foc`, collapsing mean radius
+       216.6 -> 149.3 (-31%). The orb SHRANK when you spoke to it. Outside the
+       orb (orbW 0) the term is untouched, so wheels and form behave exactly as
+       they always did. */
+    const amp=(9+70*Math.min(S.energy,1.2)+S.flare*26)*(1-.62*orbW);
+    /* ORB_BAND — the spectrum as SHAPE. Each node holds a band by latitude, so
+       a low note swells the bottom of the sphere and a high note beads the
+       crown. Applied as a FRACTIONAL radius change: the first version divided
+       by radius and then scaled by .006, which came out ~0.5% and was invisible
+       against the pull above. */
+    const bandK=orbW*.135, breathK=orbW*(.012+.042*Math.min(S.energy,1.2));
+    for(let i=0,n=0;i<p.length;i+=3,n++){
+      const dx=base[i]-foc.x,dy=base[i+1]-foc.y,dz=base[i+2]-foc.z;
+      const d=Math.sqrt(dx*dx+dy*dy+dz*dz)+1e-4, pull=amp/(1+d*.012), w=Math.sin(S.drift*2.3+d*.021);
+      let x=base[i]-(dx/d)*pull*w, y=base[i+1]-(dy/d)*pull*w, z=base[i+2]-(dz/d)*pull*w*.55;
+      if(bandOf&&bandK>1e-4){
+        const b=bandOf[n];
+        // the ring travels around the sphere so a band reads as motion, not a lump
+        const ring=Math.sin(S.drift*3.1+b*1.27+Math.atan2(z,x)*2.0);
+        const f=1+BAND[b]*bandK*(.55+.45*ring)+breathK;
+        x*=f; y*=f; z*=f;
+      }
+      p[i]=x; p[i+1]=y; p[i+2]=z; }
+    pts.geometry.attributes.position.needsUpdate=true; }
+
+  // shell fades out as it leaves the orb — a body only when it holds one
+  if(shell){ const u=shell.material.uniforms; u.t.value=t; u.e.value=S.energy+S.flare*.5;
+    u.op.value=Math.max(0,1-Math.abs(S.morph-1)*0.85); }
+  if(wisp){ wisp.material.uniforms.t.value=t; wisp.material.uniforms.e.value=S.energy+S.flare*.5; }
+  if(aura){ aura.material.uniforms.t.value=t; aura.material.uniforms.e.value=S.energy+S.flare*.5;
+    aura.material.uniforms.cz.value=camera.position.distanceTo(ophanim.position);
+    aura.rotation.y-=.00055; aura.rotation.z+=.00031; }
+  if(world){ world.material.uniforms.t.value=t; world.material.uniforms.bend.value=S.bend; }
+
+  if(reachLine){ const a=reachLine.geometry.attributes.position.array;
+    a[0]=0;a[1]=0;a[2]=0; a[3]=foc.x;a[4]=foc.y;a[5]=foc.z;
+    reachLine.geometry.attributes.position.needsUpdate=true;
+    reachLine.material.opacity=S.reach*.5; }
+
+  /* MEASURED 2026-08-17 with a full-scale 70 Hz tone: at *.85 the orb clipped to
+     a solid white disc and every filament inside it disappeared. qi's visual
+     language is near-black with ONE blown source and form defined by WHERE THE
+     LIGHT STOPS — a uniform white circle has no "where". Loud input must make it
+     brighter, never featureless, so the audio term is compressed and capped. */
+  bloom.strength=1.02+Math.min(S.energy,1.2)*.30+S.flare*.5;
+
+  for(const L of labels){ if(L.i==null||!pts) continue;
+    const a=pts.geometry.attributes.position.array;
+    proj.set(a[L.i*3],a[L.i*3+1],a[L.i*3+2]).applyMatrix4(ophanim.matrixWorld).project(camera);
+    if(proj.z<1){ L.el.style.left=((proj.x*.5+.5)*innerWidth+16)+'px';
+      L.el.style.top=((-proj.y*.5+.5)*innerHeight)+'px'; L.el.classList.add('on'); }
+    else L.el.classList.remove('on'); }
+  composer.render();
+}
+frame();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>

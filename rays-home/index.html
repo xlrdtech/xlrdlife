@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="en" class="dark scroll-smooth antialiased" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Ray's House of Fun — coding, gaming, languages, and curiosities. Curated learning trails by Ray de la Paz.">
+<meta name="author" content="Ray de la Paz">
+<title>Ray's House of Fun</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ray's House">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  // Light/dark mode bootstrap (independent of theme-color randomizer)
+  (function bootMode(){
+    const saved = (localStorage.getItem('theme') === 'light') ? 'light' : 'dark';
+    document.documentElement.dataset.theme = saved;
+    document.documentElement.classList.toggle('dark', saved === 'dark');
+  })();
+  window.toggleMode = function(){
+    const next = (document.documentElement.dataset.theme === 'dark') ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    document.documentElement.classList.toggle('dark', next === 'dark');
+    localStorage.setItem('theme', next);
+    const el = document.getElementById('mode-icon');
+    if (el) {
+      el.setAttribute('data-lucide', next === 'light' ? 'sun' : 'moon');
+      if (window.lucide && lucide.createIcons) lucide.createIcons();
+    }
+  };
+  document.addEventListener('DOMContentLoaded', function(){
+    const el = document.getElementById('mode-icon');
+    if (el) el.setAttribute('data-lucide', document.documentElement.dataset.theme === 'light' ? 'sun' : 'moon');
+    if (window.lucide && lucide.createIcons) lucide.createIcons();
+  });
+</script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Manrope', 'sans-serif'] },
+        colors: {
+          brand: { navy: '#0F172A', slate: '#1E293B', gold: '#D4AF37' }
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+:root{
+  --theme-color:#0080FF;
+  --glass-blur:30px;
+  --success:#10b981;
+}
+:root[data-theme="dark"]{
+  --color-bg:#000000;
+  --text-header:#FFFFFF;
+  --text-body:#A1A1AA;
+  --glass-bg:rgba(10,10,10,0.6);
+  --glass-border:rgba(255,255,255,0.15);
+  --glass-highlight:rgba(255,255,255,0.2);
+  --glass-shadow:rgba(0,0,0,1);
+  --orb-opacity:0.2;
+  --orb2-bg:#0F172A;
+  --orb2-opacity:0.6;
+  --particle-opacity:1;
+  --msg-bot-bg:rgba(255,255,255,.05);
+  --input-bg:rgba(255,255,255,.05);
+  --modal-card-bg:rgba(15,15,15,0.95);
+  --drawer-bg:rgba(10,10,10,0.92);
+  --path-bg:rgba(255,255,255,.04);
+}
+:root[data-theme="light"]{
+  --color-bg:#E2E8F0;
+  --text-header:#020617;
+  --text-body:#1F2937;
+  --glass-bg:rgba(255,255,255,0.55);
+  --glass-border:rgba(0,0,0,0.18);
+  --glass-highlight:rgba(255,255,255,0.85);
+  --glass-shadow:rgba(15,23,42,0.18);
+  --orb-opacity:0.35;
+  --orb2-bg:#CBD5E1;
+  --orb2-opacity:0.5;
+  --particle-opacity:0;
+  --msg-bot-bg:rgba(0,0,0,.04);
+  --input-bg:rgba(0,0,0,.04);
+  --modal-card-bg:rgba(250,250,250,0.97);
+  --drawer-bg:rgba(245,245,244,0.96);
+  --path-bg:rgba(0,0,0,.03);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Manrope',sans-serif;
+  background-color:var(--color-bg);
+  color:var(--text-body);
+  overflow-x:hidden;
+  min-height:100vh;
+  margin:0;
+  position:relative;
+}
+
+/* Glow orbs (floating ambient background, ported from execpage) */
+.glow-orb{
+  position:fixed;border-radius:50%;
+  filter:blur(150px);opacity:var(--orb-opacity);z-index:-1;pointer-events:none;
+  background:var(--theme-color);
+  mix-blend-mode:screen;
+  animation:float 25s infinite alternate ease-in-out;
+  will-change:transform;
+}
+/* Particle background canvas (ported from execpage 3D cloud engine) */
+#particle-canvas{
+  position:fixed;inset:0;width:100vw;height:100vh;
+  z-index:-2;pointer-events:none;
+  opacity:var(--particle-opacity);
+  transition:opacity .4s ease;
+}
+#particle-canvas canvas{display:block;width:100%;height:100%}
+.orb-1{width:70vw;height:70vw;top:-20%;left:-20%}
+.orb-2{width:60vw;height:60vw;bottom:-10%;right:-10%;animation-delay:-7s;background:var(--orb2-bg);opacity:var(--orb2-opacity)}
+@keyframes float{
+  0%{transform:translate(0,0) scale(1) rotate(0deg)}
+  100%{transform:translate(8%,8%) scale(1.1) rotate(5deg)}
+}
+
+/* Glass panel */
+.glass-panel{
+  background:var(--glass-bg);
+  backdrop-filter:blur(var(--glass-blur));
+  -webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);
+  box-shadow:0 4px 24px -1px var(--glass-shadow), inset 0 1px 0 0 var(--glass-highlight);
+  transition:transform .4s cubic-bezier(.16,1,.3,1), box-shadow .4s ease, border-color .4s ease;
+  border-radius:18px;
+}
+.glass-panel.is-card:hover{
+  transform:translateY(-3px);
+  border-color:color-mix(in srgb,var(--theme-color) 50%, transparent);
+  box-shadow:0 20px 50px -5px var(--glass-shadow), inset 0 1px 0 0 var(--glass-highlight), 0 0 0 1px color-mix(in srgb,var(--theme-color) 20%, transparent);
+}
+.no-hover-effect:hover{transform:none}
+
+/* Buttons */
+.btn-brand{
+  background:var(--theme-color);
+  color:#0F172A;
+  font-weight:800;
+  transition:all .3s cubic-bezier(.16,1,.3,1);
+  box-shadow:0 4px 20px color-mix(in srgb,var(--theme-color) 30%, transparent);
+  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  border:none;cursor:pointer;font-family:inherit;
+  padding:.7rem 1.4rem;border-radius:99px;font-size:.9rem;
+}
+.btn-brand:hover{transform:translateY(-2px);box-shadow:0 8px 28px color-mix(in srgb,var(--theme-color) 50%, transparent)}
+.btn-ghost{
+  background:transparent;color:var(--text-header);
+  border:1px solid var(--glass-border);
+  padding:.6rem 1.2rem;border-radius:99px;font-size:.85rem;
+  font-family:inherit;cursor:pointer;font-weight:600;
+  display:inline-flex;align-items:center;gap:.4rem;
+  transition:border-color .25s ease, color .25s ease, background .25s ease;
+}
+.btn-ghost:hover{border-color:var(--theme-color);color:var(--theme-color)}
+
+/* Topbar */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  padding:.85rem 1.25rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  margin:1rem;border-radius:18px;
+}
+.brand-mark{
+  font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:-.02em;
+  font-size:1.05rem;color:var(--text-header);
+  display:flex;align-items:center;gap:.55rem;
+}
+.brand-mark .dot{
+  width:10px;height:10px;border-radius:50%;
+  background:var(--theme-color);
+  box-shadow:0 0 14px var(--theme-color);
+}
+
+/* Hero */
+.hero{
+  text-align:center;
+  padding:5rem 1.5rem 3rem;
+  max-width:1100px;margin:0 auto;
+}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--theme-color);font-weight:700;
+  padding:.4rem .9rem;border-radius:99px;
+  border:1px solid color-mix(in srgb,var(--theme-color) 35%, transparent);
+  background:color-mix(in srgb,var(--theme-color) 8%, transparent);
+  margin-bottom:1.5rem;
+}
+.hero h1{
+  font-size:clamp(2.75rem,8vw,5.5rem);
+  font-weight:800;letter-spacing:-.04em;line-height:.98;
+  color:var(--text-header);
+  margin:0 0 1.25rem;
+  background:linear-gradient(180deg,var(--text-header) 0%,var(--text-header) 45%,color-mix(in srgb,var(--text-header) 70%,#888) 55%,var(--text-header) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:0 1px 0 color-mix(in srgb,var(--text-header) 35%,transparent),0 0 30px color-mix(in srgb,var(--theme-color) 25%,transparent);
+  filter:drop-shadow(0 2px 4px color-mix(in srgb,var(--text-header) 25%,transparent));
+}
+:root[data-theme="light"] .hero h1{
+  background:linear-gradient(180deg,#020617 0%,#1e293b 45%,#475569 60%,#0f172a 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:0 1px 0 rgba(255,255,255,.55),0 2px 6px rgba(15,23,42,.25);
+}
+.hero h1 .accent{
+  color:var(--theme-color);background:none;-webkit-text-fill-color:var(--theme-color);
+  text-shadow:0 0 24px color-mix(in srgb,var(--theme-color) 50%,transparent),0 1px 2px rgba(0,0,0,.45);
+}
+.section h2{
+  background:linear-gradient(180deg,var(--text-header) 0%,var(--text-header) 50%,color-mix(in srgb,var(--text-header) 60%,#999) 65%,var(--text-header) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 1px 2px color-mix(in srgb,var(--text-header) 20%,transparent));
+}
+:root[data-theme="light"] .section h2{
+  background:linear-gradient(180deg,#020617 0%,#1e293b 55%,#475569 70%,#0f172a 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:0 1px 0 rgba(255,255,255,.5);
+}
+.hero .tag{
+  font-size:clamp(1rem,1.6vw,1.25rem);
+  color:var(--text-body);
+  max-width:640px;margin:0 auto 1.75rem;line-height:1.55;
+}
+.by{
+  display:inline-flex;align-items:center;gap:.5rem;
+  padding:.45rem 1.05rem;border:1px solid var(--glass-border);
+  border-radius:99px;font-size:.82rem;color:var(--text-body);
+  letter-spacing:.04em;
+}
+.by .name{color:var(--theme-color);font-weight:700}
+
+.hero-actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:2rem}
+
+.search-wrap{max-width:680px;margin:2.25rem auto 0;padding:0 1rem}
+.search{
+  width:100%;padding:1rem 1.5rem;
+  background:var(--glass-bg);
+  backdrop-filter:blur(var(--glass-blur));
+  -webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);
+  border-radius:14px;
+  color:var(--text-header);font-family:inherit;font-size:1rem;
+  transition:border-color .25s ease, box-shadow .25s ease;
+}
+.search::placeholder{color:var(--text-body)}
+.search:focus{outline:none;border-color:var(--theme-color);box-shadow:0 0 0 4px color-mix(in srgb,var(--theme-color) 18%, transparent)}
+
+/* Stats */
+.stats{
+  max-width:1100px;margin:1.75rem auto 0;padding:0 1.5rem;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.85rem;
+}
+.stat{
+  padding:1rem 1.1rem;text-align:center;
+  border-radius:14px;
+}
+.stat .num{font-size:1.65rem;font-weight:800;color:var(--theme-color);letter-spacing:-.02em}
+.stat .label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-body);margin-top:.25rem;font-weight:600}
+
+/* Sections + cards */
+.wrap{max-width:1240px;margin:0 auto;padding:3rem 1.5rem 6rem}
+.section{margin:5rem 0}
+.section h2{
+  font-size:clamp(1.65rem,3vw,2.5rem);font-weight:800;
+  margin:0 0 .35rem;letter-spacing:-.02em;
+  color:var(--text-header);
+  display:flex;align-items:center;gap:.75rem;
+}
+.section h2 .icon{font-size:1em}
+.section .sub{color:var(--text-body);font-size:1rem;margin-bottom:2rem}
+.section h3{
+  font-size:.85rem;font-weight:700;color:var(--theme-color);
+  text-transform:uppercase;letter-spacing:.16em;
+  margin:2.75rem 0 1.25rem;padding-bottom:.6rem;
+  border-bottom:1px solid var(--glass-border);
+  display:flex;align-items:center;gap:.6rem;
+}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1rem}
+
+.card{
+  position:relative;padding:1.4rem 1.5rem 1.25rem;
+  text-decoration:none;color:inherit;display:block;overflow:hidden;
+  border-radius:16px;
+}
+.card h4{
+  font-size:1.05rem;font-weight:700;color:var(--text-header);
+  margin:0 0 .35rem;letter-spacing:-.01em;padding-left:1.7rem;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;
+}
+.card .arrow{
+  color:var(--text-body);transition:transform .25s ease, color .25s ease;
+  flex-shrink:0;font-weight:400;
+}
+.card:hover .arrow{transform:translate(3px,-3px);color:var(--theme-color)}
+.card .desc{color:var(--text-body);font-size:.88rem;line-height:1.5;padding-left:1.7rem}
+.card.completed{border-color:color-mix(in srgb,var(--success) 50%, transparent) !important}
+.card.completed::after{
+  content:"✓";position:absolute;top:1.45rem;left:1.45rem;
+  width:22px;height:22px;border-radius:50%;background:var(--success);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;
+}
+.card.in-progress::after{
+  content:"";position:absolute;top:1.7rem;left:1.7rem;
+  width:10px;height:10px;border-radius:50%;background:var(--theme-color);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--theme-color) 22%, transparent);
+  animation:dot 1.6s ease-in-out infinite;
+}
+@keyframes dot{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+
+.card .actions{display:flex;gap:.4rem;margin-top:.95rem;padding-left:1.7rem;flex-wrap:wrap}
+.card .actions button{
+  font-family:inherit;font-size:.7rem;padding:.3rem .75rem;
+  background:transparent;border:1px solid var(--glass-border);
+  border-radius:99px;color:var(--text-body);cursor:pointer;font-weight:600;
+  transition:border-color .2s, color .2s, background .2s;
+}
+.card .actions button:hover{border-color:var(--theme-color);color:var(--text-header)}
+.card .actions button.active{
+  background:color-mix(in srgb,var(--theme-color) 12%, transparent);
+  border-color:var(--theme-color);color:var(--theme-color);
+}
+
+/* AI fab */
+.ai-fab{
+  position:fixed;bottom:1.5rem;right:1.5rem;z-index:60;
+  background:var(--theme-color);color:#0F172A;
+  border:none;padding:.95rem 1.4rem;border-radius:99px;
+  font-family:inherit;font-weight:800;font-size:.9rem;cursor:pointer;
+  box-shadow:0 8px 32px color-mix(in srgb,var(--theme-color) 40%, transparent);
+  display:inline-flex;align-items:center;gap:.55rem;
+  transition:transform .25s ease, box-shadow .25s ease;
+}
+.ai-fab:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 12px 40px color-mix(in srgb,var(--theme-color) 55%, transparent)}
+.ai-fab .ai-glow{width:8px;height:8px;border-radius:50%;background:#0F172A;box-shadow:0 0 12px #0F172A;animation:dot 1.6s ease-in-out infinite}
+
+/* Drawer */
+.drawer{
+  position:fixed;top:0;right:0;height:100vh;width:min(440px,94vw);
+  background:var(--drawer-bg);backdrop-filter:blur(30px);
+  border-left:1px solid var(--glass-border);
+  z-index:70;transform:translateX(100%);
+  transition:transform .35s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.drawer.open{transform:translateX(0)}
+.drawer-head{padding:1rem 1.25rem;border-bottom:1px solid var(--glass-border);display:flex;justify-content:space-between;align-items:center}
+.drawer-head h3{font-size:1rem;font-weight:800;color:var(--theme-color);margin:0;letter-spacing:.04em;text-transform:uppercase}
+.drawer-close{background:transparent;border:none;color:var(--text-header);font-size:1.2rem;cursor:pointer;padding:.4rem .6rem}
+.drawer-body{flex:1;overflow-y:auto;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.75rem}
+.msg{padding:.8rem 1rem;border-radius:14px;font-size:.92rem;line-height:1.5;max-width:90%}
+.msg.user{align-self:flex-end;background:var(--theme-color);color:#0F172A;font-weight:600}
+.msg.bot{align-self:flex-start;background:var(--msg-bot-bg);border:1px solid var(--glass-border);color:var(--text-header)}
+.msg.bot ul{margin-top:.4rem;padding-left:1.2rem}
+.msg.bot a{color:var(--theme-color)}
+.drawer-input{padding:.85rem 1.25rem;border-top:1px solid var(--glass-border);display:flex;gap:.5rem}
+.drawer-input input{flex:1;padding:.7rem 1rem;background:var(--input-bg);border:1px solid var(--glass-border);border-radius:99px;color:var(--text-header);font-family:inherit}
+.drawer-input input:focus{outline:none;border-color:var(--theme-color)}
+.drawer-input button{background:var(--theme-color);color:#0F172A;border:none;border-radius:99px;padding:.7rem 1.3rem;cursor:pointer;font-family:inherit;font-weight:800}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:80;display:none;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(10px)}
+.modal.open{display:flex}
+.modal-card{background:var(--modal-card-bg);border:1px solid var(--glass-border);border-radius:18px;max-width:580px;width:100%;padding:2rem;max-height:90vh;overflow-y:auto;color:var(--text-header)}
+.modal-card h3{font-size:1.45rem;margin:0 0 .5rem;color:var(--theme-color);font-weight:800;letter-spacing:-.01em}
+.modal-card p{color:var(--text-body);margin:0 0 1.25rem}
+.path-result{background:var(--path-bg);border:1px solid var(--glass-border);border-radius:14px;padding:1rem;margin-top:1rem}
+.path-step{padding:.65rem 0;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:.85rem}
+.path-step:last-child{border-bottom:none}
+.path-step .num{width:26px;height:26px;border-radius:50%;background:var(--theme-color);color:#0F172A;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;flex-shrink:0}
+
+/* Footer */
+footer{padding:3.5rem 1.5rem;text-align:center;border-top:1px solid var(--glass-border);color:var(--text-body);font-size:.88rem;margin-top:4rem}
+footer a{color:var(--theme-color);text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+@media (prefers-reduced-motion:reduce){
+  .glow-orb,.ai-fab .ai-glow,.card.in-progress::after{animation:none}
+}
+@media (max-width:640px){
+  .hero{padding:3.25rem 1.25rem 2rem}
+  .section{margin:3.5rem 0}
+  .grid{grid-template-columns:1fr}
+  .ai-fab{padding:.8rem 1.2rem;font-size:.85rem;bottom:1rem;right:1rem}
+  .topbar{margin:.5rem}
+}
+</style>
+</head>
+<body>
+
+<div id="particle-canvas"></div>
+<div class="glow-orb orb-1"></div>
+<div class="glow-orb orb-2"></div>
+
+<nav class="topbar glass-panel no-hover-effect">
+  <div class="brand-mark"><span class="dot"></span>Ray's House of Fun</div>
+  <div style="display:flex;gap:.5rem;align-items:center">
+    <button onclick="toggleMode()" title="Toggle light/dark mode" aria-label="Toggle light/dark mode" style="background:transparent;border:1px solid var(--glass-border);color:var(--text-header);width:38px;height:38px;border-radius:99px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:border-color .25s ease,color .25s ease;font-family:inherit" onmouseover="this.style.borderColor='var(--theme-color)';this.style.color='var(--theme-color)'" onmouseout="this.style.borderColor='var(--glass-border)';this.style.color='var(--text-header)'">
+      <i id="mode-icon" data-lucide="moon" style="width:16px;height:16px"></i>
+    </button>
+    <button onclick="randomizeTheme()" title="Randomize Theme" style="background:transparent;border:1px solid var(--glass-border);color:var(--text-header);width:38px;height:38px;border-radius:99px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:border-color .25s ease,color .25s ease;font-family:inherit" onmouseover="this.style.borderColor='var(--theme-color)';this.style.color='var(--theme-color)'" onmouseout="this.style.borderColor='var(--glass-border)';this.style.color='var(--text-header)'">
+      <i data-lucide="dices" style="width:16px;height:16px"></i>
+    </button>
+    <button class="btn-ghost" onclick="openPathModal()">Build my path</button>
+    <button class="btn-brand" onclick="openDrawer()">Ask AI tutor</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Curated learning trails</div>
+  <h1>Ray's <span class="accent">House of Fun</span></h1>
+  <p class="tag">Learn how to solve a rubiks cube, play an RPG, code, speak a new language or some other fun thing</p>
+  <div class="by">curated by <span class="name">Ray de la Paz</span></div>
+
+  <div class="search-wrap">
+    <input class="search" type="search" id="search" placeholder="Search 76 courses…" aria-label="Search">
+  </div>
+
+  <div class="stats">
+    <div class="stat glass-panel no-hover-effect"><div class="num" id="stat-total">76</div><div class="label">Courses</div></div>
+    <div class="stat glass-panel no-hover-effect"><div class="num" id="stat-progress">0</div><div class="label">In Progress</div></div>
+    <div class="stat glass-panel no-hover-effect"><div class="num" id="stat-done">0</div><div class="label">Completed</div></div>
+    <div class="stat glass-panel no-hover-effect"><div class="num" id="stat-pct">0%</div><div class="label">Mastery</div></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section class="section">
+  <h2><span class="icon">💻</span> Computer Related Topics</h2>
+
+  <h3>⌨️ Computer Programming Topics</h3>
+  <div class="grid">
+    <a class="card glass-panel is-card" data-id="ai-info" data-title="AI Tutorial Series" data-tags="ai-info" href="https://rays-ai-info.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>AI Tutorial Series<span class="arrow">→</span></h4><div class="actions"><button data-id="ai-info" data-state="progress">In progress</button><button data-id="ai-info" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="cpp-course" data-title="C++ Programming" data-tags="cpp-course" href="https://rays-cpp-course.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>C++ Programming<span class="arrow">→</span></h4><div class="actions"><button data-id="cpp-course" data-state="progress">In progress</button><button data-id="cpp-course" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="docker" data-title="Docker Mastery Tutorial" data-tags="docker" href="https://rays-docker.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Docker Mastery Tutorial<span class="arrow">→</span></h4><div class="actions"><button data-id="docker" data-state="progress">In progress</button><button data-id="docker" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="htmljs" data-title="Front-End JavaScript Course" data-tags="htmljs" href="https://rays-htmljs.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Front-End JavaScript Course<span class="arrow">→</span></h4><div class="actions"><button data-id="htmljs" data-state="progress">In progress</button><button data-id="htmljs" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="fullstack" data-title="Full-Stack Development" data-tags="fullstack" href="https://rays-fullstack.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Full-Stack Development<span class="arrow">→</span></h4><div class="actions"><button data-id="fullstack" data-state="progress">In progress</button><button data-id="fullstack" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="programming" data-title="Programming Intro to Python, JavaScript and C#" data-tags="programming" href="https://rays-programming.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Programming Intro to Python, JavaScript and C#<span class="arrow">→</span></h4><div class="actions"><button data-id="programming" data-state="progress">In progress</button><button data-id="programming" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="git-info" data-title="Git and GitHub Mastery Course" data-tags="git-info" href="https://rays-git-info.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Git and GitHub Mastery Course<span class="arrow">→</span></h4><div class="actions"><button data-id="git-info" data-state="progress">In progress</button><button data-id="git-info" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="htmlcss" data-title="HTML &amp; CSS Course" data-tags="htmlcss" href="https://rays-htmlcss.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>HTML &amp; CSS Course<span class="arrow">→</span></h4><div class="actions"><button data-id="htmlcss" data-state="progress">In progress</button><button data-id="htmlcss" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="js-course" data-title="JavaScript React Fullstack Course" data-tags="js-course" href="https://rays-js-course.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>JavaScript React Fullstack Course<span class="arrow">→</span></h4><div class="actions"><button data-id="js-course" data-state="progress">In progress</button><button data-id="js-course" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="linux" data-title="Linux for Beginners" data-tags="linux" href="https://rays-linux.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Linux for Beginners<span class="arrow">→</span></h4><div class="actions"><button data-id="linux" data-state="progress">In progress</button><button data-id="linux" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="mysql" data-title="MySQL Foundations" data-tags="mysql" href="https://rays-mysql.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>MySQL Foundations<span class="arrow">→</span></h4><div class="actions"><button data-id="mysql" data-state="progress">In progress</button><button data-id="mysql" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="php" data-title="PHP Foundations" data-tags="php" href="https://rays-php.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>PHP Foundations<span class="arrow">→</span></h4><div class="actions"><button data-id="php" data-state="progress">In progress</button><button data-id="php" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="php-wordpress" data-title="PHP and WordPress Development" data-tags="php-wordpress" href="https://rays-php-wordpress.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>PHP and WordPress Development<span class="arrow">→</span></h4><div class="actions"><button data-id="php-wordpress" data-state="progress">In progress</button><button data-id="php-wordpress" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="python-course" data-title="Python Full Stack Web Developer Course" data-tags="python-course" href="https://rays-python-course.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Python Full Stack Web Developer Course<span class="arrow">→</span></h4><div class="actions"><button data-id="python-course" data-state="progress">In progress</button><button data-id="python-course" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="python-gamedev" data-title="Python Game Development with Pygame" data-tags="python-gamedev" href="https://rays-python-gamedev.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Python Game Development with Pygame<span class="arrow">→</span></h4><div class="actions"><button data-id="python-gamedev" data-state="progress">In progress</button><button data-id="python-gamedev" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="python-intro" data-title="Python Introduction" data-tags="python-intro" href="https://rays-python-intro.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Python Introduction<span class="arrow">→</span></h4><div class="actions"><button data-id="python-intro" data-state="progress">In progress</button><button data-id="python-intro" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="python-intermediate" data-title="Python Intermediate" data-tags="python-intermediate" href="https://rays-python-intermediate.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Python Intermediate<span class="arrow">→</span></h4><div class="actions"><button data-id="python-intermediate" data-state="progress">In progress</button><button data-id="python-intermediate" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="reactnative" data-title="React Native &amp; Expo Mastery Course" data-tags="reactnative" href="https://rays-reactnative.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>React Native &amp; Expo Mastery Course<span class="arrow">→</span></h4><div class="actions"><button data-id="reactnative" data-state="progress">In progress</button><button data-id="reactnative" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="typescript" data-title="React Typescript Course" data-tags="typescript" href="https://rays-typescript.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>React Typescript Course<span class="arrow">→</span></h4><div class="actions"><button data-id="typescript" data-state="progress">In progress</button><button data-id="typescript" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="react-wordpress" data-title="React WordPress Course" data-tags="react-wordpress" href="https://rays-react-wordpress.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>React WordPress Course<span class="arrow">→</span></h4><div class="actions"><button data-id="react-wordpress" data-state="progress">In progress</button><button data-id="react-wordpress" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="sdd-info" data-title="Software Design and Development Info" data-tags="sdd-info" href="https://rays-sdd-info.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Software Design and Development Info<span class="arrow">→</span></h4><div class="actions"><button data-id="sdd-info" data-state="progress">In progress</button><button data-id="sdd-info" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="typescript" data-title="React Typescript Course" data-tags="typescript" href="https://rays-typescript.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>React Typescript Course<span class="arrow">→</span></h4><div class="actions"><button data-id="typescript" data-state="progress">In progress</button><button data-id="typescript" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="sql" data-title="SQL for Beginners" data-tags="sql" href="https://rays-sql.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>SQL for Beginners<span class="arrow">→</span></h4><div class="actions"><button data-id="sql" data-state="progress">In progress</button><button data-id="sql" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="wordpress" data-title="WordPress" data-tags="wordpress" href="https://rays-wordpress.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>WordPress<span class="arrow">→</span></h4><div class="actions"><button data-id="wordpress" data-state="progress">In progress</button><button data-id="wordpress" data-state="done">Done</button></div></a>
+  </div>
+
+  <h3>🎨 Computer Art Topics</h3>
+  <div class="grid">
+    <a class="card glass-panel is-card" data-id="digitalarts" data-title="Software-Independent Digital Painting Course" data-tags="digitalarts" href="https://rays-digitalarts.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Software-Independent Digital Painting Course<span class="arrow">→</span></h4><div class="actions"><button data-id="digitalarts" data-state="progress">In progress</button><button data-id="digitalarts" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="digitalarts-int" data-title="Intermediate Digtal Artistry" data-tags="digitalarts-int" href="https://rays-digitalarts-int.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Intermediate Digtal Artistry<span class="arrow">→</span></h4><div class="actions"><button data-id="digitalarts-int" data-state="progress">In progress</button><button data-id="digitalarts-int" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="digitalarts-adv" data-title="Advanced Digital Artistry" data-tags="digitalarts-adv" href="https://rays-digitalarts-adv.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Advanced Digital Artistry<span class="arrow">→</span></h4><div class="actions"><button data-id="digitalarts-adv" data-state="progress">In progress</button><button data-id="digitalarts-adv" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="gimp-course" data-title="GIMP for Beginners" data-tags="gimp-course" href="https://rays-gimp-course.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>GIMP for Beginners<span class="arrow">→</span></h4><div class="actions"><button data-id="gimp-course" data-state="progress">In progress</button><button data-id="gimp-course" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="paintstorm-intro" data-title="Paintstorm Studio Introduction" data-tags="paintstorm-intro" href="https://rays-paintstorm-intro.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Paintstorm Studio Introduction<span class="arrow">→</span></h4><div class="actions"><button data-id="paintstorm-intro" data-state="progress">In progress</button><button data-id="paintstorm-intro" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="paintstorm-int" data-title="Paintstorm Studio Intermediate" data-tags="paintstorm-int" href="https://rays-paintstorm-int.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Paintstorm Studio Intermediate<span class="arrow">→</span></h4><div class="actions"><button data-id="paintstorm-int" data-state="progress">In progress</button><button data-id="paintstorm-int" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="paintstorm-adv" data-title="Paintstorm Studio Advanced" data-tags="paintstorm-adv" href="https://rays-paintstorm-adv.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Paintstorm Studio Advanced<span class="arrow">→</span></h4><div class="actions"><button data-id="paintstorm-adv" data-state="progress">In progress</button><button data-id="paintstorm-adv" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="blender" data-title="Blender Mastery Course" data-tags="blender" href="https://rays-blender.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Blender Mastery Course<span class="arrow">→</span></h4><div class="actions"><button data-id="blender" data-state="progress">In progress</button><button data-id="blender" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="unreal" data-title="Unreal Engine Course" data-tags="unreal" href="https://rays-unreal.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Unreal Engine Course<span class="arrow">→</span></h4><div class="actions"><button data-id="unreal" data-state="progress">In progress</button><button data-id="unreal" data-state="done">Done</button></div></a>
+  </div>
+</section>
+
+<section class="section">
+  <h2><span class="icon">🎮</span> Gaming Related Topics</h2>
+
+  <h3>🎲 RPG Topics</h3>
+  <div class="grid">
+    <a class="card glass-panel is-card" data-id="call-of-chtulhu" data-title="Call of Cthulhu RPG" data-tags="call-of-chtulhu" href="https://rays-call-of-chtulhu.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Call of Cthulhu RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="call-of-chtulhu" data-state="progress">In progress</button><button data-id="call-of-chtulhu" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="champions" data-title="Champions RPG" data-tags="champions" href="https://rays-champions.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Champions RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="champions" data-state="progress">In progress</button><button data-id="champions" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="cyberpunk" data-title="Cyberpunk Red RPG" data-tags="cyberpunk" href="https://rays-cyberpunk.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Cyberpunk Red RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="cyberpunk" data-state="progress">In progress</button><button data-id="cyberpunk" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="cypher-rpg" data-title="Cypher System RPG" data-tags="cypher-rpg" href="https://rays-cypher-rpg.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Cypher System RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="cypher-rpg" data-state="progress">In progress</button><button data-id="cypher-rpg" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="daggerheart" data-title="Daggerheart RPG" data-tags="daggerheart" href="https://rays-daggerheart.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Daggerheart RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="daggerheart" data-state="progress">In progress</button><button data-id="daggerheart" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="deadlands" data-title="Deadlands RPG" data-tags="deadlands" href="https://rays-deadlands.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Deadlands RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="deadlands" data-state="progress">In progress</button><button data-id="deadlands" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="dnd" data-title="Dungeons &amp; Dragons 5th Edition" data-tags="dnd" href="https://rays-dnd.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Dungeons &amp; Dragons 5th Edition<span class="arrow">→</span></h4><div class="actions"><button data-id="dnd" data-state="progress">In progress</button><button data-id="dnd" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="drwho" data-title="Doctor Who RPG 2nd Edition" data-tags="drwho" href="https://rays-drwho.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Doctor Who RPG 2nd Edition<span class="arrow">→</span></h4><div class="actions"><button data-id="drwho" data-state="progress">In progress</button><button data-id="drwho" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="fate-rpg" data-title="Fate RPG" data-tags="fate-rpg" href="https://rays-fate-rpg.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Fate RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="fate-rpg" data-state="progress">In progress</button><button data-id="fate-rpg" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="firefly" data-title="Firefly RPG" data-tags="firefly" href="https://rays-firefly.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Firefly RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="firefly" data-state="progress">In progress</button><button data-id="firefly" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="foundry-vtt" data-title="Foundry VTT" data-tags="foundry-vtt" href="https://rays-foundry-vtt.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Foundry VTT<span class="arrow">→</span></h4><div class="actions"><button data-id="foundry-vtt" data-state="progress">In progress</button><button data-id="foundry-vtt" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="gurps" data-title="GURPS RPG" data-tags="gurps" href="https://rays-gurps.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>GURPS RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="gurps" data-state="progress">In progress</button><button data-id="gurps" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="icrpg" data-title="Index Card RPG" data-tags="icrpg" href="https://rays-icrpg.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Index Card RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="icrpg" data-state="progress">In progress</button><button data-id="icrpg" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="masks-rpg" data-title="Masks RPG" data-tags="masks-rpg" href="https://ray-masks-rpg.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Masks RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="masks-rpg" data-state="progress">In progress</button><button data-id="masks-rpg" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="numenera" data-title="Numenera Learning Hub" data-tags="numenera" href="https://rays-numenera.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Numenera Learning Hub<span class="arrow">→</span></h4><div class="actions"><button data-id="numenera" data-state="progress">In progress</button><button data-id="numenera" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="pf2" data-title="Pathfinder 2 RPG" data-tags="pf2" href="https://rays-pf2.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Pathfinder 2 RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="pf2" data-state="progress">In progress</button><button data-id="pf2" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="rifts" data-title="Rifts RPG" data-tags="rifts" href="https://rays-rifts.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Rifts RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="rifts" data-state="progress">In progress</button><button data-id="rifts" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="root-rpg" data-title="Root RPG" data-tags="root-rpg" href="https://rays-root-rpg.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Root RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="root-rpg" data-state="progress">In progress</button><button data-id="root-rpg" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="savage-worlds" data-title="Savage Worlds RPG" data-tags="savage-worlds" href="https://rays-savage-worlds.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Savage Worlds RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="savage-worlds" data-state="progress">In progress</button><button data-id="savage-worlds" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="shadowrun" data-title="Shadowrun RPG" data-tags="shadowrun" href="https://rays-shadowrun.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Shadowrun RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="shadowrun" data-state="progress">In progress</button><button data-id="shadowrun" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="solorpg" data-title="Solo RPG" data-tags="solorpg" href="https://rays-solorpg.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Solo RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="solorpg" data-state="progress">In progress</button><button data-id="solorpg" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="starfinder" data-title="Starfinder RPG" data-tags="starfinder" href="https://rays-starfinder.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Starfinder RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="starfinder" data-state="progress">In progress</button><button data-id="starfinder" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="starwars" data-title="Star Wars RPG" data-tags="starwars" href="https://rays-starwars.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Star Wars RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="starwars" data-state="progress">In progress</button><button data-id="starwars" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="vampire" data-title="Vampire: The Masquerade RPG" data-tags="vampire" href="https://rays-vampire.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Vampire: The Masquerade RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="vampire" data-state="progress">In progress</button><button data-id="vampire" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="wfrpg" data-title="Warhammer Fantasy RPG" data-tags="wfrpg" href="https://rays-wfrpg.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Warhammer Fantasy RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="wfrpg" data-state="progress">In progress</button><button data-id="wfrpg" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="wh40krpg" data-title="Warhammer 40k: Wrath and Glory" data-tags="wh40krpg" href="https://rays-wh40krpg.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Warhammer 40k: Wrath and Glory<span class="arrow">→</span></h4><div class="actions"><button data-id="wh40krpg" data-state="progress">In progress</button><button data-id="wh40krpg" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="witcher" data-title="Witcher RPG" data-tags="witcher" href="https://rays-witcher.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Witcher RPG<span class="arrow">→</span></h4><div class="actions"><button data-id="witcher" data-state="progress">In progress</button><button data-id="witcher" data-state="done">Done</button></div></a>
+  </div>
+
+  <h3>♟️ Board Game Topics</h3>
+  <div class="grid">
+    <a class="card glass-panel is-card" data-id="heroquest" data-title="Heroquest Game System" data-tags="heroquest" href="https://rays-heroquest.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Heroquest Game System<span class="arrow">→</span></h4><div class="actions"><button data-id="heroquest" data-state="progress">In progress</button><button data-id="heroquest" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="heroscape" data-title="HeroScape Game System" data-tags="heroscape" href="https://rays-heroscape.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>HeroScape Game System<span class="arrow">→</span></h4><div class="actions"><button data-id="heroscape" data-state="progress">In progress</button><button data-id="heroscape" data-state="done">Done</button></div></a>
+  </div>
+
+  <h3>🕹️ Video Game Topics</h3>
+  <div class="grid">
+    <a class="card glass-panel is-card" data-id="wwz" data-title="World War Z: Aftermath Guide" data-tags="wwz" href="https://rays-wwz.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>World War Z: Aftermath Guide<span class="arrow">→</span></h4><div class="actions"><button data-id="wwz" data-state="progress">In progress</button><button data-id="wwz" data-state="done">Done</button></div></a>
+  </div>
+</section>
+
+<section class="section">
+  <h2><span class="icon">🌐</span> Language Topics</h2>
+  <div class="grid">
+    <a class="card glass-panel is-card" data-id="esl" data-title="English as a Second Language" data-tags="esl" href="https://rays-esl.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>English as a Second Language<span class="arrow">→</span></h4><div class="actions"><button data-id="esl" data-state="progress">In progress</button><button data-id="esl" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="french" data-title="French Language Course" data-tags="french" href="https://rays-french.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>French Language Course<span class="arrow">→</span></h4><div class="actions"><button data-id="french" data-state="progress">In progress</button><button data-id="french" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="japanese-course" data-title="Japanese Learning Adventure" data-tags="japanese-course" href="https://rays-japanese-course.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Japanese Learning Adventure<span class="arrow">→</span></h4><div class="actions"><button data-id="japanese-course" data-state="progress">In progress</button><button data-id="japanese-course" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="spanish" data-title="Spanish Learning Hub" data-tags="spanish" href="https://rays-spanish.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Spanish Learning Hub<span class="arrow">→</span></h4><div class="actions"><button data-id="spanish" data-state="progress">In progress</button><button data-id="spanish" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="tagalog" data-title="Tagalog Learning Hub" data-tags="tagalog" href="https://rays-tagalog.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Tagalog Learning Hub<span class="arrow">→</span></h4><div class="actions"><button data-id="tagalog" data-state="progress">In progress</button><button data-id="tagalog" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="kapampangan" data-title="Kapampangan Learning Hub" data-tags="kapampangan" href="https://rays-kapampangan.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Kapampangan Learning Hub<span class="arrow">→</span></h4><div class="actions"><button data-id="kapampangan" data-state="progress">In progress</button><button data-id="kapampangan" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="korean" data-title="Korean Language Course" data-tags="korean" href="https://rays-korean.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Korean Language Course<span class="arrow">→</span></h4><div class="actions"><button data-id="korean" data-state="progress">In progress</button><button data-id="korean" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="latin" data-title="Latin Language Course" data-tags="latin" href="https://rays-latin.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Latin Language Course<span class="arrow">→</span></h4><div class="actions"><button data-id="latin" data-state="progress">In progress</button><button data-id="latin" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="mandarin" data-title="Mandarin Chinese Course" data-tags="mandarin" href="https://rays-mandarin.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Mandarin Chinese Course<span class="arrow">→</span></h4><div class="actions"><button data-id="mandarin" data-state="progress">In progress</button><button data-id="mandarin" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="russian" data-title="Russian Language Course" data-tags="russian" href="https://rays-russian.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Russian Language Course<span class="arrow">→</span></h4><div class="actions"><button data-id="russian" data-state="progress">In progress</button><button data-id="russian" data-state="done">Done</button></div></a>
+  </div>
+</section>
+
+<section class="section">
+  <h2><span class="icon">✨</span> Miscellaneous Topics</h2>
+  <div class="grid">
+    <a class="card glass-panel is-card" data-id="rubiks" data-title="How to Solve a Rubik's Cube" data-tags="rubiks" href="https://ray-rubiks.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>How to Solve a Rubik's Cube<span class="arrow">→</span></h4><div class="actions"><button data-id="rubiks" data-state="progress">In progress</button><button data-id="rubiks" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="sudoku" data-title="Sudoku Fun" data-tags="sudoku" href="https://rays-sudoku.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Sudoku Fun<span class="arrow">→</span></h4><div class="actions"><button data-id="sudoku" data-state="progress">In progress</button><button data-id="sudoku" data-state="done">Done</button></div></a>
+    <a class="card glass-panel is-card" data-id="stocks" data-title="Investing &amp; Stock Options Course" data-tags="stocks" href="https://rays-stocks.netlify.app/" target="_blank" rel="noopener noreferrer"><h4>Investing &amp; Stock Options Course<span class="arrow">→</span></h4><div class="actions"><button data-id="stocks" data-state="progress">In progress</button><button data-id="stocks" data-state="done">Done</button></div></a>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>&copy; 2025 All rights reserved.</p>
+  <p style="margin-top:.5rem;opacity:.9">Having as much fun as possible and being harmless as much as possible.</p>
+  <p style="margin-top:1.5rem;font-size:.8rem;opacity:.75;max-width:720px;margin-left:auto;margin-right:auto;line-height:1.5">
+    <strong>Disclaimer:</strong> The content on this site and its linked pages is provided for educational and informational purposes only, on an "as-is" basis and without warranty of any kind. Use it at your own risk. The site author is not the copyright owner of any third-party materials referenced herein&mdash;all trademarks, game systems, logos, and copyrighted content belong to their respective owners. Any such use is intended under principles of fair use for commentary, education, and personal reference. If you are a rights holder and believe any content should be removed, please <a href="https://rays-home.netlify.app/contact.html">contact me</a> and it will be addressed promptly.
+  </p>
+</footer>
+
+<button class="ai-fab" onclick="openDrawer()" aria-label="Open AI tutor">
+  <span class="ai-glow"></span>Ask AI tutor
+</button>
+
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <h3>AI Tutor</h3>
+    <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">✕</button>
+  </div>
+  <div class="drawer-body" id="messages"></div>
+  <div class="drawer-input">
+    <input type="text" id="ai-input" placeholder="Ask anything…" aria-label="Question">
+    <button onclick="sendAI()">Ask</button>
+  </div>
+</aside>
+
+<div class="modal" id="path-modal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <h3>Build your learning path</h3>
+    <p>Tell me what you already know and where you want to go. I'll build you a sequenced path.</p>
+    <div style="margin-bottom:1rem">
+      <label style="display:block;font-size:.8rem;color:var(--text-body);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700">I already know…</label>
+      <input type="text" id="path-known" class="search" placeholder="e.g. python basics, html">
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="display:block;font-size:.8rem;color:var(--text-body);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700">I want to learn…</label>
+      <input type="text" id="path-goal" class="search" placeholder="e.g. fullstack web dev, build games">
+    </div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn-brand" onclick="buildPath()">Build path</button>
+      <button class="btn-ghost" onclick="closePathModal()">Cancel</button>
+    </div>
+    <div id="path-result"></div>
+  </div>
+</div>
+
+<script>
+// Search filter
+const search=document.getElementById('search');
+search.addEventListener('input',(e)=>{
+  const q=e.target.value.toLowerCase().trim();
+  document.querySelectorAll('.card').forEach(c=>{
+    const text=(c.textContent+' '+(c.dataset.tags||'')).toLowerCase();
+    c.style.display=!q||text.includes(q)?'':'none';
+  });
+});
+
+// Progress tracking (localStorage preserved)
+const PK='rays.progress';
+function getP(){return JSON.parse(localStorage.getItem(PK)||'{}')}
+function setP(p){localStorage.setItem(PK,JSON.stringify(p))}
+function applyP(){
+  const p=getP();
+  document.querySelectorAll('.card').forEach(c=>{
+    c.classList.remove('completed','in-progress');
+    const id=c.dataset.id;
+    if(p[id]==='done')c.classList.add('completed');
+    else if(p[id]==='progress')c.classList.add('in-progress');
+    c.querySelectorAll('.actions button').forEach(b=>{
+      b.classList.remove('active');
+      if(b.dataset.state===p[b.dataset.id]) b.classList.add('active');
+    });
+  });
+  updateStats();
+}
+function updateStats(){
+  const p=getP();
+  const total=document.querySelectorAll('.card').length;
+  const inProg=Object.values(p).filter(v=>v==='progress').length;
+  const done=Object.values(p).filter(v=>v==='done').length;
+  document.getElementById('stat-total').textContent=total;
+  document.getElementById('stat-progress').textContent=inProg;
+  document.getElementById('stat-done').textContent=done;
+  document.getElementById('stat-pct').textContent=Math.round(done/total*100)+'%';
+}
+document.querySelectorAll('.card .actions button').forEach(btn=>{
+  btn.addEventListener('click',(e)=>{
+    e.preventDefault();e.stopPropagation();
+    const id=btn.dataset.id, state=btn.dataset.state;
+    const p=getP();
+    if(p[id]===state)delete p[id];else p[id]=state;
+    setP(p);applyP();
+  });
+});
+applyP();
+
+// AI Tutor drawer
+const drawer=document.getElementById('drawer');
+const messages=document.getElementById('messages');
+function openDrawer(){
+  drawer.classList.add('open');
+  if(!messages.children.length){
+    const greet=document.createElement('div');
+    greet.className='msg bot';
+    greet.textContent="Hey — I'm a tutor for everything in Ray's House. Ask about Python loops, SQL joins, the difference between Docker and a VM, why Linux permissions look weird, anything. I route you to the right course.";
+    messages.appendChild(greet);
+  }
+  setTimeout(()=>document.getElementById('ai-input').focus(),200);
+}
+function closeDrawer(){drawer.classList.remove('open')}
+function appendMsg(role,text){const d=document.createElement('div');d.className='msg '+role;d.textContent=text;messages.appendChild(d);messages.scrollTop=messages.scrollHeight;return d}
+function sendAI(){
+  const input=document.getElementById('ai-input');
+  const q=input.value.trim();if(!q)return;
+  input.value='';appendMsg('user',q);
+  const ql=q.toLowerCase();
+  const map={'python':['python-intro','python-intermediate','python-course','python-gamedev'],'sql':['mysql','sql'],'database':['mysql','sql'],'html':['htmlcss','htmljs'],'css':['htmlcss'],'javascript':['htmljs','js-course'],'js':['htmljs','js-course'],'fullstack':['htmlcss','htmljs','js-course','php','fullstack'],'php':['php','php-wordpress'],'wordpress':['php-wordpress'],'docker':['linux','docker'],'container':['linux','docker'],'linux':['linux'],'shell':['linux'],'git':['git-info'],'version':['git-info'],'cpp':['cpp-course'],'c++':['cpp-course'],'ai':['ai-info'],'ml':['ai-info'],'machine learning':['ai-info'],'design':['sdd-info'],'sdd':['sdd-info'],'software design':['sdd-info'],'game':['python-gamedev'],'pygame':['python-gamedev']};
+  const recs=[];for(const k in map){if(ql.includes(k)){map[k].forEach(c=>{if(!recs.includes(c))recs.push(c)})}}
+  const bot=document.createElement('div');bot.className='msg bot';
+  if(recs.length){
+    const lead=document.createElement('div');lead.textContent='Based on your question, start here:';bot.appendChild(lead);
+    const ul=document.createElement('ul');
+    recs.forEach(id=>{const card=document.querySelector('[data-id="'+id+'"]');if(!card)return;const li=document.createElement('li');const a=document.createElement('a');a.href=card.href;a.target='_blank';a.rel='noopener noreferrer';a.textContent=card.querySelector('h4').textContent.replace('→','').trim();li.appendChild(a);ul.appendChild(li)});
+    bot.appendChild(ul);
+    const tip=document.createElement('p');tip.style.cssText='margin-top:.6rem;opacity:.7;font-size:.85rem';tip.textContent='Tip: mark progress as you go — your dashboard tracks across all courses.';bot.appendChild(tip);
+  }else{
+    bot.textContent='I can route you to the right course in Ray\'s House but didn\'t catch a topic in that question. Try keywords like python, sql, fullstack, docker, linux, git, ai, html, javascript, c++, php, wordpress, sdd, gamedev.';
+  }
+  messages.appendChild(bot);messages.scrollTop=messages.scrollHeight;
+}
+document.getElementById('ai-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendAI()});
+
+// Path builder
+const pathModal=document.getElementById('path-modal');
+function openPathModal(){pathModal.classList.add('open')}
+function closePathModal(){pathModal.classList.remove('open');const r=document.getElementById('path-result');while(r.firstChild)r.removeChild(r.firstChild)}
+function buildPath(){
+  const known=document.getElementById('path-known').value.toLowerCase();
+  const goal=document.getElementById('path-goal').value.toLowerCase();
+  const r=document.getElementById('path-result');while(r.firstChild)r.removeChild(r.firstChild);
+  if(!goal){const p=document.createElement('p');p.style.color='var(--theme-color)';p.textContent='Tell me what you want to learn.';r.appendChild(p);return}
+  const courses={};document.querySelectorAll('.card').forEach(c=>{courses[c.dataset.id]={id:c.dataset.id,prereq:(c.dataset.prereq||'').split(/\s+/).filter(Boolean),title:c.querySelector('h4').textContent.replace('→','').trim(),href:c.href,tags:(c.dataset.tags||'').toLowerCase()}});
+  const targets=[];for(const id in courses){const c=courses[id];if(c.tags.split(/\s+/).some(t=>goal.includes(t))||goal.includes(id))targets.push(id)}
+  if(!targets.length){const p=document.createElement('p');p.style.color='var(--theme-color)';p.textContent='Couldn\'t map that goal. Try terms like fullstack, python, sql, docker.';r.appendChild(p);return}
+  const visited=new Set();const order=[];const knownTokens=known.split(/\s+/).filter(Boolean);
+  function visit(id){if(visited.has(id))return;visited.add(id);const c=courses[id];if(!c)return;c.prereq.forEach(p=>{if(knownTokens.some(k=>p.includes(k)||k.includes(p)))return;visit(p)});order.push(id)}
+  targets.forEach(visit);
+  const wrap=document.createElement('div');wrap.className='path-result';
+  const lab=document.createElement('strong');lab.textContent='Your path ('+order.length+' steps):';lab.style.color='var(--text-header)';wrap.appendChild(lab);
+  order.forEach((id,i)=>{const c=courses[id];const step=document.createElement('div');step.className='path-step';const num=document.createElement('div');num.className='num';num.textContent=(i+1);step.appendChild(num);const a=document.createElement('a');a.href=c.href;a.target='_blank';a.rel='noopener noreferrer';a.style.cssText='color:var(--text-header);text-decoration:none;font-weight:600';a.textContent=c.title;step.appendChild(a);wrap.appendChild(step)});
+  r.appendChild(wrap);
+}
+
+// Card fade-in
+const obs=new IntersectionObserver((entries)=>{entries.forEach((e,i)=>{if(e.isIntersecting){e.target.style.transition='opacity .5s '+i*15+'ms ease, transform .5s '+i*15+'ms ease';e.target.style.opacity='1';e.target.style.transform='translateY(0)';obs.unobserve(e.target)}})},{threshold:0.1});
+document.querySelectorAll('.card').forEach(c=>{c.style.opacity='0';c.style.transform='translateY(20px)';obs.observe(c)});
+</script>
+
+<script>
+// --- Theme randomizer + 3D particle background (ported from execpage) ---
+(function(){
+  if(window.lucide && lucide.createIcons) lucide.createIcons();
+
+  let globalHue = 220;
+  const particleMaterials = [];
+
+  function hslToHex(h, s, l){
+    l /= 100;
+    const a = s * Math.min(l, 1 - l) / 100;
+    const f = n => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  }
+
+  window.randomizeTheme = function(){
+    globalHue = Math.floor(Math.random() * 360);
+    const colorHex = hslToHex(globalHue, 100, 50);
+    document.documentElement.style.setProperty('--theme-color', colorHex);
+    particleMaterials.forEach(m => { if(m && m.color) m.color.setHSL(globalHue/360, 0.6, 0.6); });
+  };
+
+  // 3D cloud particle engine
+  const container = document.getElementById('particle-canvas');
+  if(!container || typeof THREE === 'undefined') return;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 3000);
+  camera.position.z = 1000;
+  const renderer = new THREE.WebGLRenderer({ alpha:true, antialias:true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  container.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0x555555));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+  dir.position.set(0, 0, 1);
+  scene.add(dir);
+
+  function createCloudTexture(){
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+    const grad = ctx.createRadialGradient(64,64,0,64,64,64);
+    grad.addColorStop(0,'rgba(255,255,255,1)');
+    grad.addColorStop(0.4,'rgba(230,230,230,0.5)');
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,128,128);
+    return c;
+  }
+
+  const cloudMat = new THREE.MeshLambertMaterial({
+    map: new THREE.CanvasTexture(createCloudTexture()),
+    transparent:true, opacity:0.28, depthWrite:false,
+    color: new THREE.Color().setHSL(globalHue/360, 0.6, 0.6)
+  });
+  particleMaterials.push(cloudMat);
+
+  const cloudGeo = new THREE.PlaneGeometry(500,500);
+  const clouds = [];
+  for(let i=0; i<40; i++){
+    const p = new THREE.Mesh(cloudGeo, cloudMat);
+    p.position.set(Math.random()*2000-1000, Math.random()*800-400, Math.random()*2000-1800);
+    p.rotation.z = Math.random()*360;
+    p.scale.setScalar(1 + Math.random()*2);
+    scene.add(p);
+    clouds.push(p);
+  }
+
+  function animate(){
+    const scrollY = window.scrollY || 0;
+    const targetZ = 1000 - (scrollY * 0.5);
+    camera.position.z += (targetZ - camera.position.z) * 0.05;
+    clouds.forEach(p => p.rotation.z -= 0.0005);
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+</script>
+
+<script>
+  // PWA service worker registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js', { scope: './' })
+        .catch((err) => console.warn('[rays-home] SW registration failed:', err));
+    });
+  }
+</script>
+
+<!-- ─── Tutor widget (proxy: xen on qi's Mac via Cloudflare tunnel) ─── -->
+<div id="tutor" style="position:fixed;right:1rem;bottom:1rem;width:340px;max-width:calc(100vw - 2rem);max-height:60vh;display:flex;flex-direction:column;background:var(--glass-bg);backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.35);font:14px/1.4 Manrope,sans-serif;color:var(--text-body);z-index:60;overflow:hidden">
+  <div id="tutor-head" style="display:flex;align-items:center;gap:.5rem;padding:.55rem .8rem;border-bottom:1px solid var(--glass-border);cursor:pointer;font-weight:700;color:var(--text-header)">
+    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--theme-color)"></span>
+    <span id="tutor-title">Tutor</span>
+    <span id="tutor-toggle" style="margin-left:auto;opacity:.6">−</span>
+  </div>
+  <div id="tutor-log" style="flex:1;overflow:auto;padding:.6rem .8rem;font-size:13px;display:flex;flex-direction:column;gap:.4rem"></div>
+  <form id="tutor-form" style="display:flex;gap:.4rem;padding:.5rem .6rem;border-top:1px solid var(--glass-border)">
+    <input id="tutor-q" autocomplete="off" placeholder="Ask the tutor…" style="flex:1;background:rgba(0,0,0,.05);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-header);padding:.45rem .7rem;font:inherit;outline:none">
+    <button type="submit" style="background:var(--theme-color);color:#fff;border:0;border-radius:10px;padding:0 .8rem;font-weight:700;cursor:pointer">→</button>
+  </form>
+</div>
+<script>
+(function(){
+  const TUTOR_URL='https://api.xlrd.org/api/tutor';
+  const log=document.getElementById('tutor-log');
+  const form=document.getElementById('tutor-form');
+  const q=document.getElementById('tutor-q');
+  const head=document.getElementById('tutor-head');
+  const tog=document.getElementById('tutor-toggle');
+  const widget=document.getElementById('tutor');
+  // Render markdown-style links as <a> elements via DOM (no innerHTML, no XSS).
+  function renderInto(node,text){
+    while(node.firstChild)node.removeChild(node.firstChild);
+    const linkRe=/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    String(text||'').split('\n').forEach((ln,i)=>{
+      if(i>0)node.appendChild(document.createElement('br'));
+      const matches=Array.from(ln.matchAll(linkRe));
+      let cursor=0;
+      matches.forEach(m=>{
+        if(m.index>cursor)node.appendChild(document.createTextNode(ln.slice(cursor,m.index)));
+        const a=document.createElement('a');
+        a.href=m[2];a.target='_blank';a.rel='noopener';
+        a.style.color='var(--theme-color)';a.style.textDecoration='underline';
+        a.textContent=m[1];
+        node.appendChild(a);
+        cursor=m.index+m[0].length;
+      });
+      if(cursor<ln.length)node.appendChild(document.createTextNode(ln.slice(cursor)));
+    });
+  }
+  function bubble(who,text){
+    const b=document.createElement('div');
+    b.style.cssText='padding:.45rem .65rem;border-radius:10px;max-width:90%;'+(who==='you'?'align-self:flex-end;background:color-mix(in srgb,var(--theme-color) 22%,transparent);color:var(--text-header)':'align-self:flex-start;background:rgba(0,0,0,.06);color:var(--text-body)');
+    renderInto(b,text);log.appendChild(b);log.scrollTop=log.scrollHeight;return b;
+  }
+  bubble('tutor','Ask me about any course on this page.');
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const text=q.value.trim();if(!text)return;
+    q.value='';bubble('you',text);
+    const pending=bubble('tutor','…');
+    try{
+      const r=await fetch(TUTOR_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q:text})});
+      const j=await r.json();
+      renderInto(pending,j.answer||j.error||'tutor offline');
+    }catch(err){pending.textContent='tutor offline ('+err.message+')'}
+  });
+  let collapsed=false;
+  head.addEventListener('click',()=>{
+    collapsed=!collapsed;
+    log.style.display=collapsed?'none':'';form.style.display=collapsed?'none':'flex';
+    tog.textContent=collapsed?'+':'−';
+  });
+})();
+</script>
+
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="10">
+    <title>Xen System Status Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1419;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #2a3f5f;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #1a2332;
+            border: 1px solid #2a3f5f;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: #3a5f8f;
+            background: #202d40;
+        }
+        
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+        
+        .card-content {
+            font-size: 14px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-up {
+            background: #4ade80;
+        }
+        
+        .status-down {
+            background: #f87171;
+        }
+        
+        .status-unknown {
+            background: #fbbf24;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .daemon-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #2a3f5f;
+        }
+        
+        .daemon-row:last-child {
+            border-bottom: none;
+        }
+        
+        .daemon-name {
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        .daemon-status {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .metric-box {
+            background: #141b26;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        
+        .metric-value.critical {
+            color: #f87171;
+        }
+        
+        .metric-value.warning {
+            color: #fbbf24;
+        }
+        
+        .metric-value.success {
+            color: #4ade80;
+        }
+        
+        .queue-bar {
+            width: 100%;
+            height: 6px;
+            background: #2a3f5f;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        
+        .queue-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .task-list {
+            font-size: 12px;
+        }
+        
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a3f5f;
+        }
+        
+        .task-item:last-child {
+            border-bottom: none;
+        }
+        
+        .task-status {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .task-p0 {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .task-p1 {
+            background: #ea580c;
+            color: white;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px solid #2a3f5f;
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .no-wrap {
+            overflow-wrap: break-word;
+            word-break: normal;
+            hyphens: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>XEN System Status</h1>
+            <div class="timestamp" id="timestamp"></div>
+        </div>
+        
+        <!-- Daemon Health -->
+        <div class="grid">
+            <div class="card">
+                <div class="card-title">Daemon Health</div>
+                <div class="card-content">
+                    <div class="daemon-row">
+                        <span class="daemon-name">
+                            <span class="status-indicator status-up"></span>STT Engine
+                        </span>
+                        <span class="daemon-status">Active</span>
+                    </div>
+                    <div class="daemon-row">
+                        <span class="daemon-name">
+                            <span class="status-indicator status-up"></span>Genesis (Voice)
+                        </span>
+                        <span class="daemon-status">Streaming</span>
+                    </div>
+                    <div class="daemon-row">
+                        <span class="daemon-name">
+                            <span class="status-indicator status-up"></span>Exodus (Hands)
+                        </span>
+                        <span class="daemon-status">Executing</span>
+                    </div>
+                    <div class="daemon-row">
+                        <span class="daemon-name">
+                            <span class="status-indicator status-up"></span>Leviticus (Quick)
+                        </span>
+                        <span class="daemon-status">Ready</span>
+                    </div>
+                    <div class="daemon-row">
+                        <span class="daemon-name">
+                            <span class="status-indicator status-up"></span>Ezekiel (Nitro)
+                        </span>
+                        <span class="daemon-status">Idle</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Queue Depths -->
+            <div class="card">
+                <div class="card-title">Queue Depths</div>
+                <div class="card-content">
+                    <div class="metric-box">
+                        <span class="metric-label">VEI Input Queue</span>
+                        <span class="metric-value">2</span>
+                    </div>
+                    <div class="queue-bar">
+                        <div class="queue-fill" style="width: 18%;"></div>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">SAY Queue</span>
+                        <span class="metric-value success">1/4</span>
+                    </div>
+                    <div class="queue-bar">
+                        <div class="queue-fill" style="width: 25%;"></div>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">Genesis Narration</span>
+                        <span class="metric-value">3</span>
+                    </div>
+                    <div class="queue-bar">
+                        <div class="queue-fill" style="width: 30%;"></div>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">BPGS Swarm</span>
+                        <span class="metric-value">5</span>
+                    </div>
+                    <div class="queue-bar">
+                        <div class="queue-fill" style="width: 45%;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Message Timestamps -->
+            <div class="card">
+                <div class="card-title">Last Activity</div>
+                <div class="card-content">
+                    <div class="metric-box">
+                        <span class="metric-label">Last Input</span>
+                        <span class="metric-value no-wrap">2m 14s ago</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">Last Voice Output</span>
+                        <span class="metric-value no-wrap">1m 8s ago</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">Last Task Execute</span>
+                        <span class="metric-value no-wrap">31s ago</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">Last Echo Check</span>
+                        <span class="metric-value success no-wrap">15s ago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Token Burn -->
+        <div class="grid">
+            <div class="card">
+                <div class="card-title">Token Economics</div>
+                <div class="card-content">
+                    <div class="metric-box">
+                        <span class="metric-label">Burn Rate (avg/min)</span>
+                        <span class="metric-value">2,847</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">Genesis (Sonnet Low)</span>
+                        <span class="metric-value warning">1,200</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">Exodus (Opus)</span>
+                        <span class="metric-value">800</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">Leviticus (Haiku)</span>
+                        <span class="metric-value success">347</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">Est. Monthly</span>
+                        <span class="metric-value">~4.1M</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- P0/P1 Tasks -->
+            <div class="card">
+                <div class="card-title">Critical Tasks</div>
+                <div class="card-content">
+                    <div class="task-list">
+                        <div class="task-item">
+                            <span class="no-wrap">Genesis intelligent narrator</span>
+                            <span class="task-status task-p0">P0</span>
+                        </div>
+                        <div class="task-item">
+                            <span class="no-wrap">BPGS auto-goal re-enable</span>
+                            <span class="task-status task-p0">P0</span>
+                        </div>
+                        <div class="task-item">
+                            <span class="no-wrap">VEI echo-loop hardening</span>
+                            <span class="task-status task-p1">P1</span>
+                        </div>
+                        <div class="task-item">
+                            <span class="no-wrap">Omnimind freeze compliance</span>
+                            <span class="task-status task-p1">P1</span>
+                        </div>
+                        <div class="task-item">
+                            <span class="no-wrap">XP hyperrealistic GTM</span>
+                            <span class="task-status task-p1">P1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Health -->
+            <div class="card">
+                <div class="card-title">System Health</div>
+                <div class="card-content">
+                    <div class="metric-box">
+                        <span class="metric-label">Pane Uptime</span>
+                        <span class="metric-value success">22d 14h</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">Cloudflare Tunnel</span>
+                        <span class="metric-value success">Connected</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">MCP Services</span>
+                        <span class="metric-value success">6/6</span>
+                    </div>
+                    
+                    <div class="metric-box">
+                        <span class="metric-label">LaunchD Agents</span>
+                        <span class="metric-value success">~95</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Live dashboard • Auto-refresh 10s • Generated <span id="footer-time"></span></p>
+            <p>Xen System Status v1.0 • qi:/Volumes/qi_/sync_/exedus/xen/</p>
+        </div>
+    </div>
+    
+    <script>
+        function updateTimestamps() {
+            const now = new Date();
+            document.getElementById('timestamp').textContent = now.toLocaleString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            document.getElementById('footer-time').textContent = now.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+        }
+        
+        // Update timestamps on load and every second
+        updateTimestamps();
+        setInterval(updateTimestamps, 1000);
+    </script>
+</body>
+</html>

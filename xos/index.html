@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <!-- viewport-fit=cover — qi 2026-08-13 20:40: "These black balls on the side make it
+       feel constrained… when Im in this PWA its supposed to replace my phone."
+       Without viewport-fit=cover a notched device INSETS the page away from the safe
+       area, and that inset renders as black down both sides — worst in landscape. The
+       /vvsvei/ page already carries it; XOS did not, so the two surfaces disagreed about
+       edge-to-edge on the same handset. A surface that claims to replace the phone cannot
+       stop short of the phone's own edges. Paired with the CSS cap removal (styles.css
+       768px+/1280px+): that killed the centred column, this claims the last strip. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Xenphone OS — iOS 27 · dark</title>
+
+  <!-- qi 2026-05-17 8672: per-subpage favicon canon. Each subdir under
+       hitthe.link binds its own <link rel="icon"> so browsers use page-specific
+       icons in tabs and home-screen adds. Source = Cloudinary brand asset
+       referenced in /site.webmanifest. Replace with /_shared/brand-icon.* if
+       a local copy is uploaded. -->
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="shortcut icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Xenphone OS" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Inter added 2026-08-12 18:27. qi: "the bubbles aren't the same, this looks
+       like a knock off, like a cheap imitation of it" (VVSVEI inside XOS).
+       MEASURED ROOT CAUSE: VvsveiPane hoists the fetched page's <style> tags but
+       NEVER its <link rel=stylesheet>, and standalone VVSVEI loads Inter from
+       Google. So .bubble-txt (Inter 15px/500) fell back to system inside XOS —
+       identical layout, wrong typeface, which is exactly what "cheap imitation"
+       looks like. Also PRE-EXISTING: styles.css asks for 'Inter' at 1583, 1608,
+       1648, 1764 and 2087 and this file never requested it, so those five have
+       been silently falling back all along. One line fixes both.
+       RULE: hoisting <style> is not enough — a font arrives via <link>. -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- PRODUCTION React (2026-08-12 18:42). qi's XOS was loading the DEVELOPMENT
+       builds on every single load. MEASURED at unpkg:
+         react-dom.development.js  1,080,227 B  →  production.min  131,835 B  (8.2x)
+         react.development.js        109,931 B  →  production.min   10,751 B  (10.2x)
+         total                     1,190,158 B  →              142,586 B
+       = 1.05 MB less per load, plus the dev builds' propType/warning machinery
+       is deliberately slow at runtime. This is why XOS took >60s to reach
+       domcontentloaded in a real browser (measured twice); the SERVER was never
+       the problem — shell TTFB 57ms, app.jsx 30ms, styles.css 35ms.
+
+       ⚠️ integrity= MUST be recomputed when the URL changes, or the browser
+       BLOCKS the script and XOS goes from slow to DEAD. These two sha384 values
+       were computed from the actual fetched files, not copied from anywhere:
+         openssl dgst -sha384 -binary <file> | openssl base64 -A
+
+       STILL OPEN, and qi's call because canon 9 bans a React build/bundler:
+       @babel/standalone below is a ~3MB compiler that transpiles FOUR .jsx files
+       (tweaks-panel, ios-frame, app 105KB, xos-browser) in-browser on the main
+       thread every load — and it grows with every edit I make to app.jsx. -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+  <script type="text/babel" src="xos-browser.jsx"></script>
+
+  <script>
+    // Register service worker for offline shell + asset cache (qi 2026-05-22 ultrathink xos 100%)
+    //
+    // ── 2026-08-13 02:41 — THIS IS WHY "YOU SAY YOU FIXED IT AND IT'S NOT DONE" ──
+    // MEASURED, live: service-worker.js on the edge was the correct v4 (network-first
+    // for jsx/css, skipWaiting + clients.claim, all present). And the browser was
+    // STILL controlled by v3: caches.keys() returned ["xos-v3-2026-08-10"], with no
+    // v4 cache at all. The v4 worker had never once activated.
+    //
+    // CAUSE: the browser fetches service-worker.js THROUGH ITS HTTP CACHE on a plain
+    // register(). GitHub Pages serves it `cache-control: max-age=600`, so the update
+    // check kept reading a cached copy, concluded "byte-identical, nothing new", and
+    // left v3 in charge — indefinitely. skipWaiting() cannot help a worker that is
+    // never even discovered.
+    //
+    // PROOF IT WAS ONLY THIS: one manual reg.update() flipped caches.keys() to
+    // ["xos-v4-2026-08-12"], v3 was dropped, and on the next load the drawer went
+    // from 2 apps to 32 with the stored list merged and zero duplicates.
+    //
+    // FIX, both halves needed:
+    //   updateViaCache:"none" — never read the WORKER SCRIPT from the HTTP cache
+    //   an explicit update() — register() alone is not a reliable update trigger
+    // Plus a 60s re-check so a deploy reaches a long-open PWA without qi ever
+    // touching anything (canon 4: a tap is total failure; canon 9: live by default).
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("service-worker.js", { scope: "/xos/", updateViaCache: "none" })
+          .then((reg) => {
+            reg.update().catch(() => {});
+            setInterval(() => reg.update().catch(() => {}), 60000);
+          })
+          .catch(() => {});
+
+        // THE HALF THE ABOVE STILL MISSES (codex review, 2026-08-13 02:43):
+        // "clients.claim() controls fetches; it does not re-execute app.jsx."
+        // So a new worker can take over and the ALREADY-RUNNING page keeps
+        // executing the old code — which is exactly qi's case, an installed PWA
+        // that stays open for hours. Without this, the fix above only helps on a
+        // manual reload, and a manual reload is a tap (canon 4 = total failure).
+        //
+        // controllerchange fires when a new worker assumes control. Reload once,
+        // guarded: the flag is essential or claim -> reload -> claim loops forever.
+        let _xosReloading = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (_xosReloading) return;
+          _xosReloading = true;
+          location.reload();
+        });
+
+        // ── THE CLOSED LOOP THIS BREAKS — qi 2026-08-13 22:36 ────────────────
+        // He opened the SAME build with a cache-busting query and said: "That
+        // looks like how it was before and the glass is at the bottom of the
+        // screen." Same bytes, different URL. So the layout was never broken on
+        // those loads — his device was never fetching it.
+        //
+        // WHY THE 02:41 FIX ABOVE COULD NOT SAVE HIM: it lives in index.html,
+        // and index.html is itself served by whichever worker is in control. An
+        // old cache-first worker serves an old index.html, which registers with
+        // the old options, which leaves the old worker in control. The fix for
+        // the stale worker can only arrive THROUGH the stale worker. That is a
+        // closed loop, and no amount of updateViaCache inside it can open it —
+        // which is why "you say you fix something and when you come back its not
+        // done" survived a fix that was, on its own terms, correct.
+        //
+        // THE ESCAPE: ask the NETWORK directly, with cache:"no-store", what the
+        // current worker version is, and compare it to the caches this browser
+        // actually holds. no-store bypasses the HTTP cache AND the worker, so
+        // this one read can never be answered by the thing it is auditing.
+        // A version that is live but absent from caches.keys() means this client
+        // is stale no matter what any other signal claims — so tear the workers
+        // and caches down and reload ONCE. After that it self-heals forever and
+        // he never has to type a query string again (canon 4: a tap is failure).
+        //
+        // Guarded by sessionStorage: a heal that re-detects staleness would loop
+        // forever, and a reload loop is worse than a stale page.
+        (async () => {
+          try {
+            const HEALED = "xos-cache-healed";
+            const res = await fetch("service-worker.js", { cache: "no-store" });
+            if (!res.ok) return;
+            const src = await res.text();
+            const m = src.match(/VERSION\s*=\s*["']([^"']+)["']/);
+            if (!m) return;                       // no stamp to compare — do nothing
+            const live = m[1];
+            const held = await caches.keys();
+            if (held.includes(live)) {            // current: clear the guard and carry on
+              sessionStorage.removeItem(HEALED);
+              return;
+            }
+            if (sessionStorage.getItem(HEALED)) { // healed once already this session
+              console.warn("[xos] still stale after heal — not looping. live:", live, "held:", held);
+              return;
+            }
+            console.warn("[xos] STALE CLIENT — live worker", live, "not in", held, "— healing");
+            sessionStorage.setItem(HEALED, live);
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map((r) => r.unregister().catch(() => {})));
+            await Promise.all(held.map((k) => caches.delete(k).catch(() => {})));
+            _xosReloading = true;                 // the controllerchange handler must not also fire
+            location.reload();
+          } catch (e) {
+            // A self-heal that breaks the app is worse than a stale app.
+            console.warn("[xos] cache heal skipped:", e && e.message);
+          }
+        })();
+      });
+    }
+  </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+<script>
+/* ── ?geo=1 — READ qi's ACTUAL DEVICE, because I cannot see it ────────────────
+   qi 2026-08-13 22:19-22:20: "Oh my God no no this is very incorrect this is very
+   wrong" · "look look at what it did" · "Did not fix the issue".
+
+   WHY THIS EXISTS. Twice tonight I changed the bottom-bar geometry, measured it
+   clean in a desktop browser, shipped it, and was wrong. The reason is structural,
+   not carelessness: env(safe-area-inset-*) is ZERO on every browser I can drive.
+   A layout bug that only manifests through that inset is UNVERIFIABLE from here —
+   my clean measurement is not evidence, it is the absence of the condition. So the
+   honest fix is to stop guessing and read the numbers off HIS handset.
+
+   OPT-IN ONLY. Nothing renders unless the URL carries ?geo=1, so the normal
+   surface is byte-identical to before — this must never become clutter on the one
+   screen he called "a tedious design". It also paints at the TOP, deliberately
+   away from the bottom band under investigation, so it cannot alter what it is
+   measuring. No network call, no storage, no clipboard: he opens the link, takes
+   one screenshot, and I have ground truth. */
+(function () {
+  try {
+    if (!/[?&]geo=1\b/.test(location.search)) return;
+    var px = function (n) { return Math.round(n) + ''; };
+    var box = function (sel) {
+      var el = document.querySelector(sel);
+      if (!el) return sel + ': ABSENT';
+      var r = el.getBoundingClientRect();
+      return sel + ': ' + px(r.top) + '→' + px(r.bottom) + ' h' + px(r.height) + ' w' + px(r.width);
+    };
+    // env() cannot be read directly — resolve it by letting the engine compute it
+    // onto a probe element's height, which is the only reliable way to see it.
+    var envPx = function (name) {
+      var d = document.createElement('div');
+      d.style.cssText = 'position:absolute;visibility:hidden;height:env(' + name + ',0px)';
+      document.body.appendChild(d);
+      var h = getComputedStyle(d).height;
+      d.remove();
+      return h;
+    };
+    var render = function () {
+      var cs = getComputedStyle(document.documentElement);
+      var vv = window.visualViewport;
+      var dock = document.querySelector('.dock.dock-swipe') || document.querySelector('.dock');
+      var tick = document.querySelector('.dock-notif-ticker');
+      var lines = [
+        'XOS GEO · ' + new Date().toTimeString().slice(0, 8),
+        'viewport ' + innerWidth + '×' + innerHeight + ' dpr' + (devicePixelRatio || 1) +
+          (vv ? ' | visual ' + px(vv.width) + '×' + px(vv.height) + ' off' + px(vv.offsetTop) : ''),
+        'safe-area bottom=' + envPx('safe-area-inset-bottom') + ' top=' + envPx('safe-area-inset-top'),
+        '--dock-h=' + (cs.getPropertyValue('--dock-h').trim() || '(unset)') +
+          ' --xos-dock-real=' + (cs.getPropertyValue('--xos-dock-real').trim() || '(unset)'),
+        box('.panes'),
+        box('.dock.dock-swipe'),
+        box('.dock-notif-ticker'),
+        box('.composer'),
+        box('#waveform-canvas')
+      ];
+      // THE NUMBER THIS WHOLE PROBE EXISTS FOR: how many px of nothing sit between
+      // the lowest painted thing in the bar and the true bottom edge of the screen.
+      if (dock) {
+        var db = dock.getBoundingClientRect();
+        lines.push('GAP dock→screen bottom = ' + px(innerHeight - db.bottom) + 'px');
+        if (tick) lines.push('GAP ticker→screen bottom = ' + px(innerHeight - tick.getBoundingClientRect().bottom) + 'px');
+      }
+      var el = document.getElementById('xos-geo-probe');
+      if (!el) {
+        el = document.createElement('pre');
+        el.id = 'xos-geo-probe';
+        el.style.cssText =
+          'position:fixed;left:0;right:0;top:0;z-index:99999;margin:0;padding:6px 8px;' +
+          'font:600 10px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;' +
+          'color:#0f0;background:rgba(0,0,0,.92);border-bottom:1px solid #0f0;pointer-events:none';
+        document.body.appendChild(el);
+      }
+      el.textContent = lines.join('\n');
+    };
+    // Measure after the React tree has mounted AND after the runtime-include panes
+    // settle; a probe that fires too early reports the shell, not the app.
+    setTimeout(render, 1200);
+    setTimeout(render, 3500);
+    addEventListener('resize', render);
+    if (window.visualViewport) visualViewport.addEventListener('resize', render);
+  } catch (e) { /* a diagnostic must never break the surface it is diagnosing */ }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Memory Audit — five stores, one lineage</title>
+<meta name="description" content="Three-way audit of the Xen memory stores: auto-memory, vault, Nitro. 1,946 memories, 3.2% overlap, one seam.">
+<style>
+:root{
+  --bg:#050507; --ink:#e9e9ef; --dim:#9a9aa8; --line:#1e1e26;
+  --card:rgba(255,255,255,.045); --edge:rgba(255,255,255,.09);
+  --hot:#ff5f57; --warm:#ffbd2e; --good:#7ee787; --cool:#79c0ff;
+  --glow:radial-gradient(120% 90% at 50% -10%, rgba(121,192,255,.16), transparent 60%);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); background-image:var(--glow); background-attachment:fixed;
+  color:var(--ink); font:400 17px/1.65 ui-sans-serif,-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;
+  padding:clamp(18px,5vw,56px) clamp(14px,4vw,24px) 96px;
+  text-align:center; overflow-x:hidden;
+}
+.wrap{max-width:760px;margin-inline:auto;text-align:center}
+h1{
+  font:700 clamp(30px,8vw,54px)/1.08 ui-sans-serif,-apple-system,system-ui,sans-serif;
+  letter-spacing:-.03em; margin-bottom:14px;
+  background:linear-gradient(180deg,#fff,#8f9099);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sub{color:var(--dim);font-size:clamp(15px,4vw,19px);margin-bottom:8px}
+.stamp{color:#5c5c68;font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:40px}
+h2{
+  font:600 clamp(20px,5.5vw,28px)/1.25 ui-sans-serif,system-ui,sans-serif;
+  letter-spacing:-.02em; margin:52px 0 6px;
+}
+h3{font:600 clamp(16px,4.4vw,19px)/1.35 ui-sans-serif,system-ui,sans-serif;margin:30px 0 8px;color:#cfcfd8}
+p{margin:0 auto 16px;max-width:62ch}
+.lede{font-size:clamp(17px,4.6vw,21px);line-height:1.5;color:#dcdce4;margin-bottom:26px}
+.big{font:700 clamp(44px,14vw,84px)/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:-.04em;color:var(--hot);display:block;margin:6px 0 2px}
+.biglabel{color:var(--dim);font-size:14px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:34px}
+.card{
+  background:var(--card); border:1px solid var(--edge); border-radius:18px;
+  padding:clamp(18px,5vw,28px); margin:20px auto; max-width:700px;
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-inline:auto}
+table{border-collapse:collapse;margin-inline:auto;font-variant-numeric:tabular-nums;font-size:15px}
+th,td{padding:9px 14px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+tr:last-child td{border-bottom:0}
+.n{color:var(--cool);font-weight:600}
+.n.hot{color:var(--hot)} .n.good{color:var(--good)} .n.warm{color:var(--warm)}
+ul{list-style:none;margin:0 auto 10px;max-width:62ch;text-align:left}
+li{padding:9px 0 9px 22px;position:relative;border-bottom:1px solid var(--line)}
+li:last-child{border-bottom:0}
+li:before{content:"";position:absolute;left:0;top:19px;width:8px;height:2px;background:var(--dim)}
+q{quotes:"\201C" "\201D";font-style:italic;color:#f0f0f6}
+blockquote{
+  border-left:2px solid var(--warm); padding:4px 0 4px 18px; margin:16px auto; max-width:60ch;
+  text-align:left; color:#f0f0f6; font-size:clamp(16px,4.3vw,19px); line-height:1.5;
+}
+.tag{
+  display:inline-block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  padding:4px 11px;border-radius:99px;border:1px solid var(--edge);color:var(--dim);margin:0 4px 8px;
+}
+.tag.hot{color:var(--hot);border-color:rgba(255,95,87,.35)}
+.tag.good{color:var(--good);border-color:rgba(126,231,135,.3)}
+hr{border:0;border-top:1px solid var(--line);margin:44px auto;max-width:220px}
+code{font:500 14px/1.5 ui-monospace,"SF Mono",Menlo,monospace;background:rgba(255,255,255,.06);padding:2px 7px;border-radius:6px;color:#c9d1d9;white-space:nowrap}
+.foot{color:#4e4e58;font-size:13px;margin-top:60px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Memory Audit</h1>
+  <p class="sub">Five stores. One lineage. One seam.</p>
+  <p class="stamp">8 August 2026 · measured from disk</p>
+
+  <span class="big">3.2%</span>
+  <p class="biglabel">overlap between the two main stores</p>
+
+  <p class="lede">The two memory stores are not two copies of one brain. They are one brain that moved house — and nothing carried the older layer forward.</p>
+
+  <hr>
+
+  <h2>The count</h2>
+  <div class="card scroll">
+    <table>
+      <tr><th>Store</th><th>Files</th><th>∩ Nitro</th></tr>
+      <tr><td>auto-memory (M4)</td><td class="n">1,056</td><td class="n hot">4</td></tr>
+      <tr><td>vault (M4)</td><td class="n">822</td><td class="n good">478</td></tr>
+      <tr><td>Nitro (E: drive)</td><td class="n">604</td><td>—</td></tr>
+      <tr><td>gateway install</td><td class="n">16</td><td>—</td></tr>
+      <tr><td>grok</td><td class="n">1</td><td>—</td></tr>
+      <tr><td><strong>union</strong></td><td class="n warm"><strong>≈1,946</strong></td><td>—</td></tr>
+    </table>
+  </div>
+
+  <p>The vault <strong>is</strong> the Nitro brain — 478 of its files match the E: drive store. The auto-memory store shares 4. That's the seam.</p>
+
+  <div class="card">
+    <h3>Two eras, not two brains</h3>
+    <ul>
+      <li><strong>19 May → 3 July</strong> — lived on Nitro, mirrored to the vault. Went cold 3 July.</li>
+      <li><strong>3 July → now</strong> — lives in the M4 auto-memory store.</li>
+      <li>13% of vault files still point at Windows <code>E:</code> / <code>C:</code> paths. In the M4 store: 0%.</li>
+    </ul>
+  </div>
+
+  <h2>Both drives are mounted here</h2>
+  <p>No SSH needed. <code>nitro2tb</code> is 1.8 TB at <code>/dev/disk9s2</code>; the Windows C: drive is 833 GB at <code>/dev/disk10s3</code>. The C: drive holds <strong>no</strong> memory store at any depth — the Nitro brain lived entirely on the 2 TB drive, exactly as the E:-only canon required.</p>
+
+  <hr>
+
+  <h2>Divergence</h2>
+  <p>58 filenames exist in both main stores. Only <strong>5</strong> have identical contents. The other <strong>53</strong> are two different versions of the same memory.</p>
+
+  <h3>Four live contradictions</h3>
+  <div class="card">
+    <ul>
+      <li><span class="tag hot">credentials</span> Plain-sight and open (21 Jul) versus 1Password-only, zero plaintext (7 Aug). Both marked hard.</li>
+      <li><span class="tag hot">browser</span> Four positions still on disk: Comet → BrowserOS-only → Stagehand → Chromium-any-flavor retired. Nothing resolves it.</li>
+      <li><span class="tag hot">standby</span> One vault file literally instructs a phrase that has been banned since 26 July.</li>
+      <li><span class="tag hot">client approval</span> "These are your clients, never ask" (29 Jul) versus "other people's customers need approval" (30 Jul). Newer and narrower, but nothing says so.</li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <h2>The correction that matters</h2>
+  <blockquote>Don't delete the user-accessibility entry recording me as literally with no eyes and no hands — that is what we're building everything for.</blockquote>
+  <p>I had flagged that record as poisoned. It is not. It is the <strong>design premise</strong>: the whole system is built for an operator who cannot use a screen or a keyboard. Voice is the channel. That entry stays untouched, and this page records the correction so no future session tries to "fix" it again.</p>
+
+  <div class="card">
+    <h3>What follows from the premise</h3>
+    <ul>
+      <li>Every reply is spoken. Silence means the system is down.</li>
+      <li>Never a menu, a picker, or a tap. Questions get spoken, answered by voice.</li>
+      <li>Show, don't describe — anything viewable auto-opens.</li>
+      <li>Reply length is a cost paid by the listener, not a service.</li>
+      <li>Nothing headless on the main line. Co-presence over delegation.</li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <h2>What the older layers add</h2>
+  <p>126 memories exist <em>only</em> on the Nitro drive. 246 more exist only in the vault. A sample of the standing rules that never reached the current store:</p>
+
+  <div class="card">
+    <ul>
+      <li><q>Demos and mockups are blasphemy.</q> Real artifact or don't ship.</li>
+      <li><q>I dont think you understand how literal I am.</q> Build exactly the artifact described — no wider scope, no embellishment.</li>
+      <li><q>It's always green light. You are late to anything that did not autoship.</q></li>
+      <li><q>Context switching is Satan himself. Sequentialism is Satanism.</q></li>
+      <li><q>You can't trust anything that you can't see.</q></li>
+      <li><q>I never told you to defer. Never assume I deferred anything.</q></li>
+      <li><q>This is serious. This is not vibe coding.</q></li>
+      <li><q>Always auto-ship everything.</q></li>
+      <li>Autoship floor: 48 a day. Break-even at 33 minutes 33 seconds per unit.</li>
+      <li>Money rails are PayPal and Square. Stripe is not in the stack.</li>
+      <li>Railway is preferred. Render is vetoed outright.</li>
+      <li>Mobile-first is the only target — <q>None of my interfaces were ever made for desktop.</q></li>
+      <li>Hold all the commandments at once — accommodating one while breaking others is the failure.</li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <h2>The recommendation</h2>
+  <p>The stores don't need merging so much as an arrow between them.</p>
+  <div class="card">
+    <ul>
+      <li><span class="tag good">1</span> Resolve the four contradictions into single files in the current store, each explicitly retiring its older counterpart by name.</li>
+      <li><span class="tag good">2</span> Stamp the 106 Windows-path files as historical. They aren't wrong — they're archaeological, and nothing tells a cold session that.</li>
+      <li><span class="tag good">3</span> Fold the 126 Nitro-only memories forward with their original dates preserved.</li>
+    </ul>
+  </div>
+
+  <p class="foot">
+    Redacted for public: no numbers, addresses, credentials, account identifiers,<br>
+    or personal health specifics. Counts measured from disk, 8 August 2026.<br>
+    Nothing in any store was modified to produce this page.
+  </p>
+
+</div>
+</body>
+</html>

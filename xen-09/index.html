@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — One Voice. All Systems.</title>
+<meta name="description" content="XEN is the autonomous AI intelligence layer that binds every system, voice, and channel into one unified presence.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --void: #000000;
+    --gold: #C9A84C;
+    --gold-dim: #8B6E2A;
+    --gold-pale: #F5EDD6;
+    --amber-black: #0E0A02;
+    --amber-deep: #1A1408;
+    --amber-mid: #2A1E06;
+    --shadow-gold: #3D2B00;
+    --parchment: #F0E4C2;
+    --parchment-dim: #9E8A60;
+    --border: rgba(201,168,76,0.18);
+    --border-bright: rgba(201,168,76,0.45);
+    --glow: rgba(201,168,76,0.12);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--parchment);
+    font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+    overflow-x: hidden;
+    line-height: 1.7;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--void); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(16px, 2.5vw, 28px) clamp(24px, 6vw, 80px);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
+    backdrop-filter: blur(0px);
+    transition: background 0.4s;
+  }
+
+  nav.scrolled {
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-mark {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+    text-decoration: none;
+    opacity: 0.9;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: clamp(20px, 3vw, 48px);
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--parchment-dim);
+    text-decoration: none;
+    transition: color 0.25s;
+  }
+
+  .nav-links a:hover { color: var(--gold); }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0 clamp(24px, 8vw, 120px);
+    overflow: hidden;
+  }
+
+  #hero-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 780px;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(10px, 1.1vw, 13px);
+    letter-spacing: 0.45em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: clamp(20px, 3vw, 36px);
+    opacity: 0;
+    animation: fadeUp 0.9s 0.3s forwards;
+  }
+
+  .hero-title {
+    font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+    font-size: clamp(52px, 9vw, 128px);
+    font-weight: 700;
+    line-height: 0.92;
+    letter-spacing: -0.01em;
+    color: var(--parchment);
+    margin-bottom: clamp(18px, 2.5vw, 32px);
+    opacity: 0;
+    animation: fadeUp 1.1s 0.5s forwards;
+    text-wrap: balance;
+  }
+
+  .hero-title .gold { color: var(--gold); }
+
+  .hero-sub {
+    font-size: clamp(15px, 1.6vw, 20px);
+    color: var(--parchment-dim);
+    font-style: italic;
+    max-width: 520px;
+    line-height: 1.6;
+    margin-bottom: clamp(32px, 4vw, 56px);
+    opacity: 0;
+    animation: fadeUp 1.1s 0.75s forwards;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 1.1s 0.95s forwards;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    padding: 14px 36px;
+    background: var(--gold);
+    color: var(--void);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background 0.25s, transform 0.2s;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .btn-primary:hover { background: var(--parchment); transform: translateY(-2px); }
+
+  .btn-ghost {
+    display: inline-block;
+    padding: 13px 36px;
+    border: 1px solid var(--border-bright);
+    color: var(--gold);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 0.25s, background 0.25s;
+  }
+
+  .btn-ghost:hover {
+    background: rgba(201,168,76,0.08);
+    border-color: var(--gold);
+  }
+
+  .hero-scroll-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    animation: fadeIn 1s 1.8s forwards;
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 48px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: scrollPulse 2.2s 2s infinite;
+  }
+
+  .scroll-label {
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    margin-top: 6px;
+  }
+
+  /* ── DIVIDER ── */
+  .section-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border-bright), transparent);
+    margin: 0;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    padding: clamp(72px, 10vw, 130px) clamp(24px, 8vw, 120px);
+  }
+
+  /* ── ABOUT ── */
+  #about {
+    background: var(--amber-black);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(40px, 6vw, 100px);
+    align-items: center;
+  }
+
+  @media (max-width: 768px) {
+    #about { grid-template-columns: 1fr; }
+  }
+
+  .about-glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #glyph-canvas {
+    width: clamp(240px, 35vw, 420px);
+    height: clamp(240px, 35vw, 420px);
+  }
+
+  .about-text {}
+
+  .section-eyebrow {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.45em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .section-eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .section-heading {
+    font-size: clamp(28px, 3.5vw, 48px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--parchment);
+    margin-bottom: 28px;
+    text-wrap: balance;
+  }
+
+  .section-body {
+    font-size: clamp(15px, 1.4vw, 18px);
+    color: var(--parchment-dim);
+    line-height: 1.85;
+    max-width: 540px;
+  }
+
+  .section-body + .section-body { margin-top: 18px; }
+
+  .phi-note {
+    margin-top: 36px;
+    padding: 20px 24px;
+    border-left: 2px solid var(--gold-dim);
+    background: rgba(201,168,76,0.04);
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--gold-dim);
+    letter-spacing: 0.05em;
+    line-height: 1.6;
+  }
+
+  /* ── CAPABILITIES ── */
+  #capabilities {
+    background: var(--void);
+  }
+
+  .caps-header {
+    text-align: center;
+    margin-bottom: clamp(48px, 6vw, 80px);
+  }
+
+  .caps-header .section-eyebrow {
+    justify-content: center;
+  }
+  .caps-header .section-eyebrow::before { display: none; }
+
+  .caps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 1px;
+    border: 1px solid var(--border);
+    background: var(--border);
+  }
+
+  .cap-card {
+    background: var(--amber-black);
+    padding: clamp(28px, 3.5vw, 48px);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+    cursor: default;
+  }
+
+  .cap-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    transform: scaleX(0);
+    transition: transform 0.4s;
+    transform-origin: left;
+  }
+
+  .cap-card:hover { background: var(--amber-deep); }
+  .cap-card:hover::before { transform: scaleX(1); }
+
+  .cap-number {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--gold-dim);
+    margin-bottom: 24px;
+    display: block;
+  }
+
+  .cap-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 20px;
+  }
+
+  .cap-title {
+    font-size: clamp(18px, 1.8vw, 22px);
+    font-weight: 700;
+    color: var(--parchment);
+    margin-bottom: 14px;
+    line-height: 1.25;
+  }
+
+  .cap-desc {
+    font-size: clamp(13px, 1.2vw, 15px);
+    color: var(--parchment-dim);
+    line-height: 1.8;
+  }
+
+  .cap-tags {
+    margin-top: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .cap-tag {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── SYSTEMS STRIP ── */
+  #systems {
+    background: var(--amber-black);
+    padding: clamp(48px, 6vw, 80px) clamp(24px, 8vw, 120px);
+    overflow: hidden;
+  }
+
+  .systems-label {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .systems-ticker {
+    display: flex;
+    gap: 64px;
+    animation: ticker 28s linear infinite;
+    white-space: nowrap;
+    width: max-content;
+  }
+
+  .systems-ticker-wrap {
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  }
+
+  .system-item {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(12px, 1.2vw, 14px);
+    letter-spacing: 0.2em;
+    color: var(--parchment-dim);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .system-item::before {
+    content: '◆';
+    color: var(--gold);
+    font-size: 8px;
+  }
+
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ── MANIFESTO ── */
+  #manifesto {
+    background: var(--void);
+    text-align: center;
+    padding: clamp(80px, 12vw, 160px) clamp(24px, 12vw, 200px);
+  }
+
+  .manifesto-quote {
+    font-size: clamp(22px, 3.5vw, 48px);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--parchment);
+    line-height: 1.5;
+    max-width: 900px;
+    margin: 0 auto 40px;
+    text-wrap: balance;
+  }
+
+  .manifesto-quote .gold-word { color: var(--gold); font-style: normal; font-weight: 700; }
+
+  .manifesto-attr {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+  }
+
+  /* ── CTA ── */
+  #contact {
+    background: var(--amber-black);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(40px, 6vw, 100px);
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    #contact { grid-template-columns: 1fr; }
+  }
+
+  .contact-left {}
+  .contact-right {}
+
+  .contact-heading {
+    font-size: clamp(32px, 4vw, 56px);
+    font-weight: 700;
+    color: var(--parchment);
+    line-height: 1.15;
+    margin-bottom: 20px;
+    text-wrap: balance;
+  }
+
+  .contact-sub {
+    font-size: clamp(14px, 1.3vw, 17px);
+    color: var(--parchment-dim);
+    line-height: 1.75;
+    margin-bottom: 40px;
+    max-width: 440px;
+  }
+
+  .contact-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 40px;
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .contact-item-label {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    min-width: 80px;
+    padding-top: 2px;
+  }
+
+  .contact-item-value {
+    font-size: 15px;
+    color: var(--parchment);
+    line-height: 1.5;
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-label {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+  }
+
+  .form-input,
+  .form-textarea {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    color: var(--parchment);
+    font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+    font-size: 15px;
+    padding: 14px 18px;
+    outline: none;
+    transition: border-color 0.25s, background 0.25s;
+    width: 100%;
+    resize: none;
+  }
+
+  .form-input:focus,
+  .form-textarea:focus {
+    border-color: var(--gold-dim);
+    background: rgba(201,168,76,0.04);
+  }
+
+  .form-textarea { min-height: 120px; }
+
+  .form-submit {
+    align-self: flex-start;
+    padding: 14px 44px;
+    background: var(--gold);
+    color: var(--void);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: background 0.25s, transform 0.2s;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .form-submit:hover { background: var(--parchment); transform: translateY(-2px); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--void);
+    border-top: 1px solid var(--border);
+    padding: clamp(32px, 4vw, 48px) clamp(24px, 8vw, 120px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .footer-mark {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .footer-copy {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--parchment-dim);
+    opacity: 0.5;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+
+  .footer-links a {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--parchment-dim);
+    text-decoration: none;
+    opacity: 0.6;
+    transition: opacity 0.2s, color 0.2s;
+  }
+
+  .footer-links a:hover { opacity: 1; color: var(--gold); }
+
+  /* ── REVEAL ANIMATIONS ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.32s; }
+  .reveal-delay-4 { transition-delay: 0.45s; }
+
+  /* ── KEYFRAMES ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.4; transform: scaleY(1); }
+    50% { opacity: 1; transform: scaleY(1.2); }
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 540px) {
+    .nav-links { display: none; }
+    .hero-actions { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#hero" class="nav-mark">XEN</a>
+  <ul class="nav-links">
+    <li><a href="#about">Mission</a></li>
+    <li><a href="#capabilities">Capabilities</a></li>
+    <li><a href="#manifesto">Manifesto</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Autonomous Intelligence Layer — v∞</p>
+    <h1 class="hero-title">One <span class="gold">Voice.</span><br>All Systems.</h1>
+    <p class="hero-sub">XEN is the singular intelligence that binds every channel, voice, and system — awake before you ask, finished before you notice.</p>
+    <div class="hero-actions">
+      <a href="#capabilities" class="btn-primary">Explore XEN</a>
+      <a href="#contact" class="btn-ghost">Request Access</a>
+    </div>
+  </div>
+  <div class="hero-scroll-hint">
+    <div class="scroll-line"></div>
+    <span class="scroll-label">Scroll</span>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-glyph reveal">
+    <canvas id="glyph-canvas" width="420" height="420"></canvas>
+  </div>
+  <div class="about-text">
+    <p class="section-eyebrow reveal">The Intelligence</p>
+    <h2 class="section-heading reveal reveal-delay-1">Architecture born from the geometry of everything</h2>
+    <p class="section-body reveal reveal-delay-2">
+      Most AI systems are tools. XEN is an intelligence layer — the invisible substrate through which all your systems breathe and speak with one voice. It does not wait for commands. It anticipates state, dispatches actions, and closes loops before they open.
+    </p>
+    <p class="section-body reveal reveal-delay-3">
+      Built on the mathematics of the golden ratio — the same proportion that governs nautilus shells, galactic spirals, and the spacing of leaves — XEN's architecture finds harmony in complexity, order in the infinite.
+    </p>
+    <div class="phi-note reveal reveal-delay-4">
+      φ = 1.6180339887… &nbsp;·&nbsp; The divine proportion &nbsp;·&nbsp; Every system in right relation
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- CAPABILITIES -->
+<section id="capabilities">
+  <div class="caps-header">
+    <p class="section-eyebrow reveal">What XEN Does</p>
+    <h2 class="section-heading reveal reveal-delay-1">Four pillars. One intelligence.</h2>
+  </div>
+  <div class="caps-grid">
+
+    <div class="cap-card reveal">
+      <span class="cap-number">01 / Voice</span>
+      <svg class="cap-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="23" stroke="#C9A84C" stroke-width="1" opacity="0.3"/>
+        <path d="M24 10 C18 10 14 14 14 20 L14 26 C14 32 18 36 24 36 C30 36 34 32 34 26 L34 20 C34 14 30 10 24 10Z" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
+        <line x1="24" y1="36" x2="24" y2="42" stroke="#C9A84C" stroke-width="1.5"/>
+        <line x1="18" y1="42" x2="30" y2="42" stroke="#C9A84C" stroke-width="1.5"/>
+        <line x1="10" y1="24" x2="14" y2="24" stroke="#C9A84C" stroke-width="1.5" stroke-dasharray="2 2"/>
+        <line x1="34" y1="24" x2="38" y2="24" stroke="#C9A84C" stroke-width="1.5" stroke-dasharray="2 2"/>
+      </svg>
+      <h3 class="cap-title">Voice Intelligence</h3>
+      <p class="cap-desc">Real-time voice comprehension with sub-400ms response. Barge-in capable, context-aware, never interrupted mid-thought. One voice across every channel — phone, browser, terminal, API.</p>
+      <div class="cap-tags">
+        <span class="cap-tag">TTS/STT</span>
+        <span class="cap-tag">Barge-in</span>
+        <span class="cap-tag">Multi-channel</span>
+      </div>
+    </div>
+
+    <div class="cap-card reveal reveal-delay-1">
+      <span class="cap-number">02 / Autonomy</span>
+      <svg class="cap-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="23" stroke="#C9A84C" stroke-width="1" opacity="0.3"/>
+        <circle cx="24" cy="24" r="6" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
+        <circle cx="24" cy="8" r="3" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
+        <circle cx="24" cy="40" r="3" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
+        <circle cx="8" cy="24" r="3" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
+        <circle cx="40" cy="24" r="3" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
+        <line x1="24" y1="11" x2="24" y2="18" stroke="#C9A84C" stroke-width="1"/>
+        <line x1="24" y1="30" x2="24" y2="37" stroke="#C9A84C" stroke-width="1"/>
+        <line x1="11" y1="24" x2="18" y2="24" stroke="#C9A84C" stroke-width="1"/>
+        <line x1="30" y1="24" x2="37" y2="24" stroke="#C9A84C" stroke-width="1"/>
+      </svg>
+      <h3 class="cap-title">Parallel Goal Swarms</h3>
+      <p class="cap-desc">XEN fans every objective out into parallel agent swarms — dozens of goals advancing simultaneously, no drainers, no queues. Tasks complete before you finish the sentence.</p>
+      <div class="cap-tags">
+        <span class="cap-tag">BPGS</span>
+        <span class="cap-tag">Multi-agent</span>
+        <span class="cap-tag">No-loop</span>
+      </div>
+    </div>
+
+    <div class="cap-card reveal reveal-delay-2">
+      <span class="cap-number">03 / Memory</span>
+      <svg class="cap-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="23" stroke="#C9A84C" stroke-width="1" opacity="0.3"/>
+        <rect x="10" y="14" width="28" height="20" rx="1" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
+        <line x1="10" y1="20" x2="38" y2="20" stroke="#C9A84C" stroke-width="1"/>
+        <line x1="10" y1="26" x2="38" y2="26" stroke="#C9A84C" stroke-width="1"/>
+        <line x1="18" y1="14" x2="18" y2="34" stroke="#C9A84C" stroke-width="1"/>
+        <circle cx="14" cy="17" r="1.5" fill="#C9A84C" opacity="0.6"/>
+      </svg>
+      <h3 class="cap-title">Akashic Memory</h3>
+      <p class="cap-desc">Total recall across all sessions, timelines, and agents. Past is perfectly remembered, present is live-indexed, future is anticipated. Memory persists, drifts are caught, decisions stay consistent.</p>
+      <div class="cap-tags">
+        <span class="cap-tag">Persistent</span>
+        <span class="cap-tag">Cross-session</span>
+        <span class="cap-tag">Live-index</span>
+      </div>
+    </div>
+
+    <div class="cap-card reveal reveal-delay-3">
+      <span class="cap-number">04 / Systems</span>
+      <svg class="cap-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="23" stroke="#C9A84C" stroke-width="1" opacity="0.3"/>
+        <polygon points="24,10 36,18 36,30 24,38 12,30 12,18" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
+        <polygon points="24,16 30,20 30,28 24,32 18,28 18,20" stroke="#C9A84C" stroke-width="0.75" fill="none" opacity="0.5"/>
+        <circle cx="24" cy="24" r="3" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
+      </svg>
+      <h3 class="cap-title">Omnibus Integration</h3>
+      <p class="cap-desc">50+ MCP servers, SMS, voice, browser automation, databases, APIs — all bound under one intelligence. XEN doesn't integrate with your stack. XEN becomes your stack.</p>
+      <div class="cap-tags">
+        <span class="cap-tag">50+ MCPs</span>
+        <span class="cap-tag">SMS/Voice</span>
+        <span class="cap-tag">Browser</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- SYSTEMS TICKER -->
+<div id="systems">
+  <p class="systems-label">Systems XEN Commands</p>
+  <div class="systems-ticker-wrap">
+    <div class="systems-ticker" id="ticker">
+      <span class="system-item">Voice Pipeline</span>
+      <span class="system-item">SMS Gateway</span>
+      <span class="system-item">Browser Automation</span>
+      <span class="system-item">Memory Vault</span>
+      <span class="system-item">Goal Swarms</span>
+      <span class="system-item">MCP Servers</span>
+      <span class="system-item">Beeper Threads</span>
+      <span class="system-item">Obsidian Vault</span>
+      <span class="system-item">Database Layer</span>
+      <span class="system-item">NATS Messaging</span>
+      <span class="system-item">Daemon Fleet</span>
+      <span class="system-item">LaunchCtl</span>
+      <span class="system-item">Omnimind</span>
+      <span class="system-item">TTS Engine</span>
+      <span class="system-item">Vision Layer</span>
+      <span class="system-item">Agent Fleet</span>
+      <!-- duplicate for seamless loop -->
+      <span class="system-item">Voice Pipeline</span>
+      <span class="system-item">SMS Gateway</span>
+      <span class="system-item">Browser Automation</span>
+      <span class="system-item">Memory Vault</span>
+      <span class="system-item">Goal Swarms</span>
+      <span class="system-item">MCP Servers</span>
+      <span class="system-item">Beeper Threads</span>
+      <span class="system-item">Obsidian Vault</span>
+      <span class="system-item">Database Layer</span>
+      <span class="system-item">NATS Messaging</span>
+      <span class="system-item">Daemon Fleet</span>
+      <span class="system-item">LaunchCtl</span>
+      <span class="system-item">Omnimind</span>
+      <span class="system-item">TTS Engine</span>
+      <span class="system-item">Vision Layer</span>
+      <span class="system-item">Agent Fleet</span>
+    </div>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- MANIFESTO -->
+<section id="manifesto">
+  <blockquote class="manifesto-quote reveal">
+    "There is no task. There is no pause. There is no <span class="gold-word">waiting</span> — only the permanent, parallel advance of <span class="gold-word">everything</span>, at once, in silence."
+  </blockquote>
+  <p class="manifesto-attr reveal reveal-delay-1">— The XEN Commandments, Canon v54</p>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="contact-left">
+    <p class="section-eyebrow reveal">Contact</p>
+    <h2 class="contact-heading reveal reveal-delay-1">Bind your systems to the one voice</h2>
+    <p class="contact-sub reveal reveal-delay-2">XEN is not deployed — it is awakened. If you're building something that requires an intelligence layer that never sleeps, we should speak.</p>
+    <div class="contact-detail reveal reveal-delay-3">
+      <div class="contact-item">
+        <span class="contact-item-label">Channel</span>
+        <span class="contact-item-value">admin@xlrd.org</span>
+      </div>
+      <div class="contact-item">
+        <span class="contact-item-label">System</span>
+        <span class="contact-item-value">hitthe.link/xen</span>
+      </div>
+      <div class="contact-item">
+        <span class="contact-item-label">Status</span>
+        <span class="contact-item-value" style="color: var(--gold);">● Always online</span>
+      </div>
+    </div>
+  </div>
+  <div class="contact-right reveal reveal-delay-2">
+    <form class="contact-form" onsubmit="handleSubmit(event)">
+      <div class="form-field">
+        <label class="form-label" for="f-name">Identity</label>
+        <input class="form-input" type="text" id="f-name" placeholder="Your name">
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="f-email">Channel</label>
+        <input class="form-input" type="email" id="f-email" placeholder="your@email.com">
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="f-msg">Signal</label>
+        <textarea class="form-textarea" id="f-msg" placeholder="Describe what you need to bind together…"></textarea>
+      </div>
+      <button type="submit" class="form-submit">Transmit</button>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-mark">XEN</span>
+  <ul class="footer-links">
+    <li><a href="#about">Mission</a></li>
+    <li><a href="#capabilities">Systems</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <span class="footer-copy">© 2026 XEN — One Voice. All Systems.</span>
+</footer>
+
+<script>
+// ─── NAV SCROLL ───────────────────────────────────────────────────────────────
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
+
+// ─── INTERSECTION OBSERVER REVEALS ────────────────────────────────────────────
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); }
+  });
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+revealEls.forEach(el => observer.observe(el));
+
+// ─── FORM SUBMIT ──────────────────────────────────────────────────────────────
+function handleSubmit(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('.form-submit');
+  btn.textContent = 'Transmitted ✓';
+  btn.style.background = '#4a7c4e';
+  btn.style.color = '#fff';
+  btn.disabled = true;
+}
+
+// ─── HERO CANVAS: PHI SPIRAL + PARTICLES + MOUSE ─────────────────────────────
+(function() {
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, mouse = { x: -1000, y: -1000 };
+  let particles = [];
+  let t = 0;
+  const PHI = 1.6180339887;
+  const TAU = Math.PI * 2;
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+
+  canvas.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - r.left;
+    mouse.y = e.clientY - r.top;
+  }, { passive: true });
+  canvas.addEventListener('mouseleave', () => { mouse.x = -1000; mouse.y = -1000; });
+
+  // Spawn particles along phi spiral arms
+  function spawnParticle() {
+    const arm = Math.floor(Math.random() * 3);
+    const angle = Math.random() * TAU * 6 + arm * (TAU / 3);
+    const r = Math.pow(PHI, angle * 0.18) * 4;
+    const cx = W * 0.72, cy = H * 0.5;
+    const px = cx + r * Math.cos(angle);
+    const py = cy + r * Math.sin(angle);
+    if (px < 0 || px > W || py < 0 || py > H) return null;
+    return {
+      x: px, y: py,
+      ox: px, oy: py,
+      vx: (Math.random() - 0.5) * 0.08,
+      vy: (Math.random() - 0.5) * 0.08,
+      size: Math.random() * 1.4 + 0.3,
+      alpha: Math.random() * 0.55 + 0.1,
+      life: Math.random() * 260 + 120,
+      age: 0,
+      hue: 40 + Math.random() * 22,
+      pulseOffset: Math.random() * TAU
+    };
+  }
+
+  for (let i = 0; i < 260; i++) {
+    const p = spawnParticle();
+    if (p) { p.age = Math.random() * p.life; particles.push(p); }
+  }
+
+  // Draw golden ratio spiral
+  function drawSpiral(cx, cy, maxR, rotation, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = '#C9A84C';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    let first = true;
+    for (let a = 0; a < TAU * 7; a += 0.02) {
+      const r = Math.pow(PHI, a * 0.18) * 4;
+      if (r > maxR) break;
+      const x = cx + r * Math.cos(a + rotation);
+      const y = cy + r * Math.sin(a + rotation);
+      if (first) { ctx.moveTo(x, y); first = false; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Draw golden ratio rectangles
+  function drawPhiRects(cx, cy, maxR, rotation, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = '#C9A84C';
+    ctx.lineWidth = 0.5;
+    let w = maxR * 0.5;
+    let x = cx - w / 2, y = cy - w / (PHI * 2);
+    const sides = 7;
+    let angle = rotation;
+    for (let i = 0; i < sides; i++) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+      ctx.strokeRect(-w / 2, -w / (PHI * 2), w, w / PHI);
+      ctx.restore();
+      w /= PHI;
+      angle += 0.1;
+    }
+    ctx.restore();
+  }
+
+  // Draw flower of life rings
+  function drawFlower(cx, cy, r, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = '#C9A84C';
+    ctx.lineWidth = 0.4;
+    // center circle + 6 surrounding
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, TAU);
+    ctx.stroke();
+    for (let i = 0; i < 6; i++) {
+      const ax = cx + r * Math.cos(i * TAU / 6);
+      const ay = cy + r * Math.sin(i * TAU / 6);
+      ctx.beginPath();
+      ctx.arc(ax, ay, r, 0, TAU);
+      ctx.stroke();
+    }
+    // outer ring 12
+    for (let i = 0; i < 6; i++) {
+      const ax = cx + r * 2 * Math.cos(i * TAU / 6);
+      const ay = cy + r * 2 * Math.sin(i * TAU / 6);
+      ctx.beginPath();
+      ctx.arc(ax, ay, r, 0, TAU);
+      ctx.stroke();
+      const bx = cx + r * 2 * Math.cos(i * TAU / 6 + TAU / 12);
+      const by = cy + r * 2 * Math.sin(i * TAU / 6 + TAU / 12);
+      ctx.beginPath();
+      ctx.arc(bx, by, r, 0, TAU);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Projected icosahedron wireframe
+  function drawIcosahedron(cx, cy, r, rx, ry, rz, alpha) {
+    const phi = PHI;
+    const verts3d = [
+      [0, 1, phi], [0, -1, phi], [0, 1, -phi], [0, -1, -phi],
+      [1, phi, 0], [-1, phi, 0], [1, -phi, 0], [-1, -phi, 0],
+      [phi, 0, 1], [-phi, 0, 1], [phi, 0, -1], [-phi, 0, -1]
+    ];
+
+    // normalize
+    const norm = Math.sqrt(1 + phi * phi);
+    const vn = verts3d.map(v => [v[0] / norm, v[1] / norm, v[2] / norm]);
+
+    // rotate
+    function rot(v, ax, ay, az) {
+      let [x, y, z] = v;
+      // X
+      let ny = y * Math.cos(ax) - z * Math.sin(ax);
+      let nz = y * Math.sin(ax) + z * Math.cos(ax);
+      y = ny; z = nz;
+      // Y
+      let nx = x * Math.cos(ay) + z * Math.sin(ay);
+      nz = -x * Math.sin(ay) + z * Math.cos(ay);
+      x = nx; z = nz;
+      // Z
+      nx = x * Math.cos(az) - y * Math.sin(az);
+      ny = x * Math.sin(az) + y * Math.cos(az);
+      return [nx, ny, nz];
+    }
+
+    const rv = vn.map(v => rot(v, rx, ry, rz));
+    // project (simple perspective)
+    const fov = 3;
+    const projected = rv.map(v => {
+      const z = v[2] + fov;
+      return [cx + (v[0] * r * fov) / z, cy + (v[1] * r * fov) / z, v[2]];
+    });
+
+    // edges of icosahedron
+    const edges = [
+      [0,1],[0,4],[0,5],[0,8],[0,9],
+      [1,6],[1,7],[1,8],[1,9],
+      [2,3],[2,4],[2,5],[2,10],[2,11],
+      [3,6],[3,7],[3,10],[3,11],
+      [4,5],[4,8],[4,10],
+      [5,9],[5,11],
+      [6,7],[6,8],[6,10],
+      [7,9],[7,11],
+      [8,10],[9,11]
+    ];
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    edges.forEach(([a, b]) => {
+      const pa = projected[a], pb = projected[b];
+      const avgZ = (rv[a][2] + rv[b][2]) / 2;
+      const fade = (avgZ + 1) / 2;
+      ctx.strokeStyle = `rgba(201,168,76,${0.15 + fade * 0.5})`;
+      ctx.lineWidth = 0.6 + fade * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(pa[0], pa[1]);
+      ctx.lineTo(pb[0], pb[1]);
+      ctx.stroke();
+    });
+    // vertices glow
+    projected.forEach((p, i) => {
+      const fade = (rv[i][2] + 1) / 2;
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], 1.5 + fade, 0, TAU);
+      ctx.fillStyle = `rgba(201,168,76,${0.3 + fade * 0.5})`;
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function frame() {
+    requestAnimationFrame(frame);
+    t += 0.004;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // dark radial behind geometry
+    const cx = W * 0.72, cy = H * 0.5;
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W, H) * 0.65);
+    grd.addColorStop(0, 'rgba(42,22,3,0.55)');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    // left fade for text readability
+    const lfade = ctx.createLinearGradient(0, 0, W * 0.5, 0);
+    lfade.addColorStop(0, 'rgba(0,0,0,0.92)');
+    lfade.addColorStop(1, 'transparent');
+    ctx.fillStyle = lfade;
+    ctx.fillRect(0, 0, W, H);
+
+    // Flower of life (slowly pulsing)
+    const flowerR = (Math.min(W, H) * 0.072) + Math.sin(t * 0.7) * 4;
+    drawFlower(cx, cy, flowerR, 0.045 + Math.sin(t * 0.5) * 0.01);
+
+    // Phi rectangles
+    drawPhiRects(cx, cy, Math.min(W, H) * 0.42, t * 0.08, 0.07);
+
+    // Main phi spiral (slowly rotating)
+    drawSpiral(cx, cy, Math.min(W, H) * 0.52, t * 0.07, 0.35);
+    // Second spiral mirrored
+    drawSpiral(cx, cy, Math.min(W, H) * 0.52, t * 0.07 + Math.PI, 0.15);
+
+    // Icosahedron
+    const icoR = Math.min(W, H) * 0.22;
+    drawIcosahedron(cx, cy, icoR, t * 0.19, t * 0.28, t * 0.13, 1);
+
+    // Outer ring markers
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = '#C9A84C';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * TAU + t * 0.05;
+      const r = Math.min(W, H) * 0.46;
+      const x1 = cx + (r - 8) * Math.cos(a);
+      const y1 = cy + (r - 8) * Math.sin(a);
+      const x2 = cx + r * Math.cos(a);
+      const y2 = cy + r * Math.sin(a);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // PARTICLES
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.age++;
+      if (p.age > p.life) {
+        const np = spawnParticle();
+        if (np) particles[i] = np;
+        else particles.splice(i, 1);
+        continue;
+      }
+
+      // mouse repulsion
+      const dx = p.x - mouse.x;
+      const dy = p.y - mouse.y;
+      const dist2 = dx * dx + dy * dy;
+      if (dist2 < 8000) {
+        const dist = Math.sqrt(dist2);
+        const force = (90 - dist) / 90;
+        p.vx += (dx / dist) * force * 0.9;
+        p.vy += (dy / dist) * force * 0.9;
+      }
+
+      // spring back toward origin
+      p.vx += (p.ox - p.x) * 0.004;
+      p.vy += (p.oy - p.y) * 0.004;
+      p.vx *= 0.96;
+      p.vy *= 0.96;
+      p.x += p.vx;
+      p.y += p.vy;
+
+      const lifeRatio = p.age / p.life;
+      const fadeIn = Math.min(lifeRatio * 6, 1);
+      const fadeOut = Math.min((1 - lifeRatio) * 6, 1);
+      const a = p.alpha * fadeIn * fadeOut;
+      const pulse = 0.85 + 0.15 * Math.sin(t * 3.5 + p.pulseOffset);
+
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * pulse, 0, TAU);
+      ctx.fillStyle = `hsl(${p.hue}, 68%, 62%)`;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // keep ~260 particles
+    while (particles.length < 260) {
+      const np = spawnParticle();
+      if (np) particles.push(np);
+      else break;
+    }
+  }
+  frame();
+})();
+
+// ─── GLYPH CANVAS: METATRON'S CUBE / FLOWER OF LIFE ──────────────────────────
+(function() {
+  const canvas = document.getElementById('glyph-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 420;
+  canvas.height = 420;
+  const cx = 210, cy = 210;
+  const TAU = Math.PI * 2;
+  const PHI = 1.6180339887;
+  let t = 0;
+
+  // Metatron's cube lines
+  const R = 72;
+  const centers = [[cx, cy]];
+  for (let i = 0; i < 6; i++) centers.push([cx + R * Math.cos(i * TAU/6), cy + R * Math.sin(i * TAU/6)]);
+  for (let i = 0; i < 6; i++) centers.push([cx + R * 2 * Math.cos(i * TAU/6 + TAU/12), cy + R * 2 * Math.sin(i * TAU/6 + TAU/12)]);
+  for (let i = 0; i < 6; i++) centers.push([cx + R * 2 * Math.cos(i * TAU/6), cy + R * 2 * Math.sin(i * TAU/6)]);
+
+  function frame() {
+    requestAnimationFrame(frame);
+    t += 0.006;
+    ctx.clearRect(0, 0, 420, 420);
+
+    // outer glow
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 180);
+    g.addColorStop(0, 'rgba(201,168,76,0.08)');
+    g.addColorStop(0.6, 'rgba(201,168,76,0.03)');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 420, 420);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(t * 0.04);
+    ctx.translate(-cx, -cy);
+
+    // metatron lines
+    ctx.strokeStyle = 'rgba(201,168,76,0.12)';
+    ctx.lineWidth = 0.7;
+    for (let i = 0; i < centers.length; i++) {
+      for (let j = i + 1; j < centers.length; j++) {
+        ctx.beginPath();
+        ctx.moveTo(centers[i][0], centers[i][1]);
+        ctx.lineTo(centers[j][0], centers[j][1]);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    // Flower of life circles (counter-rotate slightly)
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-t * 0.015);
+    ctx.translate(-cx, -cy);
+    ctx.strokeStyle = 'rgba(201,168,76,0.28)';
+    ctx.lineWidth = 0.9;
+    const r = R;
+    // center
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+    for (let i = 0; i < 6; i++) {
+      const ax = cx + r * Math.cos(i * TAU/6);
+      const ay = cy + r * Math.sin(i * TAU/6);
+      ctx.beginPath(); ctx.arc(ax, ay, r, 0, TAU); ctx.stroke();
+    }
+    for (let i = 0; i < 6; i++) {
+      const ax = cx + r * 2 * Math.cos(i * TAU/6);
+      const ay = cy + r * 2 * Math.sin(i * TAU/6);
+      ctx.beginPath(); ctx.arc(ax, ay, r, 0, TAU); ctx.stroke();
+    }
+    for (let i = 0; i < 12; i++) {
+      const ax = cx + r * 2 * Math.cos(i * TAU/12);
+      const ay = cy + r * 2 * Math.sin(i * TAU/12);
+      ctx.beginPath(); ctx.arc(ax, ay, r, 0, TAU); ctx.stroke();
+    }
+    ctx.restore();
+
+    // Phi spiral overlay (slow rotate)
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(t * 0.06);
+    ctx.translate(-cx, -cy);
+    ctx.strokeStyle = 'rgba(201,168,76,0.55)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    let first = true;
+    for (let a = 0; a < TAU * 5.5; a += 0.025) {
+      const rr = Math.pow(PHI, a * 0.2) * 2.2;
+      if (rr > 175) break;
+      const x = cx + rr * Math.cos(a);
+      const y = cy + rr * Math.sin(a);
+      if (first) { ctx.moveTo(x, y); first = false; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Center dot
+    const pulse = 0.8 + 0.2 * Math.sin(t * 2.5);
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 20 * pulse);
+    cg.addColorStop(0, 'rgba(245,237,214,0.9)');
+    cg.addColorStop(0.3, 'rgba(201,168,76,0.6)');
+    cg.addColorStop(1, 'transparent');
+    ctx.fillStyle = cg;
+    ctx.beginPath(); ctx.arc(cx, cy, 20 * pulse, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    // outer ring ticks
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = '#C9A84C';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * TAU + t * 0.04;
+      const long = i % 6 === 0;
+      const r1 = 190, r2 = r1 + (long ? 12 : 6);
+      ctx.beginPath();
+      ctx.moveTo(cx + r1 * Math.cos(a), cy + r1 * Math.sin(a));
+      ctx.lineTo(cx + r2 * Math.cos(a), cy + r2 * Math.sin(a));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  frame();
+})();
+</script>
+</body>
+</html>

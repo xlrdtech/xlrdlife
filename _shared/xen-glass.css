@@ -1,0 +1,228 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   XEN GLASS — qi's swipe glass, extracted as a canonical material.
+
+   qi 2026-08-13 22:33:
+     "You need to get the exact CSS of my swipe glass because we need to make a
+      lot of things out of it — that swipe glass texture, that's pretty canonical"
+     "We can build more glasses from that base glass"
+     "we gotta replace the buttons that's in the bubbles with the symbols instead"
+     "we can make the symbols out of the same style of glass I created"
+
+   WHERE THIS CAME FROM. Every value below is lifted VERBATIM from the live
+   swipe glass in xos/styles.css — `.os.os-fullscreen .dock.dock-swipe` and its
+   children, lines 3676-3711 (base), 3713-3725 (:active), 3726-3736 (:hover),
+   3908-3922 (.dock-sheen), 3924-3934 (.dock-edge-light). Nothing here is
+   re-designed, re-tuned, or "improved". He built this and called it a tedious
+   design; the job was to EXTRACT it, not to have an opinion about it.
+
+   WHAT IS DELIBERATELY ABSENT: geometry. The swipe glass's own position, height,
+   safe-area handling and flex layout stay in styles.css and are NOT tokenised
+   here. This file is the MATERIAL — what glass looks like — so it can be applied
+   to a dock, a chip, a symbol or a sheet without dragging one surface's layout
+   onto another. Mixing material and geometry is what makes a design system
+   unusable two surfaces later.
+
+   USAGE
+     <div class="xglass">                       a surface made of his glass
+       <span class="xglass-sheen"></span>       top-edge refraction (1px)
+       <span class="xglass-edge"></span>        side-edge light catch
+     </div>
+     <button class="xglass xglass-symbol">      a glass symbol chip
+       <svg …/>                                 the symbol itself
+     </button>
+
+   SCALING. The recipe was authored for a full-width bar. A 28px chip with a 40px
+   backdrop blur and a 24px drop shadow reads as mud, so blur/shadow/radius are
+   exposed as per-instance variables rather than baked in — the COLOURS, which
+   are the identity, never change. Override --xg-blur / --xg-drop / --xg-radius
+   on a variant, never the rgba values.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── The material's identity. These are the numbers that make it HIS glass.
+        Do not round them, do not "clean them up". ───────────────────────────── */
+
+  /* Sheen: the off-centre radial highlight that reads as a real specular catch. */
+  --xg-sheen-radial: radial-gradient(120% 80% at 50% -10%,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0) 60%);
+
+  /* Body: a vertical tint from translucent at the top to grounded at the bottom.
+     The green-shifted darks (20,28,24 → 6,10,8) are what keep it from reading as
+     generic grey iOS frost. */
+  --xg-body: linear-gradient(to bottom,
+    rgba(20, 28, 24, 0.42) 0%,
+    rgba(10, 14, 12, 0.62) 50%,
+    rgba(6, 10, 8, 0.78) 100%);
+
+  /* Pressed: glass densifies under the finger. Same hues, higher alphas. */
+  --xg-sheen-radial-active: radial-gradient(120% 80% at 50% -10%,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0) 60%);
+  --xg-body-active: linear-gradient(to bottom,
+    rgba(20, 28, 24, 0.55) 0%,
+    rgba(10, 14, 12, 0.75) 50%,
+    rgba(6, 10, 8, 0.88) 100%);
+
+  /* Hover: the lightest of the three. */
+  --xg-sheen-radial-hover: radial-gradient(120% 80% at 50% -10%,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0) 60%);
+  --xg-body-hover: linear-gradient(to bottom,
+    rgba(22, 30, 26, 0.48) 0%,
+    rgba(12, 16, 14, 0.68) 50%,
+    rgba(8, 12, 10, 0.82) 100%);
+
+  /* Optics. Saturate is doing most of the work — it is what makes content behind
+     the glass bloom instead of just blurring. */
+  --xg-blur: 40px;
+  --xg-saturate: 220%;
+  --xg-brightness: 1.05;
+  --xg-blur-active: 48px;
+  --xg-saturate-active: 240%;
+  --xg-brightness-active: 1.1;
+
+  /* Edges. The 1px inner top light is the refraction; the inner bottom dark is
+     what grounds it so it does not float. */
+  --xg-hairline: 1px solid rgba(255, 255, 255, 0.14);
+  --xg-inset-light: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --xg-inset-dark: inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  --xg-drop: 0 -8px 24px rgba(0, 0, 0, 0.45);
+
+  /* Accent strips, lifted from .dock-sheen and .dock-edge-light. */
+  --xg-sheen-strip: linear-gradient(to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%);
+  --xg-edge-strip: linear-gradient(to right,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0) 8%,
+    rgba(255, 255, 255, 0) 92%,
+    rgba(255, 255, 255, 0.06) 100%);
+
+  --xg-radius: 0px;              /* the bar is square; chips override this */
+  --xg-transition: backdrop-filter 0.18s ease, background 0.18s ease;
+}
+
+/* ── THE BASE MATERIAL ──────────────────────────────────────────────────────
+   Material only. No position, no size, no safe-area — the caller owns those. */
+.xglass {
+  background: var(--xg-sheen-radial), var(--xg-body);
+  backdrop-filter: blur(var(--xg-blur)) saturate(var(--xg-saturate)) brightness(var(--xg-brightness));
+  -webkit-backdrop-filter: blur(var(--xg-blur)) saturate(var(--xg-saturate)) brightness(var(--xg-brightness));
+  border-top: var(--xg-hairline);
+  box-shadow: var(--xg-inset-light), var(--xg-inset-dark), var(--xg-drop);
+  border-radius: var(--xg-radius);
+  transition: var(--xg-transition);
+}
+
+.xglass:hover { background: var(--xg-sheen-radial-hover), var(--xg-body-hover); }
+
+.xglass:active,
+.xglass[data-pressed="true"] {
+  background: var(--xg-sheen-radial-active), var(--xg-body-active);
+  backdrop-filter: blur(var(--xg-blur-active)) saturate(var(--xg-saturate-active)) brightness(var(--xg-brightness-active));
+  -webkit-backdrop-filter: blur(var(--xg-blur-active)) saturate(var(--xg-saturate-active)) brightness(var(--xg-brightness-active));
+}
+
+.xglass:focus-visible { outline: 2px solid var(--accent, #00dc82); outline-offset: -4px; }
+
+/* ── THE ACCENT CHILDREN ────────────────────────────────────────────────────
+   Both are decorative and must never eat a tap — that is why the originals are
+   pointer-events:none, and why they stay that way here. */
+.xglass-sheen {
+  position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
+  background: var(--xg-sheen-strip);
+  pointer-events: none;
+}
+.xglass-edge {
+  position: absolute; top: 4px; bottom: 4px; left: 0; right: 0;
+  background: var(--xg-edge-strip);
+  pointer-events: none;
+}
+
+/* ── GLASS SYMBOL ───────────────────────────────────────────────────────────
+   qi 22:33-22:34: replace the text buttons inside the bubbles with SYMBOLS, and
+   make the symbols out of this same glass.
+
+   Only the scale-dependent numbers move. A 40px blur on a 32px chip samples
+   almost nothing but itself and turns to mud, and a -8px 24px drop shadow reads
+   as a smear at that size — so blur comes down and the shadow becomes a small
+   ambient lift with no vertical offset. The gradients, the hairline and the
+   inner lights are IDENTICAL to the bar, which is what keeps a symbol
+   recognisably the same substance as the swipe glass.
+
+   The hairline is promoted from border-top to a full inset ring: on a bar you
+   only ever see the top edge, on a chip you see all four. */
+.xglass-symbol {
+  --xg-blur: 18px;
+  --xg-blur-active: 22px;
+  --xg-radius: 10px;
+  --xg-drop: 0 2px 8px rgba(0, 0, 0, 0.45);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-top: 0;                                   /* the ring replaces it */
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),     /* the hairline, all round */
+    var(--xg-inset-light),
+    var(--xg-inset-dark),
+    var(--xg-drop);
+  color: rgba(220, 240, 230, 0.78);                /* matches the ticker's ink */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The symbol itself. currentColor so one rule tints glyph and glass together. */
+.xglass-symbol > svg,
+.xglass-symbol > .glyph {
+  width: 16px; height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;                            /* the chip takes the tap */
+}
+
+.xglass-symbol:hover { color: var(--accent, #00dc82); }
+.xglass-symbol[aria-pressed="true"],
+.xglass-symbol[data-active="true"] {
+  color: var(--accent, #00dc82);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 220, 130, 0.28),
+    var(--xg-inset-light),
+    var(--xg-inset-dark),
+    var(--xg-drop);
+}
+
+/* Sizes. Only the box and glyph scale — never the material. */
+.xglass-symbol.is-sm { width: 24px; height: 24px; --xg-radius: 8px; --xg-blur: 14px; }
+.xglass-symbol.is-sm > svg, .xglass-symbol.is-sm > .glyph { width: 13px; height: 13px; }
+.xglass-symbol.is-lg { width: 44px; height: 44px; --xg-radius: 14px; --xg-blur: 24px; }
+.xglass-symbol.is-lg > svg, .xglass-symbol.is-lg > .glyph { width: 20px; height: 20px; }
+
+/* A row of symbols where a row of text buttons used to be. */
+.xglass-symbol-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;                                        /* the ticker's own gap */
+}
+
+/* ── HONEST LIMITS ──────────────────────────────────────────────────────────
+   1. backdrop-filter only has something to work with when content passes BEHIND
+      the element. A glass surface over flat black renders as flat black — that
+      is exactly the "thats not glass . thats open space" defect on the dock.
+      Placing .xglass over an opaque parent will look broken and the CSS will not
+      be the reason.
+   2. --xg-drop lifts UPWARD (0 -8px) because the bar is bottom-anchored. Any
+      surface not anchored to the bottom should override it; .xglass-symbol
+      already does.
+   3. This file is not wired into any page yet. It is the extracted material,
+      ready to be included — nothing on qi's screen changes by its existence. */

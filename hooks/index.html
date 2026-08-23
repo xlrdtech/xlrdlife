@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Xen Webhook Control · pane %0 2-way bridge</title>
+<meta name="description" content="Control surface for the Xen 2-way pane %0 webhook bridge — list/register OUT webhooks, document + test the dictate-inject IN endpoint, and watch xen-out events live.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --obsidian:#04070a; --panel:#0a0f14; --panel-2:#0d141b; --line:rgba(22,217,137,.14);
+  --line-soft:rgba(214,224,233,.10); --ink:#e7eef3; --bone:#aebccaff; --dust:#67788a;
+  --volt:#16d989; --steel:#6ad4ff; --gold:#d2ac47; --rust:#ff6a4d; --violet:#a78bfa;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --serif:'Fraunces',Georgia,serif;
+  --chrome:linear-gradient(180deg,#f4f8fb 0%,#c9d6e0 28%,#8fa3b3 55%,#dfe9f0 80%,#9fb0bf 100%);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:var(--obsidian);color:var(--ink);font-family:var(--mono);-webkit-font-smoothing:antialiased}
+body{background:
+  radial-gradient(900px 540px at 82% -8%,rgba(22,217,137,.10),transparent 60%),
+  radial-gradient(720px 480px at 8% 4%,rgba(106,212,255,.07),transparent 55%),
+  var(--obsidian);
+  background-attachment:fixed;}
+a{color:var(--volt);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:clamp(18px,4vw,40px) clamp(14px,4vw,32px) 64px}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.brand{display:flex;flex-direction:column;gap:8px}
+.kicker{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--dust)}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(26px,4.4vw,40px);line-height:1.02;letter-spacing:-.01em;
+  background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+h1 em{font-style:italic;color:var(--volt);-webkit-text-fill-color:var(--volt)}
+.sub{color:var(--bone);font-size:13px;max-width:62ch;line-height:1.5}
+.conn{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  padding:8px 12px;border:1px solid var(--line);border-radius:50px;color:var(--dust);min-height:36px}
+.conn .dot{width:9px;height:9px;border-radius:50%;background:var(--dust);flex:0 0 auto}
+.conn.open{color:var(--volt);border-color:var(--volt)}
+.conn.open .dot{background:var(--volt);box-shadow:0 0 9px var(--volt);animation:pulse 1.6s infinite}
+.conn.err{color:var(--rust);border-color:var(--rust)}
+.conn.err .dot{background:var(--rust)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:18px;align-items:start}
+.card{background:linear-gradient(180deg,var(--panel) 0%,var(--panel-2) 100%);border:1px solid var(--line);
+  border-radius:14px;padding:clamp(16px,2.6vw,24px);position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(22,217,137,.5),transparent)}
+.card.full{grid-column:1/-1}
+.card h2{font-family:var(--serif);font-weight:600;font-size:19px;letter-spacing:-.01em;margin-bottom:4px;color:var(--ink)}
+.card .hint{color:var(--dust);font-size:11.5px;line-height:1.5;margin-bottom:16px}
+
+label{display:block;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--bone);margin:0 0 6px}
+input[type=text],input[type=url],input[type=password],textarea{
+  width:100%;background:#060a0e;border:1px solid var(--line-soft);border-radius:9px;color:var(--ink);
+  font-family:var(--mono);font-size:13px;padding:12px 13px;min-height:46px;transition:border-color .15s}
+textarea{resize:vertical;min-height:88px;line-height:1.5}
+input:focus,textarea:focus{outline:none;border-color:var(--volt);box-shadow:0 0 0 2px rgba(22,217,137,.14)}
+.field{margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.row>*{flex:1 1 160px}
+
+button,.btn{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+  border:1px solid var(--volt);background:rgba(22,217,137,.10);color:var(--volt);border-radius:9px;
+  padding:0 18px;min-height:46px;min-width:46px;cursor:pointer;transition:all .15s;display:inline-flex;
+  align-items:center;justify-content:center;gap:7px}
+button:hover,.btn:hover{background:var(--volt);color:var(--obsidian)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.ghost{border-color:var(--line-soft);background:transparent;color:var(--bone)}
+button.ghost:hover{border-color:var(--ink);background:rgba(231,238,243,.06);color:var(--ink)}
+button.danger{border-color:rgba(255,106,77,.5);background:transparent;color:var(--rust);flex:0 0 auto;padding:0 14px}
+button.danger:hover{background:var(--rust);color:var(--obsidian)}
+.btn-sm{min-height:38px;font-size:11px;padding:0 12px}
+
+.msg{font-size:11.5px;line-height:1.5;margin-top:12px;padding:10px 12px;border-radius:8px;display:none;word-break:break-word}
+.msg.show{display:block}
+.msg.ok{display:block;color:var(--volt);background:rgba(22,217,137,.08);border:1px solid var(--line)}
+.msg.bad{display:block;color:var(--rust);background:rgba(255,106,77,.08);border:1px solid rgba(255,106,77,.3)}
+
+.hooklist{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.hooklist li{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;
+  background:#060a0e;border:1px solid var(--line-soft);border-radius:9px;padding:11px 13px}
+.hooklist .u{font-size:12px;color:var(--ink);word-break:break-all;flex:1 1 200px;line-height:1.45}
+.hooklist .u .meta{display:block;color:var(--dust);font-size:10px;letter-spacing:.06em;margin-top:3px}
+.empty{color:var(--dust);font-size:12px;font-style:italic;padding:14px 2px}
+
+.codeblock{position:relative;background:#060a0e;border:1px solid var(--line-soft);border-radius:9px;
+  padding:14px 14px;margin-top:6px}
+.codeblock pre{font-family:var(--mono);font-size:11.5px;line-height:1.6;color:var(--steel);
+  white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
+.copy{position:absolute;top:9px;right:9px}
+
+#log{max-height:430px;overflow-y:auto;background:#060a0e;border:1px solid var(--line-soft);border-radius:9px;padding:12px 14px;font-size:12px}
+.ev{display:grid;grid-template-columns:74px 92px 1fr;gap:10px;padding:7px 0;border-bottom:1px dotted var(--line-soft);align-items:start}
+.ev:last-child{border-bottom:0}
+.ev .ts{color:var(--dust);font-size:10.5px}
+.ev .tag{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:1px 7px;border-radius:4px;align-self:start;white-space:nowrap}
+.ev .tag.xenout{background:rgba(22,217,137,.13);color:var(--volt)}
+.ev .tag.meta{background:rgba(106,212,255,.12);color:var(--steel)}
+.ev .tag.other{background:rgba(214,224,233,.06);color:var(--bone)}
+.ev .txt{color:var(--bone);word-break:break-word;line-height:1.5}
+.ev .txt .node{color:var(--dust);font-size:10px;display:block;margin-top:2px}
+.ev.sys{color:var(--steel);font-style:italic;grid-template-columns:1fr}
+
+.foot{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--dust);font-size:10.5px;
+  letter-spacing:.1em;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.tools-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.note{color:var(--gold);font-size:10.5px;line-height:1.5;margin-top:10px;letter-spacing:.02em}
+kbd{font-family:var(--mono);background:#060a0e;border:1px solid var(--line-soft);border-radius:4px;padding:1px 5px;font-size:10.5px;color:var(--steel)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand">
+    <span class="kicker">Xen · pane %0 bridge</span>
+    <h1>Webhook <em>Control</em></h1>
+    <p class="sub">The 2-way bridge for the live Xen pane. <strong>IN</strong> injects text into pane <code>%0</code> via <code>/api/dictate-inject</code>. <strong>OUT</strong> fires <code>xen-out</code> to every registered URL on each Xen reply. Token is entered at use-time — never stored.</p>
+  </div>
+  <div class="conn" id="conn"><span class="dot"></span><span id="conn-text">stream: connecting</span></div>
+</header>
+
+<div class="grid">
+
+  <!-- OUT WEBHOOKS -->
+  <section class="card">
+    <h2>OUT webhooks</h2>
+    <p class="hint">Registered targets that receive the <code>xen-out</code> payload. <code>GET /api/out-webhooks</code> (open).</p>
+    <div class="tools-row">
+      <button class="btn-sm" id="refresh-btn" type="button">↻ Refresh</button>
+      <span id="hook-count" class="hint" style="margin:0"></span>
+    </div>
+    <ul class="hooklist" id="hooklist"></ul>
+    <div class="msg" id="list-msg"></div>
+  </section>
+
+  <!-- REGISTER -->
+  <section class="card">
+    <h2>Register a target</h2>
+    <p class="hint"><code>POST /api/out-webhooks</code> (auth-gated). The token rides the <code>X-Xen-Token</code> header for this one call only.</p>
+    <form id="reg-form" autocomplete="off">
+      <div class="field">
+        <label for="reg-url">Target URL</label>
+        <input type="url" id="reg-url" placeholder="https://your-endpoint.example/xen-out" required>
+      </div>
+      <div class="field">
+        <label for="reg-token">X-Xen-Token <span style="color:var(--dust)">(never stored)</span></label>
+        <input type="password" id="reg-token" placeholder="paste token at use-time" autocomplete="off" required>
+      </div>
+      <div class="row">
+        <button type="submit" id="reg-btn">Register</button>
+        <button type="button" class="ghost" id="unreg-btn">Remove this URL</button>
+      </div>
+      <div class="msg" id="reg-msg"></div>
+      <p class="note">⚠ Token stays in this form field in memory only. It is sent once with the request and never persisted to storage, the page, or the URL.</p>
+    </form>
+  </section>
+
+  <!-- IN ENDPOINT DOC + TESTER -->
+  <section class="card">
+    <h2>IN · inject to pane %0</h2>
+    <p class="hint"><code>POST /api/dictate-inject</code> (open, no auth). Body <code>{"text":"…"}</code> drops straight into the live Xen pane.</p>
+    <form id="inj-form">
+      <div class="field">
+        <label for="inj-text">Text to inject</label>
+        <textarea id="inj-text" placeholder="type a message for pane %0…" required></textarea>
+      </div>
+      <div class="row">
+        <button type="submit" id="inj-btn">Send to %0</button>
+        <button type="button" class="ghost" id="curl-copy">Copy curl</button>
+      </div>
+      <div class="msg" id="inj-msg"></div>
+    </form>
+    <div class="codeblock">
+      <button class="ghost btn-sm copy" type="button" data-copy="#curl-in">Copy</button>
+      <pre id="curl-in">curl -sS -X POST https://xen.xlrd.org/api/dictate-inject \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"hello pane %0"}'</pre>
+    </div>
+  </section>
+
+  <!-- LIVE OUT PREVIEW -->
+  <section class="card full">
+    <h2>Live OUT preview · <span style="color:var(--volt)">xen-out</span></h2>
+    <p class="hint">Mirror of <code>EventSource('https://xen.xlrd.org/events')</code>. Every Xen reply fires the OUT payload — you see it here exactly as a registered target would.</p>
+    <div class="tools-row">
+      <button class="btn-sm ghost" id="pause-btn" type="button">Pause</button>
+      <button class="btn-sm ghost" id="clear-btn" type="button">Clear</button>
+      <label style="display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:11.5px;color:var(--bone)">
+        <input type="checkbox" id="only-xenout" style="width:auto;min-height:0;accent-color:var(--volt)">
+        xen-out only
+      </label>
+      <span id="ev-count" class="hint" style="margin:0">0 events</span>
+    </div>
+    <div id="log"><div class="ev sys">waiting for stream…</div></div>
+  </section>
+
+</div>
+
+<div class="foot">
+  <div>IN <code>/api/dictate-inject</code> · OUT registry <code>/api/out-webhooks</code> · SSE <code>/events</code></div>
+  <div>OUT payload: <kbd>{event:"xen-out",text,node,source,ts}</kbd></div>
+</div>
+
+</div>
+
+<script>
+"use strict";
+(function(){
+  var API = "https://xen.xlrd.org";
+  var $ = function(s){ return document.querySelector(s); };
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+    return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
+  function flash(el, kind, text){
+    el.className = "msg " + (kind==="ok" ? "ok" : "bad");
+    el.textContent = text;
+  }
+  function fmtTs(ts){
+    var d = ts ? new Date(typeof ts==="number" ? ts : Date.parse(ts)) : new Date();
+    if(isNaN(d.getTime())) d = new Date();
+    return d.toLocaleTimeString("en-US",{hour12:false});
+  }
+
+  /* ---------- OUT webhook list ---------- */
+  function normalizeHook(h){
+    if(typeof h === "string") return { url:h, meta:null };
+    if(h && typeof h === "object"){
+      var url = h.url || h.target || h.endpoint || "";
+      var bits = [];
+      if(h.added || h.created || h.ts) bits.push("added " + fmtTs(h.added || h.created || h.ts));
+      if(h.source) bits.push(String(h.source));
+      return { url:url, meta: bits.length ? bits.join(" · ") : null };
+    }
+    return { url:String(h), meta:null };
+  }
+
+  function renderHooks(hooks){
+    var ul = $("#hooklist");
+    ul.innerHTML = "";
+    if(!hooks || !hooks.length){
+      ul.innerHTML = '<li class="empty">No OUT webhooks registered yet.</li>';
+      $("#hook-count").textContent = "0 registered";
+      return;
+    }
+    $("#hook-count").textContent = hooks.length + " registered";
+    hooks.forEach(function(raw){
+      var h = normalizeHook(raw);
+      var li = document.createElement("li");
+      var urlHtml = '<div class="u">' + esc(h.url) +
+        (h.meta ? '<span class="meta">' + esc(h.meta) + '</span>' : '') + '</div>';
+      li.innerHTML = urlHtml;
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "danger";
+      btn.textContent = "Remove";
+      btn.addEventListener("click", function(){
+        $("#reg-url").value = h.url;
+        $("#reg-token").focus();
+        flash($("#reg-msg"), "bad", "Paste the X-Xen-Token, then click “Remove this URL” to confirm deletion of: " + h.url);
+      });
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  }
+
+  function loadHooks(){
+    var msg = $("#list-msg");
+    msg.className = "msg";
+    $("#refresh-btn").disabled = true;
+    fetch(API + "/api/out-webhooks", { method:"GET", cache:"no-store" })
+      .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function(j){
+        var hooks = Array.isArray(j) ? j : (j && j.webhooks) ? j.webhooks : (j && j.hooks) ? j.hooks : [];
+        renderHooks(hooks);
+      })
+      .catch(function(e){ flash(msg, "bad", "Could not load list: " + e.message); })
+      .finally(function(){ $("#refresh-btn").disabled = false; });
+  }
+
+  /* ---------- Register / Remove (POST, token at use-time) ---------- */
+  function postHook(url, token, remove, btn, doneText){
+    var msg = $("#reg-msg");
+    msg.className = "msg";
+    btn.disabled = true;
+    fetch(API + "/api/out-webhooks", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "X-Xen-Token": token },
+      body: JSON.stringify({ url:url, remove: !!remove })
+    })
+    .then(function(r){
+      return r.text().then(function(t){
+        var body; try{ body = JSON.parse(t); }catch(_){ body = { raw:t }; }
+        return { ok:r.ok, status:r.status, body:body };
+      });
+    })
+    .then(function(res){
+      if(res.ok){
+        flash(msg, "ok", doneText + " (HTTP " + res.status + ")");
+        $("#reg-token").value = "";
+        loadHooks();
+      } else {
+        var hint = (res.body && (res.body.error || res.body.hint || res.body.message)) || JSON.stringify(res.body);
+        flash(msg, "bad", "HTTP " + res.status + " — " + hint);
+      }
+    })
+    .catch(function(e){ flash(msg, "bad", "Request failed: " + e.message); })
+    .finally(function(){ btn.disabled = false; });
+  }
+
+  $("#reg-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    var url = $("#reg-url").value.trim();
+    var token = $("#reg-token").value;
+    if(!url || !token){ flash($("#reg-msg"),"bad","URL and token both required."); return; }
+    postHook(url, token, false, $("#reg-btn"), "Registered " + url);
+  });
+  $("#unreg-btn").addEventListener("click", function(){
+    var url = $("#reg-url").value.trim();
+    var token = $("#reg-token").value;
+    if(!url || !token){ flash($("#reg-msg"),"bad","URL and token both required to remove."); return; }
+    postHook(url, token, true, $("#unreg-btn"), "Removed " + url);
+  });
+  $("#refresh-btn").addEventListener("click", loadHooks);
+
+  /* ---------- IN tester ---------- */
+  $("#inj-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    var text = $("#inj-text").value;
+    var msg = $("#inj-msg");
+    if(!text.trim()){ flash(msg,"bad","Nothing to send."); return; }
+    $("#inj-btn").disabled = true;
+    msg.className = "msg";
+    fetch(API + "/api/dictate-inject", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ text:text })
+    })
+    .then(function(r){ return r.text().then(function(t){ return { ok:r.ok, status:r.status, t:t }; }); })
+    .then(function(res){
+      if(res.ok){ flash(msg,"ok","Injected to pane %0 (HTTP " + res.status + ")"); $("#inj-text").value=""; }
+      else { flash(msg,"bad","HTTP " + res.status + " — " + esc(res.t).slice(0,200)); }
+    })
+    .catch(function(e){ flash(msg,"bad","Request failed: " + e.message); })
+    .finally(function(){ $("#inj-btn").disabled = false; });
+  });
+  $("#curl-copy").addEventListener("click", function(){
+    var text = $("#inj-text").value || "hello pane %0";
+    var curl = "curl -sS -X POST " + API + "/api/dictate-inject \\\n  -H 'Content-Type: application/json' \\\n  -d " +
+      JSON.stringify(JSON.stringify({ text:text }));
+    copyText(curl, $("#curl-copy"));
+  });
+
+  /* ---------- copy buttons ---------- */
+  function copyText(text, btn){
+    var prev = btn.textContent;
+    var done = function(){ btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = prev; }, 1200); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, function(){ legacyCopy(text); done(); });
+    } else { legacyCopy(text); done(); }
+  }
+  function legacyCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); }catch(_){}
+    document.body.removeChild(ta);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".copy[data-copy]"), function(b){
+    b.addEventListener("click", function(){
+      var el = document.querySelector(b.getAttribute("data-copy"));
+      if(el) copyText(el.textContent, b);
+    });
+  });
+
+  /* ---------- Live OUT preview (SSE) ---------- */
+  var log = $("#log"), evCount = 0, paused = false, firstEvent = true;
+  function setConn(state, text){
+    var c = $("#conn");
+    c.className = "conn" + (state ? " " + state : "");
+    $("#conn-text").textContent = "stream: " + text;
+  }
+  function appendEvent(obj){
+    if(paused) return;
+    var onlyXenOut = $("#only-xenout").checked;
+    var evName = obj && obj.event ? String(obj.event) : "";
+    var isXenOut = evName === "xen-out";
+    if(onlyXenOut && !isXenOut) return;
+
+    if(firstEvent){ log.innerHTML = ""; firstEvent = false; }
+
+    var row = document.createElement("div");
+    var tagClass, tagText, txt, node = "";
+    if(isXenOut){
+      tagClass = "xenout"; tagText = "xen-out";
+      txt = obj.text != null ? obj.text : "";
+      var nbits = [];
+      if(obj.node) nbits.push("node:" + obj.node);
+      if(obj.source) nbits.push("src:" + obj.source);
+      node = nbits.join("  ");
+    } else if(evName === "connected" || evName === "caught-up"){
+      tagClass = "meta"; tagText = evName; txt = "";
+    } else {
+      tagClass = "other"; tagText = evName || (obj.source || "event");
+      txt = obj.text != null ? obj.text : "";
+      if(obj.sender && obj.sender !== obj.source) node = "from:" + obj.sender;
+    }
+    row.className = "ev";
+    row.innerHTML =
+      '<div class="ts">' + esc(fmtTs(obj.ts)) + '</div>' +
+      '<div class="tag ' + tagClass + '">' + esc(tagText) + '</div>' +
+      '<div class="txt">' + esc(txt) + (node ? '<span class="node">' + esc(node) + '</span>' : '') + '</div>';
+    log.insertBefore(row, log.firstChild);
+    evCount++;
+    $("#ev-count").textContent = evCount + (evCount===1?" event":" events");
+    while(log.childNodes.length > 400) log.removeChild(log.lastChild);
+  }
+
+  var es = null;
+  function connect(){
+    if(typeof EventSource === "undefined"){ setConn("err","unsupported"); return; }
+    try{ es = new EventSource(API + "/events"); }
+    catch(e){ setConn("err","failed"); return; }
+    setConn("", "connecting");
+    es.onopen = function(){ setConn("open","live"); };
+    es.onmessage = function(ev){
+      var data; try{ data = JSON.parse(ev.data); }catch(_){ data = { event:"raw", text:ev.data }; }
+      appendEvent(data);
+    };
+    es.onerror = function(){ setConn("err","reconnecting"); };
+  }
+
+  $("#pause-btn").addEventListener("click", function(){
+    paused = !paused;
+    this.textContent = paused ? "Resume" : "Pause";
+    this.classList.toggle("on", paused);
+  });
+  $("#clear-btn").addEventListener("click", function(){
+    log.innerHTML = '<div class="ev sys">cleared.</div>';
+    evCount = 0; firstEvent = false;
+    $("#ev-count").textContent = "0 events";
+  });
+
+  /* ---------- init ---------- */
+  loadHooks();
+  connect();
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

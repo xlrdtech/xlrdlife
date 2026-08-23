@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coding agents, priced — the budget-night table</title>
+<meta name="description" content="Every autonomous coding agent, IDE and CLI sorted by what it actually costs per month. Metered pricing flagged. Prices checked 2026-08-01 and 2026-08-02.">
+<style>
+/* ============ tokens ============ */
+:root{
+  --paper:#F2F3F0;
+  --card:#FBFBF9;
+  --card-2:#EDEFEA;
+  --ink:#131E1A;
+  --ink-2:#3D4A43;
+  --muted:#6E7A73;
+  --rule:#D6DBD3;
+  --rule-strong:#B9C0B6;
+
+  --free:#1B6349;
+  --free-bg:#E2EDE6;
+  --flat:#2B5875;
+  --flat-bg:#E3EAF0;
+  --meter:#A5391B;
+  --meter-bg:#F7E6DF;
+  --dead:#7C837B;
+  --dead-bg:#E8E9E5;
+
+  --shadow:0 1px 0 rgba(19,30,26,.05), 0 8px 24px -18px rgba(19,30,26,.35);
+
+  --display:ui-serif,"New York","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#101512; --card:#171D19; --card-2:#1E2521;
+    --ink:#E7EBE6; --ink-2:#B4BDB6; --muted:#8C978E;
+    --rule:#2A322C; --rule-strong:#3B443D;
+    --free:#6FCBA0;  --free-bg:#16301F;
+    --flat:#8CBBDD;  --flat-bg:#152530;
+    --meter:#F0805C; --meter-bg:#33170F;
+    --dead:#8A938A;  --dead-bg:#20241F;
+    --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 24px -18px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#101512; --card:#171D19; --card-2:#1E2521;
+  --ink:#E7EBE6; --ink-2:#B4BDB6; --muted:#8C978E;
+  --rule:#2A322C; --rule-strong:#3B443D;
+  --free:#6FCBA0;  --free-bg:#16301F;
+  --flat:#8CBBDD;  --flat-bg:#152530;
+  --meter:#F0805C; --meter-bg:#33170F;
+  --dead:#8A938A;  --dead-bg:#20241F;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 24px -18px rgba(0,0,0,.9);
+}
+:root[data-theme="light"]{
+  --paper:#F2F3F0; --card:#FBFBF9; --card-2:#EDEFEA;
+  --ink:#131E1A; --ink-2:#3D4A43; --muted:#6E7A73;
+  --rule:#D6DBD3; --rule-strong:#B9C0B6;
+  --free:#1B6349;  --free-bg:#E2EDE6;
+  --flat:#2B5875;  --flat-bg:#E3EAF0;
+  --meter:#A5391B; --meter-bg:#F7E6DF;
+  --dead:#7C837B;  --dead-bg:#E8E9E5;
+  --shadow:0 1px 0 rgba(19,30,26,.05), 0 8px 24px -18px rgba(19,30,26,.35);
+}
+
+/* ============ base ============ */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--body); font-size:16px; line-height:1.6;
+  overflow-x:hidden; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px; margin:0 auto; padding:0 20px}
+a{color:inherit; text-underline-offset:3px; text-decoration-thickness:1px}
+a:focus-visible{outline:2px solid var(--flat); outline-offset:3px; border-radius:2px}
+h1,h2{text-wrap:balance; margin:0}
+p{margin:0}
+.eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted);
+}
+
+/* ============ masthead ============ */
+header.top{border-bottom:1px solid var(--rule-strong); background:var(--card)}
+.top-inner{
+  display:flex; flex-wrap:wrap; gap:10px 24px;
+  align-items:baseline; justify-content:space-between;
+  padding-top:14px; padding-bottom:14px;
+}
+.wordmark{font-family:var(--mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase}
+.stamp{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.03em}
+
+/* ============ hero ============ */
+.hero{padding:56px 0 42px}
+.hero h1{
+  font-family:var(--display); font-weight:600;
+  font-size:clamp(2.05rem,5.8vw,3.85rem); line-height:1.05;
+  letter-spacing:-.02em; margin:14px 0 0;
+}
+.hero .sub{
+  margin-top:20px; font-size:clamp(1.02rem,2.4vw,1.2rem);
+  color:var(--ink-2); max-width:60ch;
+}
+.answer{
+  margin-top:34px; background:var(--card); border:1px solid var(--rule);
+  border-radius:3px; padding:22px 24px; box-shadow:var(--shadow);
+}
+.answer .q{font-family:var(--mono); font-size:12.5px; color:var(--muted); margin-bottom:10px}
+.answer .a{font-size:1.06rem; line-height:1.55; max-width:74ch}
+.answer .cite{margin-top:13px; font-family:var(--mono); font-size:11.5px; color:var(--muted); line-height:1.7}
+.answer .cite a{color:var(--flat)}
+
+/* ============ verdict strip ============ */
+.verdict-strip{
+  display:grid; gap:1px; background:var(--rule);
+  border:1px solid var(--rule); border-radius:3px; overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(212px,1fr));
+  margin-top:22px;
+}
+.vs-cell{background:var(--card); padding:18px 20px}
+.vs-cell .k{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.vs-cell .v{
+  font-family:var(--mono); font-size:1.72rem; font-variant-numeric:tabular-nums;
+  letter-spacing:-.03em; margin-top:7px; line-height:1;
+}
+.vs-cell .n{font-size:12.5px; color:var(--muted); margin-top:9px; line-height:1.45}
+.v.good{color:var(--free)}
+.v.bad{color:var(--meter)}
+
+/* ============ sections ============ */
+section{padding:52px 0; border-top:1px solid var(--rule)}
+.sec-head{margin-bottom:26px}
+.sec-head h2{
+  font-family:var(--display); font-weight:600;
+  font-size:clamp(1.5rem,3.6vw,2.15rem); letter-spacing:-.015em;
+  line-height:1.15; margin-top:10px;
+}
+.sec-head p{margin-top:12px; color:var(--ink-2); max-width:68ch}
+
+/* ============ money table ============ */
+.tablewrap{
+  overflow-x:auto; border:1px solid var(--rule-strong);
+  border-radius:3px; background:var(--card);
+  -webkit-overflow-scrolling:touch;
+}
+.grid{border-collapse:separate; border-spacing:0; width:100%; min-width:1040px; font-size:14px}
+.grid thead th{
+  position:sticky; top:0; z-index:3;
+  background:var(--card-2); color:var(--ink);
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.11em;
+  text-transform:uppercase; font-weight:600;
+  text-align:left; padding:12px 14px;
+  border-bottom:1px solid var(--rule-strong); white-space:nowrap;
+}
+.grid thead th.num{text-align:right}
+.grid tbody td{padding:13px 14px; border-bottom:1px solid var(--rule); vertical-align:top}
+.grid tbody tr:last-child td{border-bottom:none}
+.grid tbody tr:hover td{background:var(--card-2)}
+.grid td.tool{min-width:206px}
+.grid td.tool b{font-weight:640; display:block; font-size:14.5px; line-height:1.3}
+.grid td.tool span{display:block; color:var(--muted); font-size:12.2px; margin-top:4px; line-height:1.4; max-width:36ch}
+.grid td.price{
+  text-align:right; white-space:nowrap;
+  font-family:var(--mono); font-variant-numeric:tabular-nums;
+  font-size:16px; letter-spacing:-.02em;
+}
+.grid td.price .then{display:block; font-size:11px; color:var(--muted); margin-top:5px; letter-spacing:0; white-space:normal; max-width:16ch; margin-left:auto}
+.grid td.price.zero{color:var(--free); font-weight:600}
+.grid td.mid{font-size:12.6px; color:var(--ink-2); line-height:1.45; max-width:40ch}
+.grid td.src{font-family:var(--mono); font-size:11px; color:var(--muted); white-space:nowrap}
+.grid td.src a{color:var(--flat); display:block}
+.grid td.src em{font-style:normal; display:block; margin-top:4px}
+.grid tr.group td{
+  background:var(--card-2);
+  border-top:1px solid var(--rule-strong); border-bottom:1px solid var(--rule-strong);
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--muted); padding:9px 14px;
+}
+
+/* badges — full outline, no one-sided rules anywhere on this page */
+.badge{
+  display:inline-block; font-family:var(--mono); font-size:10px;
+  letter-spacing:.09em; text-transform:uppercase; font-weight:600;
+  padding:3px 7px; border-radius:2px; white-space:nowrap;
+  border:1px solid currentColor; line-height:1.5;
+}
+.b-free{color:var(--free); background:var(--free-bg)}
+.b-flat{color:var(--flat); background:var(--flat-bg)}
+.b-meter{color:var(--meter); background:var(--meter-bg)}
+.b-dead{color:var(--dead); background:var(--dead-bg)}
+.badge .mark{font-weight:700; margin-right:3px}
+
+.byo{font-family:var(--mono); font-size:12px; font-weight:600; white-space:nowrap}
+.byo.y{color:var(--free)}
+.byo.n{color:var(--meter)}
+.byo.u{color:var(--muted)}
+.byo small{display:block; font-weight:400; font-size:10.5px; color:var(--muted); margin-top:4px; letter-spacing:0; white-space:normal; max-width:22ch}
+
+.legend{
+  display:flex; flex-wrap:wrap; gap:11px 20px; align-items:center;
+  margin-top:16px; font-size:12.4px; color:var(--muted);
+}
+.legend .item{display:flex; align-items:center; gap:7px}
+
+/* ============ callouts ============ */
+.callout{
+  border:1px solid var(--rule); background:var(--card);
+  border-radius:3px; padding:20px 22px; box-shadow:var(--shadow);
+}
+.callout.warn{border-color:var(--meter); background:var(--meter-bg)}
+.callout.warn .ct{color:var(--meter)}
+.callout .ct{
+  font-family:var(--mono); font-size:11px; letter-spacing:.12em;
+  text-transform:uppercase; font-weight:600; margin-bottom:10px;
+}
+.callout p{max-width:70ch}
+.callout p + p{margin-top:11px}
+.callout .quote{
+  font-family:var(--display); font-size:1.15rem; font-style:italic;
+  line-height:1.45; margin:2px 0 12px;
+}
+.callout .lead{font-family:var(--display); font-size:1.32rem; line-height:1.35; margin-bottom:13px}
+.callout .srcline{font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:13px}
+
+.stack{display:flex; flex-direction:column; gap:18px}
+.cols2{display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(310px,1fr))}
+
+/* ============ inventory ============ */
+.inv{
+  display:grid; gap:1px; background:var(--rule);
+  border:1px solid var(--rule); border-radius:3px; overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(238px,1fr));
+}
+.inv-cell{background:var(--card); padding:18px 20px}
+.inv-cell .n{
+  font-family:var(--mono); font-size:1.5rem; font-variant-numeric:tabular-nums;
+  letter-spacing:-.03em; line-height:1;
+}
+.inv-cell .l{font-size:13px; color:var(--ink-2); margin-top:8px; line-height:1.4}
+.inv-cell .d{font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:9px; line-height:1.55}
+
+ul.tight{margin:0; padding-left:1.15em}
+ul.tight li{margin-bottom:9px; color:var(--ink-2); max-width:64ch}
+ul.tight li:last-child{margin-bottom:0}
+ul.tight b{color:var(--ink); font-weight:640}
+code{
+  font-family:var(--mono); font-size:.87em;
+  background:var(--card-2); padding:1.5px 5px; border-radius:2px;
+  border:1px solid var(--rule);
+}
+
+/* ============ cut list ============ */
+.cut{border-collapse:separate; border-spacing:0; width:100%; font-size:14px; min-width:640px}
+.cut thead th{
+  text-align:left; font-family:var(--mono); font-size:10.5px;
+  letter-spacing:.11em; text-transform:uppercase; color:var(--muted);
+  padding:12px 14px; border-bottom:1px solid var(--rule-strong);
+  font-weight:600; background:var(--card-2);
+}
+.cut thead th.num,.cut td.num{text-align:right}
+.cut td{padding:13px 14px; border-bottom:1px solid var(--rule); vertical-align:top}
+.cut td.num{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+.cut td.why{color:var(--ink-2); font-size:13px; line-height:1.45}
+.cut tr.total td{
+  border-top:2px solid var(--rule-strong); border-bottom:none;
+  font-weight:650; background:var(--card-2);
+}
+.cut tr.total td.num{color:var(--free); font-size:16px}
+
+/* ============ footer ============ */
+footer{border-top:1px solid var(--rule-strong); background:var(--card); padding:30px 0 46px}
+.f-inner{display:flex; flex-wrap:wrap; gap:16px 30px; justify-content:space-between; align-items:flex-start}
+footer p{font-family:var(--mono); font-size:11.5px; color:var(--muted); line-height:1.7}
+footer .disc{max-width:58ch}
+
+@media (max-width:640px){
+  .hero{padding:36px 0 28px}
+  section{padding:38px 0}
+  .answer{padding:18px}
+  .vs-cell,.inv-cell{padding:15px 16px}
+  .callout{padding:17px 18px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important; transition:none !important}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="wordmark">hitthe.link / coding-agents</div>
+    <div class="stamp">Prices checked 2026&#8209;08&#8209;01 &amp; 2026&#8209;08&#8209;02 &middot; page built 2026&#8209;08&#8209;01 21:11 EDT</div>
+  </div>
+</header>
+
+<main>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Budget night &middot; 33 products priced &middot; sorted by cost</div>
+    <h1>Every coding agent on the market, priced cheapest first.</h1>
+    <p class="sub">You are at <b>$373.59/month</b> and cutting to under <b>$300</b> tonight. So this page leads with the money and nothing else. Every row carries the vendor's own page and the date it was read.</p>
+
+    <div class="answer">
+      <div class="q">First, your actual question: why does typing windsurf.com land you on Devin?</div>
+      <div class="a">Because <b>Cognition acquired Windsurf on July&nbsp;14,&nbsp;2025</b> &mdash; the IP, product, trademark, brand, roughly $82M ARR and 350+ enterprise customers &mdash; then folded the IDE into their own product. <code>windsurf.com</code> now returns <b>HTTP 308 Permanent Redirect &rarr; devin.ai/desktop</b>, and Cognition's FAQ says it outright: <em>&ldquo;Devin Desktop is the new name for Windsurf.&rdquo;</em> You didn't mistype. The brand no longer exists.</div>
+      <div class="cite">Sources: <a href="https://cognition.com/blog/windsurf">cognition.com/blog/windsurf</a> &middot; <a href="https://devin.ai/desktop">devin.ai/desktop</a> &middot; redirect reproduced 2026-08-01</div>
+    </div>
+
+    <div class="verdict-strip">
+      <div class="vs-cell">
+        <div class="k">What to add tonight</div>
+        <div class="v good">$0.00</div>
+        <div class="n">Nothing in this market earns a new line item. Free tools cover every job on the list.</div>
+      </div>
+      <div class="vs-cell">
+        <div class="k">Rows priced at $0</div>
+        <div class="v good">17</div>
+        <div class="n">Fourteen are alive; three are archived. Nine of the live ones take a custom OpenAI base URL and drive your own :20128 for nothing.</div>
+      </div>
+      <div class="vs-cell">
+        <div class="k">Priced by meter or credit</div>
+        <div class="v bad">11</div>
+        <div class="n">The model you already refused. Flagged in red wherever it appears on this page.</div>
+      </div>
+      <div class="vs-cell">
+        <div class="k">Dead or renamed this year</div>
+        <div class="v">5</div>
+        <div class="n">Void, Roo Code and Continue archived. Windsurf renamed. Sweep left the category.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== THE TABLE ===================== -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">The whole market, one table</div>
+      <h2>Sorted by monthly cost. Free at the top.</h2>
+      <p>One row per product, priced at its cheapest usable tier. The <b>next tier up</b> sits under each number so a $20 sticker never hides a $200 ceiling. The <b>base&nbsp;URL</b> column is the one no vendor comparison ever shows: it says which tool can be pointed at your own local endpoints and run at zero marginal cost forever.</p>
+    </div>
+
+    <div class="tablewrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th scope="col">Tool</th>
+            <th scope="col" class="num">Entry $/mo</th>
+            <th scope="col">Pricing model</th>
+            <th scope="col">Custom OpenAI base URL</th>
+            <th scope="col">Runs</th>
+            <th scope="col">Verdict for you</th>
+            <th scope="col">Source &amp; date checked</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr class="group"><td colspan="7">$0 / month &mdash; and nine of these drive your own endpoints</td></tr>
+
+          <tr>
+            <td class="tool"><b>Aider</b><span>Terminal pair-programmer, git-native diff and commit loop</span></td>
+            <td class="price zero">$0<span class="then">no paid tier exists</span></td>
+            <td><span class="badge b-free">Free &middot; Apache 2.0</span></td>
+            <td class="byo y">YES<small>OPENAI_API_BASE + OPENAI_API_KEY</small></td>
+            <td class="mid">Local</td>
+            <td class="mid">Two env vars and it runs against :20128. Least autonomous of the free set, but the fastest to wire.</td>
+            <td class="src"><a href="https://aider.chat/docs/llms/openai-compat.html">aider.chat/docs</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Cline &middot; Cline CLI</b><span>VS Code agent plus a real headless terminal mode and an SDK</span></td>
+            <td class="price zero">$0<span class="then">optional credits provider is opt-in</span></td>
+            <td><span class="badge b-free">Free &middot; Apache 2.0</span></td>
+            <td class="byo y">YES<small>OpenAI-compatible provider with an explicit base URL field</small></td>
+            <td class="mid">Local</td>
+            <td class="mid">The headless mode is the genuinely additive part &mdash; scriptable straight from a launchd job. <code>npm i -g cline</code>.</td>
+            <td class="src"><a href="https://github.com/cline/cline">github.com/cline/cline</a><em>2026-08-01/02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Crush</b><span>Charm's terminal agent; auto-discovers a running Ollama or LM Studio</span></td>
+            <td class="price zero">$0<span class="then">optional Charm Hyper tier, price unverified</span></td>
+            <td class="mid"><span class="badge b-free">Free &middot; FSL-1.1-MIT</span></td>
+            <td class="byo y">YES<small>type: ollama | llamacpp | openai-compat</small></td>
+            <td class="mid">Local</td>
+            <td class="mid">The only tool here that finds your local endpoint without being told. Zero configuration.</td>
+            <td class="src"><a href="https://github.com/charmbracelet/crush">charmbracelet/crush</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Goose</b><span>Rust agent &mdash; CLI, desktop and API; 15+ providers, 70+ MCP extensions</span></td>
+            <td class="price zero">$0<span class="then">no paid tier exists</span></td>
+            <td><span class="badge b-free">Free &middot; Apache 2.0</span></td>
+            <td class="byo y">YES<small>Ollama plus generic OpenAI-compatible</small></td>
+            <td class="mid">Local</td>
+            <td class="mid">Governance moved to the Linux Foundation's AAIF &mdash; the lowest rug-pull risk in this set.</td>
+            <td class="src"><a href="https://github.com/block/goose">github.com/block/goose</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>opencode</b><span>Terminal agent with first-class Ollama / LM Studio config &mdash; <b>already on your PATH, v1.4.10</b></span></td>
+            <td class="price zero">$0<span class="then">the &ldquo;zen&rdquo; gateway is per-1M-token &mdash; skip it</span></td>
+            <td><span class="badge b-free">Free &middot; open source</span></td>
+            <td class="byo y">YES<small>provider.options.baseURL in opencode.json</small></td>
+            <td class="mid">Local</td>
+            <td class="mid">Installed and unused. Nothing to buy, nothing to download &mdash; just point it at :20128 tonight.</td>
+            <td class="src"><a href="https://opencode.ai/docs/providers/">opencode.ai/docs</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>OpenAI Codex CLI</b><span>The binary alone, with no OpenAI account at all &mdash; <b>already installed, 0.128.0</b></span></td>
+            <td class="price zero">$0<span class="then">ChatGPT plans $8 / $20 / $100 are separate</span></td>
+            <td><span class="badge b-free">Free binary</span></td>
+            <td class="byo y">YES<small>[[model_providers]] base_url, wire_api = "openai"</small></td>
+            <td class="mid">Local</td>
+            <td class="mid">Free as a client. The paid ChatGPT tiers behind it are a different question, and mostly redundant.</td>
+            <td class="src"><a href="https://learn.chatgpt.com/docs/config-file/config-basic">learn.chatgpt.com/docs</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Zed</b><span>Native Apple Silicon Rust editor &mdash; not an Electron VS Code fork</span></td>
+            <td class="price zero">$0<span class="then">Pro $10 &middot; Business $30/seat</span></td>
+            <td><span class="badge b-free">Free forever tier</span></td>
+            <td class="byo y">YES<small>Ollama, LM Studio, local OpenAI-compatible servers</small></td>
+            <td class="mid">Local</td>
+            <td class="mid">Free tier is explicitly &ldquo;unlimited use with your API keys.&rdquo; Best-fitting editor for a base M4 and the only one here that isn't installed.</td>
+            <td class="src"><a href="https://zed.dev/pricing">zed.dev/pricing</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>OpenHands</b><span>Self-hosted control center that orchestrates Claude Code, Codex and Gemini agents together</span></td>
+            <td class="price zero">$0<span class="then">Cloud tier free with your own key</span></td>
+            <td><span class="badge b-free">Free &middot; MIT</span></td>
+            <td class="byo y">YES<small>LLM_BASE_URL plus an openai/ model prefix</small></td>
+            <td class="mid">Local</td>
+            <td class="mid"><b>Docker conflict, flagged not resolved:</b> the repo offers <code>npm i -g @openhands/agent-canvas</code> with no Docker, while the CLI docs show a <code>docker run</code> path. You have no docker binary at all &mdash; try npm, fall back to <code>make run</code> from source.</td>
+            <td class="src"><a href="https://github.com/All-Hands-AI/OpenHands">All-Hands-AI/OpenHands</a><em>2026-08-01/02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Qwen Code</b><span>Subagents and agent teams &mdash; but read the trap</span></td>
+            <td class="price zero">$0<span class="then">no free inference remains</span></td>
+            <td><span class="badge b-free">Free &middot; Apache 2.0</span></td>
+            <td class="byo y">YES<small>OPENAI_BASE_URL in ~/.qwen/.env</small></td>
+            <td class="mid">Local</td>
+            <td class="mid"><b>Trap:</b> every blog still says &ldquo;2,000 free requests/day.&rdquo; That tier was killed 2026-04-15. The reason to pick it is gone; six other free tools fill the same slot.</td>
+            <td class="src"><a href="https://qwenlm.github.io/qwen-code-docs/en/users/configuration/auth/">qwenlm.github.io</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Google Jules</b><span>Put a &ldquo;jules&rdquo; label on a GitHub issue and it clones, fixes and opens the PR &mdash; from your phone</span></td>
+            <td class="price zero">$0<span class="then">AI Pro $19.99 &middot; AI Ultra from $99.99</span></td>
+            <td><span class="badge b-flat">Flat &middot; 15 tasks/day</span></td>
+            <td class="byo n">NO<small>Google-locked</small></td>
+            <td class="mid">Cloud &middot; phone</td>
+            <td class="mid"><b>The one genuinely free remote agent.</b> Capped in tasks per day, not tokens &mdash; a countable ceiling, no card, no meter, works from a phone browser.</td>
+            <td class="src"><a href="https://jules.google/docs/usage-limits/">jules.google/docs</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Gemini CLI</b><span>Largest free allowance in the category &mdash; <b>already installed, 0.49.0</b></span></td>
+            <td class="price zero">$0<span class="then">1,000 requests/day, 60/min, no card</span></td>
+            <td><span class="badge b-free">Free &middot; Apache 2.0</span></td>
+            <td class="byo n">NO<small>OAuth, Gemini key or Vertex only</small></td>
+            <td class="mid">Local &rarr; Google</td>
+            <td class="mid">Passes the &ldquo;free&rdquo; half of your rule and fails the &ldquo;no lock-in&rdquo; half. Useful capacity; not an insurance policy.</td>
+            <td class="src"><a href="https://github.com/google-gemini/gemini-cli">google-gemini/gemini-cli</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>GitHub Copilot Free</b><span>2,000 completions/month plus limited chat &mdash; <b>CLI 1.0.70 already on PATH</b></span></td>
+            <td class="price zero">$0<span class="then">no cloud agent on this tier</span></td>
+            <td><span class="badge b-flat">Flat &middot; hard cap</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Cloud</td>
+            <td class="mid">Fine as a free autocomplete layer. The agent side needs a paid tier, and that tier is metered.</td>
+            <td class="src"><a href="https://docs.github.com/en/copilot/concepts/billing/individual-plans">docs.github.com</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Google Antigravity</b><span>Google's agent-first IDE &mdash; <b>already installed and on your PATH</b></span></td>
+            <td class="price zero">$0<span class="then">quota &ldquo;refreshed weekly&rdquo;, number not published</span></td>
+            <td><span class="badge b-free">Free baseline</span></td>
+            <td class="byo u">UNVERIFIED</td>
+            <td class="mid">Hybrid</td>
+            <td class="mid">Real and shipping, genuinely free, unlimited Tab completions &mdash; and a fourth agentic IDE on a machine that needs zero. Credit overages can be left off.</td>
+            <td class="src"><a href="https://antigravity.google/docs/plans">antigravity.google/docs</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>SWE-agent</b><span>The Princeton and Stanford harness this whole category came from</span></td>
+            <td class="price zero">$0<span class="then">you pay only your own model calls</span></td>
+            <td><span class="badge b-dead">Maintenance only</span></td>
+            <td class="byo u">UNVERIFIED</td>
+            <td class="mid">Local</td>
+            <td class="mid">The team moved to mini-swe-agent. A benchmark harness, not a daily driver &mdash; don't build on it.</td>
+            <td class="src"><a href="https://swe-agent.com/latest/">swe-agent.com</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr class="group"><td colspan="7">Dead, archived, or no longer in this category &mdash; do not spend an evening on these</td></tr>
+
+          <tr>
+            <td class="tool"><b>Continue.dev</b><span>Formerly the go-to open BYO-model extension</span></td>
+            <td class="price zero">$0</td>
+            <td><span class="badge b-dead"><span class="mark">&times;</span>Read-only</span></td>
+            <td class="byo u">&mdash;</td>
+            <td class="mid">Local</td>
+            <td class="mid">Repo notice: &ldquo;no longer actively maintained and is read-only for all users.&rdquo;</td>
+            <td class="src"><a href="https://github.com/continuedev/continue">continuedev/continue</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Roo Code</b><span>Multi-mode VS Code agent forked from Cline</span></td>
+            <td class="price zero">$0</td>
+            <td><span class="badge b-dead"><span class="mark">&times;</span>Shut down</span></td>
+            <td class="byo u">&mdash;</td>
+            <td class="mid">Local</td>
+            <td class="mid">Shut down 2026-05-15 and archived. The repo itself points users back to Cline.</td>
+            <td class="src"><a href="https://github.com/RooCodeInc/Roo-Code">RooCodeInc/Roo-Code</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Void</b><span>The open-source Cursor alternative</span></td>
+            <td class="price zero">$0</td>
+            <td><span class="badge b-dead"><span class="mark">&times;</span>Archived</span></td>
+            <td class="byo u">&mdash;</td>
+            <td class="mid">Local</td>
+            <td class="mid">Archived 2026-06-02: &ldquo;deprecated and no longer accepting contributions.&rdquo;</td>
+            <td class="src"><a href="https://github.com/voideditor/void">voideditor/void</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Sweep</b><span>Was an autonomous PR bot &mdash; now a JetBrains autocomplete plugin</span></td>
+            <td class="price">$10<span class="then">Pro $20 &middot; Ultra $60</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Credits</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">JetBrains only</td>
+            <td class="mid">Left the category entirely, and you run no JetBrains IDE. Remove it from the consideration set.</td>
+            <td class="src"><a href="https://sweep.dev/pricing">sweep.dev/pricing</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr class="group"><td colspan="7">Paid &mdash; cheapest first. Red is the meter you already refused.</td></tr>
+
+          <tr>
+            <td class="tool"><b>ChatGPT Go &rarr; Codex agent</b><span>Codex is bundled into ChatGPT plans, never sold separately</span></td>
+            <td class="price">$8<span class="then">Plus $20 unlocks the cloud agent &middot; Pro from $100</span></td>
+            <td><span class="badge b-flat">Flat &middot; 5-hour windows</span></td>
+            <td class="byo y">YES<small>via the free CLI, not the plan</small></td>
+            <td class="mid">Hybrid</td>
+            <td class="mid"><b>Check this before buying anything.</b> If ChatGPT is already inside your $373.59, the Codex cloud agent is already yours at no extra cost.</td>
+            <td class="src"><a href="https://learn.chatgpt.com/docs/pricing">learn.chatgpt.com</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>GitHub Copilot Pro</b><span>Assign a GitHub issue to Copilot; it works in an Actions runner and opens a PR</span></td>
+            <td class="price">$10<span class="then">Pro+ $39 &middot; Max $100</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Credits</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Cloud &middot; phone</td>
+            <td class="mid">Cheapest paid autonomous agent anywhere. 1 credit = $0.01, $10 includes $15 of credits, and overage must be deliberately purchased &mdash; so $10 can stay $10. Still a meter.</td>
+            <td class="src"><a href="https://github.com/features/copilot/plans">github.com/features/copilot</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Zed Pro</b><span>Hosted model credits layered on the free editor</span></td>
+            <td class="price">$10<span class="then">Business $30/seat</span></td>
+            <td><span class="badge b-flat">Flat + $5 credits</span></td>
+            <td class="byo y">YES</td>
+            <td class="mid">Local</td>
+            <td class="mid">Pointless for you &mdash; the free tier is already unlimited against your own keys.</td>
+            <td class="src"><a href="https://zed.dev/pricing">zed.dev/pricing</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Cosine Genie</b><span>Model trained on production code, sold as cloud plus a CLI</span></td>
+            <td class="price">$19<span class="then">Team $199 &middot; Enterprise $999</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Credits</span></td>
+            <td class="byo u">UNVERIFIED</td>
+            <td class="mid">Cloud</td>
+            <td class="mid">The purest token meter on this page: $19 buys 4M credits, then $6.50 per additional 1M. No free tier, 2M trial credits only.</td>
+            <td class="src"><a href="https://cosine.sh/pricing">cosine.sh/pricing</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Google AI Pro</b><span>The only reason to consider it: it raises Jules to 100 tasks/day</span></td>
+            <td class="price">$19.99<span class="then">AI Ultra from $99.99 &rarr; 300 tasks/day</span></td>
+            <td><span class="badge b-flat">Flat &middot; tasks/day</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Cloud</td>
+            <td class="mid">Correct pricing shape, wrong month. Free Jules at 15 tasks/day is more than you'll use while cutting spend.</td>
+            <td class="src"><a href="https://jules.google/docs/usage-limits/">jules.google/docs</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Cursor</b><span>Best-known AI editor &mdash; <b>already installed</b></span></td>
+            <td class="price">$20<span class="then">Pro Plus $60 &middot; Ultra $200 &middot; Teams $40/user</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Metered</span></td>
+            <td class="byo u">UNVERIFIED</td>
+            <td class="mid">Hybrid</td>
+            <td class="mid">$20 buys $20 of third-party model usage, then bills &ldquo;in arrears&rdquo; at API rates. The marketing page still shows a free Hobby tier the docs page omits &mdash; <b>conflicting; confirm at signup, don't trust either page.</b></td>
+            <td class="src"><a href="https://cursor.com/docs/account/pricing">cursor.com/docs</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Devin</b><span>The category's namesake, and where windsurf.com now sends you</span></td>
+            <td class="price">$20<span class="then">Max $200 &middot; Teams $80 + $40/seat &middot; free tier exists</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Metered</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Cloud</td>
+            <td class="mid"><b>Worse for you now than when it was $500.</b> Full reasoning in the ACU section below.</td>
+            <td class="src"><a href="https://devin.ai/pricing">devin.ai/pricing</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Kiro</b><span>AWS's spec-driven agentic IDE</span></td>
+            <td class="price">$20<span class="then">$40 &middot; $100 &middot; Power $200 &middot; free tier = 50 credits</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Credits</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Cloud</td>
+            <td class="mid"><b>The worst offender on this page.</b> $0.04/credit overage, credits never roll over, metered to a 0.01 minimum per task, and better models burn faster &mdash; Sonnet 4.6 at 1.3&times;. A meter that speeds up when the work gets good.</td>
+            <td class="src"><a href="https://kiro.dev/pricing/">kiro.dev/pricing</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Warp</b><span>AI terminal with an agent built in</span></td>
+            <td class="price">$20<span class="then">Max $200 = 18,000 credits &middot; free tier exists</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Credits</span></td>
+            <td class="byo u">UNVERIFIED<small>&ldquo;bring your own inference&rdquo; is listed on the free tier</small></td>
+            <td class="mid">Local + cloud</td>
+            <td class="mid">$20 buys 1,500 credits. Credits are the unit at every paid tier, which settles it regardless of the BYO question.</td>
+            <td class="src"><a href="https://www.warp.dev/pricing">warp.dev/pricing</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Amp</b><span>Sourcegraph's hosted agent, sold in &ldquo;orb hours&rdquo; plus credits</span></td>
+            <td class="price">$20<span class="then">Gigawatt $200 &middot; $5 minimum top-up</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Credits</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Hybrid</td>
+            <td class="mid">Say the number out loud: <b>$20 buys $20 of usage, then you pay again.</b> That is the ACU model with better branding. The free tier is closed to new signups.</td>
+            <td class="src"><a href="https://ampcode.com/pricing">ampcode.com/pricing</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Factory.ai</b><span>&ldquo;Droids&rdquo; &mdash; cloud and local background agents</span></td>
+            <td class="price">$20<span class="then">Plus $100 &middot; Max $200 &middot; no free tier</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Metered</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Hybrid</td>
+            <td class="mid">Publishes only relative tier multipliers &mdash; &ldquo;about 5&times;&rdquo;, &ldquo;about 10&times;&rdquo; &mdash; and no per-unit rate at all. You cannot compute a worst case.</td>
+            <td class="src"><a href="https://factory.ai/pricing">factory.ai/pricing</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Devin Desktop</b><span>The renamed Windsurf IDE, now a command center for other agents</span></td>
+            <td class="price">$20<span class="then">Max $200 &middot; free tier = &ldquo;light quota&rdquo;</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>Credits</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Local &rarr; cloud</td>
+            <td class="mid">Same credit pool as Devin. A fifth agentic IDE for a machine that already has four sitting unused.</td>
+            <td class="src"><a href="https://devin.ai/desktop">devin.ai/desktop</a><em>2026-08-01</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Claude Code &mdash; Max 5&times;</b><span>The published tier nearest what you actually pay</span></td>
+            <td class="price">$100<span class="then">Pro $20 &middot; Max 20&times; listed only as &ldquo;from $100&rdquo;</span></td>
+            <td><span class="badge b-flat">Flat</span></td>
+            <td class="byo n">NO<small>Anthropic Messages format only, not OpenAI</small></td>
+            <td class="mid">Local + web + phone</td>
+            <td class="mid">The only tool on this page you cannot repoint. Max 20&times; renders as &ldquo;From $100/month&rdquo; in the fetched markup &mdash; the exact figure is <b>UNVERIFIED</b>.</td>
+            <td class="src"><a href="https://claude.com/pricing">claude.com/pricing</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Claude Code &mdash; your real line item</b><span>36% of your total monthly software spend</span></td>
+            <td class="price">$136<span class="then">matches no published tier</span></td>
+            <td><span class="badge b-flat">Flat &mdash; verify</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Local + web + phone</td>
+            <td class="mid"><b>The highest-value five minutes of tonight.</b> $136 fits no published price &mdash; not $20, not $100, not $17 annual. Run <code>/usage-credits</code> and read your billing page: a &ldquo;flat&rdquo; Claude bill can drift upward through usage credits with no plan change.</td>
+            <td class="src"><a href="https://claude.com/pricing">claude.com/pricing</a><em>2026-08-02</em></td>
+          </tr>
+
+          <tr>
+            <td class="tool"><b>Devin Enterprise</b><span>The only place ACUs still exist</span></td>
+            <td class="price">&mdash;<span class="then">&ldquo;the rate set in their order form&rdquo;</span></td>
+            <td><span class="badge b-meter"><span class="mark">&#9888;</span>ACU &middot; unpublished</span></td>
+            <td class="byo n">NO</td>
+            <td class="mid">Cloud</td>
+            <td class="mid">Negotiated per customer. No public rate exists, so there is no number to quote you.</td>
+            <td class="src"><a href="https://docs.devin.ai/admin/billing/enterprise.md">docs.devin.ai</a><em>2026-08-01</em></td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="badge b-free">Free</span> $0, no card</span>
+      <span class="item"><span class="badge b-flat">Flat</span> countable ceiling &mdash; tasks, messages, completions</span>
+      <span class="item"><span class="badge b-meter"><span class="mark">&#9888;</span>Metered</span> tokens, credits or ACUs &mdash; worst case not computable</span>
+      <span class="item"><span class="badge b-dead"><span class="mark">&times;</span>Dead</span> archived, shut down, or out of the category</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== THE ACU STORY ===================== -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">The metering question</div>
+      <h2>The ACU story changed &mdash; and it got worse, not better.</h2>
+      <p>You remembered Devin as $500/month billed in Agent Compute Units. That intel is stale in a way that matters, so here is exactly what is true today.</p>
+    </div>
+
+    <div class="stack">
+      <div class="callout">
+        <div class="ct">What actually changed</div>
+        <p>Devin no longer bills self-serve customers in ACUs. The pricing page today shows Free&nbsp;$0 / Pro&nbsp;$20 / Max&nbsp;$200 / Teams&nbsp;$80 plus $40 per full dev seat. The self-serve billing doc calls the unit &ldquo;on-demand credits&rdquo; with a daily and weekly quota that refreshes on a calendar basis; Max gets a weekly allowance with no daily cap.</p>
+        <p>I hunted the ACU deliberately. In Devin's full doc index the only surviving ACU pages sit under <code>/federal/</code> and <code>/admin/billing/enterprise</code>, where the text reads: <em>&ldquo;Devin Enterprise customers are billed in Agent Compute Units (ACUs) at the rate set in their order form.&rdquo;</em> ACUs are now a negotiated contract unit for enterprise and government, nothing more.</p>
+        <p class="srcline"><a href="https://devin.ai/pricing">devin.ai/pricing</a> &middot; <a href="https://docs.devin.ai/admin/billing/enterprise.md">docs.devin.ai/admin/billing/enterprise</a> &mdash; both read 2026-08-01</p>
+      </div>
+
+      <div class="callout warn">
+        <div class="ct">&#9888; Why this is worse for you than $500 flat was</div>
+        <p class="quote">&ldquo;Cost per message varies based on the model used, the task size and complexity, and the reasoning required.&rdquo;</p>
+        <p>That sentence is from Cognition's own pricing page. They publish no per-credit rate, no quota count, and no overage table. You asked me to quantify the ACU so you could see why you'd hate it. <b>I cannot quantify it &mdash; and that is the finding.</b></p>
+        <p>A $20 sticker attached to an unpublished, variable, per-message meter is strictly worse than a $500 flat rate, because you cannot compute your worst case before you commit. Your rule is that flat beats metered even at a higher sticker. Devin fails that rule harder now than it did at $500.</p>
+        <p>The old headline numbers &mdash; the $500 launch price, roughly $2.25 per ACU, &ldquo;1 ACU is about 15 minutes of Devin working&rdquo; &mdash; appear nowhere on Cognition's site today. They are marked <b>UNVERIFIED</b> and I will not repeat them at you as fact.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CLAUDE CODE TRAP ===================== -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">The finding that touches your $136</div>
+      <h2>Do not point Claude Code at your own endpoints.</h2>
+      <p>The base-URL column splits this market cleanly, and the answer for the one tool you already pay for is the bad one.</p>
+    </div>
+
+    <div class="cols2">
+      <div class="callout warn">
+        <div class="ct">&#9888; It converts flat into metered</div>
+        <p>Anthropic's own gateway docs state that while a gateway credential is active, <em>&ldquo;a developer's claude.ai subscription isn't used&hellip; and the subscription's usage limits don't apply. That traffic is billed per token.&rdquo;</em></p>
+        <p>So the move that looks like it saves money is precisely the move that turns your one flat line item into the metering model you refuse.</p>
+        <p class="srcline"><a href="https://code.claude.com/docs/en/llm-gateway">code.claude.com/docs/en/llm-gateway</a> &mdash; read 2026-08-02</p>
+      </div>
+
+      <div class="callout">
+        <div class="ct">And it cannot reach your endpoints anyway</div>
+        <p>Anthropic does not support routing Claude Code to non-Claude models through any gateway. <code>ANTHROPIC_BASE_URL</code> exists, but the endpoint has to speak the Anthropic Messages API &mdash; <code>POST /v1/messages</code> with an <code>anthropic-version</code> header &mdash; not the OpenAI shape your :20128 and :20129 serve.</p>
+        <p>There is a second cost. Remote Control and Claude Code on the web are <b>disabled</b> the moment a gateway credential is set. Your strictly-remote requirement and any BYO-endpoint plan for Claude Code are mutually exclusive &mdash; you cannot have both.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== WHAT YOU ALREADY HAVE ===================== -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">The honest baseline &mdash; counted live on this M4, 2026-08-01</div>
+      <h2>What you already have.</h2>
+      <p>Before any verdict about buying, here is the real inventory. Every number below was counted on the machine today, not recalled.</p>
+    </div>
+
+    <div class="inv">
+      <div class="inv-cell">
+        <div class="n">5</div>
+        <div class="l">Agentic coding CLIs already installed</div>
+        <div class="d">claude &middot; codex-cli 0.128.0 &middot; gemini 0.49.0 &middot; copilot 1.0.70 &middot; opencode 1.4.10</div>
+      </div>
+      <div class="inv-cell">
+        <div class="n">4</div>
+        <div class="l">Agentic IDEs sitting in /Applications</div>
+        <div class="d">Cursor &middot; Trae &middot; Antigravity &middot; VS Code with Copilot</div>
+      </div>
+      <div class="inv-cell">
+        <div class="n">56</div>
+        <div class="l">MCP servers already wired</div>
+        <div class="d">55 top-level plus 1 project-scoped, counted from .claude.json</div>
+      </div>
+      <div class="inv-cell">
+        <div class="n">318</div>
+        <div class="l">Model routes behind your own OmniRoute on :20128</div>
+        <div class="d">GET /v1/models = 200 &middot; 16 provider prefixes &middot; includes auto/cheap and auto/offline</div>
+      </div>
+      <div class="inv-cell">
+        <div class="n">592</div>
+        <div class="l">Executables in xen/bin, plus 482 more in ~/bin</div>
+        <div class="d">xen-omni-router &middot; xen-call-receiver &middot; xen-swarm-team &middot; xen-reply-vvs</div>
+      </div>
+      <div class="inv-cell">
+        <div class="n">218</div>
+        <div class="l">launchd jobs loaded right now</div>
+        <div class="d">461 plists on disk &middot; 94 xen- processes live</div>
+      </div>
+      <div class="inv-cell">
+        <div class="n">2</div>
+        <div class="l">Local OpenAI-compatible endpoints, both answering</div>
+        <div class="d">:20128 OmniRoute v16.2.12 &middot; :20129 shell-as-model, pane %0</div>
+      </div>
+      <div class="inv-cell">
+        <div class="n">0</div>
+        <div class="l">Docker binaries on this machine</div>
+        <div class="d">Any container-only install path is dead on arrival</div>
+      </div>
+    </div>
+
+    <div class="cols2" style="margin-top:22px">
+      <div class="callout">
+        <div class="ct">So what would a new paid tool actually add?</div>
+        <p class="lead"><b>Nothing.</b> Buy zero coding tools tonight.</p>
+        <ul class="tight">
+          <li><b>&ldquo;A better agent.&rdquo;</b> You have five installed and drive one. A sixth doesn't plug into xen-reply-vvs, the 218 launchd jobs, or the goal index &mdash; buying one means rebuilding your harness inside someone else's product.</li>
+          <li><b>&ldquo;Integrations.&rdquo;</b> 56 MCP servers. Already done, already free. That is the exact thing paid platforms sell as their differentiator.</li>
+          <li><b>&ldquo;Model choice, no lock-in.&rdquo;</b> OmniRoute already fronts 318 routes with semantic aliases. A paid router is redundant infrastructure.</li>
+          <li><b>&ldquo;Automation and scheduling.&rdquo;</b> 461 plists, watchdogs, a 60-second comms law. No SaaS scheduler beats that for your workflow, and each one is a monthly bill for something already running at $0.</li>
+        </ul>
+      </div>
+
+      <div class="callout">
+        <div class="ct">The two real gaps &mdash; both close for $0</div>
+        <ul class="tight">
+          <li><b>Remote access.</b> This is a gap in your stack, not a reason to buy. Your control surface is a tmux pane on a desk machine &mdash; but :20129 already exposes that pane as an OpenAI-compatible endpoint, and Tailscale is already installed. Reaching it from your phone is a configuration task, not a purchase. Paying a vendor for &ldquo;cloud agents&rdquo; buys a worse version of something you can finish yourself.</li>
+          <li><b>Local offline fallback.</b> Ollama, LM Studio and Jan are all installed and all idle &mdash; ports 11434 and 1234 both refuse connections, and no <code>ollama</code> binary is on your PATH. <code>auto/offline</code> currently has no backend behind it. Starting one is free, and it is the direct insurance policy against the failure that killed the last automation when the paycheck stopped.</li>
+        </ul>
+        <p class="srcline">24GB unified memory caps which models you can actually hold in RAM, so every BYO-endpoint tool is only as strong as what fits. That is a real ceiling, not a footnote.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== THE CUT ===================== -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Getting under $300</div>
+      <h2>The move here is subtraction, not addition.</h2>
+      <p>You need to shed <b>$73.59</b>. Every candidate below is a line item this research says you don't need, because Claude Code plus OmniRoute plus 56 MCPs already cover the work. I can name the price; only your statement can confirm the charge.</p>
+    </div>
+
+    <div class="tablewrap">
+      <table class="cut">
+        <thead>
+          <tr>
+            <th scope="col">Candidate line item</th>
+            <th scope="col">Why it's cuttable</th>
+            <th scope="col" class="num">$/mo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Cursor Pro</td>
+            <td class="why">The app is installed and Claude Code does the same job. Past $20 it bills in arrears at API rates.</td>
+            <td class="num">20.00</td>
+          </tr>
+          <tr>
+            <td>GitHub Copilot Pro or Pro+</td>
+            <td class="why">The CLI is installed. The free tier keeps 2,000 completions a month; the paid delta is metered credits.</td>
+            <td class="num">10.00&ndash;39.00</td>
+          </tr>
+          <tr>
+            <td>ChatGPT Plus</td>
+            <td class="why">Keep it only if you actually use the Codex cloud agent. The Codex CLI itself is free and takes your local endpoints.</td>
+            <td class="num">20.00</td>
+          </tr>
+          <tr>
+            <td>Any Google AI Pro or Ultra plan</td>
+            <td class="why">Gemini CLI already gives 1,000 requests a day free, and Jules gives 15 tasks a day free.</td>
+            <td class="num">19.99&ndash;99.99</td>
+          </tr>
+          <tr class="total">
+            <td>Cutting Cursor plus one Copilot tier alone</td>
+            <td class="why">Zero capability lost. Nothing to install as a replacement. That is 80% of the gap in two cancellations.</td>
+            <td class="num">&minus;59.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout" style="margin-top:22px">
+      <div class="ct">Before you cut anything else, read one page</div>
+      <p>$136 of your $373.59 is Claude, and it matches no published tier &mdash; not $20 Pro, not $100 Max&nbsp;5&times;, not $17 annual. It could be legacy pricing, an annual amortization, or a plan plus accrued usage credits. Anthropic ships a usage-credit system that lets spend exceed the plan, which means a bill you have been treating as fixed can quietly drift. Read it off your own billing page &mdash; that is the authoritative source for what you actually pay, and it is 36% of the number you are trying to move.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap f-inner">
+    <p>Built 2026-08-01 21:11 EDT &middot; hitthe.link/coding-agents<br>33 products priced &middot; 17 rows at $0 &middot; 11 metered &middot; 5 dead or renamed</p>
+    <p class="disc">Every price here was read directly from the vendor's own pricing or docs page on the date shown in that row. Web search was unavailable for these passes, so nothing is cross-checked against news coverage &mdash; direct vendor sourcing is stronger provenance, but it means anything a vendor declines to publish is labeled UNVERIFIED rather than estimated. Prices change constantly. Re-read the source before you commit money.</p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,552 @@
+<title>Square Home — The Metro UI you missed, live tiles reimagined</title>
+<meta name="description" content="Square Home: a Windows 10 Mobile Metro-style Android launcher with resizable live tiles, an intuitive grid, and the Metro app list.">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --tile-gap: 8px;
+    --unit: 68px;            /* base small-tile size */
+    --cobalt:  #0063b1;
+    --teal:    #00aba9;
+    --magenta: #b4009e;
+    --orange:  #d24726;
+    --green:   #107c10;
+    --red:     #e81123;
+    --purple:  #5c2d91;
+    --amber:   #e3a21a;
+    --steel:   #2d7d9a;
+    --pink:    #e3008c;
+    --lime:    #7fba00;
+    --slate:   #515c6b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    background: #050505;
+    font-family: "Segoe UI", "Segoe UI Variable", "Selawik", -apple-system, system-ui, "Helvetica Neue", sans-serif;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ── phone frame ─────────────────────────────────────── */
+  .phone {
+    position: relative;
+    width: 380px;
+    height: 800px;
+    max-height: 96vh;
+    background: #000;
+    border-radius: 44px;
+    box-shadow: 0 0 0 12px #101012, 0 0 0 13px #2a2a2e, 0 40px 90px rgba(0,0,0,.7);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── status bar ──────────────────────────────────────── */
+  .statusbar {
+    height: 28px;
+    flex: 0 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    font-size: 12px;
+    letter-spacing: .04em;
+    color: #fff;
+    z-index: 30;
+  }
+  .statusbar .right { display: flex; gap: 8px; align-items: center; font-variant-numeric: tabular-nums; }
+  .sig { display: inline-flex; gap: 1px; align-items: flex-end; height: 11px; }
+  .sig i { width: 2px; background: #fff; border-radius: 1px; }
+  .sig i:nth-child(1){height:3px} .sig i:nth-child(2){height:5px} .sig i:nth-child(3){height:8px} .sig i:nth-child(4){height:11px}
+  .batt { width: 22px; height: 11px; border: 1px solid #fff; border-radius: 2px; position: relative; padding: 1px; }
+  .batt::after { content:""; position:absolute; right:-3px; top:3px; width:2px; height:5px; background:#fff; border-radius:0 1px 1px 0; }
+  .batt b { display:block; height:100%; width:72%; background:#fff; border-radius:1px; }
+
+  /* ── pages wrapper ───────────────────────────────────── */
+  .pages { flex: 1; position: relative; overflow: hidden; }
+  .page {
+    position: absolute; inset: 0;
+    transition: transform .38s cubic-bezier(.2,.9,.2,1);
+    will-change: transform;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .page::-webkit-scrollbar { width: 0; }
+  .page.start { transform: translateX(0); }
+  .page.apps  { transform: translateX(100%); }
+  body.show-apps .page.start { transform: translateX(-16%); }
+  body.show-apps .page.apps  { transform: translateX(0); }
+
+  /* ── tile grid ───────────────────────────────────────── */
+  .grouphead {
+    font-size: 26px;
+    font-weight: 200;
+    letter-spacing: .01em;
+    color: #fff;
+    padding: 18px 20px 6px;
+    text-transform: lowercase;
+    opacity: .95;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, var(--unit));
+    grid-auto-rows: var(--unit);
+    gap: var(--tile-gap);
+    padding: 4px 20px 24px;
+    justify-content: start;
+    grid-auto-flow: dense;
+  }
+
+  .tile {
+    position: relative;
+    border: none;
+    color: #fff;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px;
+    font-size: 12px;
+    text-align: left;
+    user-select: none;
+    transition: transform .12s ease, filter .12s ease;
+    background: var(--slate);
+  }
+  .tile:active { transform: scale(.94); filter: brightness(1.15); }
+  .tile .glyph { font-size: 24px; line-height: 1; margin-bottom: auto; }
+  .tile .label { font-size: 12px; font-weight: 400; letter-spacing: .01em; }
+
+  /* sizes */
+  .s-small  { grid-column: span 1; grid-row: span 1; }
+  .s-medium { grid-column: span 2; grid-row: span 2; }
+  .s-wide   { grid-column: span 4; grid-row: span 2; }
+  .s-large  { grid-column: span 4; grid-row: span 4; }
+  .s-small .label { display: none; }
+  .s-small .glyph { font-size: 22px; margin: auto; }
+
+  /* colors */
+  .c-cobalt{background:var(--cobalt)} .c-teal{background:var(--teal)}
+  .c-magenta{background:var(--magenta)} .c-orange{background:var(--orange)}
+  .c-green{background:var(--green)} .c-red{background:var(--red)}
+  .c-purple{background:var(--purple)} .c-amber{background:var(--amber)}
+  .c-steel{background:var(--steel)} .c-pink{background:var(--pink)}
+  .c-lime{background:var(--lime)} .c-slate{background:var(--slate)}
+
+  /* ── live tile flip faces ────────────────────────────── */
+  .faces { position: absolute; inset: 0; }
+  .face {
+    position: absolute; inset: 0;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    backface-visibility: hidden;
+    transition: transform .6s cubic-bezier(.4,0,.2,1);
+    transform-origin: bottom;
+  }
+  .face.back { transform: rotateX(90deg); }
+  .tile.flipped .face.front { transform: rotateX(-90deg); }
+  .tile.flipped .face.back  { transform: rotateX(0deg); }
+
+  .live-big { font-size: 34px; font-weight: 200; line-height: 1; }
+  .live-sub { font-size: 12px; opacity: .9; margin-top: 3px; }
+  .live-top { font-size: 12px; opacity: .85; margin-bottom: auto; text-transform: lowercase; }
+
+  /* photo tile crossfade */
+  .photo-face { position:absolute; inset:0; opacity:0; transition:opacity 1s; }
+  .photo-face.on { opacity:1; }
+
+  /* clock live */
+  .clocktile .time { font-size: 40px; font-weight: 200; letter-spacing:-.02em; }
+  .clocktile .date { font-size: 12px; opacity:.9; }
+
+  /* agenda / forecast widget rows */
+  .rows { display:flex; flex-direction:column; gap:4px; margin-bottom:auto; }
+  .frow { display:flex; justify-content:space-between; font-size:12px; opacity:.92; }
+  .fstrip { display:flex; justify-content:space-between; margin-bottom:auto; gap:6px; }
+  .fcol { text-align:center; font-size:11px; opacity:.9; }
+  .fcol .fg { font-size:18px; display:block; }
+
+  /* PRO badge */
+  .pro {
+    position:absolute; top:6px; right:6px;
+    background:rgba(0,0,0,.35); color:#ffd23c;
+    font-size:9px; font-weight:700; letter-spacing:.08em;
+    padding:2px 5px; border-radius:2px;
+  }
+
+  /* edit mode */
+  body.edit .tile { animation: jiggle .28s infinite alternate ease-in-out; }
+  body.edit .tile.selected { outline: 3px solid #fff; outline-offset:-3px; }
+  @keyframes jiggle { from{transform:rotate(-.5deg)} to{transform:rotate(.5deg)} }
+  .resizer {
+    position:absolute; inset:0; display:none;
+    align-items:center; justify-content:center; gap:8px;
+    background:rgba(0,0,0,.55); z-index:5;
+  }
+  body.edit .tile.selected .resizer { display:flex; }
+  .resizer button {
+    background:#fff; color:#000; border:none;
+    width:34px; height:34px; font-size:16px; cursor:pointer; border-radius:2px;
+  }
+
+  /* ── app list (Metro) ────────────────────────────────── */
+  .applist { padding: 8px 0 40px; }
+  .app-search {
+    margin: 6px 20px 10px;
+    background:#1c1c1c; border:none; color:#fff;
+    padding:12px 14px; font-size:15px; width: calc(100% - 40px);
+    font-family:inherit;
+  }
+  .app-search::placeholder{ color:#888; }
+  .app-letter {
+    font-size:15px; font-weight:600; color:var(--teal);
+    padding: 14px 20px 4px; letter-spacing:.02em;
+  }
+  .app-row {
+    display:flex; align-items:center; gap:14px;
+    padding:11px 20px; cursor:pointer;
+  }
+  .app-row:active { background:#181818; }
+  .app-ico {
+    width:38px; height:38px; flex:0 0 38px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:19px; color:#fff;
+  }
+  .app-name { font-size:16px; font-weight:300; }
+
+  /* ── nav / footer ────────────────────────────────────── */
+  .navbar {
+    flex: 0 0 44px; height:44px;
+    display:flex; align-items:center; justify-content:space-around;
+    border-top:1px solid rgba(255,255,255,.06);
+    z-index:20;
+  }
+  .navbar button {
+    background:none; border:none; color:#fff; opacity:.85;
+    font-size:12px; letter-spacing:.05em; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-family:inherit; text-transform:lowercase;
+  }
+  .navbar button b { font-size:16px; font-weight:400; }
+  .navbar button.on { opacity:1; color:var(--teal); }
+
+  .hint {
+    position:absolute; bottom:52px; left:0; right:0; text-align:center;
+    font-size:11px; color:#888; letter-spacing:.03em; pointer-events:none;
+    z-index:25;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .face, .page, .tile { transition:none !important; }
+    body.edit .tile { animation:none; }
+    .photo-face { transition:none; }
+  }
+</style>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- status bar -->
+    <div class="statusbar">
+      <span>Square Home</span>
+      <span class="right">
+        <span class="sig"><i></i><i></i><i></i><i></i></span>
+        <span>LTE</span>
+        <span id="sbclock">9:41</span>
+        <span class="batt"><b></b></span>
+      </span>
+    </div>
+
+    <div class="pages">
+      <!-- START (tiles) -->
+      <section class="page start" id="startPage">
+        <div class="grouphead">start</div>
+        <div class="grid" id="tileGrid"></div>
+      </section>
+
+      <!-- APPS (Metro list) -->
+      <section class="page apps" id="appsPage">
+        <div class="grouphead">all apps</div>
+        <input class="app-search" id="appSearch" placeholder="search apps">
+        <div class="applist" id="appList"></div>
+      </section>
+    </div>
+
+    <div class="hint" id="hint">long-press a tile to resize · swipe for all apps</div>
+
+    <!-- nav -->
+    <div class="navbar">
+      <button id="navStart" class="on"><b>▦</b>start</button>
+      <button id="navEdit"><b>✎</b>edit</button>
+      <button id="navApps"><b>≡</b>all apps</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ── data ─────────────────────────────────────────────── */
+const COLORS = ["cobalt","teal","magenta","orange","green","red","purple","amber","steel","pink","lime","slate"];
+
+// live tiles + static app tiles on the Start screen
+const tiles = [
+  { id:"clock",    name:"Clock",     glyph:"◷", color:"cobalt",  size:"medium", live:"clock" },
+  { id:"weather",  name:"Weather",   glyph:"☁", color:"teal",    size:"medium", live:"weather" },
+  { id:"photos",   name:"Photos",    glyph:"▤", color:"magenta", size:"wide",   live:"photos" },
+  { id:"messages", name:"Messages",  glyph:"✉", color:"green",   size:"medium", live:"messages" },
+  { id:"phone",    name:"Phone",     glyph:"☎", color:"green",   size:"small" },
+  { id:"camera",   name:"Camera",    glyph:"◉", color:"steel",   size:"small" },
+  { id:"music",    name:"Music",     glyph:"♪", color:"orange",  size:"medium", live:"music" },
+  { id:"calendar", name:"Calendar",  glyph:"▦", color:"red",     size:"medium", live:"calendar" },
+  { id:"maps",     name:"Maps",      glyph:"◈", color:"lime",    size:"small" },
+  { id:"mail",     name:"Mail",      glyph:"✉", color:"cobalt",  size:"small" },
+  { id:"store",    name:"Store",     glyph:"◢", color:"purple",  size:"small" },
+  { id:"settings", name:"Settings",  glyph:"⚙", color:"slate",   size:"small", pro:true },
+  { id:"forecast", name:"Forecast",  glyph:"", color:"steel",   size:"wide",   live:"forecast" },
+  { id:"agenda",   name:"Agenda",    glyph:"", color:"purple",  size:"large",  live:"agenda" },
+  { id:"notes",    name:"Notes",     glyph:"▬", color:"amber",   size:"small" },
+  { id:"people",   name:"People",    glyph:"☻", color:"pink",    size:"medium" },
+];
+
+const APPS = ["Alarms","Calculator","Calendar","Camera","Clock","Contacts","Edge","Files","Groove Music","Mail","Maps","Messages","Notes","OneDrive","People","Phone","Photos","Podcasts","Settings","Store","Weather","Wallet","Xbox","Zune"];
+
+/* ── build tiles ──────────────────────────────────────── */
+const grid = document.getElementById("tileGrid");
+const now = new Date(new Date().getTime()); // real clock, no Date.now cache concern client-side
+
+function faceHTML(t){
+  switch(t.live){
+    case "clock": return `<div class="faces"><div class="face front clocktile"><div class="time" data-clock>9:41</div><div class="date" data-date>Mon 7</div></div></div>`;
+    case "weather": return `<div class="faces">
+        <div class="face front"><div class="live-top">Falkenstein</div><div class="live-big">6°</div><div class="live-sub">cloudy · H 9° L 2°</div></div>
+        <div class="face back c-teal"><div class="live-top">tomorrow</div><div class="live-big">11°</div><div class="live-sub">partly sunny</div></div></div>`;
+    case "photos": return `<div class="faces">
+        <div class="face front" style="padding:0">
+          <div class="photo-face on" style="background:linear-gradient(135deg,#ff8a5c,#b4009e)"></div>
+          <div class="photo-face" style="background:linear-gradient(135deg,#00aba9,#0063b1)"></div>
+          <div class="photo-face" style="background:linear-gradient(135deg,#7fba00,#107c10)"></div>
+          <div class="photo-face" style="background:linear-gradient(160deg,#5c2d91,#e3008c)"></div>
+          <div style="position:absolute;left:12px;bottom:8px;font-size:12px">Photos</div>
+        </div></div>`;
+    case "messages": return `<div class="faces">
+        <div class="face front"><div class="live-top">Messages</div><div class="live-sub" style="font-size:13px;opacity:1">Mom: dinner sunday?</div></div>
+        <div class="face back c-green"><div class="live-top">Messages · 3 new</div><div class="live-sub" style="font-size:13px;opacity:1">Alex: sent the files 📎</div></div></div>`;
+    case "music": return `<div class="faces">
+        <div class="face front"><div class="live-top">now playing</div><div class="live-sub" style="font-size:13px;opacity:1">Midnight City</div><div class="live-sub">M83 · ▶</div></div></div>`;
+    case "calendar": return `<div class="faces">
+        <div class="face front"><div class="live-top" data-day>Monday</div><div class="live-big" data-date-num>7</div><div class="live-sub">Standup · 10:00</div></div>
+        <div class="face back c-red"><div class="live-top">next up</div><div class="live-sub" style="font-size:13px;opacity:1">Design review</div><div class="live-sub">2:30 PM</div></div></div>`;
+    case "forecast": return `<div class="faces"><div class="face front"><div class="fstrip">
+        <div class="fcol"><span class="fg">☁</span>Mon 6°</div><div class="fcol"><span class="fg">⛅</span>Tue 11°</div>
+        <div class="fcol"><span class="fg">☀</span>Wed 13°</div><div class="fcol"><span class="fg">🌧</span>Thu 8°</div>
+        <div class="fcol"><span class="fg">☁</span>Fri 7°</div></div><div class="label">7-day forecast</div></div></div>`;
+    case "agenda": return `<div class="faces"><div class="face front"><div class="rows">
+        <div class="frow"><span>10:00</span><span>Standup</span></div>
+        <div class="frow"><span>11:30</span><span>1:1 with Sam</span></div>
+        <div class="frow"><span>14:30</span><span>Design review</span></div>
+        <div class="frow"><span>16:00</span><span>Deploy window</span></div>
+        <div class="frow"><span>18:00</span><span>Gym</span></div></div><div class="label">today · agenda</div></div></div>`;
+    default: return `<span class="glyph">${t.glyph}</span><span class="label">${t.name}</span>`;
+  }
+}
+
+function render(){
+  grid.innerHTML = "";
+  tiles.forEach(t => {
+    const el = document.createElement("button");
+    el.className = `tile s-${t.size} c-${t.color}`;
+    el.dataset.id = t.id;
+    el.innerHTML = faceHTML(t) +
+      (t.pro ? `<span class="pro">PRO</span>` : "") +
+      `<div class="resizer">
+         <button data-act="small" title="small">▪</button>
+         <button data-act="medium" title="medium">◻</button>
+         <button data-act="wide" title="wide">▭</button>
+         <button data-act="large" title="large">□</button>
+       </div>`;
+    grid.appendChild(el);
+  });
+  wireTiles();
+}
+
+/* ── clock (live) ─────────────────────────────────────── */
+function tick(){
+  const d = new Date();
+  let h = d.getHours(), m = d.getMinutes();
+  const hh = ((h+11)%12)+1;
+  const t = hh + ":" + String(m).padStart(2,"0");
+  document.getElementById("sbclock").textContent = t;
+  document.querySelectorAll("[data-clock]").forEach(e=>e.textContent=t);
+  const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const daysF=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  document.querySelectorAll("[data-date]").forEach(e=>e.textContent=days[d.getDay()]+" "+d.getDate());
+  document.querySelectorAll("[data-day]").forEach(e=>e.textContent=daysF[d.getDay()]);
+  document.querySelectorAll("[data-date-num]").forEach(e=>e.textContent=d.getDate());
+}
+
+/* ── live tile flips + photo crossfade ────────────────── */
+function startLiveAnimations(){
+  if (reduce) return;
+  const flippers = ["weather","messages","calendar"];
+  setInterval(()=>{
+    flippers.forEach(id=>{
+      if (Math.random() < .5){
+        const el = grid.querySelector(`[data-id="${id}"]`);
+        if (el && !document.body.classList.contains("edit")) el.classList.toggle("flipped");
+      }
+    });
+  }, 3200);
+  // photo crossfade
+  setInterval(()=>{
+    const faces = grid.querySelectorAll(".photo-face");
+    if (!faces.length) return;
+    let on = [...faces].findIndex(f=>f.classList.contains("on"));
+    faces[on].classList.remove("on");
+    faces[(on+1)%faces.length].classList.add("on");
+  }, 2600);
+}
+
+/* ── tile interaction: tap / long-press-edit / resize ──── */
+let pressTimer=null, selected=null;
+function wireTiles(){
+  grid.querySelectorAll(".tile").forEach(el=>{
+    // resize buttons
+    el.querySelectorAll(".resizer button").forEach(b=>{
+      b.addEventListener("click", ev=>{
+        ev.stopPropagation();
+        const t = tiles.find(x=>x.id===el.dataset.id);
+        t.size = b.dataset.act;
+        render();
+        // re-enter edit + reselect
+        document.body.classList.add("edit");
+        const again = grid.querySelector(`[data-id="${t.id}"]`);
+        if (again){ again.classList.add("selected"); selected=again; }
+      });
+    });
+    // long-press to edit
+    el.addEventListener("pointerdown", ()=>{
+      pressTimer = setTimeout(()=>{
+        document.body.classList.add("edit");
+        grid.querySelectorAll(".tile").forEach(t=>t.classList.remove("selected"));
+        el.classList.add("selected"); selected=el;
+        setHint("resize with the buttons · tap edit again to finish");
+      }, 480);
+    });
+    el.addEventListener("pointerup", ()=> clearTimeout(pressTimer));
+    el.addEventListener("pointerleave", ()=> clearTimeout(pressTimer));
+    // right-click = edit
+    el.addEventListener("contextmenu", ev=>{
+      ev.preventDefault();
+      document.body.classList.add("edit");
+      grid.querySelectorAll(".tile").forEach(t=>t.classList.remove("selected"));
+      el.classList.add("selected"); selected=el;
+    });
+    // tap = flip (if live) unless editing
+    el.addEventListener("click", ()=>{
+      if (document.body.classList.contains("edit")){
+        grid.querySelectorAll(".tile").forEach(t=>t.classList.remove("selected"));
+        el.classList.add("selected"); selected=el; return;
+      }
+      const t = tiles.find(x=>x.id===el.dataset.id);
+      if (t.live) el.classList.toggle("flipped");
+      else { el.style.filter="brightness(1.3)"; setTimeout(()=>el.style.filter="",150); }
+    });
+  });
+}
+
+/* ── drag to rearrange (edit mode) ────────────────────── */
+let dragId=null;
+grid.addEventListener("dragstart", e=>{ if(e.target.classList.contains("tile")) dragId=e.target.dataset.id;});
+function enableDrag(on){
+  grid.querySelectorAll(".tile").forEach(t=> t.draggable = on);
+}
+grid.addEventListener("dragover", e=>{ if(document.body.classList.contains("edit")) e.preventDefault(); });
+grid.addEventListener("drop", e=>{
+  if(!dragId) return;
+  const tgt = e.target.closest(".tile"); if(!tgt) return;
+  const from = tiles.findIndex(x=>x.id===dragId);
+  const to   = tiles.findIndex(x=>x.id===tgt.dataset.id);
+  if(from<0||to<0) return;
+  const [m] = tiles.splice(from,1); tiles.splice(to,0,m);
+  render(); enableDrag(true); dragId=null;
+});
+
+/* ── nav ──────────────────────────────────────────────── */
+const navStart=document.getElementById("navStart"),
+      navEdit=document.getElementById("navEdit"),
+      navApps=document.getElementById("navApps");
+
+function setHint(t){ document.getElementById("hint").textContent=t; }
+
+navStart.onclick = ()=>{
+  document.body.classList.remove("show-apps","edit");
+  navStart.classList.add("on"); navApps.classList.remove("on");
+  enableDrag(false);
+  setHint("long-press a tile to resize · swipe for all apps");
+};
+navApps.onclick = ()=>{
+  document.body.classList.add("show-apps");
+  document.body.classList.remove("edit");
+  navApps.classList.add("on"); navStart.classList.remove("on");
+};
+navEdit.onclick = ()=>{
+  const on = document.body.classList.toggle("edit");
+  enableDrag(on);
+  setHint(on ? "select a tile, resize or drag to rearrange · tap edit to finish"
+             : "long-press a tile to resize · swipe for all apps");
+  if(!on) grid.querySelectorAll(".tile").forEach(t=>t.classList.remove("selected"));
+};
+
+/* ── swipe between pages ──────────────────────────────── */
+let sx=0;
+document.querySelector(".pages").addEventListener("touchstart",e=>sx=e.touches[0].clientX,{passive:true});
+document.querySelector(".pages").addEventListener("touchend",e=>{
+  const dx=e.changedTouches[0].clientX-sx;
+  if(dx<-50) navApps.onclick();
+  else if(dx>50) navStart.onclick();
+});
+
+/* ── app list (Metro) ─────────────────────────────────── */
+const appList=document.getElementById("appList"), appSearch=document.getElementById("appSearch");
+function iconFor(name){
+  const g = {Camera:"◉",Phone:"☎",Messages:"✉",Photos:"▤",Music:"♪","Groove Music":"♪",Maps:"◈",Mail:"✉",Settings:"⚙",Store:"◢",Calendar:"▦",Clock:"◷",Weather:"☁",People:"☻",Contacts:"☻",Notes:"▬",Files:"▢",Calculator:"▦",Edge:"◎",Alarms:"◷",OneDrive:"☁",Podcasts:"◍",Wallet:"▭",Xbox:"◈",Zune:"♪"}[name]||"▪";
+  return g;
+}
+function colorFor(name){ let s=0; for(const c of name) s+=c.charCodeAt(0); return COLORS[s%COLORS.length]; }
+function buildApps(filter=""){
+  appList.innerHTML="";
+  const f=filter.trim().toLowerCase();
+  const shown=APPS.filter(a=>a.toLowerCase().includes(f)).sort();
+  let letter="";
+  shown.forEach(a=>{
+    const L=a[0].toUpperCase();
+    if(L!==letter && !f){ letter=L; const h=document.createElement("div"); h.className="app-letter"; h.textContent=L; appList.appendChild(h); }
+    const row=document.createElement("div"); row.className="app-row";
+    row.innerHTML=`<div class="app-ico c-${colorFor(a)}">${iconFor(a)}</div><div class="app-name">${a}</div>`;
+    row.onclick=()=>{ row.style.opacity=".4"; setTimeout(()=>row.style.opacity="",180); };
+    appList.appendChild(row);
+  });
+}
+appSearch.addEventListener("input",e=>buildApps(e.target.value));
+
+/* ── go ───────────────────────────────────────────────── */
+render();
+buildApps();
+tick(); setInterval(tick,1000);
+startLiveAnimations();
+</script>

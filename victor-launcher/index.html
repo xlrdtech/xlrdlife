@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Victor Launcher — Stable, modern, endlessly flexible</title>
+<meta name="description" content="Victor Launcher: a full Android home replacement. Adaptive icon color, icon shapes, live wallpapers, deep power-user options — the safest all-round pick.">
+<style>
+  :root{
+    --void:#0d0e12; --surface:#1a1b22; --surface-2:#22232c; --border:#2a2c36;
+    --text:#e8eaf0; --muted:#9498a6; --faint:#6b6f7d;
+    --accent:#8b6cff; --accent-2:#b7a4ff;
+    --radius:22px;
+    --good:#4ade80; --warn:#fbbf24;
+    --grid-cols:4; --grid-rows:5; --icon-size:56px; --icon-radius:30%;
+    --label:1;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 800px at 20% -10%, rgba(139,108,255,.10), transparent 60%),
+      radial-gradient(900px 700px at 100% 110%, rgba(139,108,255,.06), transparent 55%),
+      var(--void);
+    color:var(--text); font-family:var(--font);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    gap:56px; padding:48px 32px; flex-wrap:wrap;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- pitch column ---------- */
+  .pitch{max-width:340px; display:flex; flex-direction:column; gap:22px}
+  .badge{
+    font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--accent-2); display:flex; align-items:center; gap:9px;
+  }
+  .badge .rank{
+    background:var(--accent); color:#0a0a12; font-weight:800; border-radius:7px;
+    padding:2px 8px; letter-spacing:0;
+  }
+  .pitch h1{
+    font-size:2.7rem; font-weight:800; line-height:1.02; letter-spacing:-.03em; text-wrap:balance;
+  }
+  .pitch .tag{color:var(--muted); font-size:1.02rem; line-height:1.55; text-wrap:pretty}
+  .feats{display:flex; flex-direction:column; gap:11px; margin-top:4px}
+  .feat{display:flex; gap:12px; align-items:flex-start; font-size:.92rem; color:var(--text)}
+  .feat b{display:block; font-weight:600}
+  .feat span{color:var(--muted); font-size:.85rem; line-height:1.45}
+  .feat .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:6px;flex:none;box-shadow:0 0 12px var(--accent)}
+  .hint{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.04em;line-height:1.7;border-top:1px solid var(--border);padding-top:16px}
+
+  /* ---------- phone ---------- */
+  .phone{
+    position:relative; width:340px; height:720px; border-radius:46px;
+    background:#000; padding:12px;
+    box-shadow:0 0 0 2px #23242c, 0 40px 90px -20px rgba(0,0,0,.8), 0 0 60px -20px var(--accent);
+    flex:none;
+  }
+  .screen{
+    position:relative; width:100%; height:100%; border-radius:36px; overflow:hidden;
+    background:#000; isolation:isolate;
+  }
+  /* wallpapers */
+  #wp{position:absolute; inset:0; z-index:0}
+  #wp canvas{width:100%;height:100%;display:block}
+  .wp-tint{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.35));z-index:1;pointer-events:none}
+
+  /* status bar */
+  .status{
+    position:relative; z-index:5; height:44px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 22px 0 26px; font-size:13px; font-weight:600;
+  }
+  .status .r{display:flex;align-items:center;gap:6px}
+  .status svg{width:16px;height:16px;fill:var(--text)}
+  .batt{font-variant-numeric:tabular-nums}
+
+  /* home surface */
+  .home{position:relative; z-index:4; height:calc(100% - 44px); display:flex; flex-direction:column; padding:6px 20px 0}
+
+  /* at-a-glance */
+  .glance{padding:10px 4px 16px; user-select:none}
+  .glance .date{font-size:13px;color:var(--accent-2);font-weight:600;letter-spacing:.02em}
+  .glance .wx{font-size:15px;color:var(--text);opacity:.92;display:flex;align-items:center;gap:8px;margin-top:2px}
+
+  /* search widget */
+  .search{
+    height:48px; border-radius:26px; display:flex; align-items:center; gap:11px; padding:0 16px;
+    background:rgba(255,255,255,.10); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.14); color:var(--text); cursor:text;
+    box-shadow:0 6px 20px -8px rgba(0,0,0,.5);
+  }
+  .search .g{font-weight:800;background:linear-gradient(90deg,#8b6cff,#4ea1ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:17px}
+  .search input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px;font-family:var(--font)}
+  .search input::placeholder{color:rgba(255,255,255,.5)}
+  .search .mic{opacity:.7}
+
+  /* app grid */
+  .grid-wrap{flex:1; overflow:hidden; padding-top:14px}
+  .grid{
+    display:grid; grid-template-columns:repeat(var(--grid-cols),1fr);
+    gap:6px 4px; align-content:start;
+  }
+  .app{
+    display:flex; flex-direction:column; align-items:center; gap:5px; padding:5px 0; cursor:grab;
+    -webkit-user-select:none; user-select:none; transition:transform .12s;
+  }
+  .app:active{cursor:grabbing}
+  .app.press{transform:scale(.86)}
+  .app.dragging{opacity:.35}
+  .app.dropcandidate .icon{box-shadow:0 0 0 3px var(--accent), 0 0 18px var(--accent)}
+  .icon{
+    width:var(--icon-size); height:var(--icon-size); border-radius:var(--icon-radius);
+    display:flex; align-items:center; justify-content:center; font-size:calc(var(--icon-size)*.44);
+    color:#fff; position:relative; overflow:hidden;
+    box-shadow:0 8px 18px -8px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.22);
+    transition:border-radius .25s, width .2s, height .2s, filter .2s;
+  }
+  .app .name{
+    font-size:11px; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.7); max-width:100%;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    opacity:var(--label); height:calc(var(--label) * 15px); transition:opacity .2s,height .2s;
+  }
+  /* folder */
+  .icon.folder{background:rgba(255,255,255,.16)!important;backdrop-filter:blur(10px);display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:20%}
+  .icon.folder span{font-size:0;width:100%;height:100%;border-radius:26%;display:flex;align-items:center;justify-content:center}
+  .icon.folder span i{font-size:calc(var(--icon-size)*.18);font-style:normal}
+
+  /* dock */
+  .dock{
+    margin:8px -8px 0; padding:14px 14px 22px; display:grid; grid-template-columns:repeat(4,1fr); gap:4px;
+    background:rgba(255,255,255,.08); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+    border-radius:32px 32px 0 0; border-top:1px solid rgba(255,255,255,.12);
+  }
+  .dock .app .name{display:none}
+  .page-dots{display:flex;justify-content:center;gap:6px;padding:6px 0 2px;z-index:4;position:relative}
+  .page-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4)}
+  .page-dots i.on{background:#fff;width:16px;border-radius:3px}
+
+  /* handle to open settings */
+  .fab{
+    position:absolute; z-index:6; right:16px; bottom:96px; width:46px; height:46px; border-radius:50%;
+    background:var(--accent); color:#0a0a12; border:none; cursor:pointer; font-size:22px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 26px -6px var(--accent); transition:transform .15s;
+  }
+  .fab:active{transform:scale(.9)}
+  .fab:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+  /* ---------- app drawer ---------- */
+  .drawer{
+    position:absolute; inset:0; z-index:20; transform:translateY(100%); transition:transform .4s cubic-bezier(.2,.9,.25,1);
+    background:rgba(14,15,20,.72); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
+    display:flex; flex-direction:column; padding:52px 18px 18px;
+  }
+  .drawer.open{transform:translateY(0)}
+  .drawer .dsearch{margin-bottom:16px}
+  .drawer .dgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 4px;overflow-y:auto;align-content:start}
+  .drawer .grab{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.4);cursor:pointer}
+
+  /* ---------- settings sheet ---------- */
+  .sheet{
+    position:absolute; inset:0; z-index:30; transform:translateY(100%); transition:transform .42s cubic-bezier(.2,.9,.25,1);
+    background:rgba(16,17,23,.92); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
+    display:flex; flex-direction:column;
+  }
+  .sheet.open{transform:translateY(0)}
+  .sheet header{padding:20px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+  .sheet header h2{font-size:19px;font-weight:700;letter-spacing:-.01em}
+  .sheet header .x{background:var(--surface-2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px}
+  .sheet .body{overflow-y:auto;padding:16px 18px 30px;display:flex;flex-direction:column;gap:20px}
+  .grp{display:flex;flex-direction:column;gap:12px}
+  .grp .gt{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .row{display:flex;align-items:center;justify-content:between;gap:12px}
+  .row label{font-size:14px;color:var(--text);flex:1}
+  .row .val{font-family:var(--mono);font-size:12px;color:var(--accent-2);font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:3px;background:var(--border);flex:1;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--accent);cursor:pointer}
+  /* toggle */
+  .tog{position:relative;width:44px;height:26px;border-radius:14px;background:var(--border);cursor:pointer;transition:background .2s;flex:none}
+  .tog.on{background:var(--accent)}
+  .tog::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}
+  .tog.on::after{left:21px}
+  /* chip pickers */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:7px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);font-size:12.5px;cursor:pointer;transition:all .15s}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#0a0a12;font-weight:600}
+  .chip:hover{border-color:var(--accent)}
+  .shapes{display:flex;flex-wrap:wrap;gap:10px}
+  .shape{width:40px;height:40px;background:var(--accent);cursor:pointer;border:2px solid transparent;transition:border .15s}
+  .shape.on{border-color:#fff}
+  .themes{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .theme{aspect-ratio:1;border-radius:12px;cursor:pointer;border:2px solid transparent;position:relative;overflow:hidden;font-size:0}
+  .theme.on{border-color:#fff}
+  .swatch{position:relative;height:44px;border-radius:12px;cursor:pointer;border:2px solid var(--border)}
+  .swatch.on{border-color:#fff}
+  input[type=color]{width:42px;height:32px;border:none;background:none;cursor:pointer;padding:0}
+
+  .toast{
+    position:absolute; z-index:40; left:50%; bottom:70px; transform:translateX(-50%) translateY(20px);
+    background:rgba(0,0,0,.82); color:#fff; padding:9px 18px; border-radius:20px; font-size:13px;
+    opacity:0; transition:opacity .25s,transform .25s; pointer-events:none; backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.12);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  @media (max-width:760px){body{gap:32px;padding:28px 16px}.pitch{max-width:340px}}
+</style>
+</head>
+<body>
+
+  <section class="pitch">
+    <div class="badge"><span class="rank">#6</span> Launcher Countdown</div>
+    <h1>Victor Launcher</h1>
+    <p class="tag">Stable, modern, and endlessly flexible — the safest all-round pick. A full home replacement, not a skin.</p>
+    <div class="feats">
+      <div class="feat"><span class="dot"></span><div><b>Adaptive icon color</b><span>Themed icons pull an accent from your wallpaper — or pick your own.</span></div></div>
+      <div class="feat"><span class="dot"></span><div><b>Icon shapes &amp; themes</b><span>Six shapes, eight full themes, live wallpapers — all applied instantly.</span></div></div>
+      <div class="feat"><span class="dot"></span><div><b>Deep power-user settings</b><span>Grid, icons, gestures, folders, badges — the options power users want.</span></div></div>
+    </div>
+    <p class="hint">TAP the ⚙ to open settings · DRAG one app onto another to make a folder · SWIPE the search or ↑ handle for the app drawer</p>
+  </section>
+
+  <div class="phone">
+    <div class="screen" id="screen">
+      <div id="wp"><canvas id="wpc"></canvas></div>
+      <div class="wp-tint"></div>
+
+      <!-- status bar -->
+      <div class="status">
+        <span id="clock">9:41</span>
+        <span class="r">
+          <svg viewBox="0 0 24 24"><path d="M2 20h4V10H2v10zm6 0h4V4H8v16zm6 0h4V13h-4v7zm6 0h2V7h-2v13z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 4C7 4 3 8 2 10l10 10L22 10C21 8 17 4 12 4z" opacity=".9"/></svg>
+          <span class="batt">84%</span>
+        </span>
+      </div>
+
+      <!-- home -->
+      <div class="home">
+        <div class="glance">
+          <div class="date" id="glance-date">Wed, Jul 9</div>
+          <div class="wx">☀️ 74° &nbsp;·&nbsp; Sunny in Fort Wayne</div>
+        </div>
+        <div class="search" id="home-search">
+          <span class="g">G</span>
+          <input placeholder="Search apps, contacts, web" readonly>
+          <span class="mic">🎙️</span>
+        </div>
+        <div class="grid-wrap">
+          <div class="grid" id="grid"></div>
+        </div>
+        <div class="page-dots"><i class="on"></i><i></i><i></i></div>
+        <div class="dock" id="dock"></div>
+      </div>
+
+      <button class="fab" id="fab" aria-label="Open Victor settings">⚙</button>
+
+      <!-- app drawer -->
+      <div class="drawer" id="drawer">
+        <div class="grab" id="drawer-grab"></div>
+        <div class="search dsearch">
+          <span class="g">≡</span>
+          <input placeholder="Search all apps" id="drawer-input">
+        </div>
+        <div class="dgrid" id="dgrid"></div>
+      </div>
+
+      <!-- settings sheet -->
+      <div class="sheet" id="sheet">
+        <header>
+          <h2>Victor Settings</h2>
+          <button class="x" id="sheet-x" aria-label="Close settings">✕</button>
+        </header>
+        <div class="body">
+
+          <div class="grp">
+            <div class="gt">Themes</div>
+            <div class="themes" id="themes"></div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Accent · Adaptive icon color</div>
+            <div class="row"><label>Themed icons (from wallpaper)</label><div class="tog on" id="tog-themed"></div></div>
+            <div class="row"><label>Manual accent</label><input type="color" id="accent-pick" value="#8b6cff"></div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Icon shape</div>
+            <div class="shapes" id="shapes"></div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Icons</div>
+            <div class="row"><label>Icon size</label><input type="range" id="s-icon" min="44" max="72" value="56"><span class="val" id="v-icon">56</span></div>
+            <div class="row"><label>Show labels</label><div class="tog on" id="tog-label"></div></div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Grid</div>
+            <div class="row"><label>Columns</label><input type="range" id="s-cols" min="3" max="6" value="4"><span class="val" id="v-cols">4</span></div>
+            <div class="row"><label>Rows</label><input type="range" id="s-rows" min="4" max="6" value="5"><span class="val" id="v-rows">5</span></div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Live wallpaper</div>
+            <div class="chips" id="walls"></div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Gestures</div>
+            <div class="row"><label>Swipe up</label><div class="val" id="gest">App drawer</div></div>
+            <div class="chips" id="gestures"></div>
+          </div>
+
+          <div class="grp">
+            <div class="gt">Folders &amp; badges</div>
+            <div class="row"><label>Notification badges</label><div class="tog on" id="tog-badge"></div></div>
+            <div class="row"><label>Folder preview</label><div class="val">2×2 grid</div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const root=document.documentElement;
+const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+/* ---------- app data ---------- */
+const APPS=[
+  {n:"Messages",i:"💬",c:"#34c759"},{n:"Phone",i:"📞",c:"#30d158"},{n:"Photos",i:"🌸",c:"#ff2d55"},
+  {n:"Camera",i:"📷",c:"#5e5ce6"},{n:"Music",i:"♫",c:"#fa2d48"},{n:"Weather",i:"⛅",c:"#4ea1ff"},
+  {n:"Clock",i:"🕐",c:"#1c1c1e"},{n:"Notes",i:"📝",c:"#ffcc00"},{n:"Maps",i:"🧭",c:"#34c759"},
+  {n:"Calendar",i:"📅",c:"#ff3b30"},{n:"Mail",i:"✉️",c:"#1d9bf0"},{n:"Files",i:"📁",c:"#0a84ff"},
+  {n:"Health",i:"❤️",c:"#ff375f"},{n:"Wallet",i:"💳",c:"#1c1c1e"},{n:"Store",i:"🛍️",c:"#0a84ff"},
+  {n:"Podcasts",i:"🎙️",c:"#9d4edd"},{n:"Settings",i:"⚙️",c:"#8e8e93"},{n:"Fitness",i:"🏃",c:"#a3e635"},
+  {n:"News",i:"📰",c:"#ff453a"},{n:"Books",i:"📚",c:"#ff9f0a"},{n:"Voice",i:"🎤",c:"#ff2d55"},
+  {n:"Reminders",i:"☑️",c:"#ff9500"},{n:"Stocks",i:"📈",c:"#1c1c1e"},{n:"Home",i:"🏠",c:"#f59e0b"}
+];
+const DOCK=[{n:"Phone",i:"📞",c:"#30d158"},{n:"Messages",i:"💬",c:"#34c759"},{n:"Camera",i:"📷",c:"#5e5ce6"},{n:"Store",i:"🛍️",c:"#0a84ff"}];
+
+/* home items are a mutable list (apps + folders) */
+let items = APPS.slice(0,16).map(a=>({type:"app",...a}));
+
+/* ---------- render ---------- */
+function iconStyle(a){
+  const themed = $("#tog-themed").classList.contains("on");
+  const accent = getComputedStyle(root).getPropertyValue("--accent").trim();
+  if(a.type==="folder"){return "";}
+  const bg = themed
+    ? `linear-gradient(145deg, ${accent}, ${shade(accent,-28)})`
+    : `linear-gradient(145deg, ${a.c}, ${shade(a.c,-30)})`;
+  return `background:${bg}`;
+}
+function shade(hex,p){
+  hex=hex.replace("#","");if(hex.length===3)hex=hex.split("").map(x=>x+x).join("");
+  let r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+  r=Math.max(0,Math.min(255,r+p));g=Math.max(0,Math.min(255,g+p));b=Math.max(0,Math.min(255,b+p));
+  return `rgb(${r},${g},${b})`;
+}
+function appEl(a,idx,inGrid){
+  const el=document.createElement("div"); el.className="app"; el.dataset.idx=idx;
+  let iconInner="";
+  if(a.type==="folder"){
+    iconInner=a.apps.slice(0,4).map(x=>`<span style="background:${x.c}"><i>${x.i}</i></span>`).join("");
+    el.innerHTML=`<div class="icon folder">${iconInner}</div><div class="name">${a.n}</div>`;
+  }else{
+    el.innerHTML=`<div class="icon" style="${iconStyle(a)}">${a.i}</div><div class="name">${a.n}</div>`;
+  }
+  return el;
+}
+function renderGrid(){
+  const g=$("#grid"); g.innerHTML="";
+  items.forEach((a,idx)=>g.appendChild(appEl(a,idx,true)));
+  bindDrag();
+}
+function renderDock(){
+  const d=$("#dock"); d.innerHTML="";
+  DOCK.forEach(a=>{const e=appEl({type:"app",...a}); e.style.cursor="pointer"; d.appendChild(e);});
+}
+function renderDrawer(filter=""){
+  const dg=$("#dgrid"); dg.innerHTML="";
+  APPS.filter(a=>a.n.toLowerCase().includes(filter.toLowerCase())).forEach(a=>{
+    const e=appEl({type:"app",...a}); dg.appendChild(e);
+  });
+}
+
+/* ---------- press feedback ---------- */
+document.addEventListener("pointerdown",e=>{const a=e.target.closest(".app");if(a)a.classList.add("press")});
+document.addEventListener("pointerup",()=>$$(".app.press").forEach(a=>a.classList.remove("press")));
+document.addEventListener("pointercancel",()=>$$(".app.press").forEach(a=>a.classList.remove("press")));
+
+/* ---------- drag to folder ---------- */
+function bindDrag(){
+  let dragEl=null,dragIdx=null,ghost=null,target=null;
+  $$("#grid .app").forEach(el=>{
+    el.addEventListener("pointerdown",start);
+  });
+  function start(e){
+    if(e.button!==undefined&&e.button!==0)return;
+    dragEl=e.currentTarget; dragIdx=+dragEl.dataset.idx;
+    const t=setTimeout(()=>begin(e),160); // long-press to drag
+    const cancel=()=>{clearTimeout(t);document.removeEventListener("pointerup",cancel);};
+    document.addEventListener("pointerup",cancel);
+  }
+  function begin(e){
+    dragEl.classList.add("dragging");
+    ghost=dragEl.querySelector(".icon").cloneNode(true);
+    ghost.style.cssText+=";position:fixed;z-index:999;pointer-events:none;opacity:.9;transform:scale(1.1);transition:none";
+    document.body.appendChild(ghost); move(e);
+    document.addEventListener("pointermove",move);
+    document.addEventListener("pointerup",end);
+  }
+  function move(e){
+    if(!ghost)return;
+    const s=$("#grid").querySelector(".icon");
+    ghost.style.left=(e.clientX-30)+"px"; ghost.style.top=(e.clientY-30)+"px";
+    const over=document.elementFromPoint(e.clientX,e.clientY);
+    const app=over&&over.closest("#grid .app");
+    $$("#grid .app").forEach(a=>a.classList.remove("dropcandidate"));
+    target=null;
+    if(app&&app!==dragEl){app.classList.add("dropcandidate");target=+app.dataset.idx;}
+  }
+  function end(){
+    document.removeEventListener("pointermove",move);
+    document.removeEventListener("pointerup",end);
+    if(ghost){ghost.remove();ghost=null;}
+    if(dragEl)dragEl.classList.remove("dragging");
+    $$("#grid .app").forEach(a=>a.classList.remove("dropcandidate"));
+    if(target!==null&&target!==dragIdx){ makeFolder(dragIdx,target); }
+    dragEl=null;dragIdx=null;target=null;
+  }
+}
+function makeFolder(from,to){
+  const a=items[from], b=items[to];
+  const collect=x=> x.type==="folder"?x.apps:[{n:x.n,i:x.i,c:x.c}];
+  const apps=[...collect(b),...collect(a)];
+  const folder={type:"folder",n: b.type==="folder"?b.n:"Folder",apps};
+  items[to]=folder;
+  items.splice(from,1);
+  renderGrid();
+  toast(`Folder created · ${apps.length} apps`);
+}
+
+/* ---------- open/close panels ---------- */
+const sheet=$("#sheet"),drawer=$("#drawer");
+$("#fab").onclick=()=>sheet.classList.add("open");
+$("#sheet-x").onclick=()=>sheet.classList.remove("open");
+function openDrawer(){drawer.classList.add("open");renderDrawer();setTimeout(()=>$("#drawer-input").focus(),300);}
+function closeDrawer(){drawer.classList.remove("open");}
+$("#drawer-grab").onclick=closeDrawer;
+$("#home-search").onclick=openDrawer;
+$("#drawer-input").addEventListener("input",e=>renderDrawer(e.target.value));
+
+/* swipe up on home opens drawer */
+let sy=null;
+$("#screen").addEventListener("pointerdown",e=>{ if(e.clientY>0)sy=e.clientY; });
+$("#screen").addEventListener("pointerup",e=>{
+  if(sy===null)return; const dy=sy-e.clientY;
+  if(dy>90 && !sheet.classList.contains("open") && !drawer.classList.contains("open") && e.target.closest(".grid-wrap,.dock,.page-dots")) openDrawer();
+  if(dy<-90 && drawer.classList.contains("open")) closeDrawer();
+  sy=null;
+});
+
+/* ---------- settings wiring ---------- */
+function setVar(k,v){root.style.setProperty(k,v);}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1600);}
+
+/* themes */
+const THEMES={
+  "Material You":{void:"#0d0e12",surface:"#1a1b22",surface2:"#22232c",border:"#2a2c36",text:"#e8eaf0",accent:"#8b6cff"},
+  "Light":{void:"#eef0f6",surface:"#ffffff",surface2:"#f2f3f9",border:"#dfe2ec",text:"#1a1c22",accent:"#6c4cff"},
+  "Dark":{void:"#14151b",surface:"#1e2028",surface2:"#262832",border:"#333644",text:"#e8eaf0",accent:"#7aa2ff"},
+  "AMOLED":{void:"#000000",surface:"#0a0a0a",surface2:"#111",border:"#1c1c1c",text:"#f2f2f2",accent:"#00e0b8"},
+  "Sunset":{void:"#1a0f1e",surface:"#271428",surface2:"#331932",border:"#43213f",text:"#ffe8f0",accent:"#ff6b8b"},
+  "Ocean":{void:"#07131f",surface:"#0e2233",surface2:"#132c40",border:"#1c3a52",text:"#dff2ff",accent:"#33c4ff"},
+  "Forest":{void:"#0c1611",surface:"#132219",surface2:"#1a2d22",border:"#243d2e",text:"#e2f5e8",accent:"#4ade80"},
+  "Mono":{void:"#101010",surface:"#181818",surface2:"#202020",border:"#2c2c2c",text:"#ededed",accent:"#c9c9c9"}
+};
+const themesEl=$("#themes");
+Object.entries(THEMES).forEach(([name,t],i)=>{
+  const d=document.createElement("div"); d.className="theme"+(i===0?" on":""); d.title=name;
+  d.style.background=`linear-gradient(135deg,${t.surface},${t.void})`;
+  d.innerHTML=`<span style="position:absolute;right:6px;bottom:6px;width:12px;height:12px;border-radius:50%;background:${t.accent}"></span>`;
+  d.onclick=()=>{applyTheme(name);$$("#themes .theme").forEach(x=>x.classList.remove("on"));d.classList.add("on");};
+  themesEl.appendChild(d);
+});
+function applyTheme(name){
+  const t=THEMES[name];
+  setVar("--void",t.void);setVar("--surface",t.surface);setVar("--surface-2",t.surface2);
+  setVar("--border",t.border);setVar("--text",t.text);
+  if($("#tog-themed").classList.contains("on")){setVar("--accent",t.accent);setVar("--accent-2",shade(t.accent,40));$("#accent-pick").value=rgbHex(t.accent);}
+  renderGrid();renderDock();toast(name+" theme");
+}
+function rgbHex(c){if(c.startsWith("#"))return c;const m=c.match(/\d+/g);return"#"+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,"0")).join("");}
+
+/* accent */
+$("#tog-themed").onclick=function(){this.classList.toggle("on");renderGrid();renderDock();toast(this.classList.contains("on")?"Themed icons on":"Original colors");};
+$("#accent-pick").oninput=e=>{setVar("--accent",e.target.value);setVar("--accent-2",shade(e.target.value,50));renderGrid();renderDock();};
+
+/* shapes */
+const SHAPES={Circle:"50%","Squircle":"38% / 42%","Rounded":"26%","Teardrop":"50% 50% 50% 12%","Hexagon":"clip","Squircle-R":"44%"};
+const shapesEl=$("#shapes");
+Object.entries(SHAPES).forEach(([name,r],i)=>{
+  const s=document.createElement("div"); s.className="shape"+(i===2?" on":""); s.title=name;
+  s.style.background="var(--accent)";
+  if(name==="Hexagon"){s.style.clipPath="polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)";}
+  else s.style.borderRadius=r;
+  s.onclick=()=>{
+    $$("#shapes .shape").forEach(x=>x.classList.remove("on"));s.classList.add("on");
+    if(name==="Hexagon"){$$(".icon:not(.folder)").forEach(ic=>ic.style.clipPath="polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)");setVar("--icon-radius","0");}
+    else{$$(".icon").forEach(ic=>ic.style.clipPath="");setVar("--icon-radius",r);}
+    toast(name+" icons");
+  };
+  shapesEl.appendChild(s);
+});
+setVar("--icon-radius","26%");
+
+/* sliders */
+$("#s-icon").oninput=e=>{setVar("--icon-size",e.target.value+"px");$("#v-icon").textContent=e.target.value;};
+$("#s-cols").oninput=e=>{setVar("--grid-cols",e.target.value);$("#v-cols").textContent=e.target.value;};
+$("#s-rows").oninput=e=>{setVar("--grid-rows",e.target.value);$("#v-rows").textContent=e.target.value;
+  items=APPS.slice(0,Math.min(APPS.length, e.target.value* (+$("#s-cols").value||4))).map(a=>({type:"app",...a}));renderGrid();};
+$("#tog-label").onclick=function(){this.classList.toggle("on");setVar("--label",this.classList.contains("on")?"1":"0");};
+$("#tog-badge").onclick=function(){this.classList.toggle("on");toast(this.classList.contains("on")?"Badges on":"Badges off");};
+
+/* gestures */
+["App drawer","Notifications","Search","Lock screen","Recents"].forEach((g,i)=>{
+  const c=document.createElement("div");c.className="chip"+(i===0?" on":"");c.textContent=g;
+  c.onclick=()=>{$$("#gestures .chip").forEach(x=>x.classList.remove("on"));c.classList.add("on");$("#gest").textContent=g;toast("Swipe up → "+g);};
+  $("#gestures").appendChild(c);
+});
+
+/* ---------- live wallpapers ---------- */
+const cvs=$("#wpc"),ctx=cvs.getContext("2d");
+let W,H,wallMode="Aurora",t=0,raf=null,stars=[],parts=[];
+function size(){const r=cvs.getBoundingClientRect();W=cvs.width=r.width*2;H=cvs.height=r.height*2;ctx.setTransform(2,0,0,2,0,0);}
+function accent(){return getComputedStyle(root).getPropertyValue("--accent").trim()||"#8b6cff";}
+function initStars(){stars=Array.from({length:70},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.4+.3,tw:Math.random()*6}));}
+function initParts(){parts=Array.from({length:60},()=>({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0006,vy:(Math.random()-.5)*.0006,r:Math.random()*2+1}));}
+initStars();initParts();
+function draw(){
+  const w=W/2,h=H/2; ctx.clearRect(0,0,w,h); t+=reduce?0:0.006;
+  const a=accent();
+  if(wallMode==="Aurora"){
+    const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,shade(a,-70));g.addColorStop(1,"#07070c");
+    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    for(let i=0;i<3;i++){
+      ctx.beginPath();ctx.globalAlpha=.20;
+      const yo=h*.3+Math.sin(t+i)*40+i*70;
+      ctx.moveTo(0,yo);
+      for(let x=0;x<=w;x+=16)ctx.lineTo(x,yo+Math.sin(x*.02+t*1.5+i)*30);
+      ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();
+      ctx.fillStyle=[a,shade(a,50),shade(a,-30)][i];ctx.fill();
+    }ctx.globalAlpha=1;
+  }else if(wallMode==="Waves"){
+    const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,shade(a,-40));g.addColorStop(1,"#08080e");
+    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    for(let i=0;i<4;i++){ctx.beginPath();ctx.globalAlpha=.14;const yo=h*.5+i*30;
+      ctx.moveTo(0,yo);for(let x=0;x<=w;x+=14)ctx.lineTo(x,yo+Math.sin(x*.015+t*2+i*.8)*36);
+      ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fillStyle=a;ctx.fill();}ctx.globalAlpha=1;
+  }else if(wallMode==="Particles"){
+    ctx.fillStyle="#08080e";ctx.fillRect(0,0,w,h);
+    parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>1)p.vx*=-1;if(p.y<0||p.y>1)p.vy*=-1;
+      ctx.beginPath();ctx.arc(p.x*w,p.y*h,p.r,0,7);ctx.fillStyle=a;ctx.globalAlpha=.6;ctx.fill();});
+    ctx.globalAlpha=.12;ctx.strokeStyle=a;
+    for(let i=0;i<parts.length;i++)for(let j=i+1;j<parts.length;j++){
+      const dx=(parts[i].x-parts[j].x)*w,dy=(parts[i].y-parts[j].y)*h,d=Math.hypot(dx,dy);
+      if(d<70){ctx.beginPath();ctx.moveTo(parts[i].x*w,parts[i].y*h);ctx.lineTo(parts[j].x*w,parts[j].y*h);ctx.stroke();}
+    }ctx.globalAlpha=1;
+  }else{ // Starfield
+    const g=ctx.createRadialGradient(w*.5,h*.3,0,w*.5,h*.3,h);g.addColorStop(0,shade(a,-55));g.addColorStop(1,"#04040a");
+    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    stars.forEach(s=>{const tw=(Math.sin(t*2+s.tw)*.5+.5)*.8+.2;ctx.beginPath();ctx.arc(s.x*w,s.y*h,s.r,0,7);ctx.fillStyle="#fff";ctx.globalAlpha=tw;ctx.fill();});
+    ctx.globalAlpha=1;
+  }
+  if(!reduce)raf=requestAnimationFrame(draw);
+}
+const walls=["Aurora","Waves","Particles","Starfield"];
+walls.forEach((wn,i)=>{const c=document.createElement("div");c.className="chip"+(i===0?" on":"");c.textContent=wn;
+  c.onclick=()=>{wallMode=wn;$$("#walls .chip").forEach(x=>x.classList.remove("on"));c.classList.add("on");if(reduce)draw();toast(wn+" wallpaper");};
+  $("#walls").appendChild(c);});
+
+/* ---------- clock ---------- */
+function tick(){const d=new Date();let h=d.getHours(),m=d.getMinutes();const ap=h>=12?"":"";h=h%12||12;
+  $("#clock").textContent=`${h}:${String(m).padStart(2,"0")}`;
+  $("#glance-date").textContent=d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});}
+tick();setInterval(tick,10000);
+
+/* ---------- boot ---------- */
+function boot(){size();renderGrid();renderDock();if(reduce)draw();else draw();}
+addEventListener("resize",()=>{size();});
+boot();
+</script>
+</body>
+</html>

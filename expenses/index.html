@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Expense Hunt — mailbox query pack</title>
+<link rel="stylesheet" href="/xen-tokens.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--color-background-app);
+    color:var(--color-text-neutrals);
+    font-family:var(--font-family);
+    font-size:var(--font-size-body-medium);
+    line-height:var(--font-line-height-medium);
+    letter-spacing:var(--font-letter-spacing-body);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:56px 24px 120px}
+  .kicker{
+    font:var(--font-label-small-emphasized);
+    letter-spacing:.18em;text-transform:uppercase;
+    color:var(--color-text-neutrals-weak);margin-bottom:12px;
+  }
+  h1{
+    font-size:clamp(34px,6vw,60px);
+    font-weight:var(--font-weight-fullscreen);
+    line-height:1;letter-spacing:var(--font-letter-spacing-headline);
+    margin-bottom:16px;
+  }
+  .lede{font-size:var(--font-size-body-large);color:var(--color-text-neutrals-subtle);max-width:64ch}
+  .lede b{color:var(--color-text-neutrals);font-weight:var(--font-weight-emphasized)}
+
+  section{margin-top:56px}
+  h2{
+    font-size:var(--font-size-title-medium);
+    font-weight:var(--font-weight-fullscreen);
+    letter-spacing:var(--font-letter-spacing-title);
+    margin-bottom:6px;
+  }
+  .sub{color:var(--color-text-neutrals-subtle);max-width:70ch;margin-bottom:22px;font-size:var(--font-size-body-small)}
+
+  /* query cards */
+  .q{
+    border:1px solid var(--color-border-neutrals-weak);
+    border-radius:var(--border-radius-100);
+    background:var(--color-background-elevated);
+    padding:18px 20px;margin-bottom:12px;
+  }
+  .q .qh{display:flex;justify-content:space-between;gap:16px;align-items:baseline;margin-bottom:10px;flex-wrap:wrap}
+  .q .qt{font-weight:var(--font-weight-emphasized)}
+  .q .hits{
+    font:var(--font-label-xsmall-emphasized);
+    padding:3px 9px;border-radius:var(--border-radius-50);
+    background:var(--color-background-tag);white-space:nowrap;
+  }
+  .q pre{
+    background:var(--color-background-grouped);
+    border:1px solid var(--color-border-neutrals-weak);
+    border-radius:var(--border-radius-50);
+    padding:12px 14px;overflow-x:auto;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:var(--font-size-body-small);
+    line-height:1.6;user-select:all;
+  }
+  .q .why{margin-top:10px;font-size:var(--font-size-body-small);color:var(--color-text-neutrals-subtle)}
+
+  /* findings table */
+  .tbl{width:100%;overflow-x:auto;border:1px solid var(--color-border-neutrals-weak);border-radius:var(--border-radius-100)}
+  table{width:100%;border-collapse:collapse;min-width:640px}
+  th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--color-border-neutrals-weak);font-size:var(--font-size-body-small);vertical-align:top}
+  th{
+    font:var(--font-label-xsmall-emphasized);
+    letter-spacing:.12em;text-transform:uppercase;
+    color:var(--color-text-neutrals-weak);
+    background:var(--color-background-grouped);
+  }
+  tr:last-child td{border-bottom:none}
+  td.amt{font-variant-numeric:tabular-nums;font-weight:var(--font-weight-emphasized);white-space:nowrap}
+  .pill{display:inline-block;padding:2px 8px;border-radius:var(--border-radius-50);font:var(--font-label-xsmall-emphasized);white-space:nowrap}
+  .p-fail{background:var(--color-background-button-primary);color:var(--color-text-on-accent)}
+  .p-live{background:var(--color-background-tag)}
+  .p-unk{background:var(--color-background-grouped);color:var(--color-text-neutrals-weak)}
+
+  .note{
+    border-left:3px solid var(--color-border-neutrals-strong);
+    padding:14px 18px;margin-top:22px;
+    background:var(--color-background-grouped);
+    border-radius:0 var(--border-radius-50) var(--border-radius-50) 0;
+    font-size:var(--font-size-body-small);
+    color:var(--color-text-neutrals-subtle);
+  }
+  .note b{color:var(--color-text-neutrals)}
+  ol{padding-left:20px;color:var(--color-text-neutrals-subtle);font-size:var(--font-size-body-small)}
+  ol li{margin-bottom:8px}
+  ol li b{color:var(--color-text-neutrals)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--color-border-neutrals-weak);
+    color:var(--color-text-neutrals-weak);font-size:var(--font-size-body-small)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="kicker">Xen · expense hunt</div>
+<h1>Find the rest<br>of the money.</h1>
+<p class="lede">Ten mailbox queries, ordered by how much they actually find. The insight that matters: <b>failed-payment notices are a better inventory than receipts</b> — a dead card keeps bouncing monthly and each bounce names the vendor and the exact amount, while a cancelled sub goes silent.</p>
+
+<section>
+  <h2>The Spark prompt</h2>
+  <p class="sub">Paste this whole block into Spark's AI. It's written to make Spark do the sweep itself and hand back a table instead of a pile of threads.</p>
+  <div class="q">
+    <div class="qh"><span class="qt">Copy this →</span><span class="hits">for Spark AI</span></div>
+    <pre>Search my entire mailbox, all folders including archive and trash, going
+back two years, and build me a complete inventory of every recurring
+charge and subscription.
+
+Look for all of these, not just receipts:
+  - failed or declined payment notices ("was unsuccessful", "payment
+    failed", "action required", "update your payment method")
+  - renewal warnings ("will renew", "renews on", "auto-renew")
+  - receipts and invoices
+  - anything from Stripe, PayPal, Square, Paddle, Chargebee, FastSpring
+  - Apple and Google Play subscription receipts
+  - free trials that started and were never cancelled
+  - cloud and hosting bills (Railway, Vercel, Netlify, Cloudflare,
+    Hetzner, DigitalOcean, AWS, Supabase)
+  - price-increase notices
+
+Return one row per vendor with these columns:
+  vendor | amount | billing cycle | last charge date | status | which
+  email address it bills to
+
+For status use exactly one of: ACTIVE, FAILING, CANCELLED, UNKNOWN.
+Mark FAILING when a charge bounced and was retried and no later
+success appears. Mark CANCELLED only if there is an explicit
+cancellation email.
+
+Then give me three separate lists at the bottom:
+  1. Charges still being attempted against a card that is declining
+  2. Subscriptions I have not opened an email from in over six months
+  3. Anything where you could not determine the amount
+
+Do not guess an amount. If it is not stated in the email, write
+"not stated" and tell me which email to open to find it.
+Sort the main table by annual cost, highest first.</pre>
+    <p class="why">Two things make this work: it asks for failed charges (most people only ask for receipts, which hides everything billed to a dead card), and it forbids guessing amounts — otherwise the AI fills the gaps with plausible fiction.</p>
+  </div>
+</section>
+
+<section>
+  <h2>The query pack</h2>
+  <p class="sub">Paste into the Gmail search bar as-is. Run them in this order — each one is written to catch what the one above it misses.</p>
+
+  <div class="q">
+    <div class="qh"><span class="qt">1 · Failed charges — the loudest signal</span><span class="hits">highest yield</span></div>
+    <pre>subject:("was unsuccessful" OR "payment failed" OR "declined" OR "action required" OR "update your payment") newer_than:2y</pre>
+    <p class="why">Every one of these names a vendor and a dollar amount. Repeats mean the sub is still active and still trying to bill.</p>
+  </div>
+
+  <div class="q">
+    <div class="qh"><span class="qt">2 · Renewal warnings — catches the ones that never fail</span><span class="hits">high yield</span></div>
+    <pre>subject:("will renew" OR "renews on" OR "auto-renew" OR "renewal notice" OR "subscription will") newer_than:1y</pre>
+    <p class="why">Legally required notices. These surface healthy subs that never bounce, so receipts alone would hide them.</p>
+  </div>
+
+  <div class="q">
+    <div class="qh"><span class="qt">3 · Receipts, the exact phrasing</span><span class="hits">clean</span></div>
+    <pre>subject:("your receipt from" OR "receipt for your payment" OR "payment receipt" OR "invoice from") newer_than:1y</pre>
+    <p class="why">Deliberately narrow. Broad receipt searches drown in newsletters — this one stays clean.</p>
+  </div>
+
+  <div class="q">
+    <div class="qh"><span class="qt">4 · Payment processors — the chokepoint</span><span class="hits">high yield</span></div>
+    <pre>{from:stripe.com from:paypal.com from:squareup.com from:braintree from:chargebee from:paddle.com from:fastspring} newer_than:1y</pre>
+    <p class="why">Most SaaS bills through a handful of processors. Hit the processor and you catch vendors you forgot the name of.</p>
+  </div>
+
+  <div class="q">
+    <div class="qh"><span class="qt">5 · App-store subscriptions — invisible to card statements by name</span><span class="hits">often missed</span></div>
+    <pre>{from:apple.com from:google.com} subject:(receipt OR subscription OR "your invoice" OR purchase) newer_than:1y</pre>
+    <p class="why">Apple and Google bill as one lump. The itemization lives only in these emails.</p>
+  </div>
+
+  <div class="q">
+    <div class="qh"><span class="qt">6 · Free trials about to bite</span><span class="hits">preventive</span></div>
+    <pre>subject:("trial" OR "trial ends" OR "trial expires" OR "welcome to") newer_than:6m</pre>
+    <p class="why">Catches the charge before it lands rather than after.</p>
+  </div>
+
+  <div class="q">
+    <div class="qh"><span class="qt">7 · Cancellations — so you don't chase ghosts</span><span class="hits">subtractive</span></div>
+    <pre>subject:("cancelled" OR "canceled" OR "has ended" OR "we're sorry to see you go" OR "subscription ended") newer_than:2y</pre>
+    <p class="why">Run this against the list from queries 1–5 and strike off anything already dead.</p>
+  </div>
+
+  <div class="q">
+    <div class="qh"><span class="qt">8 · Price hikes you agreed to by not replying</span><span class="hits">sneaky</span></div>
+    <pre>subject:("price" OR "pricing update" OR "changes to your plan" OR "new rate") newer_than:1y</pre>
+    <p class="why">The amount you remember is often not the amount you're paying.</p>
+  </div>
+
+  <div class="q">
+    <div class="qh"><span class="qt">9 · Infrastructure metered billing — variable, so easy to miss</span><span class="hits">variable cost</span></div>
+    <pre>{from:railway.app from:vercel.com from:netlify.com from:cloudflare.com from:hetzner from:digitalocean from:aws-marketing from:supabase} newer_than:1y</pre>
+    <p class="why">Usage-based bills change every month, so they never look like a "subscription" in your head.</p>
+  </div>
+
+  <div class="q">
+    <div class="qh"><span class="qt">10 · The catch-all sweep</span><span class="hits">last pass</span></div>
+    <pre>category:purchases OR label:^smartlabel_receipt newer_than:1y</pre>
+    <p class="why">Gmail's own auto-classifier. Run it last to catch whatever the nine above didn't phrase-match.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What ran already</h2>
+  <p class="sub">Queries 1, 3 and 4 executed live against <code>selfexec.com@gmail.com</code>. Real results, not estimates.</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Vendor</th><th>Amount</th><th>State</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>Cal.com</b></td><td class="amt">$5.00 / mo</td>
+        <td><span class="pill p-fail">card declining</span></td>
+        <td>20+ failed charges Nov 2025 → Jul 28 2026, still retrying. Last successful receipt Jun 28 2026.</td>
+      </tr>
+      <tr>
+        <td><b>X (Twitter)</b></td><td class="amt">$20.00 / mo</td>
+        <td><span class="pill p-fail">card declining</span></td>
+        <td>Failed Jun 9–23 2026, seven attempts. Last successful receipt May 9 2026.</td>
+      </tr>
+      <tr>
+        <td><b>Photoroom Pro</b></td><td class="amt">amount not in notice</td>
+        <td><span class="pill p-live">renewing</span></td>
+        <td>Unbroken monthly renewal on the 6th, Dec 2025 → Jul 2026. Never bounced — receipts-only search would miss it.</td>
+      </tr>
+      <tr>
+        <td><b>Railway</b></td><td class="amt">$6.90</td>
+        <td><span class="pill p-unk">last seen Nov 2025</span></td>
+        <td>Receipt Oct 2025, failed charge Nov 30 2025, silent since. Metered — amount varies.</td>
+      </tr>
+      <tr>
+        <td><b>Suno</b></td><td class="amt">amount not in notice</td>
+        <td><span class="pill p-unk">unconfirmed</span></td>
+        <td>Receipt Apr 22 2026. No renewal notices since — needs the body opened to confirm cadence.</td>
+      </tr>
+      <tr>
+        <td><b>PayPal</b></td><td class="amt">separate ledger</td>
+        <td><span class="pill p-live">active</span></td>
+        <td>Monthly account statements arriving. Anything billed through PayPal will not appear in the Stripe sweep.</td>
+      </tr>
+      <tr>
+        <td><b>Sliplane</b></td><td class="amt">unknown</td>
+        <td><span class="pill p-unk">account exists</span></td>
+        <td>Account <code>selfexeccom-cloud</code> confirmed via a ToS notice. No billing mail found yet.</td>
+      </tr>
+      <tr>
+        <td><b>Tello</b></td><td class="amt">unknown</td>
+        <td><span class="pill p-unk">account exists</span></td>
+        <td>Mobile carrier, marketing mail only in this window.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>Two live cards are failing.</b> Cal.com has bounced 20+ times since November and X bounced seven times in June. That is one dead card behind both, not two separate problems — and a vendor that keeps retrying can still succeed the moment a good card lands on the account.
+  </div>
+</section>
+
+<section>
+  <h2>Gaps — stated, not papered over</h2>
+  <ol>
+    <li><b>One mailbox searched.</b> Only <code>selfexec.com@gmail.com</code>. Anything billed to <code>lord@xlrd.org</code> or any other address is untouched by this pass.</li>
+    <li><b>Amounts missing on three vendors.</b> Photoroom, Suno and Sliplane don't put the figure in the subject or snippet — those need the message body opened.</li>
+    <li><b>Scope not yet split.</b> Your subs, Luckie's, and L7S are still one undifferentiated list. Email alone can't attribute them; that split needs the card each one bills to.</li>
+    <li><b>PayPal is a blind spot.</b> Its statements summarize rather than itemize, so PayPal-billed subs won't show in any Stripe-side query.</li>
+  </ol>
+</section>
+
+<footer>Queries run live against Gmail · findings are observed message evidence, not estimates · <code>pages/expenses</code></footer>
+
+</div>
+</body>
+</html>

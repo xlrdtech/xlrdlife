@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex">
+<title>Ground Zero Recovery Pack</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f5f7;
+  --card:#ffffff;
+  --ink:#0b0d12;
+  --ink-2:#3c4350;
+  --ink-3:#6b7480;
+  --line:#e2e5ea;
+  --line-2:#eceff3;
+  --line-hi:#c3c9d2;
+  --red:#b42318;
+  --red-bg:#fef3f2;
+  --amber:#8a5a00;
+  --amber-bg:#fffaeb;
+  --green:#0f6b45;
+  --green-bg:#f0fdf6;
+  --blue:#1d4ed8;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;overflow-x:hidden}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding:0 0 72px;
+  overflow-x:hidden;
+}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px}
+
+/* ---------- HEADER ---------- */
+header{padding:30px 0 6px}
+.eyebrow{
+  font:600 11px/1 var(--mono);
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+}
+h1{
+  font-size:clamp(27px,7.6vw,40px);
+  line-height:1.06;
+  letter-spacing:-.024em;
+  margin:10px 0 10px;
+  font-weight:800;
+}
+.asof{
+  font:500 12.5px/1.5 var(--mono);
+  color:var(--ink-3);
+  margin:0 0 2px;
+}
+.lede{font-size:16.5px;color:var(--ink-2);margin:14px 0 0}
+.lede b{color:var(--ink)}
+
+/* ---------- CARDS (uniform borders only) ---------- */
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  margin:14px 0;
+}
+.card.strong{border-color:var(--line-hi)}
+.card.warn{background:var(--amber-bg);border-color:#e8d9ae}
+.card.bad{background:var(--red-bg);border-color:#f0c8c3}
+.card.good{background:var(--green-bg);border-color:#bfe4d0}
+
+h2{
+  font-size:13px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  font-weight:700;
+  margin:34px 0 2px;
+}
+h2 .n{color:var(--ink);font-weight:800}
+.h2sub{font-size:14.5px;color:var(--ink-2);margin:6px 0 0}
+h3{font-size:15.5px;margin:20px 0 8px;font-weight:750;letter-spacing:-.01em}
+h3:first-child{margin-top:0}
+p{margin:0 0 10px}
+p:last-child{margin-bottom:0}
+.muted{color:var(--ink-3);font-size:13.5px;line-height:1.5}
+code,.m{font-family:var(--mono);font-size:.875em}
+code{
+  background:var(--line-2);
+  border:1px solid var(--line);
+  border-radius:5px;
+  padding:1px 5px;
+  word-break:break-all;
+}
+b,strong{font-weight:700}
+
+/* ---------- THE FIVE ---------- */
+.five{counter-reset:step;list-style:none;padding:0;margin:0}
+.five > li{
+  counter-increment:step;
+  background:var(--card);
+  border:1px solid var(--line-hi);
+  border-radius:14px;
+  padding:16px 16px 16px 58px;
+  margin:0 0 10px;
+  position:relative;
+}
+.five > li::before{
+  content:counter(step);
+  position:absolute;
+  left:14px;
+  top:14px;
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  background:var(--ink);
+  color:#fff;
+  font:800 15px/30px var(--sans);
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+.five .t{font-size:16.5px;font-weight:750;letter-spacing:-.012em;margin:2px 0 6px;line-height:1.25}
+.five .d{font-size:14.5px;color:var(--ink-2);margin:0 0 8px}
+.five .d:last-child{margin-bottom:0}
+.five .why{font-size:13px;color:var(--ink-3);margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line-2)}
+
+/* ---------- CMD BLOCK ---------- */
+pre{
+  margin:8px 0 0;
+  background:#0d1117;
+  color:#e6edf3;
+  border:1px solid #0d1117;
+  border-radius:10px;
+  padding:12px 13px;
+  font-family:var(--mono);
+  font-size:12.5px;
+  line-height:1.55;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+pre .c{color:#8b98a5}
+
+/* ---------- TABLES ---------- */
+.scroll{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--card);
+  margin:12px 0;
+}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:13.5px}
+th,td{
+  text-align:left;
+  padding:9px 12px;
+  border-bottom:1px solid var(--line-2);
+  vertical-align:top;
+}
+thead th{
+  font:700 10.5px/1.3 var(--mono);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  background:#fafbfc;
+  border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0}
+td.m,th.m{font-family:var(--mono);font-size:12.5px;word-break:break-all}
+td.nw{white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- TAGS ---------- */
+.tag{
+  display:inline-block;
+  font:700 9.5px/1.4 var(--mono);
+  letter-spacing:.07em;
+  padding:2px 6px;
+  border-radius:5px;
+  text-transform:uppercase;
+  border:1px solid transparent;
+  white-space:nowrap;
+  vertical-align:1px;
+}
+.tag.v{background:var(--green-bg);color:var(--green);border-color:#bfe4d0}
+.tag.u{background:var(--amber-bg);color:var(--amber);border-color:#e8d9ae}
+.tag.x{background:var(--red-bg);color:var(--red);border-color:#f0c8c3}
+.tag.n{background:var(--line-2);color:var(--ink-3);border-color:var(--line)}
+
+/* ---------- LISTS ---------- */
+ul.tight{margin:0 0 10px;padding-left:20px}
+ul.tight li{margin:0 0 6px}
+ul.tight li:last-child{margin-bottom:0}
+ol.tight{margin:0 0 10px;padding-left:22px}
+ol.tight li{margin:0 0 8px}
+
+/* ---------- RANK ---------- */
+.rank{list-style:none;counter-reset:r;padding:0;margin:0}
+.rank li{
+  counter-increment:r;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:var(--card);
+  padding:12px 14px 12px 46px;
+  margin:0 0 8px;
+  position:relative;
+  font-size:14.5px;
+}
+.rank li::before{
+  content:counter(r);
+  position:absolute;left:12px;top:11px;
+  width:24px;height:24px;border-radius:7px;
+  background:var(--line-2);color:var(--ink-2);
+  border:1px solid var(--line);
+  font:800 12px/22px var(--sans);text-align:center;
+}
+.rank li b{display:block;margin-bottom:2px;font-size:15px}
+.rank li .s{color:var(--ink-2);font-size:13.5px}
+
+/* ---------- FLOOR ---------- */
+.floor{
+  background:var(--card);
+  border:2px solid var(--red);
+  border-radius:14px;
+  padding:18px;
+  margin:14px 0;
+}
+.floor h3{color:var(--red)}
+
+/* ---------- KV ---------- */
+.kv{display:grid;grid-template-columns:1fr;gap:0}
+.kv .row{
+  display:grid;
+  grid-template-columns:minmax(96px,150px) 1fr;
+  gap:10px;
+  padding:7px 0;
+  border-bottom:1px solid var(--line-2);
+  font-size:13.5px;
+}
+.kv .row:last-child{border-bottom:0}
+.kv .k{color:var(--ink-3);font:600 11px/1.6 var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.kv .v{word-break:break-word}
+
+hr.sep{border:0;border-top:1px solid var(--line);margin:34px 0 0}
+footer{margin-top:34px;font-size:12.5px;color:var(--ink-3);line-height:1.6}
+footer code{font-size:11.5px}
+a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">xlrd · internal · do not share</div>
+  <h1>Ground Zero Recovery Pack</h1>
+  <p class="asof">Captured Sat Aug 1 2026, 21:06 EDT · machine: Mac mini M4 · all facts below carry a VERIFIED or UNVERIFIED tag</p>
+  <p class="lede">This page exists so the next system death does not put you back to zero. <b>It contains no secrets.</b> It tells you where every secret lives, what it unlocks, and the order to move in. If you are reading this on a phone with nothing else, start at THE FIRST FIVE and do not read ahead.</p>
+</header>
+
+<div class="card strong">
+  <p style="margin:0;font-size:14.5px"><span class="tag v">verified</span> = a command was run and the output was seen. <span class="tag u">unverified</span> = inferred, not tested. <span class="tag x">broken</span> = confirmed failing right now. Nothing on this page is a guess.</p>
+</div>
+
+<!-- ============ THE FIRST FIVE ============ -->
+<h2><span class="n">The first five things.</span> In order.</h2>
+<p class="h2sub">Do these before reading anything else on this page. Do not improvise the order.</p>
+
+<ol class="five">
+
+  <li>
+    <div class="t">Copy the M4 drive. Before you touch anything else.</div>
+    <p class="d">Everything is on one USB drive: <code>/Volumes/M4</code>. There is no backup of the code tree. Do not browse it, do not <code>du</code> it, do not open folders. Plug it into any working machine and start a resumable copy, then walk away.</p>
+    <pre><span class="c"># resumable — safe to interrupt and re-run</span>
+rsync -aH --partial --append-verify --info=progress2 \
+  /Volumes/M4/sync_/ /path/to/new/disk/sync_/</pre>
+    <p class="why"><span class="tag v">verified</span> <code>tmutil destinationinfo</code> → "No destinations configured." Syncthing runs but covers only the memory vault, not the code tree. If M4 dies mid-read, whatever you already copied is what you have — which is why the copy comes first and the reading comes second.</p>
+  </li>
+
+  <li>
+    <div class="t">Sign into 1Password. You need two things only you have.</div>
+    <p class="d">The master password and the Secret Key. Nobody — not Anthropic, not 1Password, not any agent — can recover these. If both are lost, 1,196 human logins are gone and the rebuild floor drops to "email-reset every account one at a time."</p>
+    <p class="why"><span class="tag v">verified</span> Vault "xen" reachable via CLI v2.32.0 at <code>/opt/homebrew/bin/op</code>, driven by a service-account token (bare <code>op whoami</code> fails; the wrapper <code>bin/xen-op</code> loads the env file). 1,200 items: 1,196 LOGIN, 1 IDENTITY, 3 API_CREDENTIAL. <b>The 3 API credentials are the vault's own service-account tokens.</b> 1Password holds your human logins. It does not hold the machine tokens.</p>
+  </li>
+
+  <li>
+    <div class="t">Confirm the phone line is alive and in your hand.</div>
+    <p class="d">Most of the accounts on the recovery list use SMS 2FA delivered to a line that is itself on the recovery list. Pay it, port it, or physically hold the SIM — but resolve it before you start any account recovery, because a lapsed line makes every SMS-2FA account unrecoverable at the same moment.</p>
+    <p class="why"><span class="tag u">unverified</span> — inferred from the account inventory, not from testing a lockout. Named here because it is the one failure that cascades across everything at once, and the fix (keep the line) is cheap while the line still works.</p>
+  </li>
+
+  <li>
+    <div class="t">Restore the machine tokens from your copy — not from 1Password.</div>
+    <p class="d">One file carries 41 machine tokens and sits on the critical path for voice. It is not in 1Password and it is not backed up anywhere else. Pull it off the copy you made in step 1. Its two apparent locations are the same file.</p>
+    <div class="kv" style="margin-top:10px">
+      <div class="row"><div class="k">File</div><div class="v m">/Users/qi/.xen/secrets.env</div></div>
+      <div class="row"><div class="k">Same inode</div><div class="v m">/Volumes/M4/sync_/exedus/dev_/xen/.xen-state/secrets.env</div></div>
+      <div class="row"><div class="k">Why</div><div class="v"><code>~/.xen</code> is a symlink to <code>.xen-state</code>. One file, two paths — so there is one copy, not two.</div></div>
+      <div class="row"><div class="k">Consumed by</div><div class="v"><code>bin/xen-reply-vvs</code> line 27 — voice does not speak without it</div></div>
+    </div>
+    <p class="why"><span class="tag v">verified</span> via <code>os.path.samefile</code> → True. If this file is lost, every one of the 41 tokens must be reissued individually from its own provider console. Nothing recovers it in bulk.</p>
+  </li>
+
+  <li>
+    <div class="t">Join the tailnet, then start the six load-bearing daemons.</div>
+    <p class="d">Tailscale first — it is how you reach the Hetzner box, and it is the only path to several services that are otherwise firewalled. Then bring up the six jobs in the table below, in any order. Everything else can stay down; those six are the system.</p>
+    <p class="why"><span class="tag v">verified</span> tailnet <code>xlrdtech@</code>, 18 nodes, <code>xen-hetzner</code> active and direct. <b>Do not start all 234 launchd jobs.</b> Most are optional and several are actively broken — see "Open wounds."</p>
+  </li>
+
+</ol>
+
+<!-- ============ MACHINE + STORAGE ============ -->
+<h2><span class="n">Machine and storage baseline</span></h2>
+<p class="h2sub">What the hardware actually is, and which volumes you can trust.</p>
+
+<div class="card">
+  <h3>This Mac <span class="tag v">verified</span></h3>
+  <div class="kv">
+    <div class="row"><div class="k">Model</div><div class="v">Mac mini · Mac16,10 · MCYT4LL/A</div></div>
+    <div class="row"><div class="k">Chip</div><div class="v">Apple M4 · 10 cores (4P + 6E)</div></div>
+    <div class="row"><div class="k">Memory</div><div class="v">24 GB</div></div>
+    <div class="row"><div class="k">macOS</div><div class="v">26.3.1 (build 25D2128) · firmware 13822.81.10</div></div>
+    <div class="row"><div class="k">Load avg</div><div class="v">7.07 / 11.71 / 9.80 at capture — sustained above the core count</div></div>
+    <div class="row"><div class="k">Activation Lock</div><div class="v">Enabled</div></div>
+    <div class="row"><div class="k">Serial / UUID</div><div class="v">Deliberately omitted — account-recovery identifiers, and this page is public. Retrieve with <code>system_profiler SPHardwareDataType</code>.</div></div>
+  </div>
+</div>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Volume</th><th>FS</th><th class="num">Size</th><th class="num">Free</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td class="m nw">/Volumes/M4</td><td>APFS · USB</td><td class="num nw">931 Gi</td><td class="num nw">386 Gi (59% used)</td><td><b>The only canonical tree.</b> Journaled, healthy headroom, <b>no SMART</b> over this USB bridge — it cannot warn you before it dies.</td></tr>
+<tr><td class="m nw">/System/Volumes/Data</td><td>APFS</td><td class="num nw">460 Gi</td><td class="num nw">113 Gi (74% used)</td><td>Boot disk. Tightest volume in the system. Holds <code>.claude.json</code> and the 1Password service-account env — both fail independently of M4.</td></tr>
+<tr><td class="m nw">/Volumes/X31</td><td><b>exFAT</b> · USB</td><td class="num nw">954 Gi</td><td class="num nw">427 Gi (56% used)</td><td>Vault legacy. exFAT is unjournaled — this is the technical reason it "flaps." Not a backup.</td></tr>
+<tr><td class="m nw">/Volumes/nitro2tb</td><td><b>exFAT</b> · USB</td><td class="num nw">1.8 Ti</td><td class="num nw">720 Gi (62% used)</td><td>Recovered SSD. Same unjournaled risk. Largest free space in the system — the obvious place to put a real backup, <em>after</em> reformatting to APFS.</td></tr>
+<tr><td class="m nw">/Volumes/Windows</td><td>NTFS · read-only</td><td class="num nw">833 Gi</td><td class="num nw"><b>53 Gi (94% used)</b></td><td>Frozen archive. Mounted read-only via fskit — nothing can be written here. Do not plan around it.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card warn">
+  <p><b>The two storage facts that matter most.</b> <span class="tag v">verified</span></p>
+  <ul class="tight" style="margin-top:8px">
+    <li><b>M4 has no health signal.</b> It is USB-attached and reports <code>SMART Status: Not Supported</code>. The single most important disk in the system cannot tell you it is failing. There will be no warning.</li>
+    <li><b>X31 and nitro2tb are exFAT, which has no journaling.</b> One unclean unmount or power loss corrupts the directory table. Anything that exists only on those volumes is one bad unplug from gone. They are the failure mode, not the mitigation.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>The canonical tree <span class="tag v">verified</span> <span class="tag u">size unknown</span></h3>
+  <p><code>/Volumes/M4/sync_/exedus/dev_/xen</code> — <b>138 top-level directories.</b></p>
+  <p><b>Total size could not be measured.</b> <code>du -sh</code> was started three times and never completed in over 20 minutes of wall clock. That non-result is the finding: the tree has enough small files that a full walk on USB is impractical. Measured fragments: <code>.deploy/</code> = 6.8 G (several full git worktrees), <code>node_modules/</code> = 227 M, <code>media/</code> = 14 M.</p>
+  <p class="muted" style="margin-top:10px"><b>Consequence for recovery:</b> any plan that says "just copy the tree" needs a measured, resumable transfer. A single <code>cp</code> that fails at 80% leaves you with nothing you can trust. This is why step 1 uses <code>rsync --partial --append-verify</code>.</p>
+</div>
+
+<div class="card good">
+  <h3>The memory vault — the one thing that already survives <span class="tag v">verified</span></h3>
+  <p><code>/Volumes/M4/sync_/brain_/agents/xen/xen_memories</code> — 19,460 markdown files, 39,921 files total, 21 G. <code>MEMORY.md</code> is live (112 lines, modified today).</p>
+  <p>Syncthing replicates this vault to 4 devices. <b>Memory survives a disk death. Code and credentials do not.</b> That asymmetry is the single highest-leverage thing to fix: add the xen code tree to the existing Syncthing config and the largest gap in the system closes with no new software and no cost.</p>
+</div>
+
+<!-- ============ DAEMONS ============ -->
+<h2><span class="n">The six load-bearing daemons</span></h2>
+<p class="h2sub">234 Xen jobs are loaded. These six are the ones the system actually runs on. All six were alive and logging at capture. <span class="tag v">verified</span></p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Job</th><th class="nw">Every</th><th>What dies with it</th></tr></thead>
+<tbody>
+<tr>
+  <td class="m">com.xen.inbound-60s-watch</td><td class="nw">30 s</td>
+  <td><b>The 60-second response law.</b> Tracks how long every inbound message has gone unanswered. If it dies, inbound goes unanswered with no alarm at all — silence looks identical to "nothing came in."</td>
+</tr>
+<tr>
+  <td class="m">com.xen.daily-checkin-222</td><td class="nw">14:22 daily</td>
+  <td><b>Relationship decay detection.</b> Emits RECONNECT / REVIVE / CONTINUE per thread. Already flagging 26–28 day gaps. Dies → people quietly fall off the map.</td>
+</tr>
+<tr>
+  <td class="m">com.xen.comms-queue-refresh</td><td class="nw">30 min</td>
+  <td><b>The unanswered-thread queue</b> that feeds the checkin. Dies → the reply queue freezes at its last state and <em>looks empty</em>. Failure is invisible.</td>
+</tr>
+<tr>
+  <td class="m">com.xen.handoff-writer</td><td class="nw">3 min</td>
+  <td><b>Session continuity.</b> Rewrites <code>~/.xen/state/hands-handoff.md</code>. Dies → every new session resumes from stale context and re-does finished work.</td>
+</tr>
+<tr>
+  <td class="m">com.xen.archangel</td><td class="nw">2 min</td>
+  <td><b>The supervisor tier.</b> Enforces liveness on the core commandments. Currently reporting a real 50-day stall, which means it works. Dies → nothing is watching the watchers.</td>
+</tr>
+<tr>
+  <td class="m">com.xen.orchestrator</td><td class="nw">15 min</td>
+  <td><b>Open-goal pressure.</b> Re-pressures 6 live goals. Dies → open goals stop nagging and rot silently. This is the one whose absence you would notice last.</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="card bad">
+  <p><b>None of the six has a watchdog.</b> <span class="tag v">verified</span></p>
+  <p style="margin-top:8px">A grep across both <code>bin</code> directories for those six labels returns exactly one file, and it is a restore script, not a runtime supervisor. 47 watchdog plists exist and they cover ADB, audio, panes, disk, browser, 2FA and cookies — none of them covers the critical path.</p>
+  <p style="margin-top:10px"><b>The cheapest real fix:</b> one job that stats those six log paths and screams when any exceeds 3× its own interval. That is a dozen lines of shell and it closes the entire gap.</p>
+</div>
+
+<!-- ============ CREDENTIAL MAP ============ -->
+<h2><span class="n">Credential map</span></h2>
+<p class="h2sub">Where each secret lives and what it unlocks. Paths and field names only — <b>no value from any of these files appears on this page.</b></p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Path</th><th>Field / shape</th><th>Unlocks</th></tr></thead>
+<tbody>
+<tr><td class="m">~/.xen/secrets.env<br><span class="muted">= .xen-state/secrets.env (same inode)</span></td><td class="m">41 env vars</td><td>The machine-token spine. Sourced by <code>bin/xen-reply-vvs</code>. <b>Not in 1Password. Not backed up.</b></td></tr>
+<tr><td class="m">~/.claude.json</td><td class="m">.mcpServers.&lt;name&gt;.headers.Authorization<br>.mcpServers.&lt;name&gt;.env.&lt;VAR&gt;</td><td>55 global MCP servers + 1 project-scoped. Only 6 carry inline auth: <code>beeper</code>, <code>composio</code>, <code>omi</code>, <code>winmcp</code> (Authorization headers), <code>composio</code> (x-api-key), <code>phone</code> and <code>railway</code> (env vars). The 48 <code>tomcp-*</code> connectors carry no auth header — they ride a session/cookie layer.</td></tr>
+<tr><td class="m">~/.config/op/op-service-account-new.env</td><td class="m">service-account token var</td><td>1Password CLI non-interactive access. <b>Mode 0644 — world-readable.</b> The older file beside it is correctly 0600. This is the one the wrapper reads. <span class="tag x">harden</span></td></tr>
+<tr><td class="m">.claude-state/.credentials.json</td><td class="m">OAuth refresh token object</td><td>Claude auth. Three more per-persona copies under <code>.xen-state/cfg/{genesis,exodus,leviticus}/</code>.</td></tr>
+<tr><td class="m">.deploy/hetzner-setup/CREDENTIALS.env</td><td class="m">IP, key path, root pw, rescue pw</td><td>Hetzner box. Plaintext, sourced directly by <code>rescue-fix.sh</code>. <b>Never opened during this audit.</b></td></tr>
+<tr><td class="m">.xen-state/CREDENTIALS.md</td><td class="m">markdown credential list</td><td>Mixed. Plaintext. <b>Never opened during this audit.</b></td></tr>
+<tr><td class="m">~/.ssh/</td><td class="m">id_ed25519, id_ecdsa_spaceship,<br>termius_m4, vm_control</td><td>5 private keys. <code>id_ed25519</code> is the Hetzner key. Filenames only; no key material was read.</td></tr>
+<tr><td class="m">13 further env files</td><td class="m">variable names inventoried</td><td>matrix_self, agentmail, todoist, rustdesk ×2, claude-code-proxy, telnyx NUMBER, omniroute templates. Two Gmail OAuth surfaces separately.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card warn">
+  <p><b>Two files must never be pasted into anything public</b>, including a future version of this page: <code>.deploy/hetzner-setup/CREDENTIALS.env</code> and <code>.xen-state/CREDENTIALS.md</code>. A third, a Windows license note in the vault, contains a retail product key in plaintext. Documented here as <em>locations</em> so they can be found, rotated, and moved into 1Password — never as content.</p>
+</div>
+
+<!-- ============ SPOF ============ -->
+<h2><span class="n">Single points of failure, ranked</span></h2>
+<p class="h2sub">Ordered by how much is lost when each one goes, not by how likely it is.</p>
+
+<ol class="rank">
+  <li><b>The M4 volume</b><span class="s">One USB drive, no backup of the code tree, no SMART warning. Everything canonical. This is the exact shape of every prior ground-zero event.</span></li>
+  <li><b><code>secrets.env</code></b><span class="s">41 machine tokens in one unbacked file on the critical voice path. Loss means reissuing each token from its own provider console, by hand.</span></li>
+  <li><b>The 1Password service-account token</b><span class="s">Lives on the boot disk, so it fails <em>independently</em> of M4 — one machine death can take the code tree and the automated vault access in one stroke. Currently world-readable at 0644.</span></li>
+  <li><b><code>.claude.json</code> wiring</b><span class="s">55 MCP servers' worth of configuration. Recoverable in principle, brutal to rebuild from memory under stress.</span></li>
+  <li><b>Beeper single-identity concentration</b><span class="s">Every network routes through one account. One suspension takes all comms simultaneously.</span></li>
+  <li><b>Per-persona Claude refresh tokens</b><span class="s">Four separate OAuth flows to redo, each needing a browser and a human.</span></li>
+  <li><b>Gmail OAuth</b><span class="s">Consent screen re-approval, gated on the Google account, which is gated on 2FA, which is gated on the phone line.</span></li>
+</ol>
+
+<!-- ============ HETZNER ============ -->
+<h2><span class="n">The Hetzner box</span></h2>
+<p class="h2sub">One box, not two. Verified from local artifacts — no login was attempted.</p>
+
+<div class="card">
+  <div class="kv">
+    <div class="row"><div class="k">Server</div><div class="v"><code>xen-hetzner</code> · FSN1-DC17 Falkenstein · server number and customer ID omitted (account-recovery identifiers) — both are in the vault notes</div></div>
+    <div class="row"><div class="k">Type</div><div class="v"><b>Hetzner ROBOT dedicated</b> — <em>not</em> Cloud</div></div>
+    <div class="row"><div class="k">Hardware</div><div class="v">i7-7700 · 8 cores · 62 GB RAM · KVM + nested virt</div></div>
+    <div class="row"><div class="k">OS</div><div class="v">Ubuntu 24.04 · single <code>/dev/sda</code> · <b>SWRAID 0</b></div></div>
+    <div class="row"><div class="k">Reach</div><div class="v">Tailnet IP (the path that works in the notes) or the public IPv4 via <code>ssh hetzner</code>, both with <code>~/.ssh/id_ed25519</code></div></div>
+    <div class="row"><div class="k">Runs</div><div class="v">Windows 11 in Docker/KVM (noVNC on :8006), self-hosted Matrix (Synapse + Element + Postgres), Home Assistant, 5 mautrix bridges</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Three corrections to what you remember</h3>
+  <ul class="tight">
+    <li><b>"No working SSH key" is stale.</b> <span class="tag v">verified</span> The July 9 lockout was real — an OS reinstall out of rescue wiped <code>authorized_keys</code>. But <code>tailscale status</code> right now shows <code>xen-hetzner</code> <b>active and direct</b>, with 1.0 GB transmitted. The box is up and reachable on the tailnet. A later note documents working <code>ssh</code> + <code>docker exec</code> over that same path.</li>
+    <li><b>"124 GB prone to fail" does not exist.</b> <span class="tag v">verified</span> No such figure appears anywhere in the tree. The real number is a <b>128 G sparse Windows disk image</b> on a <b>single non-RAID disk</b>. The fragility is not capacity — it is that there is one disk, no RAID, and no snapshot. That is worse than being full.</li>
+    <li><b>Hetzner Cloud tooling will never see this box.</b> <span class="tag v">verified</span> <code>hcloud server list</code> returns zero servers, and console.hetzner.com does not show it. Recovery lives only at <code>robot.hetzner.com</code>. If you are ever locked out again, that is the only door.</li>
+  </ul>
+</div>
+
+<div class="card bad">
+  <h3>Two open Hetzner items</h3>
+  <p><b>1. Root compromise, contained but not resolved.</b> <span class="tag v">verified</span> A miner ran as root from July 9 at 399% CPU with self-rotating cron. The entry door was <b>noVNC on :8006 published to the open internet with no auth</b>. It was killed, persistence stripped, payloads preserved, load dropped 4.4 → 0.68, and the port is now tailnet-only and verified blocked from outside. <b>A root compromise means rebuild.</b> That decision is still open and it is yours.</p>
+  <p style="margin-top:12px"><b>2. Re-key prevention was never done.</b> <span class="tag v">verified</span> Two items sit unactioned: register the M4 public key in <b>Robot → Key management</b> so future reinstalls auto-inject it, and enable the <b>Robot Webservice user</b> so rescue and boot can be scripted. Until both exist, any reinstall repeats the July 9 lockout and the only recovery is a human driving a pixel KVM.</p>
+</div>
+
+<!-- ============ OPEN WOUNDS ============ -->
+<h2><span class="n">Open wounds</span></h2>
+<p class="h2sub">Things that are broken right now and will mislead you during a rebuild if you do not know about them.</p>
+
+<div class="card bad">
+  <h3>The top-level watchdog is a corpse that reports success <span class="tag x">broken</span></h3>
+  <p><code>com.exedus.xen-watchdog</code> runs every 5 minutes and exits 0. It also: curls a port nothing listens on, kickstarts a service whose plist is disabled, kickstarts a second service that is not loaded, and calls two Python files that do not exist. Its own log says <code>Final status: unreachable</code> — and it still exits 0.</p>
+  <p style="margin-top:10px"><b>Anything relying on "the watchdog will catch it" is unprotected.</b> Its intended replacement, <code>xen-watchdog-v2</code>, is sitting on disk unloaded.</p>
+</div>
+
+<div class="card warn">
+  <h3>Backup and log rotation have been dead for 34 days <span class="tag x">broken</span></h3>
+  <p><code>com.exedus.xen-snapshot</code> (hourly) and <code>com.exedus.xen-log-rotate</code> (15 min) are both loaded and both have not written in 34 days. <b>Snapshot is the backup rung.</b> In a system-death scenario it is the job that decides whether the baseline survives, and it has been silently not running for a month. Rotation being dead is why one log is pinned exactly at its 10 MB cap.</p>
+  <p style="margin-top:10px" class="muted">Fix these two before anything else on this list. They are the ones that make the <em>next</em> page like this one possible.</p>
+</div>
+
+<div class="card">
+  <h3>Other confirmed-bad state <span class="tag v">verified</span></h3>
+  <ul class="tight">
+    <li><b>30 plists present but not loaded</b> — dark rungs a rebuild would silently miss. Seven of them are the voice/audio recovery path, which means the audio auto-recovery commandment currently has no daemon behind it.</li>
+    <li><b>Two silence clusters, each from a single event.</b> The omni family all stopped at the same moment 10.7 days ago; the bee family all stopped 13.2 days ago. That is two root causes, not nine failures.</li>
+    <li><b>A canon verifier is screaming and nobody is reading it</b> — it reports a broken hardlink and diverged content, meaning a daemon is running stale code.</li>
+    <li><b>The telemetry backend is crash-looping</b> on a database connection pool timeout.</li>
+    <li><b>Log paths on the boot disk.</b> The orchestrator logs to <code>/tmp</code> and roughly 20 other jobs log to <code>/tmp</code> or <code>~</code>. All of it is lost on a fresh machine. Only four comms jobs log onto M4.</li>
+  </ul>
+</div>
+
+<div class="card warn">
+  <h3>The same door that got Hetzner rooted is open here <span class="tag u">unverified — check this first</span></h3>
+  <p>A Cloudflare named tunnel publishes <b>37 hostnames</b> to the public internet, all mapping to local ports on this Mac. Two of them are full control surfaces: the all-in-one MCP hub (documented in its own config as "no auth, open") and a web terminal. That is precisely the failure mode that got the Hetzner box compromised — a control surface published without auth.</p>
+  <p style="margin-top:10px">A Cloudflare Access apply-script and a verification file both exist in the tree, so edge gating <em>may</em> be enforced. <b>It was not verified</b> — no external request was made during this audit.</p>
+  <p style="margin-top:10px"><b>This is the highest-value thing to check next</b>, and the correct test is the one already learned the hard way on Hetzner: <code>curl</code> those hostnames from outside the tailnet and see what answers.</p>
+</div>
+
+<!-- ============ THE FLOOR ============ -->
+<h2><span class="n">The floor</span></h2>
+<p class="h2sub">What cannot be recovered without you. This is the honest bottom of any rebuild.</p>
+
+<div class="floor">
+  <h3>No agent, no script, and no backup can do these</h3>
+  <p>Everything above this line is a machine problem with a machine answer. Everything below it requires you, in person, with something only you have.</p>
+
+  <h3 style="margin-top:18px;color:var(--ink)">Unrecoverable if lost — nobody can reset them</h3>
+  <ul class="tight">
+    <li><b>1Password master password</b> — no reset exists, by design.</li>
+    <li><b>1Password Secret Key</b> — no reset exists, by design. Both are required together.</li>
+    <li><b>Matrix recovery key</b> — without it, encrypted history is unreadable even with a working login.</li>
+  </ul>
+
+  <h3 style="margin-top:18px;color:var(--ink)">Requires you at a browser, one at a time</h3>
+  <ul class="tight">
+    <li><b>Beeper login</b> — and every network hangs off this one identity.</li>
+    <li><b>Claude OAuth × 4 personas</b> — four separate consent flows, four browsers, four human taps.</li>
+    <li><b>Gmail OAuth consent</b> — plus the Google account itself.</li>
+    <li><b>Google Voice / Workspace</b>, <b>the mobile carrier</b>, <b>the domain registrar</b>.</li>
+    <li><b>Hetzner Robot console</b> and <b>Railway console</b>.</li>
+    <li><b>Each social network</b>, individually.</li>
+  </ul>
+
+  <div class="card" style="background:#fff;border-color:var(--red);margin-top:18px">
+    <p><b>The one insight worth acting on today, while everything still works.</b></p>
+    <p style="margin-top:8px">Most of the accounts on that list use SMS 2FA delivered to a phone line that is <em>itself</em> on that list. If the line lapses first, every SMS-2FA account becomes unrecoverable at the same moment — not one at a time, all at once. The list above is not seven independent problems. It is one problem with seven faces, and the face is the phone line.</p>
+    <p style="margin-top:10px" class="muted"><span class="tag u">unverified</span> — inferred from the account inventory, not from testing a lockout. Stated plainly because the mitigation is free and the failure is total: move the critical accounts off SMS 2FA and onto TOTP codes stored in 1Password, so the phone line stops being the root of the tree.</p>
+  </div>
+</div>
+
+<!-- ============ IF NOTHING ELSE ============ -->
+<h2><span class="n">If you only remember four things</span></h2>
+
+<div class="card strong">
+  <ol class="tight" style="font-size:15px">
+    <li><b>M4 is the only copy and it cannot warn you.</b> USB-attached, no SMART. Copy it before you do anything else, every time.</li>
+    <li><b>Memory survives; code and credentials do not.</b> Syncthing already replicates the vault to 4 devices. Adding the code tree to that same config is the single highest-leverage fix available, and it costs nothing.</li>
+    <li><b>1Password holds your logins, not your machine tokens.</b> Those 41 tokens live in one unbacked file. Until they are in the vault, a disk death means reissuing every one by hand.</li>
+    <li><b>The phone line is the root of the 2FA tree.</b> Protect it before you need it, or move off SMS entirely.</li>
+  </ol>
+</div>
+
+<hr class="sep">
+<footer>
+  <p><b>Ground Zero Recovery Pack</b> · captured Sat Aug 1 2026, 21:06 EDT on Mac mini M4 · source <code>/Volumes/M4/sync_/exedus/dev_/xen/pages/recovery/index.html</code></p>
+  <p style="margin-top:8px">Audit constraints honored: read-only on all comms — no message sent, no chat started. No daemon restarted, stopped, or booted out. No authentication flow run. No account created, connected, or deleted. Nothing on the boot disk written. <b>No credential value was read, printed, copied, or reproduced — the pack documents where each secret lives and what it unlocks, never the secret itself.</b></p>
+  <p style="margin-top:8px">Every claim carries <span class="tag v">verified</span> (a command was run, output seen), <span class="tag u">unverified</span> (inferred, not tested), or <span class="tag x">broken</span> (confirmed failing at capture). Where something could not be measured — the tree size — that is stated as an unmeasured result rather than estimated.</p>
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>XEN LIFE — assembled</title>
+<meta name="description" content="Canonical three-pane assembly. Mounts the live surfaces same-origin with per-pane URL rebasing and CSS scoping. No iframe.">
+<meta name="theme-color" content="#06080A">
+
+<!-- PWA head — qi 2026-08-20 22:24: "Its a pure PWA. It does not need iOS or Android at all."
+     Copied from the pattern already proven in xos-capacitor/www/index.html. NO Capacitor,
+     no native shell: apple-mobile-web-app-capable + viewport-fit=cover (already on line 5)
+     is what makes env(safe-area-inset-*) resolve to REAL device insets once the page is
+     launched from the home screen. black-translucent lets the view extend under the status
+     bar, which is the half that actually produces the inset. -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="XEN LIFE">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script>
+  // Register late and never block first paint. sw.js is network-first for everything but
+  // the icons, so it cannot serve stale code (see the comment header in sw.js).
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(function () {
+        /* a failed SW registration must never break the app */
+      });
+    });
+  }
+</script>
+<style>
+/* ══ tokens: LifeNote's own, read off lifenote/index.html ══ */
+:root{
+  --bg:#06080A; --jade:#00FF7F; --ink:#E8EAE8; --resolve:#7CFF9B;
+  --heavy:#6B7280; --luminous:#00FFC2; --restless:#F59E0B;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --line:rgba(0,255,127,.14); --glass:rgba(10,14,12,.72);
+  /* CANONICAL SWIPE GLASS geometry, ported from xos-capacitor/www/styles.css.
+     --sab is 0 BY DECREE (qi 2026-08-13 22:42, twice): the inset was the only thing
+     between his design and the bottom of the screen, and it cost him a clipped wave.
+     --dock-h 60px is the value XOS always resolved to, since nothing ever set it. */
+  --dock-h:60px; --sab:0px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+
+.panes{display:flex;height:100vh;width:300vw;transition:transform .38s cubic-bezier(.22,1,.36,1);will-change:transform}
+.pane{width:100vw;height:100vh;overflow:hidden;position:relative;display:flex;flex-direction:column}
+
+/* CRITICAL — the pane is a containment boundary. Codex 2026-08-20 measured
+   "top filters/nav overlap and clip" + "/life CSS overlaps severely" because a
+   mounted limb's position:fixed escaped its pane and its 100vh blew the box.
+   contain + transform creates a new containing block so fixed becomes
+   pane-relative, which is what an iframe gave us for free. */
+/* ⭐ TOP INSET — from qi's OWN HANDSET SHOT, IMG_1661.png, 2026-08-21 12:40.
+   MEASURED FROM THE SCREENSHOT (not inferred): his kicker-bar and the "Dialpad · 131"
+   badge were rendering UNDERNEATH the iOS status bar — faint ghost text bleeding through
+   behind the 12:40 clock and the battery. That is also why a byte-grep for the badge text
+   returned 0 while the element existed: it was present and hidden.
+
+   CAUSE, AND IT IS MINE: I added `apple-mobile-web-app-status-bar-style: black-translucent`
+   the night before, copied from XOS. black-translucent is DEFINED to extend the web view
+   under the status bar. XOS compensates with its own top strip; this document had no top
+   inset at all, so the first row slid under the clock.
+
+   WHY env() AND NOT A PIXEL NUMBER: his ?geo=1 probe reported top=0, but that probe ran in
+   Safari — in a standalone home-screen launch with black-translucent, inset-top becomes the
+   real device value. env() resolves to 0 in every browser I can drive, so this CANNOT change
+   the desktop view; on his handset it can only supply the inset that was missing.
+
+   --sat mirrors his --sab knob: one line to zero it if he wants the overlap back. His
+   "no safe area" decree (2026-08-13 22:42) was explicitly about the BOTTOM gap; this is the
+   opposite failure — content HIDDEN, not space added. */
+.mount{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  position:relative;transform:translateZ(0);contain:layout paint style;
+  --sat:env(safe-area-inset-top, 0px);
+  padding-top:var(--sat);padding-bottom:78px}
+
+/* ── DOCK HIT + APP DRAWER ──  replaces .swipeglass  (qi 2026-08-20 21:31)
+   MEASURED DEFECT THIS REPLACES: the old .swipeglass was a full bar at
+   z-index 2147483000 pinned to bottom:0. In a 720x865 viewport the composer's
+   SAVE button centred at y=814 — under the glass. elementFromPoint(677,814)
+   returned "glass", not the button, so SAVE was visibility:visible and
+   physically unclickable. DOM presence is not reachability.
+   The dock keeps its z-index and its glass; the COMPOSER gets clearance
+   instead (see .composer padding-bottom below) — his dock is never restyled
+   to accommodate my element. */
+/* ═══ CANONICAL SWIPE GLASS — qi 2026-08-20 22:53: "the canonical swipe glass from xos
+   is MANDATORY" + "CANONICAL". Ported from xos-capacitor/www/styles.css, extracted from
+   the LIVE rendered /xos/ DOM, not retyped from the 186KB app.jsx.
+
+   WHAT WAS WRONG: .dock-hit here was doing two jobs — it WAS the glass and the hit
+   target, in one 26px bar. Canonical is 60px, blur(40px) saturate(220%) not blur(22px)
+   saturate(140%), a layered radial-sheen + 3-stop gradient not a flat var(--glass), plus
+   a border-top and three inset shadows. And .dock-hit is not the bar at all: in XOS it is
+   an absolutely-positioned gesture layer INSIDE the glass, which is why the glass carries
+   pointer-events:none and the hit layer takes them back.
+
+   RE-SCOPED DELIBERATELY: every XOS rule is under `.os.os-fullscreen`, which does not
+   exist in this document. Copying the selectors verbatim would have produced dead CSS
+   that looks correct in the file — so the scope is dropped, nothing else is.
+
+   z-index stays this document's 2147483000 (not XOS's 6): the panes here establish their
+   own stacking and 6 would bury the glass. Geometry is canonical; layering is local. */
+.dock.dock-swipe{
+  position:fixed;left:0;right:0;bottom:0;z-index:2147483000;
+  min-height:calc(var(--dock-h) + var(--sab));
+  padding:0 0 var(--sab);
+  display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;
+  overflow:hidden;border-radius:12px;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 60%),
+    linear-gradient(to bottom,
+      rgba(20,28,24,0.42) 0%,
+      rgba(18,26,22,0.44) 50%,
+      rgba(16,24,20,0.46) 100%);
+  backdrop-filter:blur(40px) saturate(220%) brightness(1.05);
+  -webkit-backdrop-filter:blur(40px) saturate(220%) brightness(1.05);
+  border-top:1px solid rgba(255,255,255,0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.4),
+    0 -8px 24px rgba(0,0,0,0.45);
+  transition:backdrop-filter .18s ease, background .18s ease;
+  pointer-events:none;
+}
+/* press feedback — "glass densifies under finger". Deliberate in XOS, kept verbatim. */
+.dock.dock-swipe:active{
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 60%),
+    linear-gradient(to bottom, rgba(20,28,24,0.55) 0%, rgba(10,14,12,0.75) 50%, rgba(6,10,8,0.88) 100%);
+  backdrop-filter:blur(48px) saturate(240%) brightness(1.1);
+  -webkit-backdrop-filter:blur(48px) saturate(240%) brightness(1.1);
+}
+.dock.dock-swipe:hover{
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 60%),
+    linear-gradient(to bottom, rgba(22,30,26,0.48) 0%, rgba(12,16,14,0.68) 50%, rgba(8,12,10,0.82) 100%);
+}
+/* display:none in XOS — the handle is deliberately not drawn. The green pill this file
+   used to draw with .dock-hit::after was a local invention and is gone with it. */
+.dock.dock-swipe .dock-handle{display:none}
+.dock.dock-swipe .dock-sheen{
+  position:absolute;top:0;left:8%;right:8%;height:1px;pointer-events:none;
+  background:linear-gradient(to right,
+    rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+}
+.dock.dock-swipe .dock-edge-light{
+  position:absolute;top:4px;bottom:4px;left:0;right:0;pointer-events:none;
+  background:linear-gradient(to right,
+    rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 8%,
+    rgba(255,255,255,0) 92%, rgba(255,255,255,0.06) 100%);
+}
+/* --dock-notif-h reserves the ticker strip BELOW the wave. It is a variable so the two
+   can never drift into the overlap that produced the stacked-wave bug. */
+.dock.dock-swipe .dock-vei-host{
+  position:relative;z-index:2;pointer-events:auto;flex:0 0 auto;width:100%;
+  --dock-notif-h:22px;margin-bottom:var(--dock-notif-h);
+}
+.dock.dock-swipe .dock-vei-host #waveform-canvas{
+  display:block;width:100%;height:37px;pointer-events:none;background:transparent;border:0;
+}
+/* the gesture layer. touch-action:none so the OS cannot steal a horizontal drag before
+   the handler classifies its axis. */
+.dock.dock-swipe .dock-hit{
+  position:absolute;inset:0;width:auto;height:auto;transform:none;
+  pointer-events:auto;cursor:grab;background:transparent;
+  touch-action:none;-webkit-tap-highlight-color:transparent;
+}
+.dock.dock-swipe .dock-hit:focus-visible{
+  outline:2px solid rgba(0,255,127,.5);outline-offset:-4px;border-radius:12px;
+}
+
+.drawer{position:fixed;left:0;right:0;bottom:var(--xos-dock-real, calc(var(--dock-h) + var(--sab)));
+  z-index:2147483001;background:var(--glass);
+  backdrop-filter:blur(26px) saturate(150%);-webkit-backdrop-filter:blur(26px) saturate(150%);
+  border-top:1px solid var(--line);padding:10px 12px 14px;
+  display:flex;flex-direction:column;gap:8px}
+.drawer[hidden]{display:none}
+.drawer-grip{width:70px;height:4px;border-radius:999px;background:rgba(0,255,127,.22);
+  align-self:center;margin-bottom:2px}
+.drawer-app{display:flex;align-items:baseline;gap:10px;width:100%;text-align:left;
+  background:transparent;border:1px solid var(--line);border-radius:12px;
+  color:var(--heavy);font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  padding:12px 14px;text-transform:uppercase;cursor:pointer}
+.drawer-app em{font-style:normal;color:var(--jade);letter-spacing:.04em;text-transform:none;
+  margin-left:auto;font-size:10px}
+.drawer-app.on{color:var(--ink);border-color:rgba(0,255,127,.42);
+  background:rgba(0,255,127,.07);box-shadow:0 0 22px rgba(0,255,127,.14) inset}
+
+/* ── APP DRAWER SITES (qi 2026-08-22 04:07: "I want to put in the sites and populate the
+   app drawer and see them open up behind the swipe glass, etc.")
+   17 categories / 321 real routes, extracted from EDITSLN.txt — no placeholders.
+   ⛔ NOTHING BELOW TOUCHES .dock.dock-swipe. The drawer already rises from
+   bottom:var(--xos-dock-real), i.e. from behind the glass — that geometry is unchanged. */
+.drawer-scroll{max-height:min(62vh,520px);overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain}
+.drawer-sep{display:flex;align-items:center;gap:8px;margin:8px 2px 2px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(255,255,255,.3)}
+.drawer-sep:after{content:"";flex:1;height:1px;background:rgba(255,255,255,.07)}
+.cat-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  background:transparent;border:1px solid rgba(255,255,255,.06);border-radius:11px;
+  color:var(--heavy);font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;
+  padding:11px 13px;text-transform:uppercase;cursor:pointer}
+.cat-row:hover,.cat-row:focus-visible{border-color:rgba(0,255,127,.3);color:var(--ink)}
+.cat-row .n{margin-left:auto;color:var(--jade);font-size:9.5px;letter-spacing:.06em}
+.cat-row .chev{color:rgba(255,255,255,.28);font-size:12px}
+.site-back{display:flex;align-items:center;gap:8px;background:transparent;
+  border:1px solid rgba(0,255,127,.28);border-radius:11px;color:var(--jade);
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;padding:9px 13px;
+  text-transform:uppercase;cursor:pointer;margin-bottom:2px}
+.site-card{display:flex;align-items:center;gap:9px;text-decoration:none;
+  border:1px solid rgba(255,255,255,.055);border-radius:10px;padding:10px 12px;
+  color:var(--heavy);font-family:var(--mono);font-size:10.5px;letter-spacing:.04em}
+.site-card:hover{border-color:rgba(0,255,127,.3);color:var(--ink)}
+.site-card .dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.2);
+  flex:0 0 auto}
+.site-card.fresh .dot{background:var(--jade);box-shadow:0 0 7px rgba(0,255,127,.6)}
+.site-card .r{margin-left:auto;color:rgba(255,255,255,.26);font-size:9px;
+  letter-spacing:.1em;flex:0 0 auto}
+.site-card .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.phead{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:12px 14px 10px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--heavy);
+  border-bottom:1px solid rgba(255,255,255,.05);position:relative;z-index:5;background:var(--bg)}
+.phead b{color:var(--jade);font-weight:500}
+
+/* ══ THE DIALPAD ══ styling for qi's canonical markup, verbatim classes.
+
+   ⚠️ CLASS COLLISION, HANDLED HERE AND NOWHERE ELSE: his dialpad's outer wrapper is
+   class="pane", and this file already defines .pane{width:100vw;height:100vh} for the
+   300vw carousel. Nested inside #m-right that would hand the dialpad a full-viewport
+   box and tear the layout apart. So the FIRST rule below re-scopes only the nested
+   one. His markup is untouched and .pane's canon geometry is untouched — the fix
+   lives entirely in specificity. */
+#m-right .pane{width:auto;height:auto;overflow:visible;display:block;position:static}
+
+#m-right .kicker-bar{display:flex;align-items:baseline;justify-content:space-between;
+  gap:10px;padding:12px 14px 8px;font-family:var(--mono);font-size:11px;letter-spacing:.14em}
+#m-right .kicker{color:var(--heavy);text-transform:uppercase}
+#m-right .badge{font-size:9.5px;letter-spacing:.1em;color:var(--heavy);
+  border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+#m-right .muted{color:var(--heavy)}
+
+.phone{display:flex;flex-direction:column;min-height:0}
+.phone-tabs{display:flex;gap:6px;padding:0 12px 10px}
+.phone-tabs button{flex:1;background:transparent;border:1px solid var(--line);
+  border-radius:999px;color:var(--heavy);font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.1em;padding:9px 6px;text-transform:uppercase;cursor:pointer}
+.phone-tabs button.active{color:var(--ink);border-color:rgba(0,255,127,.42);
+  background:rgba(0,255,127,.07);box-shadow:0 0 22px rgba(0,255,127,.14) inset}
+
+.phone-body{display:flex;flex-direction:column;gap:12px;padding:0 14px 14px}
+.dial-area{text-align:center}
+.dial-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--heavy)}
+.dial-display{font-family:var(--mono);font-size:26px;letter-spacing:.14em;
+  color:var(--ink);min-height:34px;margin:4px 0 2px}
+.dial-display .placeholder{color:var(--heavy)}
+.dial-match{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--heavy)}
+
+.ascii-pad{display:flex;flex-direction:column;gap:9px}
+.pad-row{display:flex;gap:9px}
+.ascii-key{flex:1;aspect-ratio:1/1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;
+  background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:50%;
+  color:var(--ink);font-family:var(--mono);cursor:pointer}
+.ascii-key:active{background:rgba(0,255,127,.12);border-color:rgba(0,255,127,.42)}
+.ak-num{font-size:24px;line-height:1}
+.ak-chars{font-size:8.5px;letter-spacing:.16em;color:var(--heavy)}
+
+.call-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-top:4px}
+.ca-btn{display:flex;align-items:center;justify-content:center;gap:7px;
+  width:52px;height:52px;border-radius:50%;background:transparent;
+  border:1px solid var(--line);color:var(--heavy);cursor:pointer}
+.ca-btn.call{flex:1;width:auto;border-radius:999px;border:0;
+  background:linear-gradient(180deg,#00FF7F,#00C765);color:#04120A;
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase}
+.ca-btn.call[aria-disabled="true"]{opacity:.4}
+
+/* ══ CENTER COMPOSER ══ the write leg's face.            (added 2026-08-20)
+   GEOMETRY IS SAFE BY CONSTRUCTION, NOT BY CARE: .pane is already
+   flex-direction:column with .phead flex:0 0 auto and .mount flex:1;min-height:0.
+   A third child at flex:0 0 auto simply makes .mount shorter. Nothing here reads
+   or writes .panes{width:300vw} or .pane{width:100vw}, so the one-pane-at-a-time
+   swipeglass carousel cannot be disturbed by this block — that geometry is
+   untouchable canon and a previous attempt of mine to "fix" it was a real defect.
+   Nothing here touches .dock.dock-swipe either; the drawer IS the product. */
+.composer{flex:0 0 auto;border-top:1px solid var(--line);background:var(--glass);
+  /* BOTTOM PADDING IS THE FIX FOR A MEASURED DEFECT, not spacing taste: the dock
+     is fixed at bottom:0 with z-index 2147483000, so without clearance the SAVE
+     button lands underneath it and elementFromPoint returns "glass" instead of
+     the button — visible, focusable, and impossible to click. Clearance equals the
+     dock strip + the safe-area inset, so it tracks the dock instead of guessing.
+     The dock is NOT restyled to make room; my element yields to his. */
+  padding:10px 12px calc(12px + var(--xos-dock-real, calc(var(--dock-h) + var(--sab))));
+  display:flex;flex-direction:column;gap:8px}
+.composer .crow{display:flex;align-items:flex-end;gap:8px}
+.composer textarea{flex:1;min-width:0;resize:none;height:38px;max-height:112px;
+  background:rgba(0,0,0,.42);border:1px solid var(--line);border-radius:10px;
+  color:var(--ink);font-family:var(--mono);font-size:12.5px;line-height:1.45;
+  padding:9px 11px;outline:none}
+.composer textarea:focus{border-color:rgba(0,255,127,.42)}
+.composer textarea::placeholder{color:var(--heavy)}
+.composer .send{flex:0 0 auto;height:38px;padding:0 16px;border:0;border-radius:999px;
+  background:linear-gradient(180deg,#00FF7F,#00C765);color:#04120A;font-family:var(--mono);
+  font-size:11px;font-weight:700;letter-spacing:.06em;cursor:pointer}
+.composer .send:disabled{opacity:.42;cursor:default}
+.composer .cstat{font-family:var(--mono);font-size:10px;letter-spacing:.04em;
+  color:var(--heavy);min-height:12px}
+.composer .cstat.ok{color:var(--resolve)}
+.composer .cstat.pending{color:var(--restless)}
+.composer .cstat.bad{color:#FF6B6B}
+.phead .rail{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--heavy)}
+.dot.live{background:var(--jade);box-shadow:0 0 10px var(--jade)}
+.dot.err{background:#F87171}
+.loading{padding:22px 16px;font-family:var(--mono);font-size:12px;color:var(--heavy)}
+.fail{padding:22px 16px;font-family:var(--mono);font-size:12px;color:var(--restless);line-height:1.7}
+.fail a{color:var(--jade)}
+.notgv{margin:10px 14px;padding:10px 12px;border:1px solid rgba(245,158,11,.4);border-radius:10px;
+  font-family:var(--mono);font-size:11px;color:var(--restless);line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="panes" id="panes">
+  <!-- qi 2026-08-20 21:44, verbatim: remove all three .phead bars and the whole GV
+       chrome (#gv-live, #gp-keypad, #gv-foot). The panes are now pure mounted
+       surfaces — no label strip, no status rail, no dial pad. Every id those blocks
+       carried is on RETIRED_IDS so the 42 live references absorb harmlessly; one of
+       them (#gv-stat) was the source of the "Cannot set properties of null" error
+       he could see on screen. -->
+  <section class="pane" id="pane-left">
+    <div class="mount" id="m-left"><div class="loading">mounting /xos3/ …</div></div>
+  </section>
+
+  <section class="pane" id="pane-center">
+    <div class="mount" id="m-center"><div class="loading">mounting /lifenote/ …</div></div>
+    <!-- The composer is a SIBLING of .mount, never inside it: the mounted limb's
+         own DOM is replaced on every remount, so anything living in there would
+         vanish. flex:0 0 auto keeps it pinned under the feed. -->
+    <div class="composer" id="composer">
+      <div class="crow">
+        <textarea id="cnote" rows="1" maxlength="3800"
+          placeholder="note to the record… ⌘⏎ to save"></textarea>
+        <button class="send" id="csend">SAVE</button>
+      </div>
+      <div class="cstat" id="cstat"></div>
+    </div>
+  </section>
+
+  <!-- ══ THE DIALPAD ══ qi 2026-08-20 21:46: "THIS IS THE DIALPAD", pasted verbatim.
+       This is the canonical component — I had been carrying an invented keypad
+       (#gv-keys/#gv-callbig/#gv-dialtxt), which is exactly what he told me to
+       remove one message earlier. His markup is reproduced EXACTLY: same classes,
+       same nesting, same SVGs, same tab order (Dialpad first, active).
+       Behaviour is attached by CLASS from JS below — no ids added, no attributes
+       injected, no shape changed, because the shape is his. -->
+  <section class="pane" id="pane-right">
+    <div class="mount" id="m-right">
+      <div class="pane"><div class="kicker-bar"><div class="kicker">Phone</div><div class="badge muted" id="dial-badge">Dialpad</div></div><div class="phone"><div class="phone-tabs"><button class="active">Dialpad</button><button class="">Recents</button><button class="">Contacts</button></div><div class="phone-body"><div class="dial-area"><div class="dial-label">phone</div><div class="dial-display"><span class="placeholder">_ _ _ _ _ _</span></div><div class="dial-match muted">&rsaquo; tap a key or speak a name</div></div><div class="ascii-pad"><div class="pad-row"><button class="ascii-key"><div class="ak-num">1</div><div class="ak-chars">&nbsp;</div></button><button class="ascii-key"><div class="ak-num">2</div><div class="ak-chars">ABC</div></button><button class="ascii-key"><div class="ak-num">3</div><div class="ak-chars">DEF</div></button></div><div class="pad-row"><button class="ascii-key"><div class="ak-num">4</div><div class="ak-chars">GHI</div></button><button class="ascii-key"><div class="ak-num">5</div><div class="ak-chars">JKL</div></button><button class="ascii-key"><div class="ak-num">6</div><div class="ak-chars">MNO</div></button></div><div class="pad-row"><button class="ascii-key"><div class="ak-num">7</div><div class="ak-chars">PQRS</div></button><button class="ascii-key"><div class="ak-num">8</div><div class="ak-chars">TUV</div></button><button class="ascii-key"><div class="ak-num">9</div><div class="ak-chars">WXYZ</div></button></div><div class="pad-row"><button class="ascii-key"><div class="ak-num" style="font-size: 32px; margin-top: -2px;">&#10033;</div><div class="ak-chars">&nbsp;</div></button><button class="ascii-key"><div class="ak-num">0</div><div class="ak-chars">+</div></button><button class="ascii-key"><div class="ak-num">#</div><div class="ak-chars">&nbsp;</div></button></div></div><div class="call-actions"><button class="ca-btn" aria-label="contacts"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></button><a class="ca-btn call" href="#" style="text-decoration: none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 15.5c-1.2 0-2.5-.2-3.6-.6-.3-.1-.7 0-1 .3l-2.2 2.2c-2.8-1.4-5.2-3.7-6.6-6.6l2.2-2.2c.3-.3.4-.7.3-1-.4-1.1-.6-2.3-.6-3.6 0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1 0 9.4 7.6 17 17 17 .6 0 1-.4 1-1v-3.5c0-.6-.4-1-1-1z"></path></svg><span>call</span></a><button class="ca-btn" aria-label="backspace"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg></button></div></div></div></div>
+      <div class="gvp" id="gp-recents" hidden><div class="gvempty">reading omni…</div></div>
+      <div class="gvp" id="gp-contacts" hidden><div class="gvempty">reading omni…</div></div>
+    </div>
+  </section>
+</div>
+
+<!-- qi 2026-08-20 21:31, verbatim: remove the three-button swipeglass nav, replace
+     with a dock hit strip that opens the app drawer. The labelled button bar is
+     gone; the drawer is the surface. -->
+<div class="dock dock-swipe">
+  <span class="dock-handle" aria-hidden="true"></span>
+  <span class="dock-sheen" aria-hidden="true"></span>
+  <span class="dock-edge-light" aria-hidden="true"></span>
+  <div class="dock-vei-host"><canvas id="waveform-canvas" width="333" height="37" data-xos-docked="1"></canvas></div>
+  <div class="dock-hit" role="button" tabindex="0" aria-label="Open app drawer"></div>
+</div>
+
+<!-- The drawer the aria-label names. It did not exist — measured: "drawer" matched
+     exactly once in this file, and that one hit was my own comment. An element with
+     role="button" that opens nothing is a dead control (cmd 4), so this is the
+     minimum surface that makes the label true. Flagged to qi as my inference.
+     It still calls go(i), so the 300vw carousel is driven exactly as before. -->
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="App drawer" hidden>
+  <div class="drawer-grip"></div>
+  <button class="drawer-app" data-i="0"><span>OMNI-INBOX</span><em>/xos3</em></button>
+  <button class="drawer-app" data-i="1"><span>LIFENOTE</span><em>/lifenote</em></button>
+  <button class="drawer-app" data-i="2"><span>GV REMOTE</span><em>ggv.xlrd.org</em></button>
+  <!-- THE SITES. Populated from SITES below, rendered at boot — never a hardcoded list,
+       so adding a route to the data adds it to the drawer. -->
+  <div class="drawer-sep">sites</div>
+  <div class="drawer-scroll" id="sites-scroll"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ═══════════════════════════════════════════════════════════════════════════
+   ASSEMBLY v2 — fixes the three defects Codex measured on v1, 2026-08-20:
+     1. "Center LifeNote shows FEED 404 with empty journals: relative data URLs
+        broke when mounted."  ← lifenote does var FEED="lifenote.json", which
+        resolved against /life-app/ instead of /lifenote/. MY bug.
+     2. "top filters/nav overlap and clip" / "/life CSS overlaps severely"
+        ← three limbs' global CSS injected into one document, colliding.
+     3. right pane is /life, not GV  ← no GV surface exists; now labelled.
+
+   HOW 1 IS FIXED — a per-pane fetch/EventSource/XHR shim installed BEFORE the
+   limb's scripts run, so any bare-relative request resolves against the limb's
+   own directory instead of this page's. That is the piece an iframe gives free.
+   HOW 2 IS FIXED — every limb rule is rewritten to be scoped under its pane,
+   html/body/:root selectors are remapped, and position:fixed becomes absolute
+   (the .mount is a containing block via contain+transform).
+   ⛔ STILL NO IFRAME. Ever.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── RETIRED-NODE SAFETY NET ──                            (qi 2026-08-20 21:44)
+   He removed the three .phead bars and the whole GV chrome (#gv-live, #gp-keypad,
+   #gv-foot). That orphans 42 references across 17 ids — and one of them was
+   ALREADY biting him: the visible "ggv unreachable: Cannot set properties of null
+   (setting 'textContent')" was this code writing #gv-stat after it went missing.
+
+   Why not just make $() always return a stub: other code does existence checks —
+   `if(drawer)`, `if(t)` — and an always-truthy stub silently inverts them. So the
+   inert node is returned ONLY for ids on this explicit retired list. Live elements
+   behave exactly as before; retired ones absorb writes and no-op.
+   Reads stay type-correct so nothing downstream sees undefined. */
+var RETIRED_IDS = {
+  "d-left":1,"s-left":1,"d-center":1,"s-center":1,"d-right":1,"s-right":1,
+  "gv-live":1,"gv-title":1,"gv-ctl":1,
+  "gp-keypad":1,"gv-dialout":1,"gv-dialtxt":1,"gv-hint":1,"gv-keys":1,
+  "gv-callrow":1,"gv-callbig":1,"gv-del":1,"gv-contacts-btn":1,
+  "gv-foot":1,"gv-stat":1,"gv-age":1
+};
+function inertNode(){
+  return { textContent:"", innerHTML:"", value:"", disabled:false, hidden:true,
+           className:"", style:{}, dataset:{},
+           classList:{ add:function(){}, remove:function(){}, toggle:function(){},
+                       contains:function(){return false;} },
+           setAttribute:function(){}, getAttribute:function(){return null;},
+           removeAttribute:function(){}, addEventListener:function(){},
+           appendChild:function(){}, focus:function(){}, click:function(){},
+           querySelector:function(){return null;}, querySelectorAll:function(){return [];},
+           getBoundingClientRect:function(){return {x:0,y:0,width:0,height:0,top:0,left:0,right:0,bottom:0};} };
+}
+var $=function(i){
+  var el=document.getElementById(i);
+  if(el) return el;
+  return RETIRED_IDS[i] ? inertNode() : null;   // unknown missing id still returns null
+};
+
+/* ── swipeglass ────────────────────────────────────────────────────────── */
+var idx=1, panes=$("panes");
+function go(i){
+  idx=Math.max(0,Math.min(2,i));
+  panes.style.transform="translateX("+(-idx*100)+"vw)";
+  /* #glass is GONE (qi 2026-08-20). Kept as a tolerant lookup rather than deleted:
+     an empty NodeList just skips the loop, so this stays correct whether the old
+     nav is present or not. The drawer's own buttons carry the .on state now. */
+  var b=document.querySelectorAll("#glass button, #drawer .drawer-app");
+  for(var k=0;k<b.length;k++) b[k].className=
+    (b[k].classList.contains("drawer-app") ? "drawer-app" : "")
+    + ((+b[k].dataset.i===idx) ? " on" : "");
+}
+
+/* ── dock hit → app drawer ──────────────────────────────────────────────────
+   THIS GUARD IS THE WHOLE REASON THE PAGE STILL BOOTS. The old line was
+   `$("glass").addEventListener(...)` at module scope. With the nav removed
+   $("glass") is null, that line throws a TypeError, and EVERY statement after it
+   dies with it — go(1), the touch + keyboard handlers, URL rebasing, all three
+   pane mounts, the composer. A blank shell that still returns HTTP 200. */
+var hit=document.querySelector(".dock-hit"), drawer=$("drawer");
+
+/* PUBLISH THE GLASS'S MEASURED HEIGHT — ported from xos-capacitor/www/app.jsx:1606-1641.
+   --xos-dock-real is what .drawer and .composer read for their bottom offsets, so nothing
+   downstream hardcodes a dock height again. The CSS fallback calc() covers the frames
+   before the first measure.
+
+   NO FEEDBACK LOOP BY CONSTRUCTION: --xos-dock-real is consumed by .drawer and .composer,
+   neither of which is inside .dock.dock-swipe, so writing it can never change the observed
+   element's own height. The prev-value guard also stops a same-value write from scheduling
+   another layout. */
+(function(){
+  var dock = document.querySelector(".dock.dock-swipe");
+  if (!dock || typeof ResizeObserver === "undefined") return;
+  function publish(){
+    var h = Math.round(dock.getBoundingClientRect().height);
+    if (!h) return;                       // 0 during a hidden/pre-layout frame — ignore
+    var next = h + "px";
+    if (document.documentElement.style.getPropertyValue("--xos-dock-real") === next) return;
+    document.documentElement.style.setProperty("--xos-dock-real", next);
+  }
+  new ResizeObserver(publish).observe(dock);
+  publish();
+})();
+
+function setDrawer(open){
+  if(!drawer) return;
+  drawer.hidden=!open;
+  drawer.classList.toggle("open",!!open);
+  if(hit) hit.setAttribute("aria-expanded",open?"true":"false");
+}
+if(hit){
+  hit.setAttribute("aria-expanded","false");
+  hit.addEventListener("click",function(){ setDrawer(drawer && drawer.hidden); });
+  // role="button" promises keyboard operability; Enter/Space must work or the
+  // role is a lie to a screen reader.
+  hit.addEventListener("keydown",function(e){
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); setDrawer(drawer && drawer.hidden); }
+  });
+}
+if(drawer){
+  drawer.addEventListener("click",function(e){
+    var t=e.target.closest(".drawer-app");
+    if(t){ go(+t.dataset.i); setDrawer(false); }
+  });
+}
+document.addEventListener("keydown",function(e){ if(e.key==="Escape") setDrawer(false); });
+go(1);
+var x0=null;
+document.addEventListener("touchstart",function(e){x0=e.touches[0].clientX;},{passive:true});
+document.addEventListener("touchend",function(e){
+  if(x0===null)return; var dx=e.changedTouches[0].clientX-x0;
+  if(Math.abs(dx)>60) go(idx+(dx<0?1:-1)); x0=null;
+},{passive:true});
+document.addEventListener("keydown",function(e){
+  if(e.key==="ArrowLeft")go(idx-1); if(e.key==="ArrowRight")go(idx+1);
+});
+
+function status(side,state,text){
+  var d=$("d-"+side),s=$("s-"+side);
+  if(d)d.className="dot"+(state==="live"?" live":state==="err"?" err":"");
+  if(s)s.textContent=text;
+}
+
+/* ── URL rebasing: bare-relative → the limb's own directory ────────────── */
+function rebase(u, base){
+  if(u==null) return u;
+  var s=String(u);
+  if(/^(https?:|data:|blob:|about:|javascript:|mailto:|#|\/\/)/i.test(s)) return s;
+  if(s.charAt(0)==="/") return s;                  // already root-absolute: fine
+  try { return new URL(s, location.origin+base).pathname
+              + new URL(s, location.origin+base).search; } catch(e){ return s; }
+}
+
+/* ── CSS scoping: rewrite each rule to live under this pane only ────────── */
+function scopeCss(css, scope, base){
+  css=css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g,function(m,q,u){
+    return "url("+q+rebase(u,base)+q+")";
+  });
+  // position:fixed would escape the pane; .mount is a containing block so make it absolute
+  css=css.replace(/position\s*:\s*fixed/gi,"position:absolute");
+  // 100vh inside a pane is the pane, not the viewport
+  css=css.replace(/(\d+)vh/g,function(m,n){ return n==="100" ? "100%" : m; });
+  var out=[], depth=0, buf="";
+  // walk top-level rules; only rewrite selectors at depth 0 (leave @media innards to recursion)
+  function scopeSelectors(sel){
+    return sel.split(",").map(function(s){
+      s=s.trim();
+      if(!s) return s;
+      if(/^(from|to|\d+%)$/.test(s)) return s;                 // keyframe stops
+      if(/^(html|body|:root)\b/i.test(s)){
+        return scope + s.replace(/^(html|body|:root)/i,"");
+      }
+      return scope+" "+s;
+    }).join(",");
+  }
+  var i=0, n=css.length, sel="";
+  while(i<n){
+    var ch=css[i];
+    if(ch==="{"){
+      depth++;
+      if(depth===1){
+        var s=sel.trim(); sel="";
+        if(s.charAt(0)==="@"){
+          if(/^@(media|supports|layer)/i.test(s)){ out.push(s+"{"); buf=""; }
+          else { out.push(s+"{"); buf=""; }        // @keyframes / @font-face pass through
+          i++; continue;
+        }
+        out.push(scopeSelectors(s)+"{"); i++; continue;
+      }
+      out.push("{"); i++; continue;
+    }
+    if(ch==="}"){ depth--; out.push("}"); i++; continue; }
+    if(depth===0) sel+=ch; else out.push(ch);
+    i++;
+  }
+  var scoped=out.join("");
+  // second pass: selectors nested inside @media were emitted raw — scope them
+  scoped=scoped.replace(/@(media|supports|layer)([^{]*)\{([\s\S]*?)\}\s*(?=@|$)/g,
+    function(m,kw,cond,body){
+      var inner=body.replace(/([^{}]+)\{/g,function(mm,s){ return scopeSelectors(s)+"{"; });
+      return "@"+kw+cond+"{"+inner+"}";
+    });
+  return scoped;
+}
+
+/* ── PERMANENT URL REBASING ────────────────────────────────────────────────────
+   MEASURED 2026-08-20 in the live console: 13 identical errors, one every ~20s —
+     404 https://life.xlrd.org/life-app/lifenote.json
+   The previous shim restored the real fetch after 4000ms, with the comment "long
+   enough for the limb's own boot fetches to fire." That assumption is the bug.
+   LifeNote does not fetch once at boot; it POLLS lifenote.json every 20 seconds
+   for the life of the page. So the shim was right for four seconds and wrong for
+   every poll after — the pane rendered, then went stale and showed FEED 404 while
+   the mount itself reported "live". A longer timeout only moves the cliff.
+   SHAPE: separate LEARNING from REBASING. While a limb boots, LIMB_ACTIVE names
+   its base and every bare-relative path it requests is remembered against that
+   base. From then on the shim keeps rewriting those SAME paths forever, so an
+   interval poll resolves exactly like its first fetch did. Panes still cannot
+   cross-talk: each learned path stays bound to the base that asked for it, and a
+   path is only ever learned while its own limb is the active one.
+   Absolute, root-relative and protocol URLs are passed through untouched, which is
+   why /xos3 (it targets https://omni.xlrd.org) needs none of this.            */
+var LIMB_ACTIVE = null;      /* base of the limb currently booting, else null */
+var LIMB_LEARNED = {};       /* bare path -> the base that owns it            */
+(function installPermanentRebase(){
+  var of=window.fetch, oes=window.EventSource, oxhr=XMLHttpRequest.prototype.open;
+  function resolve(u){
+    if(typeof u!=="string" || !u) return u;
+    if(/^(https?:|data:|blob:|about:|javascript:|mailto:|#|\/\/)/i.test(u)) return u;
+    if(u.charAt(0)==="/") return u;
+    var key=u.split("?")[0];
+    var b=LIMB_ACTIVE || LIMB_LEARNED[key];
+    if(!b) return u;
+    LIMB_LEARNED[key]=b;
+    return rebase(u,b);
+  }
+  window.fetch=function(u,o){ return of.call(window, resolve(u), o); };
+  if(oes) window.EventSource=function(u,o){ return new oes(resolve(u),o); };
+  XMLHttpRequest.prototype.open=function(m,u){ arguments[1]=resolve(u); return oxhr.apply(this,arguments); };
+})();
+
+/* ── mount one limb ───────────────────────────────────────────────────── */
+function mount(side, base){
+  var host=$("m-"+side), scope="#m-"+side;
+  status(side,"","fetching");
+  fetch(base,{credentials:"same-origin",cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.text(); })
+    .then(function(html){
+      var doc=new DOMParser().parseFromString(html,"text/html");
+
+      /* styles: scope + rebase, then attach */
+      doc.querySelectorAll("style").forEach(function(st){
+        var el=document.createElement("style");
+        el.setAttribute("data-limb",side);
+        el.textContent=scopeCss(st.textContent||"", scope, base);
+        document.head.appendChild(el);
+      });
+      doc.querySelectorAll('link[rel="stylesheet"]').forEach(function(lk){
+        var href=rebase(lk.getAttribute("href"), base);
+        fetch(href,{cache:"no-store"}).then(function(r){return r.ok?r.text():"";})
+          .then(function(css){
+            if(!css) return;
+            var el=document.createElement("style");
+            el.setAttribute("data-limb",side);
+            el.textContent=scopeCss(css, scope, base);
+            document.head.appendChild(el);
+          }).catch(function(){});
+      });
+
+      /* markup: rebase every asset attribute */
+      ["src","href","poster","data-src"].forEach(function(a){
+        doc.body.querySelectorAll("["+a+"]").forEach(function(el){
+          el.setAttribute(a, rebase(el.getAttribute(a), base));
+        });
+      });
+
+      host.innerHTML="";
+      var kids=doc.body.childNodes;
+      while(kids.length) host.appendChild(kids[0]);
+
+      /* Open the LEARNING window for this limb. The permanent shim (installed once,
+         far below) rebases while LIMB_ACTIVE is set and REMEMBERS each bare path it
+         saw, so later polls keep resolving correctly. See the shim for why the old
+         4-second restore was structurally wrong.                                */
+      LIMB_ACTIVE = base;
+
+      var scripts=host.querySelectorAll("script");
+      for(var i=0;i<scripts.length;i++){
+        var o=scripts[i], nx=document.createElement("script");
+        for(var a=0;a<o.attributes.length;a++) nx.setAttribute(o.attributes[a].name,o.attributes[a].value);
+        if(o.src) nx.src=rebase(o.getAttribute("src"), base);
+        else nx.textContent=o.textContent;
+        o.parentNode.replaceChild(nx,o);
+      }
+
+      /* Close the LEARNING window only. The rebasing itself is permanent for the
+         paths learned here, which is the whole point of the fix.                */
+      setTimeout(function(){ if(LIMB_ACTIVE===base) LIMB_ACTIVE=null; }, 4000);
+
+      status(side,"live",base);
+    })
+    .catch(function(err){
+      status(side,"err","failed");
+      host.innerHTML='<div class="fail">could not mount <b>'+base+'</b><br>'+String(err.message)+
+        '<br><br>open directly: <a href="'+base+'">'+base+'</a></div>';
+    });
+}
+
+
+/* ── RIGHT PANE: THE REAL GV REMOTE ────────────────────────────────────────────
+   Wired to the CANONICAL route ggv.xlrd.org (tunnel canon: -> 127.0.0.1:3457,
+   service mcp-gv/gv-mcp.mjs), which had regressed to 502 with no listener and is
+   now restored and guardian-owned. This pane is NATIVE to this page rather than a
+   mounted limb: GV cannot be iframed (Google sends frame-blocking headers) and
+   /life was never the GV surface. Call CONTROL goes through gv-mcp's tools, which
+   puppet Google Voice's OWN hidden controls in the headed logged-in BrowserOS tab —
+   we never reimplement dialing and never touch audio bytes.
+   Contacts + recents are REAL gvoice threads from omni; nothing here is invented.
+   ────────────────────────────────────────────────────────────────────────────── */
+var GGV  = "https://ggv.xlrd.org";
+var OMNI = "https://omni.xlrd.org";
+
+function gvStyles(){
+  var css = ''
+  + '#m-right{padding:0;display:flex;flex-direction:column;overflow:hidden}'
+  + '#gv-live{flex:0 0 auto;padding:9px 12px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;'
+  +   'color:#00FF7F;border-bottom:1px solid rgba(0,255,127,.16);background:linear-gradient(180deg,rgba(0,255,127,.07),transparent)}'
+  + '#gv-live.incall{color:#00FFC2;background:linear-gradient(180deg,rgba(0,255,194,.16),transparent)}'
+  + '#gv-tabs{flex:0 0 auto;display:flex;gap:2px;padding:7px 8px;border-bottom:1px solid rgba(0,255,127,.1)}'
+  + '.gvt{flex:1;padding:7px 3px;text-align:center;cursor:pointer;font-size:10px;letter-spacing:.11em;'
+  +   'text-transform:uppercase;color:#6B7280;border:1px solid transparent;border-radius:8px}'
+  + '.gvt.on{color:#00FF7F;background:rgba(0,255,127,.055);border-color:rgba(0,255,127,.22)}'
+  + '.gvp{display:none;flex:1 1 auto;overflow-y:auto;padding:9px}'
+  + '.gvp.on{display:block}'
+  + '.gvrow{display:flex;align-items:center;gap:9px;padding:9px 10px;margin-bottom:6px;'
+  +   'background:#0A0E11;border:1px solid rgba(0,255,127,.1);border-radius:10px}'
+  + '.gvav{flex:0 0 32px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;'
+  +   'font-size:11px;background:rgba(0,255,127,.055);border:1px solid rgba(0,255,127,.22);color:#00FF7F}'
+  + '.gvmeta{flex:1 1 auto;min-width:0}'
+  + '.gvwho{font-size:12px;color:#E8EAE8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+  + '.gvprev{font-size:10px;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}'
+  + '.gvwhen{flex:0 0 auto;font-size:10px;color:#6B7280}'
+  /* the canonical emerald glass call button */
+  + '.gvcall{flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;cursor:pointer;'
+  +   'background:radial-gradient(circle at 32% 28%,rgba(0,255,194,.34),rgba(0,255,127,.13) 62%,rgba(0,255,127,.05));'
+  +   'border:1px solid rgba(0,255,127,.42);color:#00FFC2;font-size:14px;line-height:1;'
+  +   'box-shadow:0 0 0 1px rgba(0,255,127,.10) inset,0 2px 14px rgba(0,255,127,.20);'
+  +   '-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);transition:transform .12s ease}'
+  + '.gvcall:active{transform:scale(.92)}'
+  + '.gvcall.hangup{background:radial-gradient(circle at 32% 28%,rgba(245,158,11,.34),rgba(245,158,11,.10) 64%,transparent);'
+  +   'border-color:rgba(245,158,11,.46);color:#F59E0B}'
+  + '#gv-dialout{min-height:42px;padding:9px 11px;margin-bottom:11px;background:#0A0E11;'
+  +   'border:1px solid rgba(0,255,127,.22);border-radius:10px;font-size:20px;letter-spacing:.05em;'
+  +   'color:#E8EAE8;display:flex;align-items:center;justify-content:space-between;gap:8px}'
+  + '#gv-dialout .ph{color:#6B7280;font-size:12px;letter-spacing:.1em}'
+  + '#gv-del{cursor:pointer;color:#6B7280;font-size:15px;padding:0 4px}'
+  /* ROUND keys, per the canonical GV Phone dialpad — not squares. */
+  + '#gv-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 6px;max-width:300px;margin:0 auto}'
+  + '.gvk{aspect-ratio:1/1;border-radius:50%;display:flex;flex-direction:column;align-items:center;'
+  +   'justify-content:center;cursor:pointer;background:#141A1E;border:1px solid rgba(255,255,255,.05);'
+  +   'font-size:26px;font-weight:300;color:#E8EAE8;line-height:1;transition:background .1s ease}'
+  + '.gvk:active{background:rgba(0,255,127,.10)}'
+  + '.gvk small{display:block;font-size:8px;color:#6B7280;letter-spacing:.16em;margin-top:3px;font-weight:400}'
+  /* the hint line above the pad */
+  + '#gv-hint{text-align:center;font-size:11px;letter-spacing:.12em;color:#6B7280;margin:0 0 14px}'
+  /* CALL row: contacts · emerald pill · backspace */
+  + '#gv-callrow{display:flex;align-items:center;gap:12px;margin-top:16px;max-width:300px;margin-left:auto;margin-right:auto}'
+  + '.gvside{flex:0 0 46px;height:46px;border-radius:50%;display:grid;place-items:center;cursor:pointer;'
+  +   'background:#141A1E;border:1px solid rgba(255,255,255,.05);color:#9BA3AA;font-size:17px}'
+  + '.gvside:active{background:rgba(0,255,127,.08)}'
+  + '#gv-callbig{flex:1 1 auto;height:52px;cursor:pointer;border-radius:999px;font:inherit;'
+  +   'display:flex;align-items:center;justify-content:center;gap:9px;'
+  +   'font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#00FF7F;'
+  +   'background:radial-gradient(120% 140% at 50% 10%,rgba(0,255,127,.20),rgba(0,255,127,.07) 60%,rgba(0,255,127,.03));'
+  +   'border:1px solid rgba(0,255,127,.46);'
+  +   'box-shadow:0 0 0 1px rgba(0,255,127,.08) inset,0 4px 30px rgba(0,255,127,.26);'
+  +   '-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}'
+  + '#gv-callbig:disabled{opacity:.35;cursor:default;box-shadow:none}'
+  /* big number readout, centred, like the canonical pad */
+  + '#gv-dialout{justify-content:center;font-size:27px;letter-spacing:.08em;border:0;background:transparent;min-height:56px}'
+  + '#gv-foot{flex:0 0 auto;padding:7px 11px;border-top:1px solid rgba(0,255,127,.1);'
+  +   'font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6B7280;display:flex;justify-content:space-between;gap:8px}'
+  + '#gv-foot .bad{color:#F59E0B}'
+  + '#gv-ctl{display:flex;gap:7px;margin-left:auto}'
+  + '#gv-live{display:flex;align-items:center;gap:8px}'
+  + '#gv-ctl .gvcall{width:28px;height:28px;font-size:12px}'
+  + '.gvnonum{flex:0 0 auto;width:34px;text-align:center;color:#6B7280;font-size:14px;cursor:default}'
+  + '.gvempty{padding:20px 10px;text-align:center;color:#6B7280;font-size:11px;line-height:1.7}'
+  + '.gvempty b{display:block;color:#F59E0B;margin-bottom:5px;letter-spacing:.1em}';
+  var el=document.createElement("style"); el.setAttribute("data-limb","right");
+  el.textContent=css; document.head.appendChild(el);
+}
+
+function gvEsc(v){ return String(v==null?"":v).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function gvAgo(ts){ if(!ts) return "";
+  var d=Math.floor((Date.now()-ts)/1000);
+  if(d<60) return d+"s"; if(d<3600) return Math.floor(d/60)+"m";
+  if(d<86400) return Math.floor(d/3600)+"h"; return Math.floor(d/86400)+"d"; }
+function gvInit(n){ var t=String(n||"").trim();
+  if(/^\+?[\d\s()\-]+$/.test(t)) return "#";
+  var p=t.split(/\s+/).filter(Boolean);
+  return ((p[0]||"?")[0]+(p[1]?p[1][0]:"")).toUpperCase(); }
+function gvIsNum(v){ return /^\+?[\d\s()\-]{7,}$/.test(String(v||"").trim()); }
+
+/* Every control goes through gv-mcp's own tools. No auth header: qi's explicit
+   decision, stated four times — "if anybody can do that, that means it works."
+   gv-mcp records each call to an M4 audit log with the number redacted to last-4. */
+function gvTool(name, args){
+  return fetch(GGV+"/mcp",{
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({jsonrpc:"2.0",id:Date.now(),method:"tools/call",
+                         params:{name:name,arguments:args||{}}})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    // MCP returns HTTP 200 even when the TOOL failed — the verdict lives in
+    // result.isError and the payload text, never in the status line. Reading the
+    // 200 as success is how a UI ends up announcing "dial sent" on a rejection.
+    if (d && d.error) throw new Error(d.error.message || "rpc error");
+    var res = d && d.result, txt = "";
+    try { txt = (res.content || [])[0].text || ""; } catch(_) {}
+    var inner = null;
+    try { inner = JSON.parse(txt); } catch(_) {}
+    if ((res && res.isError) || (inner && inner.ok === false)) {
+      throw new Error((inner && (inner.detail || inner.error || inner.blocker)) || txt || "tool reported failure");
+    }
+    return inner || res;
+  });
+}
+function gvDial(num){
+  var st=$("gv-stat"); st.textContent="dialing "+num; st.className="";
+  gvTool("gv_dial",{number:num})
+    .then(function(){ st.textContent="dial accepted · watching state"; gvPoll(); })
+    .catch(function(e){ st.textContent="dial failed: "+(e.message||e); st.className="bad"; });
+}
+function gvHangup(){ gvTool("gv_hangup").then(gvPoll).catch(function(){}); }
+
+function gvDialable(r){
+  // A dialable target must be an actual number. MEASURED on the live payload:
+  // omni's 6 gvoice rows carry NO `number` field and only 2 titles are numeric,
+  // so 4 of them are names with no phone number anywhere in the data. Offering a
+  // call button there would dial a name. Nothing is invented to fill the gap.
+  var cand = r.number || r.title || "";
+  var digits = String(cand).replace(/\D/g, "");
+  return (gvIsNum(cand) && digits.length >= 10) ? cand : null;
+}
+function gvRowHTML(r){
+  var who=r.title||r.number||"unknown";
+  var dial=gvDialable(r);
+  return '<div class="gvrow"><div class="gvav">'+gvEsc(gvInit(who))+'</div>'
+    +'<div class="gvmeta"><div class="gvwho">'+gvEsc(who)+'</div>'
+    +'<div class="gvprev">'+gvEsc(r.preview||"")+'</div></div>'
+    +'<div class="gvwhen">'+gvEsc(gvAgo(r.lastTs))+'</div>'
+    +(dial
+       ? '<div class="gvcall" data-dial="'+gvEsc(dial)+'" title="call '+gvEsc(dial)+'">&#9742;</div>'
+       : '<div class="gvnonum" title="no phone number in this thread - omni carries no number field for it">&#8212;</div>')
+    +'</div>';
+}
+function gvEmpty(el,head,why){
+  el.innerHTML='<div class="gvempty"><b>'+gvEsc(head)+'</b>'+gvEsc(why)+'</div>';
+}
+
+/* Contacts and recents are REAL gvoice threads out of omni. If omni answers with
+   zero gvoice rows we say so — nothing is invented to fill the pane. */
+function gvRooms(){
+  fetch(OMNI+"/api/rooms",{cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(d){
+      var all=Array.isArray(d.rooms)?d.rooms:[];
+      var gv=all.filter(function(r){
+        return ["gvoice","googlevoice","gv"].indexOf(String(r.network||"").toLowerCase())>=0;
+      }).sort(function(a,b){ return (b.lastTs||0)-(a.lastTs||0); });
+      if(!gv.length){
+        gvEmpty($("gp-recents"),"NO GOOGLE VOICE THREADS","Omni answered and reported zero gvoice rows.");
+        gvEmpty($("gp-contacts"),"NO CONTACTS","Contacts come only from real gvoice threads.");
+        return;
+      }
+      $("gp-recents").innerHTML=gv.map(gvRowHTML).join("");
+      var seen={},people=[],nums=[];
+      gv.forEach(function(r){ var w=r.title||r.number; if(!w||seen[w])return; seen[w]=1;
+        (gvIsNum(w)?nums:people).push(r); });
+      $("gp-contacts").innerHTML=people.concat(nums).map(gvRowHTML).join("");
+    })
+    .catch(function(e){
+      gvEmpty($("gp-recents"),"OMNI UNREACHABLE","The gvoice threads live in omni: "+(e.message||e));
+      gvEmpty($("gp-contacts"),"OMNI UNREACHABLE","Contacts come from omni.");
+    });
+}
+
+var gvLastAt=0;
+function gvPoll(){
+  fetch(GGV+"/state",{cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(d){
+      gvLastAt=Date.now();
+      var live=$("gv-live"), st=$("gv-stat");
+      if(d.ok===false && d.blocker){
+        // The service tells the truth about its own blocker; surface it verbatim.
+        $("gv-title").textContent=d.blocker;
+        status("right","","blocked"); st.textContent=d.blocker; st.className="bad";
+        return;
+      }
+      var s=d.state||{};
+      $("gv-title").textContent = s.inCall
+        ? ("IN CALL · "+(s.callerName||s.callerNumber||"unknown")+(s.duration?(" · "+s.duration):""))
+        : (s.title||"idle");
+      live.className = s.inCall ? "incall" : "";
+      // State-appropriate controls, driven by what gv_state says GV's own DOM
+      // actually exposes. canAnswer/canHangup are false when no call is up — the
+      // controls appear because the real controls exist, not because we guessed.
+      var ctl=$("gv-ctl");
+      var bits="";
+      if(s.canAnswer) bits+='<div class="gvcall" data-act="answer" title="answer">&#9742;</div>';
+      if(s.canHangup) bits+='<div class="gvcall hangup" data-act="hangup" title="hang up">&#9743;</div>';
+      if(s.canHangup) bits+='<div class="gvcall" data-act="mute" title="mute">&#9836;</div>';
+      ctl.innerHTML=bits;
+      ctl.style.display = bits ? "flex" : "none";
+      status("right","live","ggv live");
+      st.textContent = s.inCall ? "in call" : "live · ggv"; st.className="";
+    })
+    .catch(function(e){
+      status("right","err","ggv down");
+      var st=$("gv-stat"); st.textContent="ggv unreachable: "+(e.message||e); st.className="bad";
+    });
+}
+
+function mountGV(){
+  gvStyles();
+  /* keypad */
+  var K=[["1",""],["2","ABC"],["3","DEF"],["4","GHI"],["5","JKL"],["6","MNO"],
+         ["7","PQRS"],["8","TUV"],["9","WXYZ"],["*",""],["0","+"],["#",""]];
+  var dialed="";
+  function sync(){ var t=$("gv-dialtxt");
+    if(dialed){ t.textContent=dialed; t.className=""; }
+    else { t.innerHTML="&#8212; &#8212; &#8212; &#8212; &#8212; &#8212;"; t.className="ph"; }
+    $("gv-callbig").disabled = dialed.length<3; }
+  $("gv-keys").innerHTML=K.map(function(k){
+    return '<div class="gvk" data-k="'+k[0]+'">'+k[0]+(k[1]?'<small>'+k[1]+'</small>':'')+'</div>'; }).join("");
+  $("gv-keys").addEventListener("click",function(e){
+    var k=e.target.closest(".gvk"); if(!k) return; dialed+=k.getAttribute("data-k"); sync(); });
+  $("gv-del").addEventListener("click",function(){ dialed=dialed.slice(0,-1); sync(); });
+  $("gv-contacts-btn").addEventListener("click",function(){
+    var t=document.querySelector('#gv-tabs .gvt[data-gp="contacts"]'); if(t) t.click();
+  });
+  $("gv-callbig").addEventListener("click",function(){ if(dialed) gvDial(dialed); });
+  sync();
+
+  /* tabs */
+  $("gv-tabs").addEventListener("click",function(e){
+    var t=e.target.closest(".gvt"); if(!t) return;
+    var want=t.getAttribute("data-gp");
+    Array.prototype.forEach.call(document.querySelectorAll("#gv-tabs .gvt"),function(x){
+      x.classList.toggle("on", x===t); });
+    Array.prototype.forEach.call(document.querySelectorAll("#m-right .gvp"),function(pp){
+      pp.classList.toggle("on", pp.id==="gp-"+want); });
+  });
+
+  /* delegated call buttons — survives every re-render */
+  $("m-right").addEventListener("click",function(e){
+    var b=e.target.closest(".gvcall"); if(!b) return;
+    var act=b.getAttribute("data-act"), st=$("gv-stat");
+    function run(tool){
+      st.textContent=tool.replace("gv_","")+"…"; st.className="";
+      gvTool(tool)
+        .then(function(){ st.textContent=tool.replace("gv_","")+" sent"; gvPoll(); })
+        // Honest selector-miss feedback: gv-mcp reports which selector failed to
+        // match when GV's DOM drifts. Surface that verbatim instead of "failed".
+        .catch(function(err){ st.textContent=tool.replace("gv_","")+" failed: "+(err.message||err); st.className="bad"; });
+    }
+    if(act==="answer") return run("gv_answer");
+    if(act==="hangup") return run("gv_hangup");
+    if(act==="mute")   return run("gv_mute");
+    var num=b.getAttribute("data-dial");
+    if(num) gvDial(num);
+  });
+
+  gvPoll(); gvRooms();
+  setInterval(gvPoll, 6000);      /* call state is the fast lane */
+  setInterval(gvRooms, 20000);    /* threads move slower */
+  setInterval(function(){ $("gv-age").textContent = gvLastAt ? ("state "+gvAgo(gvLastAt)+" old") : ""; }, 1000);
+
+  /* live push when available; polling above is the floor, not the ceiling */
+  try{
+    var ws=new WebSocket("wss://ggv.xlrd.org/ws");
+    ws.onmessage=function(){ gvPoll(); };
+  }catch(_){}
+}
+
+/* stagger so the three shims never overlap */
+mount("center","/lifenote/");
+setTimeout(function(){ mount("left","/xos3/"); }, 4200);
+setTimeout(mountGV, 8400);
+
+/* ══ DIALPAD WIRING ══ qi's canonical markup, behaviour attached BY CLASS.
+   Nothing here adds an id, an attribute, or a wrapper to his DOM — the shape is
+   his, so the code adapts to it rather than the reverse. Delegated from #m-right
+   so it survives a remount of the limb.
+
+   THE CALL BUTTON PLACES A REAL CALL through the gv-mcp rail that is already
+   verified live (:3457 -> ggv.xlrd.org, gvTabAttached). So it is deliberately
+   inert until there are >=10 digits, and it reports the REAL failure text rather
+   than a cheerful nothing — a dialer that silently no-ops is worse than one that
+   says why. */
+(function wireDialpad(){
+  var root = document.getElementById("m-right");
+  if(!root) return;
+
+  function disp(){ return root.querySelector(".dial-display"); }
+  function match(){ return root.querySelector(".dial-match"); }
+  var digits = "";
+
+  function paint(){
+    var d = disp(); if(!d) return;
+    d.innerHTML = digits
+      ? digits.replace(/[<>&]/g,"")
+      : '<span class="placeholder">_ _ _ _ _ _</span>';
+    var m = match();
+    if(m){
+      m.textContent = digits.length >= 10
+        ? "› ready to dial " + digits
+        : (digits ? "› " + digits.length + " of 10 digits"
+                  : "› tap a key or speak a name");
+    }
+    var call = root.querySelector(".ca-btn.call");
+    if(call) call.setAttribute("aria-disabled", digits.replace(/\D/g,"").length >= 10 ? "false" : "true");
+  }
+
+  root.addEventListener("click", function(e){
+    var key = e.target.closest && e.target.closest(".ascii-key");
+    if(key){
+      var n = key.querySelector(".ak-num");
+      if(n){ digits += (n.textContent || "").trim(); paint(); }
+      return;
+    }
+    var back = e.target.closest && e.target.closest('.ca-btn[aria-label="backspace"]');
+    if(back){ digits = digits.slice(0, -1); paint(); return; }
+
+    var tab = e.target.closest && e.target.closest(".phone-tabs button");
+    if(tab){
+      Array.prototype.forEach.call(root.querySelectorAll(".phone-tabs button"), function(b){
+        b.className = (b === tab) ? "active" : "";
+      });
+      var want = (tab.textContent || "").trim().toLowerCase();
+      var body = root.querySelector(".phone-body");
+      var rec  = document.getElementById("gp-recents");
+      var con  = document.getElementById("gp-contacts");
+      if(body) body.hidden = (want !== "dialpad");
+      if(rec)  rec.hidden  = (want !== "recents");
+      if(con)  con.hidden  = (want !== "contacts");
+      return;
+    }
+
+    var call = e.target.closest && e.target.closest(".ca-btn.call");
+    if(call){
+      e.preventDefault();                       // his markup is <a href="#">
+      var num = digits.replace(/\D/g, "");
+      var m = match();
+      if(num.length < 10){ if(m) m.textContent = "› need 10 digits before dialing"; return; }
+      if(m) m.textContent = "› dialing " + num + "…";
+      // gvTool already asserts on result.isError AND inner ok===false, so a
+      // failure surfaces its real reason instead of a false success.
+      gvTool("gv_dial", { number: num }).then(function(){
+        if(m) m.textContent = "› dialing " + num + " — accepted by the line";
+      }).catch(function(err){
+        if(m) m.textContent = "› NOT dialed — " + (err && err.message ? err.message : err);
+      });
+    }
+  });
+
+  paint();
+})();
+
+/* ══ CENTER COMPOSER WIRING ══                            (added 2026-08-20)
+   POSTs to omni's /api/note, which appends `note: <text>` to qi's canonical
+   capture log — the same jsonl xen-lifenote-feed reads as its FIRST source. The
+   rail is a TEXT PREFIX, not a field (xen-lifenote-feed:239), and the server adds
+   it, so nothing here needs to know the schema.
+
+   THE STATUS LINE TELLS THE TRUTH AND THAT IS THE POINT: a 200 here means the
+   append is on disk, NOT that the note is visible in the feed. Rendering needs
+   the generator to rebuild, and the PUBLIC build additionally needs a Pages
+   publish. Saying "posted" would be the lie; it says saved + when it will appear.
+   MEASURED 2026-08-20: an unverified 200 from this exact route sat on a note that
+   rendered ZERO times because of a timezone bug. Never trust the status code alone.
+   Public path proven: preflight 204 with ACAO:* from the life.xlrd.org origin. */
+(function wireComposer(){
+  var ta = document.getElementById("cnote");
+  var btn = document.getElementById("csend");
+  var out = document.getElementById("cstat");
+  if(!ta || !btn || !out) return;
+
+  function stat(msg, cls){ out.textContent = msg; out.className = "cstat" + (cls ? " " + cls : ""); }
+
+  function grow(){ ta.style.height = "38px"; ta.style.height = Math.min(ta.scrollHeight, 112) + "px"; }
+  ta.addEventListener("input", grow);
+
+  var sending = false;
+  function save(){
+    var text = (ta.value || "").trim();
+    if(!text || sending) return;
+    // The server caps a note at 4000 B for atomicity against the capture writer;
+    // fail here with a real reason rather than letting the POST 413.
+    if(text.length > 3800){ stat("too long — " + text.length + "/3800 characters", "bad"); return; }
+    sending = true; btn.disabled = true; stat("saving…", "pending");
+    fetch(OMNI + "/api/note", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text })
+    }).then(function(r){
+      return r.text().then(function(t){
+        var j = null; try { j = JSON.parse(t); } catch(e){}
+        // Assert on the BODY. This server answers 200 with ok:false on a real
+        // failure, so a status-only check would report success that did not happen.
+        if(!r.ok || !j || j.ok !== true){
+          throw new Error((j && j.error) ? j.error : ("HTTP " + r.status + " " + t.slice(0,90)));
+        }
+        return j;
+      });
+    }).then(function(j){
+      ta.value = ""; grow();
+      stat("saved to the record · " + j.bytes + " B · shows in the feed after the next rebuild", "ok");
+    }).catch(function(e){
+      stat("NOT saved — " + (e && e.message ? e.message : e), "bad");
+    }).then(function(){
+      sending = false; btn.disabled = false;
+    });
+  }
+
+  btn.addEventListener("click", save);
+  ta.addEventListener("keydown", function(e){
+    if(e.key === "Enter" && (e.metaKey || e.ctrlKey)){ e.preventDefault(); save(); }
+  });
+})();
+})();
+
+/* ── SITES → APP DRAWER (qi 2026-08-22). 17 categories, 321 routes, real data.
+   Two views inside one scroller: category list, then that category's cards.
+   ⚠️ Rendered from SITES, never written as markup — a route added to the data
+   appears in the drawer with no HTML edit. */
+var SITES = [{"id":"cat-0","title":"Xen Ecosystem","cards":[{"href":"/xen","title":"XEN \u2014 Tag It. It's There.","fresh":true,"label":"/xen","date":"AUG 18"},{"href":"/xen-01","title":"XEN \u2014 Voice-First Autonomous AI","fresh":false,"label":"/xen-01","date":"JUL 08"},{"href":"/xen-architecture","title":"XEN \u2014 Architecture White-Paper","fresh":false,"label":"/xen-architecture","date":"JUN 20"},{"href":"/xen-fabric","title":"XEN Real-Time Fabric","fresh":false,"label":"/xen-fabric","date":"JUL 22"},{"href":"/xen-map","title":"Xen \u00b7 Exedus \u2014 Live Architecture Map","fresh":true,"label":"/xen-map","date":"AUG 18"},{"href":"/xen-prd","title":"XEN Unified Brain Platform \u00b7 PRD v1.0","fresh":false,"label":"/xen-prd","date":"JUN 28"},{"href":"/xenos","title":"XENOS \u2014 shapeshifter","fresh":true,"label":"/xenos","date":"AUG 18"},{"href":"/xenos-env","title":"XENOS","fresh":true,"label":"/xenos-env","date":"AUG 18"},{"href":"/xenos-plasma","title":"XENOS","fresh":true,"label":"/xenos-plasma","date":"AUG 18"},{"href":"/xos","title":"Xenphone OS \u2014 iOS 27 \u00b7 dark","fresh":true,"label":"/xos","date":"AUG 18"},{"href":"/xql","title":"XQL Control Plane \u2014 Genesis\u2194Leviticus Bridge","fresh":false,"label":"/xql","date":"AUG 07"}]},{"id":"cat-1","title":"Veinom / VVS","cards":[{"href":"/vei","title":"VEI moved \u2192 VVSVEI","fresh":false,"label":"/vei","date":"AUG 07"},{"href":"/veinom","title":"VEINOM \u00b7 RUACH","fresh":false,"label":"/veinom","date":"AUG 07"},{"href":"/veinom-inject","title":"VEINOM Inject \u00b7 VVS on any web chat","fresh":false,"label":"/veinom-inject","date":"AUG 07"},{"href":"/venom","title":"VENOM \u2014 Xen Symbiote","fresh":false,"label":"/venom","date":"AUG 07"},{"href":"/agyveinom","title":"AGY Venom \u2014 Redirecting...","fresh":false,"label":"/agyveinom","date":"AUG 07"},{"href":"/claude/veinom","title":"VEINOM \u00b7 Voice-control every web AI, your browser &amp; comms","fresh":false,"label":"/claude/veinom","date":"AUG 07"},{"href":"/grokveinom","title":"GrokVeinom \u2014 Redirecting...","fresh":false,"label":"/grokveinom","date":"AUG 07"},{"href":"/VVS","title":"Variation Vault | East Allen Studios","fresh":false,"label":"/VVS","date":"AUG 07"},{"href":"/vvsvei-live","title":"VVSVEI \u2014 live","fresh":false,"label":"/vvsvei-live","date":"JUL 26"}]},{"id":"cat-2","title":"AI & Agents","cards":[{"href":"/agents","title":"AGENTS \u00b7 stress-bench \u00b7 hitthe.link","fresh":false,"label":"/agents","date":"AUG 07"},{"href":"/auto-agent","title":"AUTO_AGENT Protocol List \u2014 fleet skills audit","fresh":false,"label":"/auto-agent","date":"JUN 20"},{"href":"/coding-agents","title":"Coding agents, priced \u2014 the budget-night table","fresh":true,"label":"/coding-agents","date":"AUG 18"},{"href":"/subagent","title":"XEN Guardian Sub-Agent \u00b7 Sonnet Prompt","fresh":false,"label":"/subagent","date":"JUN 28"},{"href":"/claude-mem","title":"claude-mem \u2014 memory browser","fresh":false,"label":"/claude-mem","date":"JUL 07"},{"href":"/claudeos","title":"ClaudeOS \u2014 Live Swarm","fresh":false,"label":"/claudeos","date":"AUG 07"},{"href":"/extendlm","title":"ExtendLM Optimizer | Advanced Scope Merger","fresh":false,"label":"/extendlm","date":"AUG 07"},{"href":"/nblm","title":"NBLM Thread \u2014 Full-Scope Build Doc \u00b7 2026-05-17/18","fresh":false,"label":"/nblm","date":"AUG 07"},{"href":"/vectorgen","title":"Pro Client-Side SVG Converter","fresh":false,"label":"/vectorgen","date":"AUG 07"}]},{"id":"cat-3","title":"L7S & Ops","cards":[{"href":"/l7","title":"L7S \u00b7 Links &amp; Docs Index \u2014 organized by purpose","fresh":false,"label":"/l7","date":"AUG 07"},{"href":"/l7s","title":"XLRDTECH \u00b7 L7S 11 VOICE-NATIVE CALCULATOR \u00b7 v08","fresh":false,"label":"/l7s","date":"AUG 07"},{"href":"/l7s-client-info","title":"L7S Inc. - Client Information Sheet","fresh":false,"label":"/l7s-client-info","date":"JUN 21"},{"href":"/l7s-gap","title":"L7S Gap Analysis \u2014 live site vs. what converts","fresh":true,"label":"/l7s-gap","date":"AUG 18"},{"href":"/l7s-hero","title":"L7S Hero \u00b7 League of Seven Superheroes","fresh":true,"label":"/l7s-hero","date":"AUG 18"},{"href":"/l7s-operator-hub","title":"L7S HERO | B.A.T.M.A.N. Infrastructure Hub","fresh":false,"label":"/l7s-operator-hub","date":"JUN 20"},{"href":"/l7s-pulse","title":"L7S Hero Pulse \u2014 One-Pager for FOODIES","fresh":false,"label":"/l7s-pulse","date":"AUG 07"},{"href":"/check-hero","title":"L7CheckMark: HERO","fresh":false,"label":"/check-hero","date":"AUG 07"}]},{"id":"cat-4","title":"Launchers & UI","cards":[{"href":"/launchers","title":"10 Android Launchers \u2014 Live Prototypes","fresh":false,"label":"/launchers","date":"JUL 09"},{"href":"/aio-launcher","title":"AIO Launcher \u2014 Everything at a glance","fresh":false,"label":"/aio-launcher","date":"JUL 09"},{"href":"/anime-launcher","title":"Anime Launcher \u2014 Bring your home screen to life","fresh":false,"label":"/anime-launcher","date":"JUL 09"},{"href":"/big-launcher","title":"Big Launcher \u2014 Function over flash, a home screen anyone can read","fresh":false,"label":"/big-launcher","date":"JUL 09"},{"href":"/lawnchair","title":"Lawnchair \u2014 The perfect balance of style and function","fresh":false,"label":"/lawnchair","date":"JUL 09"},{"href":"/parallax-launcher","title":"Parallax Launcher \u2014 Motion, depth, and a home screen that feels alive","fresh":false,"label":"/parallax-launcher","date":"JUL 09"},{"href":"/autophone","title":"Making Your Business Phone Work for You","fresh":false,"label":"/autophone","date":"AUG 07"}]},{"id":"cat-5","title":"Voice & Comms","cards":[{"href":"/comms-health","title":"Comms Health \u2014 what works, what is lying","fresh":true,"label":"/comms-health","date":"AUG 18"},{"href":"/dial","title":"Xen Audio Hub \u2014 Dial Pad","fresh":false,"label":"/dial","date":"JUL 20"},{"href":"/gv-call-stt","title":"GV Call STT \u00b7 xen-qi-vdo \u2192 inject","fresh":false,"label":"/gv-call-stt","date":"JUN 21"},{"href":"/telephony-plan","title":"24/7 Telephony Plan","fresh":false,"label":"/telephony-plan","date":"JUN 15"},{"href":"/twoway-voice","title":"Xen Two-Way Voice \u2014 iOS Shortcut","fresh":false,"label":"/twoway-voice","date":"JUN 20"},{"href":"/voice-council","title":"Voice Pipeline Council \u2014 Root Cause &amp; Fixes","fresh":false,"label":"/voice-council","date":"JUN 20"},{"href":"/receptionist","title":"BE\u00b7ME Receptionist \u00b7 by Self Exec","fresh":true,"label":"/receptionist","date":"AUG 18"},{"href":"/switchboard","title":"Hook Switchboard \u2014 Claude Code hooks, live inventory | CTO East","fresh":true,"label":"/switchboard","date":"AUG 18"}]},{"id":"cat-6","title":"Dev & Code","cards":[{"href":"/architecture","title":"XEN \u2014 Auto-Agent / BPGS Architecture","fresh":false,"label":"/architecture","date":"JUN 20"},{"href":"/container","title":"Container Hub v5.4 | Direct Dial Build","fresh":false,"label":"/container","date":"AUG 07"},{"href":"/endpoints","title":"Catalog \u2014 Xen AUA Endpoints","fresh":false,"label":"/endpoints","date":"AUG 07"},{"href":"/gateway","title":"XEN Model Gateway \u2014 docs","fresh":false,"label":"/gateway","date":"JUN 28"},{"href":"/hooks","title":"Xen Webhook Control \u00b7 pane %0 2-way bridge","fresh":false,"label":"/hooks","date":"AUG 07"},{"href":"/infra","title":"INFRA MAP \u2014 Xen Architecture Single Source of Truth","fresh":false,"label":"/infra","date":"JUN 20"},{"href":"/mesh","title":"Universal Mesh \u2014 Self Exec","fresh":false,"label":"/mesh","date":"AUG 07"}]},{"id":"cat-7","title":"Business & Finance","cards":[{"href":"/costs","title":"Cost Breakdown Dashboard","fresh":false,"label":"/costs","date":"AUG 07"},{"href":"/debt","title":"Xen Ledger \u2014 Debt \u00b7 P&amp;L \u00b7 Sentiment","fresh":false,"label":"/debt","date":"AUG 07"},{"href":"/expenses","title":"Expense Hunt \u2014 mailbox query pack","fresh":false,"label":"/expenses","date":"AUG 02"},{"href":"/pricing","title":"XLRD \u00b7 Executive Leverage \u2014 Engagements &amp; Pricing","fresh":false,"label":"/pricing","date":"AUG 07"},{"href":"/taxes","title":"Home | Taxes R Us Elite llc","fresh":true,"label":"/taxes","date":"AUG 18"},{"href":"/subscriptions","title":"XLRD \u00b7 Subscriptions","fresh":false,"label":"/subscriptions","date":"JUL 26"},{"href":"/usage-burn","title":"XEN \u00b7 Usage Burn Audit \u2014 what ran while you were away","fresh":false,"label":"/usage-burn","date":"JUL 03"},{"href":"/offer-builder","title":"Offer Builder \u2014 7-Variable Framework \u00b7 XLRD","fresh":false,"label":"/offer-builder","date":"JUN 20"}]},{"id":"cat-8","title":"Life & Note","cards":[{"href":"/action-board","title":"Xen \u00b7 Action Board \u2014 2026-07-25","fresh":false,"label":"/action-board","date":"JUL 26"},{"href":"/brain-map","title":"XEN \u2014 M4 Brain Map","fresh":false,"label":"/brain-map","date":"JUN 20"},{"href":"/commandments","title":"Xen Commandments v51 \u2014 One Canon, No Fallbacks","fresh":false,"label":"/commandments","date":"AUG 07"},{"href":"/godsop","title":"G.O.D. SOP Dashboard | East Allen","fresh":false,"label":"/godsop","date":"AUG 07"},{"href":"/life","title":"XEN \u00b7 LIFE \u2014 Command Dashboard","fresh":true,"label":"/life","date":"AUG 18"},{"href":"/manifesto","title":"EXEDUS \u00b7 XEN \u2014 Canon Manifesto","fresh":false,"label":"/manifesto","date":"AUG 07"},{"href":"/today","title":"Mon 27 Jul \u2014 Everything","fresh":true,"label":"/today","date":"AUG 18"}]},{"id":"cat-9","title":"Integrations","cards":[{"href":"/asana","title":"Asana Progress \u2014 hitthe.link","fresh":false,"label":"/asana","date":"AUG 07"},{"href":"/clay-integrations","title":"Integrations Catalog - Clay.com Style","fresh":false,"label":"/clay-integrations","date":"AUG 07"},{"href":"/ifttt","title":"IFTTT Ops Overhaul \u2014 Padre \u00b7 Beside \u00b7 PayPal \u00b7 Square \u00b7 Drive \u00b7 Calendar","fresh":false,"label":"/ifttt","date":"AUG 07"},{"href":"/apps/matrix","title":"Xen Matrix","fresh":false,"label":"/apps/matrix","date":"JUN 28"},{"href":"/composio","title":"Composio Toolkit Roster \u2014 xlrdtech Connect Console","fresh":false,"label":"/composio","date":"JUN 20"},{"href":"/finish-gmail-bridge","title":"Finish the Gmail Bridge","fresh":false,"label":"/finish-gmail-bridge","date":"JUL 03"}]},{"id":"cat-10","title":"Index 0-9","cards":[{"href":"/063026","title":"063026 \u00b7 Session Export Overview","fresh":false,"label":"/063026","date":"JUL 03"},{"href":"/070326","title":"070326 \u00b7 Daily Overview &amp; Action Items","fresh":false,"label":"/070326","date":"JUL 05"},{"href":"/070326-weekly-export","title":"070326 \u00b7 Weekly Session &amp; Matrix Export","fresh":false,"label":"/070326-weekly-export","date":"JUL 05"},{"href":"/081426","title":"43 Seconds \u2014 where a turn actually goes","fresh":true,"label":"/081426","date":"AUG 18"},{"href":"/12step","title":"C.A.R.E. Sales Assessment \u201a\u00c4\u00ee 12-Step Call Form","fresh":false,"label":"/12step","date":"AUG 07"},{"href":"/222church","title":"222 Church | Presence-Based Worship Center","fresh":false,"label":"/222church","date":"AUG 07"},{"href":"/26thTemple","title":"26th Temple | Non-Profit Compliance &amp; Education","fresh":false,"label":"/26thTemple","date":"AUG 07"},{"href":"/8922","title":"Numerology Dynamics | 9-22-8 Paradigm","fresh":false,"label":"/8922","date":"AUG 07"},{"href":"/999","title":"999 OPS \u2014 XLRD999 + X9 \u00b7 Command Hub","fresh":false,"label":"/999","date":"JUN 20"}]},{"id":"cat-11","title":"Index A-C","cards":[{"href":"/abos","title":"Automated Business Operation System | Freedom Calculator","fresh":false,"label":"/abos","date":"AUG 07"},{"href":"/absorb","title":"ABSORB \u2014 Live Source Extractor","fresh":false,"label":"/absorb","date":"AUG 07"},{"href":"/actions","title":"Action board \u2014 from email","fresh":false,"label":"/actions","date":"JUL 20"},{"href":"/allendale","title":"Allendale Equine Services | Horse Boarding &amp; Riding in Palmetto, GA","fresh":false,"label":"/allendale","date":"AUG 07"},{"href":"/anthony","title":"Anthony \u00d7 Self Exec \u00b7 Your Lead Business, Overview","fresh":false,"label":"/anthony","date":"AUG 07"},{"href":"/arch-jetstream","title":"Xen Architecture \u2014 JetStream Event Sourcing","fresh":false,"label":"/arch-jetstream","date":"JUL 22"},{"href":"/asset-coverage","title":"Asset Coverage \u2014 review deck","fresh":true,"label":"/asset-coverage","date":"AUG 18"},{"href":"/aua","title":"AUA \u2014 Agentic URL Manifesto","fresh":false,"label":"/aua","date":"AUG 07"},{"href":"/audit","title":"Xen Audit Pack \u2014 qi \u00b7 xlrdtech","fresh":false,"label":"/audit","date":"AUG 07"},{"href":"/auracle","title":"XENOS \u2014 Auxgen Voice GUI","fresh":true,"label":"/auracle","date":"AUG 18"},{"href":"/auth","title":"AUTH CONSOLE \u2014 connect everything","fresh":false,"label":"/auth","date":"JUN 20"},{"href":"/auto-flow","title":"XEN Auto-Flow / BPGS Canon","fresh":false,"label":"/auto-flow","date":"JUN 15"},{"href":"/autoship-gaps","title":"Autoship \u2014 Gap Analysis &amp; Repair","fresh":false,"label":"/autoship-gaps","date":"JUL 03"},{"href":"/avatar","title":"Ophanim: Gemini Uplink","fresh":false,"label":"/avatar","date":"AUG 07"},{"href":"/barnlights","title":"Barn Lights Payment Dashboard","fresh":true,"label":"/barnlights","date":"AUG 18"},{"href":"/bee","title":"Bee","fresh":true,"label":"/bee","date":"AUG 18"},{"href":"/bee-gap-05ca3778f9","title":"Bee Capability Gap Report","fresh":false,"label":"/bee-gap-05ca3778f9","date":"JUL 20"},{"href":"/beelogin","title":"Bee login","fresh":false,"label":"/beelogin","date":"JUL 20"},{"href":"/beside-call-handler","title":"East AI \u2014 Beside Call Handler (2026)","fresh":false,"label":"/beside-call-handler","date":"JUN 28"},{"href":"/beside-proxy","title":"Beside AI \u00b7 the only path to Twilio","fresh":false,"label":"/beside-proxy","date":"AUG 07"},{"href":"/big3atl","title":"BIG 3 ATL \u2014 Halloween Trail Ride &amp; Field Party","fresh":true,"label":"/big3atl","date":"AUG 18"},{"href":"/breath-to-life","title":"Breath to Life","fresh":true,"label":"/breath-to-life","date":"AUG 18"},{"href":"/btl","title":"Breath to Life","fresh":true,"label":"/btl","date":"AUG 18"},{"href":"/buzycred","title":"BuzyCred \u00b7 Build Credit. Get Funded.","fresh":true,"label":"/buzycred","date":"AUG 18"},{"href":"/calculators","title":"L7S \u00b7 Hero Calculators","fresh":false,"label":"/calculators","date":"AUG 07"},{"href":"/cc-updates","title":"Claude Code 2.1.220 \u2192 2.1.224","fresh":true,"label":"/cc-updates","date":"AUG 18"},{"href":"/cca","title":"Claude Certified Architect (CCA-F) \u2014 Study Guide","fresh":false,"label":"/cca","date":"JUL 20"},{"href":"/cellbrowser-codex","title":"CellBrowser \u00b7 Codex Handoff","fresh":false,"label":"/cellbrowser-codex","date":"AUG 07"},{"href":"/clash","title":"is tuned for SEARCH INTENT (how a burnt-out caregiver-founder actually types it into Googl","fresh":true,"label":"/clash","date":"AUG 18"},{"href":"/claude-web-api","title":"claude.ai API map","fresh":false,"label":"/claude-web-api","date":"JUL 07"},{"href":"/clipboard-to-xen","title":"Send Clipboard to Xen \u2014 iOS Shortcut","fresh":false,"label":"/clipboard-to-xen","date":"JUN 20"},{"href":"/complaints-registry","title":"qi Complaint Registry \u2014 Xen System","fresh":false,"label":"/complaints-registry","date":"AUG 07"},{"href":"/comprehension","title":"Comprehension Audit \u00b7 Xen","fresh":true,"label":"/comprehension","date":"AUG 18"},{"href":"/conductor","title":"Conductor \u2014 Claude Code Orchestrator","fresh":false,"label":"/conductor","date":"JUL 03"},{"href":"/connect","title":"hitthe.link \u2014 Connect","fresh":false,"label":"/connect","date":"JUN 29"},{"href":"/context","title":"PGS Context Tracker \u00b7 never forget \u00b7 2026-05-23","fresh":false,"label":"/context","date":"AUG 07"},{"href":"/cookbook","title":"XLRD TUI / AUA Inject Cookbook","fresh":false,"label":"/cookbook","date":"AUG 07"},{"href":"/crystal-blur","title":"Crystal Blur Launcher \u2014 Elevate your home screen to a polished, modern level.","fresh":false,"label":"/crystal-blur","date":"JUL 09"},{"href":"/cto-east","title":"CTO East \u2014 XENOS","fresh":true,"label":"/cto-east","date":"AUG 18"},{"href":"/custom-er","title":"Custom ER | Emergency Software Response","fresh":false,"label":"/custom-er","date":"AUG 07"}]},{"id":"cat-12","title":"Index D-G","cards":[{"href":"/day","title":"DAY \u2014 what day is it","fresh":true,"label":"/day","date":"AUG 18"},{"href":"/dcl-demo","title":"Terance x Designer Collaboration","fresh":false,"label":"/dcl-demo","date":"AUG 07"},{"href":"/dcz","title":"Diamond Cutz Studios \u00b7 Recording Studio","fresh":true,"label":"/dcz","date":"AUG 18"},{"href":"/dcz-call","title":"DCZ + First Care \u2014 Call Brief","fresh":false,"label":"/dcz-call","date":"JUL 26"},{"href":"/deprecated","title":"Legacy apps &amp; tools \u2014 what not to touch","fresh":true,"label":"/deprecated","date":"AUG 18"},{"href":"/desk","title":"desk \u00b7 XEN's universal inbox","fresh":false,"label":"/desk","date":"JUL 03"},{"href":"/diamond-cut","title":"Diamond Cutz Studios \u00b7 Recording Studio","fresh":false,"label":"/diamond-cut","date":"AUG 07"},{"href":"/die-list","title":"The D.I.E. List \u00b7 Exedus Xen canon","fresh":false,"label":"/die-list","date":"AUG 07"},{"href":"/direction","title":"Direction \u2014 your own words back","fresh":true,"label":"/direction","date":"AUG 18"},{"href":"/dirtyhawks","title":"Dirty Hawks Shooting Club | Shooting Dept.","fresh":false,"label":"/dirtyhawks","date":"AUG 07"},{"href":"/docs","title":"Docs \u00b7 hitthe.link","fresh":false,"label":"/docs","date":"AUG 07"},{"href":"/domain","title":"l7sinc.com \u2014 get it out of Wix","fresh":true,"label":"/domain","date":"AUG 18"},{"href":"/domain-board","title":"Domain Portfolio Gap Board \u2014 26 domains, what serves and what is dark | CTO East","fresh":true,"label":"/domain-board","date":"AUG 18"},{"href":"/domains","title":"DOMAINS \u2014 idea \u2192 available, cheap, short","fresh":false,"label":"/domains","date":"JUN 20"},{"href":"/e","title":"Electric EATS","fresh":false,"label":"/e","date":"AUG 07"},{"href":"/east-allen","title":"East Allen \u2014 XENOS","fresh":true,"label":"/east-allen","date":"AUG 18"},{"href":"/east-allen-growth-interface","title":"East Allen's Growth Interface","fresh":false,"label":"/east-allen-growth-interface","date":"AUG 07"},{"href":"/eats","title":"Electric EATS \u2014 Decode every food decision","fresh":false,"label":"/eats","date":"AUG 07"},{"href":"/eli","title":"ELI \u00b7 Qualified Leads, Resold Right","fresh":false,"label":"/eli","date":"AUG 07"},{"href":"/eliops","title":"Tracking Together \u2014 Portal moved","fresh":false,"label":"/eliops","date":"AUG 07"},{"href":"/elios","title":"Tracking Together \u2014 Sign In","fresh":false,"label":"/elios","date":"AUG 07"},{"href":"/elso","title":"ELSO \u00b7 Executive Leverage Site Offers","fresh":false,"label":"/elso","date":"AUG 07"},{"href":"/execpage","title":"Exec Page \u00b7 Executive Presence. 7-Day Launch.","fresh":true,"label":"/execpage","date":"AUG 18"},{"href":"/executive-leverage","title":"Executive Leverage \u2014 XENOS","fresh":true,"label":"/executive-leverage","date":"AUG 18"},{"href":"/firehose","title":"Omnicom \u00b7 live event stream","fresh":false,"label":"/firehose","date":"AUG 07"},{"href":"/firstcare","title":"First Care Surgical Assistant, llc","fresh":false,"label":"/firstcare","date":"JUL 24"},{"href":"/firstcare-brief","title":"First Care Surgical Assistant \u2014 Receptionist Brief","fresh":false,"label":"/firstcare-brief","date":"JUL 24"},{"href":"/firstcare-v2","title":"First Care Surgical Assistant, LLC \u2014 Where Patient Care Comes First","fresh":false,"label":"/firstcare-v2","date":"JUL 26"},{"href":"/flcheats","title":"FL Studio Ultimate Cheatsheet","fresh":false,"label":"/flcheats","date":"AUG 07"},{"href":"/free-brain","title":"Free Brain \u2014 tiered $0 LLM (local MLX + OpenRouter :free)","fresh":false,"label":"/free-brain","date":"JUL 24"},{"href":"/freedom-number","title":"The Freedom Number \u2014 find your baseline, set your price","fresh":true,"label":"/freedom-number","date":"AUG 18"},{"href":"/gagateway-snap","title":"Georgia Gateway \u2014 SNAP Reinstatement","fresh":true,"label":"/gagateway-snap","date":"AUG 18"},{"href":"/gallery","title":"XLRD Gallery \u2014 XENOS","fresh":true,"label":"/gallery","date":"AUG 18"},{"href":"/gap","title":"Gap analysis \u2014 27 Jul 2026","fresh":true,"label":"/gap","date":"AUG 18"},{"href":"/gap-analysis","title":"Gap Analysis \u2014 framework vs. operation","fresh":true,"label":"/gap-analysis","date":"AUG 18"},{"href":"/gen-stack","title":"Gen Stack \u2014 what each generator actually costs","fresh":true,"label":"/gen-stack","date":"AUG 18"},{"href":"/ggv","title":"Google Grok Voice UI - Inline","fresh":false,"label":"/ggv","date":"AUG 07"},{"href":"/go-green","title":"Go Green Contractor \u2014 We Rebuild Your Site, We Send the Leads","fresh":false,"label":"/go-green","date":"JUN 20"},{"href":"/goals","title":"Objectives \u2014 Xen","fresh":true,"label":"/goals","date":"AUG 18"},{"href":"/god-sop-dashboard","title":"G.O.D. SOP Dashboard | East Allen","fresh":false,"label":"/god-sop-dashboard","date":"AUG 07"},{"href":"/godmode","title":"Godmode Siri \u2014 Xen","fresh":false,"label":"/godmode","date":"AUG 07"},{"href":"/gov","title":"GGV","fresh":false,"label":"/gov","date":"AUG 07"},{"href":"/grok","title":"Grok Projects \u2022 hitthe.link","fresh":false,"label":"/grok","date":"AUG 07"},{"href":"/growth","title":"East Allen's Growth Interface","fresh":false,"label":"/growth","date":"AUG 07"},{"href":"/gtm","title":"Xenphone \u2014 Steps to GTM (attempt 11)","fresh":false,"label":"/gtm","date":"AUG 07"},{"href":"/guardian","title":"XEN Session Guardian \u00b7 Fork Prompt","fresh":false,"label":"/guardian","date":"JUN 28"}]},{"id":"cat-13","title":"Index H-L","cards":[{"href":"/hands-free-tablet","title":"Best Hands-Free Tablet Solutions 2026 \u2014 Mounts, Stands &amp; Accessibility","fresh":false,"label":"/hands-free-tablet","date":"JUL 03"},{"href":"/hightop-sleep","title":"HighTop + Sleep Study \u2014 One Call","fresh":true,"label":"/hightop-sleep","date":"AUG 18"},{"href":"/hittl","title":"hitthe.link \u2014 XENOS","fresh":true,"label":"/hittl","date":"AUG 18"},{"href":"/hotl-plan","title":"HOTL Plan \u2014 Lanes, Echo Fix &amp; Memory Verdict","fresh":false,"label":"/hotl-plan","date":"JUL 03"},{"href":"/infinihash","title":"Infinihash KYT \u2014 Real-Time Crypto Wallet Screening &amp; AML","fresh":false,"label":"/infinihash","date":"JUN 20"},{"href":"/inject","title":"Omni Inject \u2014 Mobile Access Surface","fresh":false,"label":"/inject","date":"AUG 07"},{"href":"/intake","title":"Client Intake \u00b7 Self Exec \u2014 Build Your Site","fresh":false,"label":"/intake","date":"AUG 07"},{"href":"/invoice-books-decks","title":"XLRD TECH \u2014 Invoice","fresh":false,"label":"/invoice-books-decks","date":"JUL 26"},{"href":"/ios-shortcut-deploy","title":"iOS Shortcut deploy \u00b7 5 qi-only blocker commands","fresh":false,"label":"/ios-shortcut-deploy","date":"AUG 07"},{"href":"/itinerary","title":"Itinerary \u00b7 pre-sunrise punch list + full 36-section scope \u00b7 2026-05-23","fresh":false,"label":"/itinerary","date":"AUG 07"},{"href":"/ju","title":"Pable Ju \u00b7 Fool For Love","fresh":false,"label":"/ju","date":"AUG 07"},{"href":"/l7s-site","title":"L7S, Inc. \u2014 Who We Are | Analytical, Architectural, AI-Powered Business Strategy","fresh":false,"label":"/l7s-site","date":"AUG 06"},{"href":"/l7shero","title":"L7S Hero - Strategic Business Solutions","fresh":false,"label":"/l7shero","date":"AUG 07"},{"href":"/lab","title":"The Lab \u2014 Xen Build Telemetry","fresh":false,"label":"/lab","date":"AUG 07"},{"href":"/legacy","title":"Legacy \u2014 preserved, working, do not change","fresh":true,"label":"/legacy","date":"AUG 18"},{"href":"/life-note","title":"Life Note \u2014 you don't run programs, you write Notes, and they run you","fresh":true,"label":"/life-note","date":"AUG 18"},{"href":"/lifenote","title":"LifeNote","fresh":true,"label":"/lifenote","date":"AUG 19"},{"href":"/links","title":"hitthe.link \u00b7 Link Index \u2014 every link, by purpose","fresh":false,"label":"/links","date":"AUG 07"},{"href":"/literary-devices","title":"Literary Devices Generator \u00b7 hitthe.link","fresh":false,"label":"/literary-devices","date":"JUN 20"},{"href":"/luckie","title":"Luckie &quot;Links&quot; Goggins \u00b7 L7S INC \u00b7 Operator Hub","fresh":false,"label":"/luckie","date":"AUG 07"},{"href":"/lyn","title":"LYN \u00b7 L7S Hero \u00b7 The Superhero Operating System","fresh":false,"label":"/lyn","date":"AUG 07"}]},{"id":"cat-14","title":"Index M-P","cards":[{"href":"/PriceHero","title":"PriceHero \u00b7 L7S Hero deliverables pricing calculator","fresh":false,"label":"/PriceHero","date":"AUG 07"},{"href":"/mb","title":"M_B \u00b7 Southern Soul \u2014 bookmb.com","fresh":false,"label":"/mb","date":"AUG 07"},{"href":"/mbv2","title":"M_B \u2014 Urban King of Southern Soul \u00b7 Benjamin McAllister","fresh":false,"label":"/mbv2","date":"AUG 07"},{"href":"/mbv3","title":"M_B\u00ae \u2014 Studio","fresh":false,"label":"/mbv3","date":"AUG 07"},{"href":"/mbv4","title":"M_B\u00ae STUDIO","fresh":false,"label":"/mbv4","date":"AUG 07"},{"href":"/mcp-live","title":"MCP Live-Streaming Data \u2014 Sourced Brief","fresh":false,"label":"/mcp-live","date":"JUL 21"},{"href":"/memory-audit","title":"Memory Audit \u2014 five stores, one lineage","fresh":true,"label":"/memory-audit","date":"AUG 18"},{"href":"/menu","title":"XLRD TECH \u00b7 $111 Menu \u00b7 Build Your Operation One Unit At A Time","fresh":false,"label":"/menu","date":"AUG 07"},{"href":"/metro-vs-straighttalk","title":"Metro vs Straight Talk \u2014 Plan &amp; SIM Comparison","fresh":false,"label":"/metro-vs-straighttalk","date":"JUN 20"},{"href":"/nblmaudit","title":"Notebook Archivist","fresh":false,"label":"/nblmaudit","date":"AUG 07"},{"href":"/new-launcher","title":"NewLauncher \u2014 That modern, slightly futuristic feel, for any device","fresh":false,"label":"/new-launcher","date":"JUL 09"},{"href":"/notifs","title":"Notification Capture \u2014 2026-08-07","fresh":true,"label":"/notifs","date":"AUG 18"},{"href":"/now","title":"NOW \u2014 Xen","fresh":true,"label":"/now","date":"AUG 18"},{"href":"/offers","title":"L7S Offer Ladder | Low \u2192 Mid \u2192 High","fresh":false,"label":"/offers","date":"AUG 07"},{"href":"/omni-inbox","title":"Omni-Inbox \u2014 Architecture &amp; Plan","fresh":false,"label":"/omni-inbox","date":"JUL 20"},{"href":"/omnifused","title":"Omni_Fused \u2014 the architecture, permanently","fresh":true,"label":"/omnifused","date":"AUG 18"},{"href":"/omnip","title":"OmniP \u2014 omnipresent capture mesh","fresh":true,"label":"/omnip","date":"AUG 18"},{"href":"/onair","title":"ON AIR \u2014 Xen","fresh":true,"label":"/onair","date":"AUG 18"},{"href":"/orientation","title":"Xen Orientation Prompt","fresh":true,"label":"/orientation","date":"AUG 18"},{"href":"/oss-sites","title":"OSS VEINOM-SaaS Showdown \u00b7 verbatim prompt","fresh":false,"label":"/oss-sites","date":"AUG 07"},{"href":"/overview","title":"hitthe.link \u00b7 The Ledger","fresh":false,"label":"/overview","date":"AUG 07"},{"href":"/p6","title":"PURGATORY 6 \u00b7 P6.5 \u2014 10.13.2026","fresh":true,"label":"/p6","date":"AUG 19"},{"href":"/padre","title":"Padre Sales Ops \u00b7 Local Business Sites Playbook","fresh":false,"label":"/padre","date":"AUG 07"},{"href":"/padula","title":"L7S Loan Hero \u2014 Capital &amp; Funding Coordination \u00b7 L7 Solutions","fresh":false,"label":"/padula","date":"JUN 20"},{"href":"/pattern-tree","title":"Design Pattern Decision Tree \u2014 pick by friction, not by name","fresh":false,"label":"/pattern-tree","date":"JUL 22"},{"href":"/pgs","title":"Shang Tsung PGS \u00b7 soul-steal the source","fresh":false,"label":"/pgs","date":"AUG 07"},{"href":"/pin-feed","title":"Pinterest Feed \u00b7 Infinite Topic Swipe","fresh":false,"label":"/pin-feed","date":"AUG 07"},{"href":"/plasma-core","title":"XENOS \u2014 Auxgen Voice GUI","fresh":true,"label":"/plasma-core","date":"AUG 18"},{"href":"/prd","title":"Xen Swarm-of-Swarms \u2014 Sintra Replacement PRD","fresh":false,"label":"/prd","date":"JUL 20"},{"href":"/premium","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/premium","date":"JUL 08"}]},{"id":"cat-15","title":"Index Q-S","cards":[{"href":"/rays","title":"Ray's Courses \u2014 Learning Hub","fresh":false,"label":"/rays","date":"AUG 07"},{"href":"/rays-home","title":"Ray's House of Fun","fresh":false,"label":"/rays-home","date":"AUG 07"},{"href":"/realtime-voice","title":"Real-Time Full-Duplex Voice \u2014 the Xen stack","fresh":true,"label":"/realtime-voice","date":"AUG 19"},{"href":"/receptionist-sprint","title":"AI Receptionist Sprint \u00b7 Self Exec","fresh":false,"label":"/receptionist-sprint","date":"JUN 28"},{"href":"/recovered-dictation","title":"Recovered Dictation \u2014 looped session 2026-06-21","fresh":false,"label":"/recovered-dictation","date":"JUN 21"},{"href":"/recovery","title":"Ground Zero Recovery Pack","fresh":true,"label":"/recovery","date":"AUG 18"},{"href":"/requests","title":"xen \u00b7 requests \u00b7 the map","fresh":false,"label":"/requests","date":"JUL 20"},{"href":"/review","title":"48H REVIEW \u2014 overview + gap analysis","fresh":false,"label":"/review","date":"JUN 20"},{"href":"/roadmap","title":"XEN \u00b7 48-Hour Roadmap","fresh":false,"label":"/roadmap","date":"JUN 28"},{"href":"/rss","title":"XEN \u00b7 Notification Center","fresh":false,"label":"/rss","date":"JUN 29"},{"href":"/rv-rentals","title":"RV Rentals Atlanta, GA \u2014 2026 Guide","fresh":false,"label":"/rv-rentals","date":"JUL 03"},{"href":"/scopes","title":"XEN \u00b7 Scope Universe \u2014 766, proven","fresh":true,"label":"/scopes","date":"AUG 19"},{"href":"/scribble-launcher","title":"Scribble Launcher \u2014 Scribble a letter. Get where you're going.","fresh":false,"label":"/scribble-launcher","date":"JUL 09"},{"href":"/secondme","title":"Second Me \u2014 conversation map","fresh":false,"label":"/secondme","date":"JUL 20"},{"href":"/sel","title":"Self Exec | Enterprise Automation &amp; Intelligent Systems","fresh":false,"label":"/sel","date":"AUG 07"},{"href":"/selfexec","title":"Self Exec \u00b7 Automation &amp; AI Consulting","fresh":true,"label":"/selfexec","date":"AUG 18"},{"href":"/selfexec-3d","title":"Self Exec \u2014 XENOS","fresh":true,"label":"/selfexec-3d","date":"AUG 18"},{"href":"/session-063026","title":"XEN \u00b7 Session Overview 6/30 \u2014 M drive, Beeper kill, M4 disk fault","fresh":false,"label":"/session-063026","date":"JUL 03"},{"href":"/shang","title":"Shang Tsung PGS \u00b7 Absorbed Sources","fresh":true,"label":"/shang","date":"AUG 19"},{"href":"/shopping","title":"Pickup \u00b7 checklist","fresh":false,"label":"/shopping","date":"JUN 28"},{"href":"/signing","title":"Digital Forms Portal","fresh":false,"label":"/signing","date":"AUG 07"},{"href":"/sleep","title":"XEN \u2014 Sleep &amp; Autonomy","fresh":false,"label":"/sleep","date":"JUL 07"},{"href":"/slid","title":"Video Gallery","fresh":false,"label":"/slid","date":"AUG 07"},{"href":"/spatial-navigator","title":"AUXGEN // SPATIAL NAVIGATOR","fresh":true,"label":"/spatial-navigator","date":"AUG 18"},{"href":"/speedrun","title":"Speedrun \u00b7 All Scopes","fresh":false,"label":"/speedrun","date":"JUN 20"},{"href":"/spine","title":"The Business Spine \u2014 entities \u00b7 payments \u00b7 roadmaps","fresh":false,"label":"/spine","date":"AUG 07"},{"href":"/square-home","title":"Square Home \u2014 The Metro UI you missed, live tiles reimagined","fresh":false,"label":"/square-home","date":"JUL 09"},{"href":"/stal-lyon","title":"Stal'lyon \u2192 Diamond Cutz Studios","fresh":false,"label":"/stal-lyon","date":"AUG 07"},{"href":"/stal-lyon-populate","title":"Stal'lyon \u00b7 populate the 9 tokens \u00b7 half-completion gate","fresh":false,"label":"/stal-lyon-populate","date":"AUG 07"},{"href":"/state-map","title":"Xen State Map \u2014 2026-07-25","fresh":false,"label":"/state-map","date":"JUL 26"},{"href":"/status","title":"Status \u2014 Xen Live","fresh":false,"label":"/status","date":"AUG 07"},{"href":"/steer","title":"XEN \u00b7 STEER \u2014 the command ledger","fresh":false,"label":"/steer","date":"AUG 07"},{"href":"/studio","title":"XEN STUDIO \u2014 mashup engine","fresh":false,"label":"/studio","date":"AUG 02"},{"href":"/stylism","title":"@stylism_ Visual Reference","fresh":false,"label":"/stylism","date":"AUG 07"},{"href":"/subs-audit","title":"Subscription Audit \u2014 the real number","fresh":true,"label":"/subs-audit","date":"AUG 18"},{"href":"/swarm","title":"PGS \u2014 Parallel Goal Swarm \u00b7 2026-05-30","fresh":false,"label":"/swarm","date":"AUG 07"}]},{"id":"cat-16","title":"Index T-Z","cards":[{"href":"/template-io-mission-control","title":"Template.io | Mission Control","fresh":false,"label":"/template-io-mission-control","date":"AUG 07"},{"href":"/tmux-vocab","title":"tmux vocabulary \u2014 server, session, window, pane","fresh":true,"label":"/tmux-vocab","date":"AUG 18"},{"href":"/tomcp","title":"toMCP \u2014 Live Sites as MCP Servers","fresh":false,"label":"/tomcp","date":"AUG 07"},{"href":"/trackingtogether","title":"TrackingTogether \u00b7 Track everything. Automate everything.","fresh":true,"label":"/trackingtogether","date":"AUG 18"},{"href":"/trackingtogether-v1","title":"TrackingTogether \u2014 every deal, knock to paid","fresh":false,"label":"/trackingtogether-v1","date":"JUN 20"},{"href":"/unblock","title":"UNBLOCK \u2014 what Xen needs from qi","fresh":false,"label":"/unblock","date":"JUN 20"},{"href":"/urls","title":"Master URL List \u2014 qi","fresh":false,"label":"/urls","date":"JUL 24"},{"href":"/v7","title":"XENOS \u2014 frozen versions","fresh":true,"label":"/v7","date":"AUG 18"},{"href":"/v7-20260817-1227","title":"XLRD Gallery \u2014 XENOS","fresh":true,"label":"/v7-20260817-1227","date":"AUG 18"},{"href":"/vibe-repos","title":"5 New Vibe-Coding Repos","fresh":false,"label":"/vibe-repos","date":"JUN 20"},{"href":"/vibes","title":"Vibes \u00b7 @stylism_","fresh":false,"label":"/vibes","date":"AUG 07"},{"href":"/victor-launcher","title":"Victor Launcher \u2014 Stable, modern, endlessly flexible","fresh":false,"label":"/victor-launcher","date":"JUL 09"},{"href":"/video-spec","title":"Music Video Spec \u2014 and the honest hardware verdict","fresh":true,"label":"/video-spec","date":"AUG 18"},{"href":"/vision","title":"Xen \u00b7 Omni Vision Wall","fresh":false,"label":"/vision","date":"AUG 07"},{"href":"/voice-decouple","title":"Voice Never Interrupts Work \u2014 M4 inject diagnosis","fresh":false,"label":"/voice-decouple","date":"JUN 20"},{"href":"/voice-line","title":"Xen Voice Line \u2014 Status &amp; Fix Log","fresh":false,"label":"/voice-line","date":"JUN 20"},{"href":"/voice-status","title":"XEN Voice \u2014 One Queue (live)","fresh":false,"label":"/voice-status","date":"JUN 20"},{"href":"/voice-transport","title":"Claude Web Voice Transport \u2014 measured wire spec","fresh":false,"label":"/voice-transport","date":"AUG 06"},{"href":"/vvsvei","title":"VVSVEI \u00b7 voice vision sms \u00b7 Xen","fresh":true,"label":"/vvsvei","date":"AUG 18"},{"href":"/vvsvei-voice","title":"Xen Voice -&gt; VEI (canon)","fresh":false,"label":"/vvsvei-voice","date":"AUG 07"},{"href":"/walmart-list","title":"Walmart Run \u2014 Pest Control","fresh":true,"label":"/walmart-list","date":"AUG 18"},{"href":"/wcci","title":"World Changers Church International \u2014 Blanketing the World with the Gospel","fresh":false,"label":"/wcci","date":"AUG 07"},{"href":"/wes","title":"Wesley Allen - Job Search Tracker","fresh":false,"label":"/wes","date":"AUG 07"},{"href":"/wip","title":"Selfown OS - Alpha","fresh":false,"label":"/wip","date":"AUG 07"},{"href":"/xen-02","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-02","date":"JUL 08"},{"href":"/xen-03","title":"Xen \u2014 Intelligence Infrastructure","fresh":false,"label":"/xen-03","date":"JUL 08"},{"href":"/xen-04","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-04","date":"JUL 08"},{"href":"/xen-05","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-05","date":"JUL 08"},{"href":"/xen-06","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-06","date":"JUL 08"},{"href":"/xen-07","title":"Xen \u2014 Autonomous Intelligence","fresh":false,"label":"/xen-07","date":"JUL 08"},{"href":"/xen-08","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-08","date":"JUL 08"},{"href":"/xen-09","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-09","date":"JUL 08"},{"href":"/xen-10","title":"XEN \u2014 Autonomous Intelligence System","fresh":false,"label":"/xen-10","date":"JUL 08"},{"href":"/xen-11","title":"XEN \u2014 Autonomous Intelligence System","fresh":false,"label":"/xen-11","date":"JUL 08"},{"href":"/xen-12","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-12","date":"JUL 08"},{"href":"/xen-13","title":"XEN \u2014 Autonomous Intelligence","fresh":false,"label":"/xen-13","date":"JUL 08"},{"href":"/xen-14","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-14","date":"JUL 08"},{"href":"/xen-15","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-15","date":"JUL 08"},{"href":"/xen-16","title":"XEN \u2014 Parallel Intelligence","fresh":false,"label":"/xen-16","date":"JUL 08"},{"href":"/xen-17","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-17","date":"JUL 08"},{"href":"/xen-18","title":"XEN \u2014 Quantum Resonance","fresh":false,"label":"/xen-18","date":"JUL 08"},{"href":"/xen-19","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-19","date":"JUL 08"},{"href":"/xen-20","title":"XEN \u2014 Autonomous Intelligence Infrastructure","fresh":false,"label":"/xen-20","date":"JUL 08"},{"href":"/xen-21","title":"XEN \u2014 Autonomous Intelligence Infrastructure","fresh":false,"label":"/xen-21","date":"JUL 08"},{"href":"/xen-22","title":"XEN \u2014 Autonomous Voice Intelligence","fresh":false,"label":"/xen-22","date":"JUL 08"},{"href":"/xen-23","title":"XEN \u2014 Autonomous Intelligence","fresh":false,"label":"/xen-23","date":"JUL 08"},{"href":"/xen-24","title":"XEN \u2014 One Voice. All Systems.","fresh":false,"label":"/xen-24","date":"JUL 08"},{"href":"/xen-25","title":"XEN-25 \u2014 Quantum-Native AI Infrastructure","fresh":false,"label":"/xen-25","date":"JUL 08"},{"href":"/xen-awareness","title":"Xen Awareness Map \u2014 registry of registries","fresh":false,"label":"/xen-awareness","date":"JUN 21"},{"href":"/xen-source-of-truth","title":"XEN \u2014 Operational Source of Truth","fresh":false,"label":"/xen-source-of-truth","date":"JUN 20"},{"href":"/xen-status","title":"Xen Status","fresh":true,"label":"/xen-status","date":"AUG 19"},{"href":"/xen-system-decision","title":"Xen Unified System \u2014 Decision Canon","fresh":false,"label":"/xen-system-decision","date":"AUG 07"},{"href":"/xen-worklog","title":"Xen \u00b7 Work Log \u2014 live","fresh":true,"label":"/xen-worklog","date":"AUG 18"},{"href":"/xenos-v3","title":"XENOS \u2014 Auxgen Hyper-Realism","fresh":true,"label":"/xenos-v3","date":"AUG 18"},{"href":"/xenos-variations","title":"XENOS \u2014 orb variations","fresh":true,"label":"/xenos-variations","date":"AUG 18"},{"href":"/xenos-world","title":"XENOS","fresh":true,"label":"/xenos-world","date":"AUG 18"},{"href":"/xlrd-org","title":"XLRD.org \u2014 XENOS","fresh":true,"label":"/xlrd-org","date":"AUG 18"},{"href":"/xlrd-tech","title":"XLRD Tech \u2014 XENOS","fresh":true,"label":"/xlrd-tech","date":"AUG 18"},{"href":"/xos3","title":"OMNI-INBOX \u00b7 XOS","fresh":false,"label":"/xos3","date":"JUL 21"}]}];
+(function(){
+  var host = document.getElementById("sites-scroll");
+  if (!host) return;                       /* fail soft — never break the drawer */
+  var CHEV = '<span class="chev">\u203a</span>';
+
+  function esc(t){ var d=document.createElement("div"); d.textContent=t==null?"":t; return d.innerHTML; }
+
+  function showCats(){
+    var h = "";
+    for (var i=0;i<SITES.length;i++){
+      var c = SITES[i];
+      h += '<button class="cat-row" data-cat="'+i+'">'
+         +  esc(c.title)
+         +  '<span class="n">'+c.cards.length+'</span>'+CHEV+'</button>';
+    }
+    host.innerHTML = h;
+    host.scrollTop = 0;
+  }
+
+  function showCards(i){
+    var c = SITES[i]; if (!c) return showCats();
+    var h = '<button class="site-back" data-back="1">\u2039 '+esc(c.title)
+          + ' \u00b7 '+c.cards.length+'</button>';
+    for (var k=0;k<c.cards.length;k++){
+      var x = c.cards[k];
+      h += '<a class="site-card'+(x.fresh?" fresh":"")+'" href="'+esc(x.href)+'"'
+        +  ' title="'+esc(x.title)+'"><span class="dot"></span>'
+        +  '<span class="t">'+esc(x.label||x.href)+'</span>'
+        +  '<span class="r">'+esc(x.date)+'</span></a>';
+    }
+    host.innerHTML = h;
+    host.scrollTop = 0;
+  }
+
+  host.addEventListener("click", function(e){
+    var back = e.target.closest && e.target.closest("[data-back]");
+    if (back) { showCats(); return; }
+    var row = e.target.closest && e.target.closest("[data-cat]");
+    if (row) { showCards(+row.getAttribute("data-cat")); }
+  });
+
+  showCats();
+})();
+</script>
+</body>
+</html>

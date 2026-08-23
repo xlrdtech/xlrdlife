@@ -1,0 +1,2187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet"/>
+  <title>XLRD Tech — XENOS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@100;300;400&display=swap" rel="stylesheet"/>
+  
+  <style>
+    :root {
+      --ink: #dffbe9;
+      --accent: #3cff96;
+      --alert: #ff4a4a;
+      --dim: rgba(223, 251, 233, 0.45);
+      --faint: rgba(223, 251, 233, 0.12);
+      --glass: rgba(0, 4, 0, 0.65);
+      --bg: #000200;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; background: var(--bg); overflow: hidden; touch-action: none; font-family: 'Inter', sans-serif; cursor: crosshair; }
+    canvas { display: block; position: fixed; inset: 0; outline: none; }
+    
+    /* Center focal ring for tactile targeting */
+    #ring {
+      position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
+      width: min(85vmin, 800px); aspect-ratio: 1; border-radius: 50%;
+      border: 1px solid var(--faint);
+      box-shadow: 0 0 140px rgba(94, 255, 168, 0.03) inset; pointer-events: none; z-index: 2;
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #ring.active { transform: translate(-50%,-50%) scale(0.95); border-color: var(--dim); box-shadow: 0 0 160px rgba(94, 255, 168, 0.08) inset; }
+
+    /* UI Overlay Layer */
+    .ui {
+      position: fixed; inset: 0; pointer-events: none; z-index: 5;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: clamp(20px, 4vw, 40px);
+    }
+    
+    .header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .brand h1 { font-family: 'JetBrains Mono', monospace; font-weight: 300; font-size: clamp(24px, 4vw, 36px); letter-spacing: -0.04em; color: var(--ink); line-height: 1; }
+    .brand h1 span { color: var(--accent); font-weight: 100; }
+    .brand p { margin-top: 8px; font-size: 11px; letter-spacing: 0.1em; color: var(--dim); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+    
+    .telemetry { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 10px; line-height: 1.8; color: var(--faint); letter-spacing: 0.15em; }
+    .telemetry span { color: var(--dim); }
+    .telemetry b { color: var(--accent); font-weight: 400; transition: color 0.3s; }
+    .telemetry b.live { color: var(--accent); }
+    .telemetry b.muted { color: var(--dim); }
+    .telemetry b.error { color: var(--alert); }
+
+    /* Audio Equalizer visualizer in HUD */
+    .eq-matrix { display: flex; align-items: flex-end; justify-content: flex-end; gap: 2px; height: 12px; margin-top: 4px; }
+    .eq-bar { width: 4px; background: var(--accent); opacity: 0.2; border-radius: 1px; transition: height 0.05s linear, opacity 0.1s; }
+
+    .footer { display: flex; justify-content: space-between; align-items: flex-end; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; max-width: 65%; pointer-events: auto; }
+    
+    button {
+      background: var(--glass); border: 1px solid var(--faint); border-radius: 30px;
+      padding: 12px 20px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 400;
+      color: var(--dim); cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); letter-spacing: 0.05em; text-transform: uppercase;
+      outline: none; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; gap: 6px;
+    }
+    button:hover, button:active { color: var(--ink); border-color: var(--accent); background: rgba(94, 255, 168, 0.1); transform: scale(0.98); }
+    button.active { color: #010101; background: var(--accent); border-color: var(--accent); }
+    
+    #mic.listening { color: #010101; background: var(--accent); border-color: var(--accent); animation: pulse-mic 2s infinite; }
+    #mic.denied { color: var(--alert); border-color: var(--alert); background: rgba(255, 74, 74, 0.1); }
+    
+    @keyframes pulse-mic {
+      0% { box-shadow: 0 0 0 0 rgba(94, 255, 168, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(94, 255, 168, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(94, 255, 168, 0); }
+    }
+
+    .status-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .status-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--accent); border: 1px solid rgba(94, 255, 168, 0.3); padding: 4px 10px; border-radius: 20px; background: rgba(94, 255, 168, 0.05); }
+
+    .crosshair { position: absolute; left: 50%; top: 50%; width: 2px; height: 2px; background: var(--accent); transform: translate(-50%, -50%); border-radius: 50%; opacity: 0.5; }
+    .crosshair::before, .crosshair::after { content: ''; position: absolute; background: var(--faint); }
+    .crosshair::before { width: 40px; height: 1px; left: -19px; top: 0; }
+    .crosshair::after { width: 1px; height: 40px; left: 0; top: -19px; }
+
+    /* Node Labels */
+    .lbl {
+      position: absolute; transform: translate(0,-50%); font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em;
+      color: var(--dim); white-space: nowrap; opacity: 0; transition: opacity 0.4s; pointer-events: none;
+    }
+    .lbl.on { opacity: 1; }
+    .lbl::before { content: ''; position: absolute; left: -16px; top: 50%; width: 12px; height: 1px; background: var(--accent); opacity: 0.5; }
+
+    @media (max-width: 768px) {
+      .controls { max-width: 100%; justify-content: center; width: 100%; }
+      .footer { flex-direction: column; align-items: center; gap: 20px; }
+      .status-panel { align-items: center; }
+      .telemetry { display: none; }
+      #ring { width: 95vmin; }
+    }
+
+    /* ═══ WORLD LAYER — added around XENOS. Nothing here restyles his HUD. ═══ */
+    #panels { position: fixed; left: clamp(20px,4vw,48px); top: 50%; transform: translateY(-50%);
+              width: min(38vw, 420px); z-index: 6; pointer-events: none; }
+    /* ⚠️ ROOT CAUSE OF 6 DEADLINK PAGES, measured 2026-08-17 11:36 with elementFromPoint.
+       All 8 panels are absolutely positioned at the same spot. A click aimed at panel 1's
+       link was landing on PANEL 6's link — inactive, opacity 0, pointer-events none —
+       because `.p-i a` set `pointer-events: auto` UNCONDITIONALLY.
+       THE CSS FACT THAT BIT: `pointer-events: none` on a parent is not inherited-and-final.
+       A descendant may set `auto` and become hit-testable again, and `opacity: 0` never
+       blocks hit-testing. So the last panel in DOM order silently swallowed every click.
+       The cut worked because keyboard events do not hit-test. Fixed two ways so one
+       failing cannot resurrect it: `visibility` removes inactive panels from hit-testing
+       entirely, and the `auto` is scoped to `.panel.on`. */
+    .panel  { position: absolute; left: 0; top: 50%; transform: translateY(-50%) translateX(-14px);
+              opacity: 0; visibility: hidden;
+              transition: opacity .55s cubic-bezier(.16,1,.3,1), transform .55s cubic-bezier(.16,1,.3,1),
+                          visibility 0s linear .55s;
+              pointer-events: none; }
+    .panel.on { opacity: 1; visibility: visible; transform: translateY(-50%) translateX(0);
+                pointer-events: auto; transition-delay: 0s, 0s, 0s; }
+    .p-k    { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.28em;
+              color: var(--accent); opacity:.75; margin-bottom:12px; }
+    .p-t    { font-size: clamp(26px,3.4vw,44px); font-weight:300; letter-spacing:-.035em;
+              line-height:1.04; color: var(--ink); margin-bottom:14px; }
+    .p-b    { font-size:14px; line-height:1.62; color: var(--dim); max-width:38ch; }
+    .p-i    { margin-top:22px; display:flex; flex-direction:column; gap:9px; }
+    .p-i a  { font-family:'JetBrains Mono',monospace; font-size:11px;
+              letter-spacing:.10em; text-transform:uppercase; color: var(--dim);
+              text-decoration:none; padding:9px 15px; border:1px solid var(--faint);
+              border-radius:24px; background: var(--glass);
+              backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+              transition: all .3s cubic-bezier(.16,1,.3,1); width:fit-content; }
+    .p-i a:hover { color: var(--ink); border-color: var(--accent); background: rgba(60,255,150,.10); }
+
+    /* right-edge shot rail — the map of the world, and a way to jump in it */
+    #routes { position: fixed; right: clamp(14px,2.4vw,26px); top: 50%; transform: translateY(-50%);
+              z-index: 7; display: flex; flex-direction: column; gap: 14px; align-items: flex-end; }
+    #routes a { pointer-events:auto; display:flex; align-items:center; gap:9px; text-decoration:none;
+                font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.16em;
+                text-transform:uppercase; color: transparent; transition: color .3s; }
+    #routes a i { display:block; width:22px; height:1px; background: var(--faint); transition: all .35s; }
+    #routes a:hover { color: var(--dim); }
+    #routes a.on   { color: var(--accent); }
+    #routes a.on i { background: var(--accent); width:34px; }
+
+    #hint { position: fixed; left: 50%; bottom: clamp(84px,12vh,120px); transform: translateX(-50%);
+            z-index: 6; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.32em;
+            color: var(--faint); pointer-events:none; transition: opacity .6s; }
+    #hint.gone { opacity: 0; }
+    #hint b { display:block; margin:7px auto 0; width:1px; height:18px;
+              background:linear-gradient(var(--accent),transparent); opacity:.5;
+              animation: hintfall 1.9s ease-in-out infinite; }
+    @keyframes hintfall { 0%,100%{transform:translateY(0);opacity:.15} 50%{transform:translateY(6px);opacity:.55} }
+
+    /* ⚠️ NO NON-DIEGETIC LAYER (qi 12:50-12:52, he named the buttons himself).
+       His dock and telemetry are hidden rather than removed: his own handlers hold
+       references to these nodes, and deleting them would mean rewriting his working
+       code to satisfy a styling correction. Hidden = reversible in one line. */
+    .ui, .ui .controls, .ui .telemetry, .ui .status-panel, .ui .brand,
+    #ring, .crosshair, .lbl { display: none !important; }
+    /* ⚠️ .ui itself, not just its children — the brand wordmark was still pinned
+       to the viewport after the first pass, which is the same mistake one level up. */
+
+    @media (max-width: 768px) {
+      #panels { left: 18px; right: 18px; width: auto; top: 30%; }
+      .p-b { max-width: none; }
+      #routes { right: 8px; gap: 11px; }
+      #routes a span { display: none; }
+      #hint { bottom: 148px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="ring"></div>
+<div class="crosshair"></div>
+
+<div class="ui">
+  <div class="header">
+    <div class="brand">
+      <h1>XLRD<span>//</span>XENOS</h1>
+      <p>Executive Leverage Research &amp; Development</p>
+    </div>
+    <div class="telemetry">
+      <span>AUDIO:</span> <b id="audio-stat" class="muted">MUTED/BREATHING</b><br>
+      <span>STATE:</span> <b id="form-disp">ORB</b><br>
+      <span>NODES:</span> <b id="nn">—</b><br>
+      <span>EDGES:</span> <b id="ee">—</b><br>
+      <div class="eq-matrix" id="eq-matrix">
+        <!-- Generated by JS -->
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <div class="controls">
+      <button id="mic">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+        Voice
+      </button>
+      <button data-f="0">Wheels</button>
+      <button data-f="1" class="active">Core</button>
+      <button data-f="2">Form</button>
+      <button id="probe">Pulse</button>
+    </div>
+    <div class="status-panel">
+      <div class="status-badge" id="mood">IDLE</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ⚠️ NO OVERLAY. qi 12:50:44: "there should not be an overlay over the environment."
+     The panels and rail that used to live here are now GEOMETRY in the scene (see
+     buildSigns). These two nodes remain because the travel code holds references to
+     them, and they are kept strictly invisible and non-interactive — deleting them
+     would mean rewriting his working navigation to fix a styling objection, which is
+     how a small correction turns into a regression. -->
+<div id="panels" style="display:none"></div>
+<nav id="routes" style="display:none"></nav>
+<div id="hint" style="display:none"></div>
+<div id="h-fps" style="position:fixed;left:-9999px;top:-9999px">0</div>
+<script src="https://unpkg.com/gsap@3.13.0/dist/gsap.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer }  from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass }      from 'three/addons/postprocessing/OutputPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { BokehPass }  from 'three/addons/postprocessing/BokehPass.js';
+import { FilmPass }   from 'three/addons/postprocessing/FilmPass.js';
+
+
+// --- UI / EQ SETUP ---
+const NB = 8; // Number of frequency bands
+const eqMatrix = document.getElementById('eq-matrix');
+const eqBars = [];
+for(let i=0; i<NB; i++) {
+  const bar = document.createElement('div');
+  bar.className = 'eq-bar';
+  bar.style.height = '2px';
+  eqMatrix.appendChild(bar);
+  eqBars.push(bar);
+}
+
+// --- CORE THREE.JS ---
+const scene = new THREE.Scene(); 
+scene.fog = new THREE.FogExp2(0x000200, 0.0018);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 1, 8000); 
+camera.position.z = 600;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.appendChild(renderer.domElement);
+
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const composer = new EffectComposer(renderer); 
+composer.addPass(new RenderPass(scene, camera));
+
+// Bloom tuned for XLRD brand plasma
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.5, 0.85, 0.1);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
+// --- STATE MANAGEMENT ---
+const S = { 
+  fx: 0, fy: 0, 
+  camZ: 600, 
+  scale: 1, 
+  spin: 0.0015, 
+  flare: 0, 
+  energy: 0, // Master audio energy
+  drift: 0, 
+  morph: 1, // Default to ORB
+  reach: 0, 
+  rz: 0,
+  velX: 0, velY: 0,
+  time: 0
+};
+
+const ophanim = new THREE.Group(); 
+scene.add(ophanim);
+
+// 1. Volatile Superfluid Plasma Core (Shader) - Solid Glass Shell Removed
+const coreGeometry = new THREE.IcosahedronGeometry(220, 48); // Subdivided for organic displacement
+
+const plasmaUniforms = {
+  t: { value: 0 },
+  energy: { value: 0 },
+  morph: { value: 1 }
+};
+
+const plasmaMaterial = new THREE.ShaderMaterial({
+  uniforms: plasmaUniforms,
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  wireframe: false, // Changed from true. Using fragment discard to create voids.
+  vertexShader: `
+    varying vec3 vPos;
+    varying vec3 vNormal;
+    varying vec3 vView;
+    uniform float t;
+    uniform float energy;
+    
+    // Simplex 3D Noise 
+    vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+    vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+    float snoise(vec3 v){ 
+      const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+      const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+      vec3 i  = floor(v + dot(v, C.yyy) );
+      vec3 x0 = v - i + dot(i, C.xxx) ;
+      vec3 g = step(x0.yzx, x0.xyz);
+      vec3 l = 1.0 - g;
+      vec3 i1 = min( g.xyz, l.zxy );
+      vec3 i2 = max( g.xyz, l.zxy );
+      vec3 x1 = x0 - i1 + C.xxx;
+      vec3 x2 = x0 - i2 + C.yyy;
+      vec3 x3 = x0 - D.yyy;
+      i = mod(i, 289.0 ); 
+      vec4 p = permute( permute( permute( 
+                 i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+               + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) 
+               + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+      float n_ = 0.142857142857; 
+      vec3  ns = n_ * D.wyz - D.xzx;
+      vec4 j = p - 49.0 * floor(p * ns.z *ns.z);  
+      vec4 x_ = floor(j * ns.z);
+      vec4 y_ = floor(j - 7.0 * x_ );    
+      vec4 x = x_ *ns.x + ns.yyyy;
+      vec4 y = y_ *ns.x + ns.yyyy;
+      vec4 h = 1.0 - abs(x) - abs(y);
+      vec4 b0 = vec4( x.xy, y.xy );
+      vec4 b1 = vec4( x.zw, y.zw );
+      vec4 s0 = floor(b0)*2.0 + 1.0;
+      vec4 s1 = floor(b1)*2.0 + 1.0;
+      vec4 sh = -step(h, vec4(0.0));
+      vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+      vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+      vec3 p0 = vec3(a0.xy,h.x);
+      vec3 p1 = vec3(a0.zw,h.y);
+      vec3 p2 = vec3(a1.xy,h.z);
+      vec3 p3 = vec3(a1.zw,h.w);
+      vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+      p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+      vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+      m = m * m;
+      return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+    }
+
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+      vView = normalize(-mvPos.xyz);
+      
+      float time = t * 2.0;
+      float n = snoise(position * 0.012 - time);
+      float n2 = snoise(position * 0.03 + time * 0.8);
+
+      // Erratic branching: power isolates peaks, scale pushes them outward
+      float spike = pow(max(0.0, n), 5.0) * 450.0 * (0.5 + energy * 2.5);
+      
+      // Base sphere is crushed to 5%, only the violent spikes extend outward
+      vec3 pos = (position * 0.05) + normal * (spike + n2 * 10.0);
+      
+      vPos = pos; // Pass displaced position for accurate radial fading
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vPos;
+    varying vec3 vNormal;
+    varying vec3 vView;
+    uniform float t;
+    uniform float energy;
+    uniform float morph;
+
+    float hash(vec3 p) {
+        p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+        p += dot(p, p.yxz + 33.33);
+        return fract((p.x + p.y) * p.z);
+    }
+    float noise(vec3 x) {
+        vec3 i = floor(x);
+        vec3 f = fract(x);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
+                       mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+                   mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+                       mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+    }
+
+    void main() {
+      // Distance from true center based on DISPLACED position
+      float dist = length(vPos) / 220.0;
+      
+      vec3 v = normalize(vPos);
+      
+      // High-Frequency Noise for micro-arcing
+      float n1 = noise(v * 6.0 + vec3(0.0, t * 4.0, t * 2.0));
+      float n2 = noise(v * 12.0 - vec3(t * 3.0, 0.0, t * 4.0));
+      
+      // Sharp lightning veins
+      float veins = abs(sin((n1 + n2) * 20.0));
+      
+      // Extremely aggressive clipping: only the absolute peaks survive (the rest is invisible void)
+      veins = smoothstep(0.97, 1.0, 1.0 - veins);
+      
+      // Master activity driver
+      float activity = veins * (1.0 + energy * 3.0);
+
+      // Discard empty space instantly to shatter the solid silhouette
+      if (activity < 0.02) discard;
+      
+      // Color Palette: XLRD Electric Green to Soft White-Green Core (No pure white blowouts)
+      vec3 darkVoid = vec3(0.0, 0.0, 0.0);
+      vec3 lightningGreen = vec3(0.0, 0.85, 0.35); 
+      vec3 coreHot = vec3(0.4, 1.0, 0.6); 
+      
+      vec3 color = mix(lightningGreen, coreHot, clamp(activity - 0.5, 0.0, 1.0));
+      
+      // Fade out entirely if not in ORB mode
+      float orbW = max(0.0, 1.0 - abs(morph - 1.0));
+      
+      float alpha = activity * orbW;
+      
+      // Soft fade at physical edges to avoid hard geometric cutoffs
+      alpha *= smoothstep(2.0, 0.2, dist); 
+      
+      gl_FragColor = vec4(color, alpha);
+    }
+  `
+});
+
+const plasmaCore = new THREE.Mesh(coreGeometry, plasmaMaterial);
+ophanim.add(plasmaCore);
+
+// Preserve original base vertices for audio morphing
+const glassBasePositions = coreGeometry.attributes.position.clone();
+
+// Ambient data dust
+let world;
+{ 
+  const NP = 2500, p = new Float32Array(NP*3), s = new Float32Array(NP), ph = new Float32Array(NP);
+  for(let i=0; i<NP; i++) { 
+    const r = 1200 + Math.random()*2000, th = Math.random()*Math.PI*2, pp = Math.acos(2*Math.random()-1);
+    p[i*3] = r*Math.sin(pp)*Math.cos(th); p[i*3+1] = r*Math.sin(pp)*Math.sin(th); p[i*3+2] = r*Math.cos(pp);
+    s[i] = Math.random()*2.0 + 0.5; ph[i] = Math.random()*Math.PI*2; 
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  g.setAttribute('asize', new THREE.BufferAttribute(s, 1));
+  g.setAttribute('aph', new THREE.BufferAttribute(ph, 1));
+  world = new THREE.Points(g, new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { t: {value:0} },
+    vertexShader: `
+      attribute float asize; attribute float aph; uniform float t;
+      varying float vo;
+      void main(){ 
+        vec3 q = position;
+        q.y += sin(t * 0.5 + aph) * 50.0;
+        vec4 mv = modelViewMatrix * vec4(q, 1.0);
+        vo = 0.1 + 0.15 * sin(t * 0.8 + aph);
+        gl_PointSize = asize * (400.0 / -mv.z); 
+        gl_Position = projectionMatrix * mv; 
+      }`,
+    fragmentShader: `
+      varying float vo; 
+      void main(){ 
+        vec2 d = gl_PointCoord - 0.5;
+        if(length(d) > 0.5) discard; 
+        gl_FragColor = vec4(0.23, 1.0, 0.58, exp(-dot(d,d)*12.0) * vo); 
+      }`
+  }));
+  scene.add(world); 
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   WORLD — the environment XENOS lives in. Everything above this line is qi's.
+   Nothing below touches his core, his shaders, his points, or his lines.
+   ═════════════════════════════════════════════════════════════════════════════ */
+const WORLD = new THREE.Group();
+scene.add(WORLD);
+/* ⚠️ FOG, corrected after LOOKING at the first build (2026-08-17 11:23).
+   0.00040 seemed reasonable by arithmetic and erased every ridge: MeshBasicMaterial
+   DOES take fog, so the -6600 wall arrived at exp(-2.64) = 7% opacity — present in the
+   bytes, absent on the screen. The lesson is the same one qi keeps paying for: a value
+   that looks correct in the source is not a value that looks correct in the frame. */
+scene.fog = new THREE.FogExp2(0x000200, 0.000105);
+const FLOOR_Y = -560;
+
+function radialTex(inner, outer) {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+  g.addColorStop(0, inner); g.addColorStop(1, outer);
+  x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(c);
+}
+
+/* floor — dark, wet, faintly reflective. Reads as a lab deck, not a grid toy. */
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(20000, 20000),
+  new THREE.MeshStandardMaterial({ color: 0x00070a, metalness: 0.90, roughness: 0.30, envMapIntensity: 0.28 })
+);
+floor.rotation.x = -Math.PI / 2; floor.position.y = FLOOR_Y; WORLD.add(floor);
+
+/* the pool of light XENOS casts on the deck — this is what anchors him.
+   A floating subject reads as a sketch; a subject with contact reads as present.
+   ⚠️ MEASURED AND CUT DOWN, 11:23: at radius 1900 / alpha 0.50 this additive disc WAS
+   the green wash. From the sky shot the camera looks straight down through it, so it
+   filled the lower half of the frame and swallowed the ridges, the monoliths and his
+   core. Anchoring needs a tight bright contact, not a large soft one — the same error
+   as a hot interior shell erasing structure instead of lighting seams. */
+const pool = new THREE.Mesh(
+  new THREE.CircleGeometry(300, 64),
+  new THREE.MeshBasicMaterial({ map: radialTex('rgba(60,255,150,0.09)', 'rgba(0,0,0,0)'),
+                                transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })
+);
+pool.rotation.x = -Math.PI / 2; pool.position.y = FLOOR_Y + 2; WORLD.add(pool);
+
+/* survey rings + spokes — scale reference, so travel is legible as distance.
+   Named at outer scope: altitude fades these out, and a material you cannot reach is a
+   material you cannot change (third time this lesson has come up today). */
+let rings;
+{
+  const seg = 168, v = [];
+  for (let r = 460; r <= 6000; r += 380) {
+    for (let i = 0; i < seg; i++) {
+      const a1 = i / seg * Math.PI * 2, a2 = (i + 1) / seg * Math.PI * 2;
+      v.push(Math.cos(a1) * r, 0, Math.sin(a1) * r, Math.cos(a2) * r, 0, Math.sin(a2) * r);
+    }
+  }
+  for (let k = 0; k < 24; k++) {
+    const a = k / 24 * Math.PI * 2;
+    v.push(Math.cos(a) * 460, 0, Math.sin(a) * 460, Math.cos(a) * 6000, 0, Math.sin(a) * 6000);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  rings = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
+    color: 0x2fffa0, transparent: true, opacity: 0.070,
+    blending: THREE.AdditiveBlending, depthWrite: false }));
+  rings.position.y = FLOOR_Y + 3; WORLD.add(rings);
+}
+
+/* receding ridge silhouettes — aerial perspective: nearest darkest, farthest palest.
+   Flat MeshBasicMaterial on purpose, so they stay silhouettes and never catch light. */
+function ridge(z, w, h, color, seed) {
+  const g = new THREE.PlaneGeometry(w, h, 240, 1);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i);
+    if (y > 0) {
+      let n = 0, amp = 1, f = 0.00052;
+      for (let o = 0; o < 4; o++) {
+        n += Math.sin(x * f + seed * (o + 1) * 1.7) * amp + Math.cos(x * f * 1.7 + seed * (o + 3)) * amp * 0.6;
+        amp *= 0.5; f *= 2.1;
+      }
+      p.setY(i, y + n * h * 0.11);
+    }
+  }
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+  m.position.set(0, FLOOR_Y + h / 2, z);
+  return m;
+}
+/* collected, not anonymous — the dimension palette recolours these every frame, and
+   a material you cannot reach is a material you cannot change (measured: applyTone
+   referenced RIDGES before this existed and would have thrown on frame one). */
+const RIDGES = [];
+[[-2700, 16000, 1500, 0x03130c, 1.3], [-4400, 22000, 2500, 0x072016, 2.7],
+ [-6600, 30000, 3800, 0x0b2c1e, 4.1], [-9200, 40000, 5400, 0x103826, 5.5]]
+  .forEach(a => { const m = ridge(a[0], a[1], a[2], a[3], a[4]); WORLD.add(m); RIDGES.push(m); });
+
+/* monoliths — the parallax. These are what makes camera travel FELT rather than
+   merely computed; without near geometry, a dolly through empty space is static. */
+const MONO_MAT = new THREE.MeshStandardMaterial({ color: 0x030f0b, metalness: 0.82, roughness: 0.40, envMapIntensity: 0.34 });
+{
+  const mat  = MONO_MAT;   // hoisted so the dimension palette can recolour it
+  /* ⚠️ 0.26 -> 0.11 and narrowed, measured 11:26. An additive strip in front of a dark
+     tower is brighter than the tower is visible, so each seam read as a free-floating
+     neon rod with nothing behind it. The seam is supposed to describe an edge, not
+     replace the object — the same trap as pale emissive shards vanishing against a
+     blown seam, inverted. */
+  const seam = new THREE.MeshBasicMaterial({ color: 0x3cff96, transparent: true, opacity: 0.11,
+                                             blending: THREE.AdditiveBlending, depthWrite: false });
+  const P = [[-1500,-900,220,1500], [1700,-1250,260,2100], [-2400,420,300,1250], [2600,900,240,1750],
+             [-950,-2600,340,2600], [1250,-3100,300,2200], [-3200,-1600,280,1900], [3300,-2050,320,2400],
+             [-2050,1850,200,900],  [2250,2100,220,1100],  [-4250,-420,360,3000], [4400,-720,340,2800],
+             [-620,-4400,420,3400], [950,-5200,400,3200],  [-5400,-2400,380,3600], [5600,-2900,360,3300]];
+  for (const a of P) {
+    const x = a[0], z = a[1], w = a[2], h = a[3];
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.82), mat);
+    m.position.set(x, FLOOR_Y + h / 2, z); WORLD.add(m);
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.09, h * 0.84), seam);
+    s.position.set(x - w * 0.30, FLOOR_Y + h / 2, z + w * 0.42); WORLD.add(s);
+  }
+}
+
+/* haze pooling between the ridges.
+   ⚠️ Pushed BEHIND the subject and dimmed 0.26 -> 0.09. The nearest sheet was at
+   z=-1900, which is only ~1900 from origin — near enough to sit between the camera
+   and his core on half the shots and veil him. Haze belongs in the distance; haze in
+   front of the subject is just a scrim. */
+const HAZE = [];
+{
+  const hz = radialTex('rgba(18,86,52,0.09)', 'rgba(0,0,0,0)');
+  for (const z of [-3800, -6200, -8600]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(26000, 6400),
+      new THREE.MeshBasicMaterial({ map: hz, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    m.position.set(0, FLOOR_Y + 1500, z); WORLD.add(m); HAZE.push(m);
+  }
+}
+
+/* ⭐ THE WORLD'S ONLY REAL LIGHT IS XENOS HIMSELF.
+   A point light at his origin, driven by the same energy that drives his plasma, so
+   the deck, the monoliths and the haze all breathe with his voice. This is why he is
+   "a living avatar" in a room rather than a sprite pasted over a backdrop.
+
+   ⚠️ RANGE 12000 -> 3400 and decay 1.5 -> 2.0, measured 11:23. A near-infinite-range
+   light with slow decay lit the whole 20,000-unit floor evenly, which is the opposite
+   of what a single source does — it flattened the deck into one pale value. Physical
+   inverse-square falloff is what produces the near-black-to-bright range the reference
+   class depends on; a light that reaches everything reveals nothing. */
+/* ═══ LENS ═══ Reorder his composer so the optics sit AFTER his bloom and OutputPass
+   stays last — tone mapping must come after the grade or the grade is tone-mapped. */
+{
+  const kept = composer.passes.slice();
+  composer.passes.length = 0;
+  let outPass = null;
+  for (const ps of kept) {
+    if (ps.constructor && ps.constructor.name === 'OutputPass') { outPass = ps; continue; }
+    composer.addPass(ps);
+  }
+
+  /* DEPTH OF FIELD — the strongest single cue. A real lens focuses at exactly one
+     distance and everything else falls away; nothing in CG does that by default.
+     Focus is retargeted onto the avatar's true distance every frame (LENS_TICK), so he
+     stays sharp while the world softens around him the way a photographed subject does. */
+  window.__bokeh = new BokehPass(scene, camera, { focus: 620, aperture: 0.000021, maxblur: 0.0035 });
+  composer.addPass(window.__bokeh);
+
+  /* DISPERSION + FALLOFF — glass splits colour toward the frame edge and dims there.
+     Both are deliberately tiny: at these amounts you cannot point at them, you simply
+     stop reading the image as synthetic. */
+  composer.addPass(new ShaderPass({
+    uniforms: { tDiffuse: { value: null }, amt: { value: 0.0016 }, vig: { value: 0.26 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader: [
+      'uniform sampler2D tDiffuse; uniform float amt; uniform float vig; varying vec2 vUv;',
+      'void main(){',
+      '  vec2 d = vUv - 0.5;',
+      '  float r2 = dot(d, d);',
+      '  vec2 off = d * amt * (1.0 + r2 * 3.2);',
+      '  float cr = texture2D(tDiffuse, vUv + off).r;',
+      '  vec4  cg = texture2D(tDiffuse, vUv);',
+      '  float cb = texture2D(tDiffuse, vUv - off).b;',
+      '  vec3 c = vec3(cr, cg.g, cb);',
+      '  c *= 1.0 - vig * r2 * 2.0;',
+      '  gl_FragColor = vec4(c, cg.a);',
+      '}'
+    ].join(String.fromCharCode(10))
+  }));
+
+  /* GRAIN — every real capture carries sensor noise. A perfectly clean frame is the
+     most synthetic thing on the screen. Low enough to be felt, not seen. */
+  composer.addPass(new FilmPass(0.09, false));
+
+  if (outPass) composer.addPass(outPass);
+}
+
+/* ═══ CAPTURED LIGHT, NOT INVENTED LIGHT ══════════════════════════════════════
+   qi 13:10:25 named the goal: "illusionism" — paintings you cannot tell from a real
+   human. That tradition wins on LIGHT being exactly right, never on detail, and a
+   viewer reads light before they read shape. Every light here up to now was a bulb I
+   placed at a position I made up, which is why 13:18:46 was "it still looks like a
+   video game."
+
+   So the world is now lit by a real photographed sky. `satara_night_no_lamps` is a 2K
+   CC0 capture of an actual night sky with no artificial lamps in it — real starfield,
+   real horizon glow, real colour temperature. It is SELF-HOSTED in /env: a runtime
+   dependency on someone else's CDN is a way for his page to go dark with nobody
+   touching it.
+
+   Verified on disk by the #?RADIANCE magic header, not by the download's 200 — an
+   error page is also 200-shaped and would load as a black environment, which looks
+   exactly like "the HDRI didn't help." */
+const _pmrem = new THREE.PMREMGenerator(renderer);
+_pmrem.compileEquirectangularShader();
+new RGBELoader().setPath('/env/').load('satara_night_no_lamps_2k.hdr', hdr => {
+  const envMap = _pmrem.fromEquirectangular(hdr).texture;
+  scene.environment = envMap;                 // LIGHT ONLY
+  /* deliberately NOT scene.background: his own 2500-point dust IS the sky, and painting
+     a photo behind it would bury the field he built. The capture is here to light the
+     rock, nothing else. */
+  hdr.dispose(); _pmrem.dispose();
+  window.__envReady = true;
+}, undefined, err => {
+  /* fail LOUD in the console but never break the scene — a missing sky must degrade to
+     the previous look, not to a black frame */
+  console.warn('[xenos] captured sky failed to load, falling back to invented light', err);
+  window.__envReady = false;
+});
+
+/* ⚠️ I SET TONE MAPPING HERE AND IT WAS ALREADY HIS. Measured 13:26 —
+   xenos-plasma/index.html:182-183 already does ACESFilmicToneMapping at exposure 1.2,
+   and three.js 0.160 already defaults outputColorSpace to SRGB. So my block was
+   redundant, and re-declaring a value he tuned is a silent fight over his own frame.
+   REMOVED. His file owns the camera response. */
+
+/* his core genuinely emits, so it should still throw light on nearby rock — that part
+   was always physically correct. It just stops being the sun. */
+const coreLight = new THREE.PointLight(0x3cff96, 1.7, 3400, 2.0);
+scene.add(coreLight);
+const fill = new THREE.DirectionalLight(0x9fffd0, 0.10); fill.position.set(-1, 0.55, 1); scene.add(fill);
+const rim  = new THREE.DirectionalLight(0x1a4a30, 0.16); rim.position.set(0.4, -0.15, -1); scene.add(rim);
+
+
+let pts, lines, base, T0, T1, T2, N=0, labels=[], bandOf=null;
+const SHELL = 230;
+const RINGS = [
+  {t:[0,0,0],r:SHELL}, {t:[1.5708,0,0],r:SHELL*1.05}, {t:[0,1.5708,0],r:SHELL*0.95},
+  {t:[0.5,0.5,0.2],r:SHELL*1.1}, {t:[-0.7,0.8,-0.3],r:SHELL*0.9}, {t:[1.1,0.2,0.7],r:SHELL*1.02}
+];
+
+function humanoid(i, n) {
+  const u = i/n, a = Math.random()*Math.PI*2, jr = Math.random();
+  let x, y, z, rad;
+  if(u<0.12) { rad=45*Math.sqrt(jr); y=220+Math.sqrt(Math.max(0,1-(rad/50)**2))*40; x=Math.cos(a)*rad; z=Math.sin(a)*rad*0.8; }
+  else if(u<0.18) { rad=25+jr*10; y=160+jr*20; x=Math.cos(a)*rad; z=Math.sin(a)*rad*0.8; }
+  else if(u<0.35) { rad=120*(0.6+0.4*jr); y=120+jr*30; x=Math.cos(a)*rad; z=Math.sin(a)*rad*0.5; }
+  else if(u<0.60) { const ty=(u-0.35)/0.25; rad=(100-40*ty)*(0.5+0.5*jr); y=120-ty*180; x=Math.cos(a)*rad; z=Math.sin(a)*rad*0.6; }
+  else if(u<0.80) { const s=(u<0.7)?-1:1, ta=(u<0.7)?(u-0.6)/0.1:(u-0.7)/0.1; x=s*(110+ta*50)+(Math.random()-0.5)*20; y=110-ta*190+(Math.random()-0.5)*20; z=(Math.random()-0.5)*30; }
+  else { const s=(u<0.9)?-1:1, tl=(u<0.9)?(u-0.8)/0.1:(u-0.9)/0.1; x=s*40+(Math.random()-0.5)*20; y=-60-tl*170+(Math.random()-0.5)*20; z=(Math.random()-0.5)*30; }
+  return [x, y, z];
+}
+
+// Graph Construction
+const N_NODES = 500;
+N = N_NODES;
+T0 = new Float32Array(N*3); T1 = new Float32Array(N*3); T2 = new Float32Array(N*3);
+bandOf = new Uint8Array(N); 
+const edges = [];
+
+// Synthesize edges
+for(let i=0; i<N*1.5; i++) {
+  const s = Math.floor(Math.random()*N), t = Math.floor(Math.random()*N);
+  if(s !== t) edges.push({s, t, w: Math.random()});
+}
+
+const eu = new THREE.Euler();
+const q = new THREE.Quaternion();
+
+// Generate States
+for(let i=0; i<N; i++) {
+  // State 0: Ophanim / Wheels
+  const R = RINGS[i%RINGS.length];
+  const a = Math.random()*Math.PI*2, rr = R.r + (Math.random()-0.5)*40;
+  const v = new THREE.Vector3(Math.cos(a)*rr, Math.sin(a)*rr, (Math.random()-0.5)*20);
+  eu.set(R.t[0], R.t[1], R.t[2]); q.setFromEuler(eu); v.applyQuaternion(q);
+  T0[i*3] = v.x; T0[i*3+1] = v.y; T0[i*3+2] = v.z; 
+
+  // State 1: Orb (Audio Reactive Bands)
+  const th = Math.random()*Math.PI*2, pp = Math.acos(2*Math.random()-1);
+  const rOrb = SHELL * 1.05; 
+  T1[i*3] = rOrb*Math.sin(pp)*Math.cos(th); 
+  T1[i*3+1] = rOrb*Math.sin(pp)*Math.sin(th); 
+  T1[i*3+2] = rOrb*Math.cos(pp);
+  // Map vertical position (y) to an audio band (0 to 7)
+  bandOf[i] = Math.max(0, Math.min(NB-1, Math.floor((T1[i*3+1]/rOrb*0.5+0.5)*NB)));
+
+  // State 2: Form (Humanoid)
+  const h = humanoid(i,N); 
+  T2[i*3] = h[0]; T2[i*3+1] = h[1]; T2[i*3+2] = h[2]; 
+}
+
+base = new Float32Array(T1); // Boot to ORB
+const pos = new Float32Array(T1), col = new Float32Array(N*3), siz = new Float32Array(N);
+
+for(let i=0; i<N; i++) { 
+  col[i*3] = 0.23; col[i*3+1] = 1.0; col[i*3+2] = 0.58; 
+  siz[i] = 3.0 + Math.random()*5.0; 
+}
+
+const gp = new THREE.BufferGeometry();
+gp.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+gp.setAttribute('acolor', new THREE.BufferAttribute(col, 3));
+gp.setAttribute('asize', new THREE.BufferAttribute(siz, 1));
+
+pts = new THREE.Points(gp, new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { t: {value:0}, flare: {value:0}, foc: {value: new THREE.Vector3()} },
+  vertexShader: `
+    attribute vec3 acolor; attribute float asize; uniform float t; uniform float flare; uniform vec3 foc;
+    varying vec3 vc; varying float vf; varying float vn;
+    void main(){ 
+      vc = acolor; 
+      vec4 wp = modelMatrix * vec4(position, 1.0);
+      vn = 1.0 - smoothstep(0.0, 300.0, distance(wp.xyz, foc));
+      vec4 mv = viewMatrix * wp;
+      vf = 1.0 - smoothstep(100.0, 1500.0, -mv.z);
+      gl_PointSize = asize * (400.0 / -mv.z) * (1.0 + flare*2.0 + vn*1.5);
+      gl_Position = projectionMatrix * mv; 
+    }`,
+  fragmentShader: `
+    varying vec3 vc; varying float vf; varying float vn;
+    void main(){ 
+      vec2 d = gl_PointCoord - 0.5; float r = length(d); if(r > 0.5) discard;
+      vec3 c = mix(vc, vec3(0.86, 1.0, 0.93), vn * 0.75);
+      gl_FragColor = vec4(c, exp(-r*r*12.0) * vf * (0.55 + 0.75*vn)); 
+    }`
+}));
+ophanim.add(pts);
+
+const ep = new Float32Array(edges.length * 6);
+const ea = new Float32Array(edges.length * 2);
+let k = 0, k2 = 0;
+for(const e of edges) {
+  ep[k++] = T1[e.s*3]; ep[k++] = T1[e.s*3+1]; ep[k++] = T1[e.s*3+2];
+  ep[k++] = T1[e.t*3]; ep[k++] = T1[e.t*3+1]; ep[k++] = T1[e.t*3+2];
+  const w = e.w * 0.5; ea[k2++] = w; ea[k2++] = w;
+}
+const ge = new THREE.BufferGeometry();
+ge.setAttribute('position', new THREE.BufferAttribute(ep, 3));
+ge.setAttribute('aw', new THREE.BufferAttribute(ea, 1));
+lines = new THREE.LineSegments(ge, new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  vertexShader: `
+    attribute float aw; varying float vw; varying float vf;
+    void main(){ vw=aw; vec4 mv=modelViewMatrix*vec4(position,1.);
+    vf=1.-smoothstep(200.,1800.,-mv.z); gl_Position=projectionMatrix*mv; }`,
+  fragmentShader: `
+    varying float vw; varying float vf;
+    void main(){ gl_FragColor=vec4(0.23, 1.0, 0.58, vw*vf*0.4); }`
+}));
+ophanim.add(lines);
+
+document.getElementById('nn').textContent = N.toLocaleString();
+document.getElementById('ee').textContent = edges.length.toLocaleString();
+
+for(let i=0; i<5; i++) {
+  const el = document.createElement('div'); el.className = 'lbl';
+  el.textContent = `DATA.PRTCL.${Math.floor(Math.random()*9999)}`;
+  document.querySelector('.ui').appendChild(el); 
+  labels.push({el, i: Math.floor(Math.random()*N)}); 
+}
+
+gsap.fromTo(S, {scale: 0.01}, {scale: 1, duration: 2.5, ease: 'expo.out'});
+
+// --- AUDIO / MIC INTEGRATION ---
+let analyser = null, bins = null, actx = null;
+const BAND = new Float32Array(NB), BTGT = new Float32Array(NB);
+let LEVEL = 0, APEAK = 1e-4, HAS_AUDIO = false;
+const micBtn = document.getElementById('mic');
+const audioStat = document.getElementById('audio-stat');
+
+async function attachMic() {
+  if (HAS_AUDIO) return;
+  try {
+    const st = await navigator.mediaDevices.getUserMedia({audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') await actx.resume();
+    analyser = actx.createAnalyser(); 
+    analyser.fftSize = 2048; 
+    analyser.smoothingTimeConstant = 0.72;
+    actx.createMediaStreamSource(st).connect(analyser);
+    bins = new Uint8Array(analyser.frequencyBinCount);
+    
+    HAS_AUDIO = true;
+    micBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><line x1="19" y1="10" x2="19" y2="12"></line><line x1="5" y1="10" x2="5" y2="12"></line><line x1="12" y1="19" x2="12" y2="22"></line></svg> LIVE';
+    micBtn.className = 'listening';
+    audioStat.textContent = 'LIVE / TRACKING';
+    audioStat.className = 'live';
+  } catch(e) {
+    micBtn.innerHTML = 'DENIED';
+    micBtn.className = 'denied';
+    audioStat.textContent = 'ACCESS DENIED';
+    audioStat.className = 'error';
+    console.error("Mic error:", e);
+  }
+}
+micBtn.addEventListener('click', attachMic);
+
+function readVoice() {
+  if(analyser && HAS_AUDIO) {
+    analyser.getByteFrequencyData(bins);
+    const M = bins.length; let sum = 0;
+    for(let b=0; b<NB; b++) {
+      const lo = Math.floor(Math.pow(M, b/NB));
+      const hi = Math.max(lo+1, Math.floor(Math.pow(M, (b+1)/NB)));
+      let s = 0; for(let i=lo; i<hi; i++) s += bins[i];
+      BTGT[b] = s / ((hi-lo)*255); sum += BTGT[b];
+    }
+    let lv = sum / NB;
+    APEAK = Math.max(APEAK * 0.9992, lv); // Auto Gain Control
+    const g = 1 / Math.max(APEAK, 0.045);
+    for(let b=0; b<NB; b++) BTGT[b] = Math.min(1.6, BTGT[b]*g);
+    lv = Math.min(1.5, lv*g);
+    LEVEL += (lv - LEVEL) * (lv > LEVEL ? 0.55 : 0.06);
+  } else {
+    // Synthetic idle breathing
+    for(let b=0; b<NB; b++) {
+      BTGT[b] = (0.10 + 0.15*(0.5 + 0.5*Math.sin(S.time*(0.37+b*0.211)+b*1.73)) + 0.05*Math.sin(S.time*(1.7+b*0.53)+b)) * (1-b*0.055);
+    }
+    const lv = 0.055 + 0.045*Math.sin(S.time*0.55) + 0.022*Math.sin(S.time*1.31+1.7);
+    LEVEL += (lv - LEVEL) * 0.06;
+  }
+  
+  // Smooth the bands for visual use
+  for(let b=0; b<NB; b++) {
+    BAND[b] += (BTGT[b] - BAND[b]) * (BTGT[b] > BAND[b] ? 0.55 : 0.075);
+    
+    // Update HUD Equalizer
+    if (eqBars[b]) {
+      const h = Math.max(2, BAND[b] * 100);
+      eqBars[b].style.height = `${h}px`;
+      eqBars[b].style.opacity = 0.2 + BAND[b];
+    }
+  }
+}
+
+// --- INTERACTION ---
+const moodEl = document.getElementById('mood');
+const ring = document.getElementById('ring');
+const setMood = m => { moodEl.textContent = m; };
+
+let isDragging = false;
+let lastTouch = { x: innerWidth/2, y: innerHeight/2 };
+
+function handleInteractionStart(e) {
+  if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+  isDragging = true;
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  lastTouch = { x, y };
+  
+  // Anticipation logic: telekinesis attractor
+  gsap.to(S, {fx: (x/innerWidth*2-1), fy: -(y/innerHeight*2-1), duration: 0.4, ease: 'power3.out', overwrite: 'auto'});
+
+  setMood('TRACKING');
+  ring.classList.add('active');
+  if(navigator.vibrate) navigator.vibrate(10);
+  gsap.to(S, {flare: 0.6, duration: 0.3});
+}
+
+function handleInteractionMove(e) {
+  if(!isDragging) {
+    // Hover stalking
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    gsap.to(S, {fx: (x/innerWidth*2-1), fy: -(y/innerHeight*2-1), duration: 0.8, ease: 'power2.out', overwrite: 'auto'});
+    return;
+  }
+  
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  const dx = x - lastTouch.x;
+  const dy = y - lastTouch.y;
+  
+  S.velX = dx * 0.005;
+  S.velY = dy * 0.005;
+  
+  gsap.to(S, {fx: (x/innerWidth*2-1), fy: -(y/innerHeight*2-1), duration: 0.2, ease: 'none', overwrite: 'auto'});
+  
+  lastTouch = { x, y };
+}
+
+function handleInteractionEnd() {
+  isDragging = false;
+  setMood('INERTIAL');
+  ring.classList.remove('active');
+  gsap.to(S, {flare: 0, duration: 1.0});
+  setTimeout(() => setMood('IDLE'), 2000);
+}
+
+window.addEventListener('mousedown', handleInteractionStart, {passive: true});
+window.addEventListener('mousemove', handleInteractionMove, {passive: true});
+window.addEventListener('mouseup', handleInteractionEnd, {passive: true});
+window.addEventListener('touchstart', handleInteractionStart, {passive: true});
+window.addEventListener('touchmove', handleInteractionMove, {passive: true});
+window.addEventListener('touchend', handleInteractionEnd, {passive: true});
+
+window.addEventListener('deviceorientation', (e) => {
+    if (e.beta === null || e.gamma === null) return;
+    const ax = Math.min(Math.max((e.gamma || 0) / 45, -1), 1);
+    const ay = Math.min(Math.max((e.beta || 0) - 45, -45) / 45, 1);
+    // Gyro adds to the target focus point softly
+    gsap.to(S, { fx: ax * 0.8, fy: -ay * 0.8, duration: 0.8, ease: 'power2.out', overwrite: 'auto' });
+}, {passive: true});
+
+const FORMS = ['OPHANIM','CORE','FORM'];
+const btns = document.querySelectorAll('.controls button[data-f]');
+
+function shift(idx) {
+  btns.forEach(b => b.classList.remove('active'));
+  document.querySelector(`button[data-f="${idx}"]`).classList.add('active');
+  
+  gsap.to(S, { 
+    morph: idx, 
+    duration: 2.5, 
+    ease: 'power3.inOut',
+    onUpdate: () => { document.getElementById('form-disp').textContent = FORMS[Math.round(S.morph)] || FORMS[1]; }
+  });
+  
+  if(idx === 1) { 
+    gsap.to(plasmaCore.scale, {x: 1, y: 1, z: 1, duration: 2, ease: 'back.out(1.2)'});
+  } else {
+    gsap.to(plasmaCore.scale, {x: 0.1, y: 0.1, z: 0.1, duration: 2, ease: 'power2.inOut'});
+  }
+
+  gsap.fromTo(S, { flare: 1.0 }, { flare: 0, duration: 1.5, ease: 'power2.out' });
+  if(navigator.vibrate) navigator.vibrate([15, 30, 15]);
+  setMood('MORPHING');
+  setTimeout(() => setMood('IDLE'), 2500);
+}
+btns.forEach(b => b.onclick = () => shift(+b.dataset.f));
+
+document.getElementById('probe').onclick = () => {
+  setMood('PULSE');
+  if(navigator.vibrate) navigator.vibrate(40);
+  gsap.timeline()
+    .to(S, {scale: 0.9, duration: 0.1, ease: 'power2.in'})
+    .to(S, {scale: 1.15, duration: 0.4, ease: 'elastic.out(1, 0.4)'})
+    .to(S, {scale: 1, duration: 0.8, ease: 'power2.out'});
+  gsap.fromTo(S, {flare: 2.0}, {flare: 0, duration: 1.5});
+  setTimeout(() => setMood('IDLE'), 1500);
+};
+
+// --- RENDER LOOP ---
+const proj = new THREE.Vector3(); 
+const foc = new THREE.Vector3();
+
+function frame() {
+  requestAnimationFrame(frame); 
+  S.time += 0.016 * TF.v;      /* TF.v == 0 freezes his plasma mid-arc for the cut */
+  S.drift += 0.0041 * TF.v;
+
+  // Audio Analysis
+  readVoice();
+  S.energy += (LEVEL - S.energy) * (LEVEL > S.energy ? 0.6 : 0.045);
+
+  // Inertial momentum
+  S.velX *= 0.95; 
+  S.velY *= 0.95;
+  
+  ophanim.rotation.y += S.spin + S.velX;
+  ophanim.rotation.x += S.velY;
+  
+  // Drift + Audio Energy alters global rotation
+  ophanim.rotation.z = S.rz + Math.sin(S.drift*0.9) * (0.05 + S.energy*0.06);
+  
+  ophanim.position.x += ((S.fx * 46) - ophanim.position.x) * 0.08;
+  ophanim.position.y += ((S.fy * 38) - ophanim.position.y) * 0.08;
+  ophanim.scale.setScalar(S.scale);
+
+  /* ⚠️ WIRE THE DRIVER. travelTick() was defined and NOT called in the first pass —
+     the route, the portals and the pursuit would all have existed and done nothing,
+     which is the same dead-code shape as an unwired constant. Caught by reading my
+     own unrun code before shipping it. */
+  if (typeof travelTick === 'function') travelTick();
+
+  /* LENS_TICK — a fixed focus would blur him the instant the camera moves, and here the
+     camera never stops. Refocus on the subject, the way a lens tracks. */
+  if (window.__bokeh && window.__bokeh.uniforms && window.__bokeh.uniforms['focus']) {
+    const fd = camera.position.distanceTo(ophanim.getWorldPosition(_lensV));
+    const fu = window.__bokeh.uniforms['focus'];
+    fu.value += (fd - fu.value) * 0.08;
+  }
+
+  /* travel owns the camera; his fx/fy survive as hand-parallax on top of the move */
+  camera.position.x += ((CAM.x + S.fx * 70) - camera.position.x) * 0.055;
+  camera.position.y += ((CAM.y + S.fy * 54) - camera.position.y) * 0.055;
+  camera.position.z += (CAM.z - camera.position.z) * 0.055;
+  camera.lookAt(LOOK.x, LOOK.y, LOOK.z);
+
+  /* the world's light is him — deck, monoliths and haze all breathe with his energy */
+  coreLight.intensity = 1.7 + Math.min(S.energy, 1.4) * 2.5 + S.flare * 1.8;
+  coreLight.position.copy(ophanim.position);
+
+  // Telekinesis Focus Point
+  foc.set(S.fx * 300, S.fy * 240, 120);
+
+  // 1. Morph Topology & Telekinesis Pull
+  if(pts && base && T0) {
+    const m = S.morph, A = (m<1) ? T0 : T1, B = (m<1) ? T1 : T2, k = (m<1) ? m : m-1;
+    const p = pts.geometry.attributes.position.array;
+    
+    // Shader uniforms update
+    pts.material.uniforms.foc.value.copy(foc);
+    pts.material.uniforms.t.value = S.time;
+    pts.material.uniforms.flare.value = S.flare;
+
+    const orbW = Math.max(0, 1 - Math.abs(S.morph - 1));
+    const amp = (9 + 70 * Math.min(S.energy, 1.2) + S.flare * 26) * (1 - 0.62 * orbW);
+    const bandK = orbW * 0.135;
+    const breathK = orbW * (0.012 + 0.042 * Math.min(S.energy, 1.2));
+    
+    for(let i=0, n=0; i<N*3; i+=3, n++) {
+      // Base morph interpolation
+      base[i]   = A[i]   + (B[i]   - A[i])   * k;
+      base[i+1] = A[i+1] + (B[i+1] - A[i+1]) * k;
+      base[i+2] = A[i+2] + (B[i+2] - A[i+2]) * k;
+      
+      // Telekinesis calculation
+      const dx = base[i] - foc.x, dy = base[i+1] - foc.y, dz = base[i+2] - foc.z;
+      const d = Math.sqrt(dx*dx + dy*dy + dz*dz) + 1e-4;
+      const pull = amp / (1 + d * 0.012);
+      const w = Math.sin(S.drift * 2.3 + d * 0.021);
+      
+      let x = base[i] - (dx/d)*pull*w;
+      let y = base[i+1] - (dy/d)*pull*w;
+      let z = base[i+2] - (dz/d)*pull*w*0.55;
+
+      // Audio frequency displacement based on latitude band
+      if(bandOf && bandK > 1e-4) {
+        const b = bandOf[n];
+        const ring = Math.sin(S.drift * 3.1 + b * 1.27 + Math.atan2(z, x) * 2.0);
+        const f = 1 + BAND[b] * bandK * (0.55 + 0.45 * ring) + breathK;
+        x *= f; y *= f; z *= f;
+      }
+      
+      // Apply to geometry buffer
+      p[i]   = x; 
+      p[i+1] = y; 
+      p[i+2] = z; 
+    }
+    pts.geometry.attributes.position.needsUpdate = true;
+    
+    // Update structural lines to follow points
+    if (lines) {
+      const lpos = lines.geometry.attributes.position.array;
+      let pIdx = 0;
+      for(const e of edges) {
+        lpos[pIdx++] = p[e.s*3]; lpos[pIdx++] = p[e.s*3+1]; lpos[pIdx++] = p[e.s*3+2];
+        lpos[pIdx++] = p[e.t*3]; lpos[pIdx++] = p[e.t*3+1]; lpos[pIdx++] = p[e.t*3+2];
+      }
+      lines.geometry.attributes.position.needsUpdate = true;
+    }
+  }
+
+  // 2. Transmissive Core Audio Reactivity
+  if(S.morph > 0.5 && S.morph < 1.5) { 
+    const cPos = coreGeometry.attributes.position.array;
+    const cBase = glassBasePositions.array;
+    const orbW = Math.max(0, 1 - Math.abs(S.morph - 1));
+    
+    for(let i=0; i<cPos.length; i+=3) {
+      const bx = cBase[i], by = cBase[i+1], bz = cBase[i+2];
+      // Map Y to band 0-7
+      const bandIdx = Math.max(0, Math.min(NB-1, Math.floor((by / 220 * 0.5 + 0.5) * NB)));
+      const activeBand = BAND[bandIdx];
+      
+      // The CPU audio displacement adds low-frequency "breathing" underneath the shader's lightning
+      const noise = Math.sin(bx * 0.02 + S.time) * Math.cos(by * 0.02 + S.time) * Math.sin(bz * 0.02 + S.time);
+      const disp = (activeBand * 40.0 * orbW) * (1 + noise);
+      
+      const len = Math.sqrt(bx*bx + by*by + bz*bz);
+      cPos[i]   = bx + (bx/len * disp);
+      cPos[i+1] = by + (by/len * disp);
+      cPos[i+2] = bz + (bz/len * disp);
+    }
+    coreGeometry.attributes.position.needsUpdate = true;
+  } else {
+    // Reset core if morphing away from orb
+    coreGeometry.setAttribute('position', glassBasePositions.clone());
+  }
+
+  if(plasmaMaterial) {
+    plasmaMaterial.uniforms.t.value = S.time;
+    plasmaMaterial.uniforms.energy.value = S.energy;
+    plasmaMaterial.uniforms.morph.value = S.morph;
+  }
+
+  if(world) world.material.uniforms.t.value = S.time;
+  
+  plasmaCore.rotation.y = -S.time * 0.4;
+  plasmaCore.rotation.x = S.time * 0.2;
+  
+  // Bloom dialed down to prevent blowout, maintaining deep greens
+  bloomPass.strength = 0.8 + Math.min(S.energy, 1.5) * 0.5 + S.flare * 0.8;
+
+  // DOM Labels tracking 3D space
+  for(const L of labels) { 
+    if(L.i == null || !pts) continue;
+    const a = pts.geometry.attributes.position.array;
+    proj.set(a[L.i*3], a[L.i*3+1], a[L.i*3+2]).applyMatrix4(ophanim.matrixWorld).project(camera);
+    if(proj.z < 1 && proj.x > -0.9 && proj.x < 0.9 && proj.y > -0.9 && proj.y < 0.9) { 
+      L.el.style.left = ((proj.x*0.5+0.5)*innerWidth) + 'px';
+      L.el.style.top = ((-proj.y*0.5+0.5)*innerHeight) + 'px'; 
+      L.el.classList.add('on'); 
+    } else L.el.classList.remove('on'); 
+  }
+
+  composer.render();
+}
+
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   NAVIGATION — CONTINUOUS TRAVEL. You move through the world; nothing teleports.
+
+   qi 2026-08-17 12:07-12:08, correcting the first version:
+     "I wanted it to be like where you can travel through in real life."
+     "The avatar on the scroll, it just needs to continue to go through the worlds,
+      through the portals, not cut scenes."
+     "you can't just teleport to a different angle"
+     "You have to scroll through reality to see different parts. You have to
+      actually TRAVEL to the different parts."
+
+   ⚠️ THE FREEZE-CUT IS NOT DELETED, IT IS REASSIGNED. He kept it — for the
+   LIKENESS build, real video of him: "the cutting of scenes like going back and
+   forth between different angles, that was for real life, from a video of me for
+   real. Like my likeness, NOT the avatar." So cuts belong to the likeness pages;
+   the avatar travels. Two different grammars for two different subjects, and my
+   first build applied the wrong one to the avatar.
+
+   MECHANICS: scroll accumulates into a distance along a CatmullRom path. His
+   avatar rides that path and flies THROUGH portal rings; the camera trails behind
+   and looks at him, so the world streams past instead of being cut between. Panels
+   fade by PROXIMITY to each portal — a continuous function of position, never a
+   discrete state change. Time never stops.
+   ═════════════════════════════════════════════════════════════════════════════ */
+const SHOTS = [
+  {key:"SKY",form:1,cam:[0,2600,1900],camEnd:[0,520,1150],look:[0,0,0],title:"XLRD Tech",body:"The engineering arm. Real-time systems, voice interfaces and autonomous operations — built, measured, and shipped in public.",items:[["Enter the world","#1"]]},
+  {key:"WIDE",form:1,cam:[-1750,260,1850],camEnd:[-820,180,1280],look:[0,40,0],title:"Built in the open",body:"Every surface here runs live off the working tree. No staging environment, no screenshots standing in for the thing itself.",items:[["See what is live","https://hitthe.link/now/"]]},
+  {key:"LOW",form:1,cam:[420,-430,760],camEnd:[-360,-300,900],look:[0,190,0],lookEnd:[0,260,0],title:"Voice as the interface",body:"Speech in, speech out, with the visual layer as confirmation rather than the primary channel. The avatar you are looking at is the same runtime.",items:[]},
+  {key:"CORE",form:1,cam:[540,90,460],camEnd:[-540,130,470],look:[0,0,0],title:"XENOS",body:"A knowledge lab as a living avatar — the graph, the voice agent and the face are one object, not three integrations.",items:[["Open XENOS","/xenos-plasma/"]]},
+  {key:"FORM",form:2,cam:[-700,120,620],camEnd:[700,60,640],look:[0,20,0],title:"It takes a form",body:"Ophanim, core, or figure. The same 500 nodes and their edges, redistributed — the structure is constant, only the arrangement changes.",items:[]},
+  {key:"DECK",form:0,cam:[-2400,-480,-1450],camEnd:[-1100,-470,620],look:[0,60,0],title:"Operations",body:"Autonomous agents, scheduled watchers, and a status board that refuses to report a pass it cannot prove.",items:[["Status board","https://hitthe.link/now/"]]},
+  {key:"FIELD",form:1,cam:[2900,340,-2600],camEnd:[900,250,1500],look:[0,0,0],title:"Research and development",body:"The R and the D in XLRD are literal. Techniques get built here first, then they show up in client work.",items:[["XLRD.org","https://xlrd.org"],["hitthe.link","https://hitthe.link"]]},
+  {key:"HORIZON",form:1,cam:[0,1450,-3400],camEnd:[0,700,2400],look:[0,0,0],title:"Work with the engineering arm",body:"Deposit-first, scoped, and shipped. If it is not live in public, it does not count as delivered.",items:[["XLRD.org","https://xlrd.org"],["hitthe.link","https://hitthe.link"]]}
+];
+
+/* His avatar becomes a passenger. Reparenting is purely additive — three.js
+   removes it from the scene on add(), so not one line of his own code changes, and
+   his drag-parallax keeps working because it now moves him LOCALLY within the
+   travelling frame. */
+const TRAVEL = new THREE.Group();
+scene.add(TRAVEL);
+TRAVEL.add(ophanim);
+if (typeof world !== 'undefined' && world) TRAVEL.add(world);   // dust travels with him
+
+/* THE ROUTE. One continuous curve: high sky entry, descending into the deck, then
+   a long forward run weaving between the monoliths. Waypoints are spaced so each
+   portal sits ON the path — you pass through, you do not arrive at. */
+/* qi 12:32:26 — "I know we need to go to space."
+   The route used to hug the deck the whole way, so there was nowhere else to BE. It
+   now climbs out of the world and comes back: deck level, then a long ascent, open
+   space at the top of the loop, then a descent home. Because the curve is closed the
+   cycle repeats forever, so space is a place you keep returning to rather than an
+   ending. ALTITUDE is what the world reads off — see spaceMix() below. */
+const ROUTE = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(    0,   760,  2600),   // arrival, above the deck
+  new THREE.Vector3(  240,   240,  1500),   // down onto it
+  new THREE.Vector3( -300,   140,   420),
+  new THREE.Vector3(  420,    60,  -760),   // lowest — weaving the monoliths
+  new THREE.Vector3( -560,   420, -1900),   // lifting
+  new THREE.Vector3(  520,  1900, -3000),   // climbing out
+  new THREE.Vector3( -420,  4600, -4150),   // SPACE
+  new THREE.Vector3(  260,  6200, -5300),   // deep space, top of the loop
+  new THREE.Vector3(  900,  3200, -6500),   // falling back
+  new THREE.Vector3(    0,  1500, -5200),   // re-entry, closing to the start
+], true, 'catmullrom', 0.5);
+
+/* 0 on the deck, 1 in open space. Everything that makes the place a PLACE fades on
+   this: at altitude the floor, the ridges and the towers are simply not there, and
+   what remains is his dust — which is already a star field, 2500 points at r 1200-3200,
+   and now travels with him. Nothing new had to be invented to make space; the world
+   just has to get out of the way. */
+const spaceMix = y => Math.max(0, Math.min(1, (y - 900) / 3400));
+
+/* ═══ SPACE IS FILMED, NOT MODELLED ═══════════════════════════════════════════════
+   qi 13:18:46 "it still looks like a video game" · 13:10:46 "that's a dead giveaway
+   that it's a fake world" · 12:32:26 "I know we need to go to space."
+
+   Every previous answer to those was better rendering. This one stops rendering. The
+   plate is NASA public-domain footage — "Earth Views from the International Space
+   Station", 7,957,833 bytes, self-hosted at /plates/ — real light through a real lens
+   in orbit. The part of the frame that IS reality cannot be caught out.
+
+   It is a PLATE, not a texture on a globe. The footage was shot looking out a window at
+   Earth, so it appears as the view when altitude climbs. Mapping a photograph onto a
+   sphere would make it a render imitating a photograph, which is the same lie in a new
+   costume. */
+const PLATE = { mesh: null, vid: null, ready: false };
+{
+  const v = document.createElement('video');
+  v.src = '/plates/iss-earth.mp4';
+  v.loop = true;
+  v.muted = true;            /* REQUIRED — an unmuted video's play() promise rejects */
+  v.playsInline = true;      /* REQUIRED on iOS or it takes over the whole screen */
+  v.preload = 'auto';
+  v.crossOrigin = 'anonymous';
+  PLATE.vid = v;
+
+  const tex = new THREE.VideoTexture(v);
+  /* without this the footage renders washed out against his ACES response curve */
+  if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
+
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(9000, 5060),      /* 16:9, the aspect it was shot at */
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0,
+                                  depthWrite: false, side: THREE.DoubleSide })
+  );
+  m.visible = false;         /* not drawn until a real frame exists — else first draw is black */
+  m.position.set(0, 5200, -14000);
+  PLATE.mesh = m;
+  WORLD.add(m);
+
+  /* the promise CAN reject (autoplay policy, decode failure, 404). Unhandled, that is a
+     silent black plate that looks exactly like a shader bug — so it is caught and named. */
+  const start = () => {
+    const p = v.play();
+    if (p && p.catch) p.catch(err => {
+      console.warn('[xenos] space plate could not autoplay — world falls back to his dust', err);
+      PLATE.ready = false;
+    });
+  };
+  v.addEventListener('loadeddata', () => { PLATE.ready = true; m.visible = true; start(); });
+  v.addEventListener('error', () => {
+    console.warn('[xenos] space plate failed to load:', v.error && v.error.message);
+    PLATE.ready = false; m.visible = false;
+  });
+  start();
+  window.__plateReady = () => PLATE.ready && !PLATE.vid.paused && PLATE.vid.currentTime > 0;
+}
+
+/* the plate fades in with ALTITUDE, so reaching space is what reveals it — it is a place
+   you travel to, never a backdrop that was always there (qi 12:07 travel, not cuts) */
+function plateTick(sm) {
+  if (!PLATE.mesh || !PLATE.ready) return;
+  const a = Math.max(0, Math.min(1, (sm - 0.22) / 0.55));
+  PLATE.mesh.material.opacity = a * 0.92;
+  PLATE.mesh.visible = a > 0.01;
+  /* it faces the traveller rather than a fixed axis, because a plate seen edge-on is a
+     line — and a photograph must be seen square to read as a photograph */
+  PLATE.mesh.lookAt(camera.position);
+}
+
+/* ═══ THE TRANSITION IS A BORE THROUGH ROCK ════════════════════════════════════
+   qi 13:10:46, looking at the previous version: "those tunnels that you made, tunnels
+   don't exist like that in real life. So that's a dead giveaway that it's a fake world.
+   You got a whole bunch of tunnels. But none of those tunnels exist."
+
+   He is right and the diagnosis is deeper than style. I had already restyled this object
+   ONCE, at 12:14, when he said the concentric rings read as his old logo — and I changed
+   the styling while keeping the CLASS. A glowing ring throat is not a badly-drawn real
+   thing; it is a thing with no referent, and one of those is enough to give away an
+   entire frame no matter how correct everything else is.
+
+   His word was "portal", meaning the TRANSITION. A bore cut through rock — a road
+   tunnel, a mine adit, a lava tube — is a real transition, photographed millions of
+   times, and it does the identical job: you approach a face, there is an opening, you
+   pass through darkness, you come out somewhere else.
+
+   WHAT MAKES IT READ AS ROCK RATHER THAN A CYLINDER:
+   - the bore walls are DISPLACED per-vertex, so no silhouette is a perfect circle
+   - rough non-metal material, so it takes environment light instead of emitting
+   - the face is an irregular annulus of the same rock, so the opening is CUT INTO
+     something rather than floating
+   - the interior gets darker with depth by geometry, not by an additive glow */
+const PORTALS = [];
+{
+  /* deterministic pseudo-noise — a build must be byte-reproducible, so no Math.random
+     anywhere in geometry (a world that is different on every reload cannot be verified
+     against a screenshot). */
+  const nz = (a, b, c) => {
+    const s = Math.sin(a * 12.9898 + b * 78.233 + c * 37.719) * 43758.5453;
+    return (s - Math.floor(s)) * 2 - 1;
+  };
+
+  const rockMat = () => new THREE.MeshStandardMaterial({
+    color: 0x14181a, roughness: 0.96, metalness: 0.02,
+    envMapIntensity: 0.32, side: THREE.DoubleSide, flatShading: true });
+
+  const R_IN = 430, LEN = 2600;
+
+  for (let i = 1; i < SHOTS.length; i++) {
+    const t = i / (SHOTS.length - 1) * 0.92 + 0.04;
+    const p = ROUTE.getPointAt(t);
+    const tan = ROUTE.getTangentAt(t);
+    const g = new THREE.Group();
+    g.position.copy(p);
+    g.lookAt(p.clone().add(tan));            // the bore FACES down the route
+
+    /* ── the bore itself: an open tube, walls displaced so it is cut rather than made */
+    const bore = new THREE.CylinderGeometry(R_IN, R_IN * 0.92, LEN, 56, 14, true);
+    const bp = bore.attributes.position;
+    for (let v = 0; v < bp.count; v++) {
+      const x = bp.getX(v), y = bp.getY(v), z = bp.getZ(v);
+      const rad = Math.hypot(x, z) || 1;
+      /* two octaves: broad undulation of the wall, plus chipped detail */
+      const d = nz(x * 0.004, y * 0.004, z * 0.004) * 46
+              + nz(x * 0.021, y * 0.019, z * 0.023) * 15;
+      bp.setX(v, x + (x / rad) * d);
+      bp.setZ(v, z + (z / rad) * d);
+      bp.setY(v, y + nz(x * 0.01, y * 0.03, z * 0.01) * 9);
+    }
+    bore.computeVertexNormals();
+    const tube = new THREE.Mesh(bore, rockMat());
+    tube.rotation.x = Math.PI / 2;           // lie the tube DOWN the -z travel axis
+    tube.position.z = -LEN / 2;
+    g.add(tube);
+
+    /* ── the face it is cut into: an irregular rock annulus, so the mouth has mass */
+    const face = new THREE.RingGeometry(R_IN, R_IN * 2.9, 64, 3);
+    const fp = face.attributes.position;
+    for (let v = 0; v < fp.count; v++) {
+      const x = fp.getX(v), y = fp.getY(v);
+      const rad = Math.hypot(x, y) || 1;
+      if (rad > R_IN * 1.05) {               // hold the inner lip, break up the outside
+        const d = nz(x * 0.003, y * 0.003, 7) * 190;
+        fp.setX(v, x + (x / rad) * d);
+        fp.setY(v, y + (y / rad) * d);
+      }
+      fp.setZ(v, nz(x * 0.005, y * 0.005, 3) * 70);
+    }
+    face.computeVertexNormals();
+    const mouth = new THREE.Mesh(face, rockMat());
+    g.add(mouth);
+
+    /* ── the dark at depth. Opaque, so it OCCLUDES the world behind the opening —
+          without this the bore reads as a hole punched in the scene, which is the
+          black-sphere lesson from this morning applied deliberately. */
+    const deep = new THREE.Mesh(
+      new THREE.CircleGeometry(R_IN * 0.94, 48),
+      new THREE.MeshBasicMaterial({ color: 0x020403, side: THREE.DoubleSide })
+    );
+    deep.position.z = -LEN + 60;
+    g.add(deep);
+
+    WORLD.add(g);
+    /* `ring` is kept as the KEY NAME because applyTone() and the proximity pass both
+       reach for p.ring.material.color. Now it tints the rock, which is physically
+       sensible — different ground, different stone. Renaming it would have been a
+       silent break in two other systems. */
+    PORTALS.push({ group: g, t, ring: mouth, tube, index: i });
+  }
+}
+
+const CAM  = { x: 0, y: 1500, z: 1400 };
+const LOOK = { x: 0, y: 0, z: 0 };
+const TF   = { v: 1 };                 // time NEVER freezes on the avatar route
+let shotIdx = -1;
+
+const panelWrap = document.getElementById('panels');
+const routeWrap = document.getElementById('routes');
+const hintEl    = document.getElementById('hint');
+
+SHOTS.forEach((s, i) => {
+  const p = document.createElement('div');
+  p.className = 'panel';
+  const items = (s.items || []).map(it =>
+    '<a href="' + it[1] + '">' + it[0] + '</a>').join('');
+  p.innerHTML = '<div class="p-k">' + String(i + 1).padStart(2, '0') + ' / ' +
+                String(SHOTS.length).padStart(2, '0') + ' &nbsp;·&nbsp; ' + s.key + '</div>' +
+                '<div class="p-t">' + s.title + '</div>' +
+                '<div class="p-b">' + s.body + '</div>' +
+                (items ? '<div class="p-i">' + items + '</div>' : '');
+  panelWrap.appendChild(p);
+
+  const a = document.createElement('a');
+  a.href = '#' + i; a.innerHTML = '<span>' + s.key + '</span><i></i>';
+  a.addEventListener('click', ev => { ev.preventDefault(); go(i); });
+  routeWrap.appendChild(a);
+});
+const panelEls = [].slice.call(panelWrap.children);
+const routeEls = [].slice.call(routeWrap.children);
+
+/* ═══ DIMENSIONS — each portal opens onto a DIFFERENT world ═══════════════════
+   qi 12:18, after travelling it: "I don't know where it's going. It didn't really go
+   to another dimension." Exactly right, and the cause is that there was only ever ONE
+   world: same deck, same towers, same colour on both sides of every throat. Passing
+   through was motion without arrival.
+   So the route now carries a palette per segment. Fog, floor, structures, ridges and
+   the portal light all interpolate as you travel, which means crossing a throat
+   visibly changes the dimension you are standing in. It is one scene by construction —
+   rebuilding geometry mid-flight would stutter — but every colour that defines the
+   place is a function of where you are. */
+const TONES = [
+  { fog: 0x000200, floor: 0x00070a, mono: 0x030f0b, ridge: 0x07200f, accent: 0x3cff96 }, // green — home
+  { fog: 0x00060c, floor: 0x001018, mono: 0x03121c, ridge: 0x06263a, accent: 0x3ce0ff }, // cyan deep
+  { fog: 0x02000a, floor: 0x0a0018, mono: 0x120726, ridge: 0x1d0b3a, accent: 0xa855ff }, // violet
+  { fog: 0x0a0300, floor: 0x180a00, mono: 0x241000, ridge: 0x3a1c00, accent: 0xffa63c }, // amber
+  { fog: 0x000806, floor: 0x00120e, mono: 0x04201a, ridge: 0x073026, accent: 0x3cffd0 }, // teal
+  { fog: 0x080008, floor: 0x140016, mono: 0x1e0622, ridge: 0x2e0d34, accent: 0xff5ce0 }, // magenta
+  { fog: 0x000407, floor: 0x000d14, mono: 0x02161f, ridge: 0x052430, accent: 0x6ea8ff }, // steel blue
+  { fog: 0x030300, floor: 0x0d0d02, mono: 0x161604, ridge: 0x242408, accent: 0xd8ff3c }, // acid
+];
+const _c1 = new THREE.Color(), _c2 = new THREE.Color();
+function toneAt(t) {
+  const f = Math.max(0, Math.min(0.9999, t)) * (TONES.length - 1);
+  const i = Math.floor(f), k = f - i;
+  const a = TONES[i], b = TONES[Math.min(TONES.length - 1, i + 1)];
+  return { k, a, b };
+}
+function applyTone(t) {
+  const { k, a, b } = toneAt(t);
+  const mix = (ka, kb) => _c1.setHex(ka).lerp(_c2.setHex(kb), k);
+  scene.fog.color.copy(mix(a.fog, b.fog));
+  renderer.setClearColor(mix(a.fog, b.fog));
+  floor.material.color.copy(mix(a.floor, b.floor));
+  if (MONO_MAT) MONO_MAT.color.copy(mix(a.mono, b.mono));
+  for (const r of RIDGES) r.material.color.copy(mix(a.ridge, b.ridge));
+  const ac = mix(a.accent, b.accent);
+  for (const p of PORTALS) p.ring.material.color.copy(ac);
+  coreLight.color.copy(ac);
+}
+
+/* ═══ IN-WORLD SIGNAGE ═══════════════════════════════════════════════════════
+   qi 12:50:44: "There should NOT be an overlay over the environment. That's the big
+   mistake right there."
+   He is right and it is the difference between a place and a webpage. Flat DOM floating
+   in front of a render tells the eye instantly that it is looking at a page with 3D
+   behind it — nothing in a real space has text hovering between you and the world.
+   So the copy becomes GEOMETRY: canvas-textured planes standing in the world beside
+   each portal, which means they are fogged by distance, blurred by the lens, occluded
+   by towers, and they turn as you turn. My own reference notes said this and I ignored
+   it — the class this is measured against renders its UI in WebGL, not DOM.
+   ⚠️ HIS HUD IS LEFT ALONE. The brand, telemetry, eq and buttons are his canonical
+   piece; removing them is his call to make, not mine to assume. */
+function signTexture(kind, title, body) {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 512;
+  const x = c.getContext('2d');
+  x.clearRect(0, 0, 1024, 512);
+  x.font = '600 26px "JetBrains Mono", monospace';
+  x.fillStyle = 'rgba(60,255,150,0.92)';
+  x.fillText(kind.toUpperCase(), 40, 64);
+  x.font = '300 74px Inter, -apple-system, sans-serif';
+  x.fillStyle = 'rgba(232,255,241,0.98)';
+  x.fillText(title, 38, 168);
+  x.font = '300 30px Inter, -apple-system, sans-serif';
+  x.fillStyle = 'rgba(210,240,222,0.72)';
+  const words = String(body).split(' ');
+  let line = '', y = 236;
+  for (const w of words) {
+    if (x.measureText(line + w).width > 940) { x.fillText(line, 40, y); line = w + ' '; y += 42; }
+    else line += w + ' ';
+    if (y > 470) break;
+  }
+  if (line && y <= 470) x.fillText(line, 40, y);
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  return t;
+}
+
+/* ═══ CONTROLS AS OBJECTS ═════════════════════════════════════════════════════
+   qi 12:50-12:52: "all the buttons that you're putting on here and the text, you're
+   treating them like [an overlay]" / "everything must be in 3D" / "everything is an
+   environment, it's not a website, you just drop into a world" / "we gotta have hyper
+   realistic ways to show where the links are — THEY GOTTA BE OBJECTS. Everything has to
+   be objects."
+   THE TEST HE ARRIVED AT: could you walk around it? Anything fixed to the viewport
+   proves there is a screen. So his five controls stop being a dock and become bodies
+   orbiting XENOS — the same language his own rings already speak — and a real 3D
+   raycast click drives the same shift() his buttons called. The DOM dock is hidden, not
+   deleted: his file owns those nodes and his handlers still reference them, so removing
+   them would mean rewriting his working code to satisfy a styling correction. */
+const ORBITERS = [];
+function buildOrbiters() {
+  /* ═══ CAIRNS — qi 13:13:06 ══════════════════════════════════════════════════════
+     "But I don't like those bubbles. Those aren't real either. The bubbles that's
+      floating around me, those aren't real."
+
+     Correct, and it is the same failure as the tunnels: a glowing sphere orbiting a
+     figure has no referent. The replacement was already in his own words two minutes
+     earlier, at 13:12:35 — "we go and we travel to it to touch the stone that emits
+     light ... that's actually real, ancient technology that brings light from stones,
+     that's electromagnetic energy."
+
+     A CAIRN is the exact right object. A stack of stones marking a route is how humans
+     mark paths in the physical world — every mountain trail on earth has them, they are
+     photographed constantly, and their real-world FUNCTION is already "this is the way."
+     So the navigation marker stops being a metaphor.
+
+     And the light is real physics, not magic: quartz is triboluminescent and
+     piezoelectric — struck or pressed, it genuinely emits. So a stone that lights WHERE
+     YOU TOUCH IT is a simulation of something that happens on this planet.
+
+     Dark until touched, on purpose: an unread marker is an object you have not reached
+     yet, never a glowing badge demanding attention.
+
+     The array keeps the name ORBITERS because pickOrbiter(), the pointerdown handler and
+     the telemetry all reference it. Renaming for tidiness would break three systems to
+     satisfy a comment. */
+  const defs = [
+    { label: 'WHEELS', form: 0, hue: 0x3cff96 },
+    { label: 'CORE',   form: 1, hue: 0x8affc4 },
+    { label: 'FORM',   form: 2, hue: 0xd8ff3c },
+    { label: 'PULSE',  form: -1, hue: 0xff9f3c },
+  ];
+
+  const nz = (a, b, c) => {
+    const s = Math.sin(a * 12.9898 + b * 78.233 + c * 37.719) * 43758.5453;
+    return (s - Math.floor(s)) * 2 - 1;
+  };
+
+  defs.forEach((d, i) => {
+    const g = new THREE.Group();
+
+    /* a stack of stones. Each one an irregular boulder, sitting on the one below with
+       real offset and tilt — a cairn is stacked by hand, so nothing is centred. */
+    const stones = [];
+    const N = 4;
+    let y = 0;
+    for (let k = 0; k < N; k++) {
+      const r = 30 - k * 5.2;                      // narrows upward, like a real stack
+      const geo = new THREE.IcosahedronGeometry(r, 1);
+      const gp = geo.attributes.position;
+      for (let v = 0; v < gp.count; v++) {
+        const x = gp.getX(v), yy = gp.getY(v), z = gp.getZ(v);
+        const rad = Math.hypot(x, yy, z) || 1;
+        const dsp = 1 + nz(x + k * 9, yy, z) * 0.30;
+        gp.setX(v, x * dsp); gp.setY(v, yy * dsp * 0.72); gp.setZ(v, z * dsp);
+      }
+      geo.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x1a1e1f, roughness: 0.94, metalness: 0.03,
+        emissive: new THREE.Color(d.hue), emissiveIntensity: 0.0,   // DARK until touched
+        envMapIntensity: 0.30, flatShading: true });
+      const s = new THREE.Mesh(geo, mat);
+      y += r * 0.78;
+      s.position.set(nz(k, i, 1) * 5, y, nz(k, i, 2) * 5);
+      s.rotation.set(nz(k, i, 3) * 0.5, nz(k, i, 4) * 3, nz(k, i, 5) * 0.5);
+      y += r * 0.5;
+      g.add(s);
+      stones.push({ mesh: s, mat });
+    }
+
+    /* the name is CARVED, not captioned — a plate leaning against the base, in the
+       world, taking the same light as the rock */
+    const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+    const cx = c.getContext('2d');
+    cx.font = '600 30px "JetBrains Mono", monospace';
+    cx.fillStyle = 'rgba(223,251,233,0.88)';
+    cx.fillText(d.label, 8, 42);
+    const tag = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false,
+      opacity: 0.62 }));
+    tag.scale.set(140, 35, 1);
+    tag.position.set(0, y + 30, 0);
+    g.add(tag);
+
+    /* ⚠️ PARENTED TO THE WORLD, NOT TO HIM. The bubbles were children of ophanim, which
+       is exactly why they orbited — and an object that flies in formation around a
+       figure is the thing he rejected. A cairn sits on the ground and you TRAVEL to it
+       (qi 12:07: "you have to actually travel to the different parts"). */
+    const t = 0.055 + i * 0.19;
+    const pt = ROUTE.getPointAt(t);
+    const tn = ROUTE.getTangentAt(t);
+    const side = new THREE.Vector3(-tn.z, 0, tn.x).normalize();
+    g.position.copy(pt).addScaledVector(side, 430 + i * 40);
+    g.position.y = 0;                          // ON the deck — cairns do not hover
+    WORLD.add(g);
+
+    ORBITERS.push({ group: g, body: stones[0].mesh, stones, tag, mat: stones[0].mat,
+                    def: d, phase: 0, glow: 0, t });
+  });
+}
+
+/* ═══ REACTIONS, NOT CONTROLS — AND THE VOCABULARY IS A REAL HAND ══════════════
+   qi 13:17:57: "the transformations are really like reactions."
+   qi 13:18:27: "You can turn into a giant hand that's doing a thumbs up when you hit
+   like on something ... the only reason I'm hesitant to say emojis is because emojis is
+   a fake, but you can transform..."
+
+   He asked for the emoji VOCABULARY and refused the emoji FORM, which is the 13:10
+   referent law applied to expression — a yellow circle with a thumb is a pictogram OF a
+   hand, and a pictogram gives away the frame exactly like a glowing ring tunnel does.
+   So: an anatomical hand, built out of his light, making the actual gesture.
+
+   ⚠️ NOT part of his morph machine. T0/T1/T2 are MODES; a reaction blooms, holds and
+   dissolves. An event in the mode machine would turn a feeling into a setting.
+
+   The shape function copies the GRAMMAR of his own humanoid(i, n): walk one normalized
+   index through anatomical regions. This is his technique at closer range, not a new
+   system — and his fingerprinted constants are never touched. */
+const GEST = { active: null, t: 0, dur: 2.6, cloud: null, target: null, from: null };
+
+/* deterministic — a build that renders differently every reload cannot be verified
+   against a screenshot, so no Math.random in any shape function here */
+function _gr(i, k) {
+  const s = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+/* A HAND. Regions in the order his humanoid() uses: mass first, then limbs.
+   palm slab -> four finger columns -> opposed thumb. `pose` bends the fingers, which is
+   what makes it a GESTURE rather than a mannequin part:
+     'up'    fingers curled into the palm, thumb extended straight up  (thumbs up)
+     'open'  fingers extended, thumb out                              (hello / stop)
+     'point' index extended, the rest curled                          (there)  */
+function handShape(i, n, pose) {
+  const u = i / n;
+  const j1 = _gr(i, 1), j2 = _gr(i, 2), j3 = _gr(i, 3);
+  let x, y, z;
+
+  if (u < 0.34) {
+    /* palm: a slab with thickness, not a disc — a flat palm reads as cardboard */
+    x = (j1 - 0.5) * 150;
+    y = -40 + j2 * 150;
+    z = (j3 - 0.5) * 52;
+  } else if (u < 0.82) {
+    /* four fingers. `f` picks the finger, `s` runs base->tip along it. */
+    const q = (u - 0.34) / 0.48;
+    const f = Math.min(3, Math.floor(q * 4));
+    const s = (q * 4) - f;
+    const bx = -56 + f * 37;
+    const len = [96, 112, 104, 84][f];
+    const curl = pose === 'open' ? 0.0 : (pose === 'point' && f === 0 ? 0.0 : 1.0);
+    /* a curled finger folds forward and down over the palm — two joints, so the fold
+       has a knuckle instead of being a single arc */
+    const bend = curl * Math.min(1, s * 1.35);
+    x = bx + (j1 - 0.5) * 24;
+    y = 110 + s * len * (1 - bend * 0.92);
+    z = (j2 - 0.5) * 22 + bend * (s * 86);
+    if (curl > 0.5) y -= bend * 44;
+  } else {
+    /* the thumb: opposed, off the side of the palm. Extended and vertical for 'up',
+       which is the whole read of the gesture. */
+    const s = (u - 0.82) / 0.18;
+    if (pose === 'up') {
+      x = -78 + (j1 - 0.5) * 26;
+      y = 40 + s * 168;                       // straight up, clear of the fist
+      z = (j2 - 0.5) * 24 - s * 14;
+    } else {
+      x = -78 - s * 92 + (j1 - 0.5) * 22;     // out to the side
+      y = 34 + s * 42;
+      z = (j2 - 0.5) * 24;
+    }
+  }
+  /* wrist down-shift so the hand sits where a hand sits relative to his body centre */
+  return [x, y - 120, z];
+}
+
+function buildGestureCloud() {
+  const N = 2600;                              // enough points that a silhouette READS
+  const pos = new Float32Array(N * 3);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const spr = document.createElement('canvas'); spr.width = spr.height = 32;
+  const sc = spr.getContext('2d');
+  const rg = sc.createRadialGradient(16, 16, 0, 16, 16, 16);
+  rg.addColorStop(0, 'rgba(255,255,255,1)');
+  rg.addColorStop(0.4, 'rgba(150,255,200,0.55)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  sc.fillStyle = rg; sc.fillRect(0, 0, 32, 32);
+  /* textured points, never bare ones — an untextured THREE.Points near the lens blows
+     into an opaque grey SQUARE over the scene, and that is invisible in a local still */
+  const mat = new THREE.PointsMaterial({
+    size: 9, map: new THREE.CanvasTexture(spr), transparent: true, opacity: 0,
+    depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
+    color: 0x9dffc8, alphaTest: 0.01 });
+  const cl = new THREE.Points(geo, mat);
+  cl.visible = false;
+  ophanim.add(cl);                             // it is HIM reforming, so it rides with him
+  GEST.cloud = cl;
+  GEST.target = new Float32Array(N * 3);
+  GEST.from = new Float32Array(N * 3);
+  GEST.n = N;
+}
+
+/* ⭐ the public reaction. Called by real events, never by a button. */
+function react(pose) {
+  if (!GEST.cloud) return;
+  const N = GEST.n;
+  for (let i = 0; i < N; i++) {
+    const h = handShape(i, N, pose);
+    GEST.target[i * 3] = h[0] * 1.35;
+    GEST.target[i * 3 + 1] = h[1] * 1.35;
+    GEST.target[i * 3 + 2] = h[2] * 1.35;
+    /* it ASSEMBLES out of his own cloud radius rather than fading in from nowhere —
+       the gesture is him reforming, so the material has to come from somewhere */
+    const a = _gr(i, 7) * Math.PI * 2, b = Math.acos(2 * _gr(i, 8) - 1), r = 200 + _gr(i, 9) * 90;
+    GEST.from[i * 3]     = Math.sin(b) * Math.cos(a) * r;
+    GEST.from[i * 3 + 1] = Math.cos(b) * r;
+    GEST.from[i * 3 + 2] = Math.sin(b) * Math.sin(a) * r;
+  }
+  GEST.active = pose; GEST.t = 0;
+  GEST.cloud.visible = true;
+  if (typeof S === 'object') S.flare = Math.max(S.flare || 0, 1.6);
+}
+
+function gestureTick(dt) {
+  if (!GEST.active || !GEST.cloud) return;
+  GEST.t += dt;
+  const u = Math.min(1, GEST.t / GEST.dur);
+  /* assemble (0-0.28) -> hold (0.28-0.72) -> dissolve (0.72-1). The hold is what makes
+     it legible; a gesture that is only ever in motion never resolves into a shape. */
+  const k = u < 0.28 ? (u / 0.28)
+          : u < 0.72 ? 1
+          : 1 - (u - 0.72) / 0.28;
+  const ease = k * k * (3 - 2 * k);
+  const p = GEST.cloud.geometry.attributes.position.array;
+  for (let i = 0; i < GEST.n * 3; i++) {
+    p[i] = GEST.from[i] + (GEST.target[i] - GEST.from[i]) * ease;
+  }
+  GEST.cloud.geometry.attributes.position.needsUpdate = true;
+  GEST.cloud.material.opacity = ease * 0.92;
+  if (u >= 1) { GEST.active = null; GEST.cloud.visible = false; }
+}
+
+/* ── WHAT TRIGGERS A REACTION. Real events only. */
+addEventListener('keydown', e => {
+  if (e.key === 'l' || e.key === 'L') react('up');      // approval
+});
+/* touching a stone is an acknowledgement, so it answers with an open hand */
+addEventListener('pointerup', e => {
+  if (pickOrbiter(e.clientX, e.clientY)) react('open');
+}, { passive: true });
+/* exposed so a notification arrival, an SSE event or a console poke can answer in the
+   same language — reaction is an API, not a keybinding */
+window.__xenosReact = react;
+
+/* ── TOUCH MAKES IT LIGHT. qi 13:08:36: "that real touch interaction, that's the
+      craziest thing that can be with a life form through a screen. That's the highest
+      level." Pressure -> light is piezoluminescence; it stays lit briefly after release
+      because phosphorescence decays rather than switching off. An instant-off light is
+      a switch, and a switch is a UI control. */
+function stoneTouch(cx, cy, pressed) {
+  const o = pickOrbiter(cx, cy);
+  for (const q of ORBITERS) q.target = 0;
+  if (o) o.target = pressed ? 1 : 0.34;
+  return o;
+}
+function stoneTick() {
+  for (const o of ORBITERS) {
+    const want = o.target || 0;
+    /* asymmetric: light comes up fast under the finger, falls away slowly */
+    const k = want > o.glow ? 0.22 : 0.035;
+    o.glow += (want - o.glow) * k;
+    for (const s of o.stones) s.mat.emissiveIntensity = o.glow * 1.5;
+    o.tag.material.opacity = 0.42 + o.glow * 0.5;
+  }
+}
+
+/* real 3D picking — the object is the control, so the click has to hit the OBJECT */
+const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2();
+function pickOrbiter(cx, cy) {
+  _ndc.set((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1);
+  _ray.setFromCamera(_ndc, camera);
+  /* every stone in the stack is a target, not just the base — a cairn is one object to
+     the hand, so hitting any of its rocks must count as touching it */
+  const all = [];
+  for (const o of ORBITERS) for (const s of (o.stones || [])) all.push(s.mesh);
+  const hits = _ray.intersectObjects(all, false);
+  if (!hits.length) return null;
+  return ORBITERS.find(o => (o.stones || []).some(s => s.mesh === hits[0].object)) || null;
+}
+addEventListener('pointerdown', e => {
+  const o = stoneTouch(e.clientX, e.clientY, true);
+  if (!o) return;
+  if (o.def.form === -1) { const b = document.getElementById('probe'); if (b) b.click(); }
+  else if (typeof shift === 'function') shift(o.def.form);
+}, { passive: true });
+/* hover/drag across a stone lights it too — the stone answers the hand, not the click */
+addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch' && e.buttons === 0) return;
+  stoneTouch(e.clientX, e.clientY, e.buttons !== 0);
+}, { passive: true });
+addEventListener('pointerup', () => { for (const q of ORBITERS) q.target = 0; }, { passive: true });
+
+const SIGNS = [];
+function buildSigns() {
+  for (const p of PORTALS) {
+    const shot = SHOTS[p.index];
+    if (!shot) continue;
+    const tex = signTexture(shot.key || '', shot.title || '', shot.body || '');
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(880, 440),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false,
+                                    side: THREE.DoubleSide })
+    );
+    /* stand it just off the route beside its portal, angled to face oncoming travel */
+    const pt = ROUTE.getPointAt(p.t);
+    const tn = ROUTE.getTangentAt(p.t);
+    const side = new THREE.Vector3(-tn.z, 0, tn.x).normalize();
+    m.position.copy(pt).addScaledVector(side, 700).add(new THREE.Vector3(0, 120, 0));
+    m.lookAt(pt.clone().addScaledVector(tn, -600));
+    WORLD.add(m);
+    SIGNS.push({ mesh: m, t: p.t, index: p.index, mat: m.material });
+  }
+}
+
+/* ── PROGRESS ALONG THE ROUTE. `target` is where scroll has asked to be, `prog` is
+      where we actually are, and it CHASES the target every frame. That lag is what
+      makes it travel rather than jump: there is no code path that sets position
+      without passing through every value between. */
+const NAVG = { prog: 0, target: 0 };
+
+/* ⭐ XENOS AS COMPANION — qi 12:08-12:09: "the avatar is the companion ... it pays
+   attention to the mouse ... as you go through wherever the world allows you to be,
+   it follows ... like how a cat chases a ball of yarn ... XENOS is in pursuit of
+   control through the mouse, waiting its next click to be the telepathy that makes
+   the will of the mouse come into instant reality."
+   He already built the pursuit: S.fx/S.fy track the pointer and `foc` is the
+   attractor his nodes strain toward. So this does not invent behaviour, it gives
+   that behaviour ROOM — the avatar leans toward the cursor as the world streams by,
+   and a click is the moment intent becomes instant. */
+const LEAN = { x: 0, y: 0 };
+addEventListener('click', () => {
+  /* the click IS the telepathy: an immediate surge, no easing in */
+  S.flare = 2.2;
+  gsap.to(S, { flare: 0, duration: 1.4, ease: 'power2.out' });
+  if (typeof setMood === 'function') setMood('WILL');
+});
+
+function nearestPortal() {
+  let best = 0, bd = 1e9;
+  const t = wrap(NAVG.prog);
+  for (const p of PORTALS) {
+    let d = Math.abs(p.t - t); if (d > 0.5) d = 1 - d;   // seam-aware
+    if (d < bd) { bd = d; best = p.index; }
+  }
+  return best;
+}
+
+/* Panels fade by PROXIMITY — a continuous function of where you are, so copy
+   arrives as you approach rather than snapping on at a waypoint. */
+function updatePanels() {
+  const i = nearestPortal();
+  if (i !== shotIdx) {
+    shotIdx = i;
+    panelEls.forEach((el, k) => el.classList.toggle('on', k === i));
+    routeEls.forEach((el, k) => el.classList.toggle('on', k === i));
+    const s = SHOTS[i];
+    if (s && s.form != null && typeof shift === 'function' && Math.round(S.morph) !== s.form) shift(s.form);
+  }
+  if (NAVG.prog > 0.05) hintEl.classList.add('gone');
+}
+
+/* travel input: wheel / swipe / keys all add DISTANCE. No lock, no debounce, no
+   discrete step — holding a key or spinning the wheel moves you continuously. */
+function advance(d) {
+  NAVG.target += d;              // NO CLAMP — this clamp was the end of the universe
+}
+/* wrap for sampling only: the chase runs on unbounded numbers so it never fights a
+   seam, and every curve/palette lookup folds that into 0..1 */
+const wrap = x => ((x % 1) + 1) % 1;
+addEventListener('wheel', e => advance(e.deltaY * 0.00042), { passive: true });
+let ty = null;
+addEventListener('touchstart', e => { ty = e.touches[0].clientY; tx = e.touches[0].clientX; }, { passive: true });
+let tx = null;
+addEventListener('touchmove', e => {
+  if (ty == null) return;
+  const y = e.touches[0].clientY, x = e.touches[0].clientX;
+  /* vertical drag travels, horizontal drag TURNS — on a phone there is no hover, so
+     without this there is no way to look around at all. Unbounded, so 360 works. */
+  advance((ty - y) * 0.0011);
+  if (tx != null) VIEW.tYaw -= (x - tx) * 0.006;
+  ty = y; tx = x;
+}, { passive: true });
+const HELD = {};
+addEventListener('keydown', e => {
+  const K = { ArrowDown: 1, PageDown: 1, ' ': 1, ArrowRight: 1, ArrowUp: -1, PageUp: -1, ArrowLeft: -1 };
+  if (K[e.key]) { e.preventDefault(); HELD[e.key] = K[e.key]; advance(K[e.key] * 0.055); }
+});
+addEventListener('keyup', e => { delete HELD[e.key]; });
+
+/* jumping from the rail is still a TRAVEL — it retargets, and the chase carries you
+   there through every point between. Clicking a destination never teleports. */
+function go(i) {
+  const p = PORTALS.find(q => q.index === i);
+  if (!p) { NAVG.target = Math.ceil(NAVG.prog); return; }
+  const base = Math.floor(NAVG.prog);
+  let tgt = base + p.t;
+  if (tgt < NAVG.prog) tgt += 1;      // always travel FORWARD into the next lap
+  NAVG.target = tgt;
+}
+
+/* ── THE TRAVEL DRIVER. Called every frame from his loop (see TRAVEL_TICK). */
+const _cp = new THREE.Vector3(), _cl = new THREE.Vector3(), _av = new THREE.Vector3();
+const _lensV = new THREE.Vector3();
+function travelTick() {
+  for (const k in HELD) advance(HELD[k] * 0.0038);       // held key = continuous motion
+  stoneTick();                                           // phosphorescence decays here
+  gestureTick(0.016);                                    // reactions bloom and dissolve
+
+  /* ⭐ THE SITE VISITS THE HUMAN — qi 12:30, reversing the roles:
+     "the human doesn't visit the site, the site visits the human, basically. So it's
+      reversing the roles." / "the users need to be traveling through it themselves."
+     THE TELL THAT I HAD IT BACKWARDS: nothing moved until he scrolled. A world that
+     sits inert until acted upon is a place being VISITED — the exact relationship he
+     is rejecting. So the world now arrives on its own. It drifts toward him
+     continuously, presenting each dimension in turn, and his scroll becomes STEERING
+     rather than the engine: push to hurry it, pull to hold it back, do nothing and it
+     still comes to you.
+     The drift eases off while he is actively steering, so it never fights his hand —
+     it resumes the moment he lets go. That is attendance, not autoplay. */
+  const steering = Math.abs(NAVG.target - NAVG.prog) > 0.004;
+  if (!steering) NAVG.target += 0.00058;                 // it comes to you, unbidden
+
+  NAVG.prog += (NAVG.target - NAVG.prog) * 0.045;         // the chase — never a jump
+
+  const t = wrap(NAVG.prog);     // endless: t cycles, the traveller never stops
+  ROUTE.getPointAt(t, _av);
+  applyTone(t);                  // the dimension you are in is a function of where you are
+
+  /* ── SPACE. The ground world dissolves with altitude, so leaving the deck is real
+        rather than decorative, and the fog thins out to vacuum. */
+  const sm = spaceMix(_av.y);
+  plateTick(sm);                 // real footage reveals with altitude
+  floor.visible = sm < 0.98;
+  floor.material.opacity = 1 - sm; floor.material.transparent = sm > 0.01;
+  pool.material.opacity  = 0.09 * (1 - sm);
+  rings.material.opacity = 0.070 * (1 - sm);
+  MONO_MAT.opacity = 1 - sm; MONO_MAT.transparent = sm > 0.01;
+  for (const r of RIDGES) { r.material.opacity = 1 - sm; r.material.transparent = sm > 0.01; }
+  for (const h of HAZE)   h.material.opacity = 1 - sm;
+  scene.fog.density = 0.000105 * (1 - sm * 0.94);   // vacuum does not scatter
+  if (world) world.material.uniforms.t.value = S.time;   // his stars keep breathing
+  TRAVEL.position.copy(_av);                              // the avatar rides the route
+
+  /* the camera ORBITS him on your yaw/pitch while both travel the route. Smoothed so
+     a flick of the pointer glides instead of snapping — you are looking around a place,
+     not cutting to an angle. */
+  VIEW.yaw   += (VIEW.tYaw   - VIEW.yaw)   * 0.075;
+  VIEW.pitch += (VIEW.tPitch - VIEW.pitch) * 0.075;
+  VIEW.dist  += (VIEW.tDist  - VIEW.dist)  * 0.06;
+
+  /* base heading follows the direction of travel, so "forward" still means forward
+     down the route — your yaw is a turn of the head RELATIVE to where you are going */
+  ROUTE.getTangentAt(t, _cl);
+  const head = Math.atan2(_cl.x, _cl.z);
+  /* your turn + a glance on top. VIEW.yaw is unbounded so a 360 holds; GLANCE only
+     nudges. This is why the two must be separate numbers. */
+  const yaw  = head + Math.PI + VIEW.yaw + GLANCE.x;
+  const pit  = Math.max(-1.45, Math.min(1.45, VIEW.pitch + GLANCE.y));
+  const cp   = Math.cos(pit), sp = Math.sin(pit);
+  CAM.x = _av.x + Math.sin(yaw) * VIEW.dist * cp;
+  CAM.y = _av.y + VIEW.dist * sp + 90;
+  CAM.z = _av.z + Math.cos(yaw) * VIEW.dist * cp;
+  LOOK.x = _av.x; LOOK.y = _av.y; LOOK.z = _av.z;
+
+  /* portals brighten as you approach and pass through them */
+  for (const p of PORTALS) {
+    let d = Math.abs(p.t - t); if (d > 0.5) d = 1 - d;   // shortest way round the loop
+    const near = Math.max(0, 1 - d / 0.16);
+    p.ring.material.opacity = 0.10 + near * 0.55;
+    p.group.rotation.z += 0.0012 + near * 0.004;
+  }
+  /* the controls orbit him. They are objects: they occlude, they catch his light, and
+     they are picked by a raycast rather than by a CSS hit box. */
+  for (const o of ORBITERS) {
+    const a = S.time * 0.32 + o.phase;
+    o.group.position.set(Math.cos(a) * 330, Math.sin(a * 0.7) * 92 + 40, Math.sin(a) * 330);
+    o.body.rotation.y += 0.013; o.body.rotation.x += 0.007;
+    /* Sprite: no facing maths needed, legible from all 360 degrees by construction */
+    const on = Math.round(S.morph) === o.def.form;
+    o.mat.emissiveIntensity += ((on ? 0.42 : 0.10) - o.mat.emissiveIntensity) * 0.08;
+  }
+
+  /* signs brighten as you approach and fade behind you — presence, not a popup */
+  for (const g of SIGNS) {
+    let d = Math.abs(g.t - t); if (d > 0.5) d = 1 - d;
+    g.mat.opacity = Math.max(0, 1 - d / 0.13);
+  }
+  updatePanels();
+}
+
+/* ⭐ FREE LOOK — this is what makes it a WORLD instead of a ride.
+   qi 12:29: "it's just not enough 3D rotation, like it can't really — it's NOT A
+   WORLD YET" / "you need to be traveling through it yourself, not traveling
+   for[ward]".
+   Exactly right, and the cause was that the camera sat at ONE fixed offset behind the
+   avatar and always looked straight at him. You could move but you could not turn
+   your head, and a place you cannot look around in is a corridor, not a world.
+   So the camera now ORBITS him on a yaw/pitch you control, at a distance you control,
+   while the pair travels the endless route. Move the pointer to glance; drag to swing
+   right around him; wheel with shift to push in or pull out. Travel and look are
+   independent, which is the whole difference. */
+/* ⚠️ 620 put the camera INSIDE his node cloud — measured by looking at the frame,
+   not by reading the number. His shell is r=230 and the plasma spikes well past it,
+   so the lens was among the points. 1150 is where he reads as a body you are
+   looking AT rather than a fog you are inside. */
+const VIEW = { yaw: 0, pitch: 0.16, dist: 1150, tYaw: 0, tPitch: 0.16, tDist: 1150 };
+const GLANCE = { x: 0, y: 0 };   // additive, never authoritative
+let dragging = false, lastX = 0, lastY = 0;
+
+addEventListener('pointermove', e => {
+  if (dragging) {
+    VIEW.tYaw   -= (e.clientX - lastX) * 0.005;
+    VIEW.tPitch -= (e.clientY - lastY) * 0.004;
+    lastX = e.clientX; lastY = e.clientY;
+  } else {
+    /* ⚠️ BUG I SHIPPED, caught by qi 12:45-12:46: "it doesn't feel real if it doesn't
+       have 360 ... if it was real I can go where I wanna go."
+       Drag already accumulated UNLIMITED yaw — full turns worked. But this branch then
+       ASSIGNED tYaw from absolute pointer position, clamped to ±0.55 rad, so the next
+       mouse move after a drag snapped the view back to ~±30° and a held 360 was
+       impossible. An absolute setter and an accumulator cannot share one variable.
+       Glance is now an OFFSET applied on top of the turn you own, so pointer drift
+       never destroys where you chose to face. */
+    GLANCE.x = (e.clientX / innerWidth  * 2 - 1) * 0.42;
+    GLANCE.y = -(e.clientY / innerHeight * 2 - 1) * 0.26;
+  }
+  /* near-vertical, not clamped to a narrow cone — you can look straight up at space
+     and straight down at the deck. Stops just short of the pole to avoid gimbal flip. */
+  VIEW.tPitch = Math.max(-1.45, Math.min(1.45, VIEW.tPitch));
+  /* his own attractor still follows the pointer — XENOS keeps chasing the mouse */
+  LEAN.x = (e.clientX / innerWidth * 2 - 1) * 160;
+  LEAN.y = -(e.clientY / innerHeight * 2 - 1) * 90;
+}, { passive: true });
+
+addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; }, { passive: true });
+addEventListener('pointerup',   () => { dragging = false; }, { passive: true });
+addEventListener('pointercancel', () => { dragging = false; }, { passive: true });
+/* shift+wheel pushes in and pulls out instead of travelling */
+addEventListener('wheel', e => {
+  if (!e.shiftKey) return;
+  VIEW.tDist = Math.max(180, Math.min(2600, VIEW.tDist + e.deltaY * 0.9));
+}, { passive: true });
+
+buildOrbiters();
+
+buildGestureCloud();  // controls become bodies, not a dock
+buildSigns();     // content becomes part of the place, not a layer on top of it
+
+/* open on the sky, then glide down into the world — one continuous move, no cut */
+NAVG.prog = 0; NAVG.target = 0.055;
+
+window.__xenos = {
+  ready: false,
+  identity: "xlrd-tech",
+  jointCount: N,
+  shotIndex: () => shotIdx,
+  shots: SHOTS.length,
+  progress: () => NAVG.prog,
+  portals: PORTALS.length,
+  /* ⚠️ EXPOSED SO A CLAIM ABOUT IT CAN BE FALSIFIED. Module scope hid VIEW from any
+     outside test, so "360 works" was unobservable — which under qi's rule means it was
+     false, however good the code looked. A behaviour with no read-back is a behaviour
+     you are trusting, not verifying. */
+  view: () => ({ yaw: VIEW.yaw, tYaw: VIEW.tYaw, pitch: VIEW.pitch, dist: VIEW.dist,
+                 glanceX: GLANCE.x, glanceY: GLANCE.y,
+                 turns: VIEW.tYaw / (Math.PI * 2) }),
+  go,
+};
+
+frame();
+
+/* fps readout — the probe needs a number only a running rAF loop can produce */
+{
+  const el = document.getElementById('h-fps');
+  let f = 0, t0 = performance.now();
+  (function tick() {
+    requestAnimationFrame(tick); f++;
+    const now = performance.now();
+    if (now - t0 >= 1000) { el.textContent = String(Math.round(f * 1000 / (now - t0))); f = 0; t0 = now; }
+  })();
+}
+window.__xenos.ready = true;
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

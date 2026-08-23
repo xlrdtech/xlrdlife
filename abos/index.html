@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Business Operation System | Freedom Calculator</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a', // Keeping tailwind defaults available but we will use zinc
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #09090b; /* Zinc 950 - Removing Blue Tint */
+            color: #e4e4e7; /* Zinc 200 */
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 10;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(220, 38, 38, 0.05) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 10s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100%; }
+        }
+        .crt-flicker {
+            animation: flicker 0.15s infinite;
+        }
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            5% { opacity: 0.95; }
+            10% { opacity: 0.9; }
+            15% { opacity: 0.95; }
+            20% { opacity: 0.99; }
+            50% { opacity: 0.95; }
+            100% { opacity: 0.98; }
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #09090b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27272a; /* Zinc 800 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46; /* Zinc 700 */
+        }
+
+        .terminal-cursor::after {
+            content: '█';
+            animation: blink 1s step-start infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.7); /* Zinc 900 base */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(220, 38, 38, 0.1); /* Red hint border */
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        // --- ICONS ---
+        const Icon = ({ children, className, size = 24, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
+        );
+
+        const Terminal = (props) => <Icon {...props}><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></Icon>;
+        const Calculator = (props) => <Icon {...props}><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="14"></line><line x1="12" y1="14" x2="12" y2="14"></line><line x1="8" y1="14" x2="8" y2="14"></line><line x1="16" y1="18" x2="16" y2="18"></line><line x1="12" y1="18" x2="12" y2="18"></line><line x1="8" y1="18" x2="8" y2="18"></line></Icon>;
+        const Zap = (props) => <Icon {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></Icon>;
+        const Lock = (props) => <Icon {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></Icon>;
+        const Activity = (props) => <Icon {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></Icon>;
+        const ChevronRight = (props) => <Icon {...props}><polyline points="9 18 15 12 9 6"></polyline></Icon>;
+        const Server = (props) => <Icon {...props}><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></Icon>;
+        const Cpu = (props) => <Icon {...props}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></Icon>;
+        const User = (props) => <Icon {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></Icon>;
+        
+        // 1. TERMINAL INTRO
+        const TerminalIntro = ({ onComplete }) => {
+            const [lines, setLines] = useState([
+                "> INITIALIZING L7S KERNEL...",
+                "> CONNECTING TO SECURE GATEWAY...",
+            ]);
+            const [isDeploying, setIsDeploying] = useState(false);
+            
+            const addLine = (text, delay = 0) => {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        setLines(prev => [...prev, text]);
+                        resolve();
+                    }, delay);
+                });
+            };
+
+            const handleDeploy = async () => {
+                setIsDeploying(true);
+                await addLine("> AUTHENTICATING USER...", 400);
+                await addLine("> ACCESS GRANTED: ARCHITECT LEVEL.", 600);
+                await addLine("> EXECUTING 'BEEPER' PROTOCOL v2.1...", 400);
+                await addLine("> FETCHING ASSETS FROM GITHUB...", 500);
+                await addLine("> COMPILING REACT COMPONENTS...", 800);
+                await addLine("> OPTIMIZING FREEDOM ALGORITHMS...", 600);
+                await addLine("> DEPLOYMENT SUCCESSFUL. LAUNCHING UI.", 1000);
+                setTimeout(onComplete, 800);
+            };
+
+            return (
+                <div className="flex items-center justify-center h-screen w-full bg-black text-red-500 font-mono p-4 relative overflow-hidden">
+                    <div className="scanline"></div>
+                    <div className="w-full max-w-2xl border border-red-900 bg-black bg-opacity-90 shadow-[0_0_20px_rgba(220,38,38,0.2)] rounded-md overflow-hidden">
+                        <div className="bg-red-950 bg-opacity-40 p-2 border-b border-red-900 flex items-center justify-between">
+                            <span className="text-xs">L7S_TERMINAL_ACCESS</span>
+                            <div className="flex space-x-2">
+                                <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                                <div className="w-3 h-3 rounded-full bg-zinc-800"></div>
+                                <div className="w-3 h-3 rounded-full bg-zinc-800"></div>
+                            </div>
+                        </div>
+                        <div className="p-6 h-96 overflow-y-auto flex flex-col justify-end">
+                            {lines.map((line, i) => (
+                                <div key={i} className="mb-1 text-sm md:text-base opacity-90">{line}</div>
+                            ))}
+                            {!isDeploying && (
+                                <div className="mt-4">
+                                    <p className="mb-4 text-zinc-300">System Update Required to Access Dashboard.</p>
+                                    <button 
+                                        onClick={handleDeploy}
+                                        className="group flex items-center gap-2 bg-red-950/50 hover:bg-red-900 hover:text-white text-red-400 border border-red-800 px-6 py-2 rounded transition-all duration-200"
+                                    >
+                                        <Zap size={16} />
+                                        <span>EXECUTE DEPLOYMENT</span>
+                                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                </div>
+                            )}
+                            {isDeploying && (
+                                <div className="mt-2 text-red-500 terminal-cursor">_</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. FREEDOM CALCULATOR
+        const FreedomCalculator = () => {
+            const [monthlyExpenses, setMonthlyExpenses] = useState(5000);
+            const [passiveYield, setPassiveYield] = useState(8); 
+            const [currentSavings, setCurrentSavings] = useState(10000);
+            
+            const annualExpenses = monthlyExpenses * 12;
+            const freedomNumber = annualExpenses / (passiveYield / 100);
+            const monthlyPassiveNeeded = monthlyExpenses;
+            const progress = Math.min((currentSavings / freedomNumber) * 100, 100);
+
+            const formatMoney = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+
+            return (
+                <div className="bg-zinc-900 rounded-xl p-6 md:p-8 shadow-2xl border border-zinc-800 shadow-red-900/10">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 bg-red-700 rounded-lg text-white shadow-lg shadow-red-500/20">
+                            <Calculator size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-white">Freedom Number Calculator</h2>
+                            <p className="text-zinc-400 text-sm">Quantify your exit strategy.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-2 font-bold">Target Monthly Lifestyle Cost</label>
+                                <div className="flex items-center bg-zinc-950 rounded-lg border border-zinc-800 px-4 py-3 focus-within:border-red-600 transition-colors">
+                                    <span className="text-zinc-500 mr-2">$</span>
+                                    <input 
+                                        type="number" 
+                                        value={monthlyExpenses} 
+                                        onChange={(e) => setMonthlyExpenses(Number(e.target.value))}
+                                        className="bg-transparent w-full text-white text-lg focus:outline-none font-mono"
+                                    />
+                                </div>
+                                <input 
+                                    type="range" 
+                                    min="1000" 
+                                    max="50000" 
+                                    step="500" 
+                                    value={monthlyExpenses} 
+                                    onChange={(e) => setMonthlyExpenses(Number(e.target.value))}
+                                    className="w-full mt-3 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-600"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-2 font-bold">Expected Portfolio Yield (%)</label>
+                                <div className="flex items-center bg-zinc-950 rounded-lg border border-zinc-800 px-4 py-3 focus-within:border-red-600">
+                                    <span className="text-zinc-500 mr-2">%</span>
+                                    <input 
+                                        type="number" 
+                                        value={passiveYield} 
+                                        onChange={(e) => setPassiveYield(Number(e.target.value))}
+                                        className="bg-transparent w-full text-white text-lg focus:outline-none font-mono"
+                                    />
+                                </div>
+                                <div className="flex justify-between text-xs text-zinc-500 mt-2">
+                                    <span>Conservative (4%)</span>
+                                    <span>Aggressive (12%)</span>
+                                </div>
+                                <input 
+                                    type="range" 
+                                    min="2" 
+                                    max="15" 
+                                    step="0.5" 
+                                    value={passiveYield} 
+                                    onChange={(e) => setPassiveYield(Number(e.target.value))}
+                                    className="w-full mt-3 h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-600"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-zinc-950 to-zinc-900 rounded-xl border border-zinc-800 p-6 flex flex-col justify-center relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Activity size={120} className="text-red-500" />
+                            </div>
+                            
+                            <div className="relative z-10">
+                                <p className="text-zinc-400 text-sm mb-1">Your Freedom Number (Total Capital)</p>
+                                <h3 className="text-3xl md:text-4xl font-bold text-red-500 font-mono mb-4">{formatMoney(freedomNumber)}</h3>
+                                
+                                <p className="text-zinc-400 text-sm mb-1">Passive Monthly Income Generated</p>
+                                <h4 className="text-xl text-white font-mono mb-6">{formatMoney(monthlyPassiveNeeded)} / month</h4>
+
+                                <div className="w-full bg-zinc-800 h-3 rounded-full overflow-hidden mb-2">
+                                    <div 
+                                        className="h-full bg-red-600 transition-all duration-500"
+                                        style={{ width: `${progress}%` }}
+                                    ></div>
+                                </div>
+                                <div className="flex justify-between text-xs text-zinc-500">
+                                    <span>Current Status</span>
+                                    <span>{progress.toFixed(1)}% Funded</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-zinc-800 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <p className="text-zinc-400 text-sm max-w-md">
+                            Don't just calculate it. Build the engine that funds it. The ABOS system automates the path to this number.
+                        </p>
+                        <button className="w-full md:w-auto bg-white text-zinc-950 font-bold py-3 px-8 rounded-lg hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10 flex items-center justify-center gap-2">
+                            <span>Launch Execution Plan</span>
+                            <ChevronRight size={18} />
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // 3. MAIN DASHBOARD
+        const Dashboard = () => {
+            const [showHidden, setShowHidden] = useState(false);
+            const [clicks, setClicks] = useState(0);
+
+            const handleFooterClick = () => {
+                setClicks(c => c + 1);
+                if (clicks + 1 === 5) {
+                    setShowHidden(true);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-black text-zinc-300">
+                    {/* Header */}
+                    <nav className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50">
+                        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-tr from-red-700 to-red-600 rounded flex items-center justify-center text-white font-bold shadow-red-500/20 shadow-lg">
+                                    L7
+                                </div>
+                                <span className="font-semibold text-white tracking-tight">ABOS <span className="text-zinc-600 font-normal hidden sm:inline">| Automated Business Operation System</span></span>
+                            </div>
+                            <div className="flex gap-4 text-sm font-medium">
+                                <a href="#" className="hover:text-white transition-colors">System</a>
+                                <a href="#" className="hover:text-white transition-colors">Metrics</a>
+                                <button className="text-red-500 hover:text-red-400 transition-colors">Login</button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Hero */}
+                    <header className="pt-20 pb-16 px-4 text-center relative overflow-hidden">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-900/20 rounded-full blur-[128px] pointer-events-none"></div>
+                        
+                        <div className="max-w-3xl mx-auto relative z-10">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-medium text-red-400 mb-6">
+                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                System Operational: 2026.1.27
+                            </div>
+                            <h1 className="text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
+                                Architect Your <br/>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">Global System.</span>
+                            </h1>
+                            <p className="text-xl text-zinc-400 mb-10 max-w-2xl mx-auto">
+                                Stop trading time. Start building automated assets. Determine your target, deploy the system, and reclaim your sovereignty.
+                            </p>
+                            <div className="flex flex-col sm:flex-row justify-center gap-4">
+                                <button onClick={() => document.getElementById('calc').scrollIntoView({behavior: 'smooth'})} className="bg-red-700 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-600 transition-all shadow-lg shadow-red-600/20">
+                                    Start Calculation
+                                </button>
+                                <button className="bg-zinc-900 text-white font-semibold py-3 px-8 rounded-lg hover:bg-zinc-800 border border-zinc-800 transition-all">
+                                    View Documentation
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="max-w-5xl mx-auto px-4 pb-24 space-y-20">
+                        
+                        <section id="calc" className="scroll-mt-24">
+                            <FreedomCalculator />
+                        </section>
+
+                        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="glass-panel p-6 rounded-xl border border-zinc-800/50">
+                                <div className="w-12 h-12 bg-zinc-900 rounded-lg flex items-center justify-center text-red-500 mb-4 border border-zinc-800">
+                                    <Server size={24} />
+                                </div>
+                                <h3 className="text-lg font-bold text-white mb-2">Automated Infrastructure</h3>
+                                <p className="text-sm text-zinc-400">Don't clean emails manually. Our stack handles the janitorial work so you can act as the architect.</p>
+                            </div>
+                            <div className="glass-panel p-6 rounded-xl border border-zinc-800/50">
+                                <div className="w-12 h-12 bg-zinc-900 rounded-lg flex items-center justify-center text-red-500 mb-4 border border-zinc-800">
+                                    <Cpu size={24} />
+                                </div>
+                                <h3 className="text-lg font-bold text-white mb-2">Algorithmic Efficiency</h3>
+                                <p className="text-sm text-zinc-400">From 30-second website updates to time auditing. We leverage code to multiply human output.</p>
+                            </div>
+                            <div className="glass-panel p-6 rounded-xl border border-zinc-800/50">
+                                <div className="w-12 h-12 bg-zinc-900 rounded-lg flex items-center justify-center text-red-500 mb-4 border border-zinc-800">
+                                    <User size={24} />
+                                </div>
+                                <h3 className="text-lg font-bold text-white mb-2">High-Net-Worth Network</h3>
+                                <p className="text-sm text-zinc-400">Join a community of operators deploying capital into sovereign assets. No noise, just results.</p>
+                            </div>
+                        </section>
+
+                        {/* CTA / Community */}
+                        <section className="bg-gradient-to-r from-red-950 to-black border border-red-900/30 rounded-2xl p-8 md:p-12 text-center relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                            <div className="relative z-10">
+                                <h2 className="text-3xl font-bold text-white mb-4">Ready to Deploy?</h2>
+                                <p className="text-zinc-400 mb-8 max-w-xl mx-auto">
+                                    The Freedom Number is just the target. The Community provides the vehicle. Secure your spot in the L7S University cohort.
+                                </p>
+                                <button className="bg-white text-red-950 font-bold py-3 px-10 rounded-full hover:bg-zinc-200 transition-colors shadow-xl">
+                                    Join the Community
+                                </button>
+                            </div>
+                        </section>
+
+                        {/* THE "BASEMENT" */}
+                        {showHidden && (
+                            <section className="mt-20 border-t-2 border-red-900/30 pt-10 animate-in fade-in duration-1000">
+                                <div className="flex items-center gap-2 mb-8 text-red-500">
+                                    <Lock size={20} />
+                                    <h2 className="text-sm font-mono tracking-widest uppercase">Restricted Access: Deep Storage // Roadmap</h2>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="p-4 bg-red-950/20 border border-red-900/30 rounded">
+                                        <h4 className="text-red-400 font-mono text-xs mb-2">ASSET CLASS A</h4>
+                                        <p className="text-white font-bold">Pink Salt Mines</p>
+                                        <p className="text-xs text-red-300 mt-1">Global commodity extraction.</p>
+                                    </div>
+                                    <div className="p-4 bg-red-950/20 border border-red-900/30 rounded">
+                                        <h4 className="text-red-400 font-mono text-xs mb-2">PROJECT BATMAN</h4>
+                                        <p className="text-white font-bold">Crypto Mining Farms</p>
+                                        <p className="text-xs text-red-300 mt-1">Data server infrastructure.</p>
+                                    </div>
+                                    <div className="p-4 bg-red-950/20 border border-red-900/30 rounded">
+                                        <h4 className="text-red-400 font-mono text-xs mb-2">PROJECT ICE TEA</h4>
+                                        <p className="text-white font-bold">Time Auditing AI</p>
+                                        <p className="text-xs text-red-300 mt-1">Efficiency optimization protocols.</p>
+                                    </div>
+                                    <div className="p-4 bg-red-950/20 border border-red-900/30 rounded">
+                                        <h4 className="text-red-400 font-mono text-xs mb-2">FOREX HERO</h4>
+                                        <p className="text-white font-bold">Currency Arbitrage</p>
+                                        <p className="text-xs text-red-300 mt-1">Automated trading bots.</p>
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="border-t border-zinc-900 bg-black py-12 text-center text-zinc-600 text-sm">
+                        <p className="mb-2">&copy; 2026 L7S Operations Inc. All systems nominal.</p>
+                        <p 
+                            className="font-mono text-xs cursor-pointer hover:text-zinc-500 transition-colors select-none"
+                            onClick={handleFooterClick}
+                        >
+                            v2026.1.27 {clicks > 0 && clicks < 5 && <span className="text-red-900">...</span>}
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // 4. MAIN APP CONTROLLER
+        const App = () => {
+            const [view, setView] = useState('intro');
+
+            return (
+                <>
+                    {view === 'intro' && <TerminalIntro onComplete={() => setView('dashboard')} />}
+                    {view === 'dashboard' && <Dashboard />}
+                </>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

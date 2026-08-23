@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SELmcp — Xen Universal MCP Handoff</title>
+<style>
+:root{--bg:#060d14;--ink:#d4f0ff;--gold:#d4af37;--accent:#00ccff;--green:#00ff88;--mute:#3a6a8a;--card:#0a1a28;--line:rgba(0,204,255,.12);--red:#ff4d6d}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;min-height:100vh}
+body{max-width:1000px;margin:0 auto;padding:24px 16px 60px}
+header{padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:28px}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.badge.live{background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.3);color:var(--green)}
+.badge.noauth{background:rgba(0,204,255,.1);border:1px solid rgba(0,204,255,.25);color:var(--accent)}
+h1{font-size:28px;font-weight:800;margin:10px 0 6px;background:linear-gradient(135deg,var(--ink),var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tagline{color:var(--mute);font-size:14px;margin-bottom:12px}
+.connect-box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:20px 0}
+.connect-box h2{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.url-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0}
+.url-label{font-size:11px;font-weight:700;color:var(--mute);min-width:60px;text-transform:uppercase}
+code{background:rgba(0,204,255,.08);border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-family:ui-monospace,monospace;font-size:13px;color:var(--accent)}
+.method-box{background:#0a1608;border:1px solid rgba(0,255,136,.12);border-radius:8px;padding:12px 16px;margin:10px 0;font-family:ui-monospace,monospace;font-size:12px;color:#9af5c0;white-space:pre-wrap}
+.clients{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin:14px 0}
+.client{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12px;font-weight:600}
+.client .name{color:var(--ink);margin-bottom:3px}
+.client .hint{color:var(--mute);font-size:11px}
+.section{margin-bottom:28px}
+.section-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.icon{font-size:24px;flex-shrink:0;margin-top:2px}
+.section-title{font-size:16px;font-weight:700;color:var(--ink)}
+.section-sub{font-size:12px;color:var(--mute)}
+.tool-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.tool-table th{padding:8px 12px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);background:rgba(0,0,0,.3);border-bottom:1px solid var(--line)}
+.tool-table td{padding:8px 12px;border-bottom:1px solid rgba(0,204,255,.06);font-size:12px}
+.tool-table tr:last-child td{border-bottom:none}
+.ns{font-family:ui-monospace,monospace;font-size:11px;color:var(--accent)}
+.nm{font-weight:600}
+.desc{color:var(--mute)}
+.stat{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;font-size:12px}
+.stat .n{font-size:20px;font-weight:800;color:var(--accent)}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+footer{margin-top:40px;text-align:center;font-size:11px;color:var(--mute)}
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <span class="badge live">● Live</span>
+    <span class="badge noauth">No Auth</span>
+    <span class="badge noauth">Client Agnostic</span>
+    <span class="badge noauth">Open</span>
+  </div>
+  <h1>SELmcp — Xen Universal MCP Hub</h1>
+  <div class="tagline">All Xen MCP servers merged into one endpoint. Plug in any agent, model, or client — no auth, no config, no friction.</div>
+  <div class="stats">
+    <div class="stat"><span class="n">41</span> Tools</div>
+    <div class="stat"><span class="n">2</span> Servers</div>
+    <div class="stat"><span class="n">0</span> Auth Required</div>
+  </div>
+</header>
+
+<div class="connect-box">
+  <h2>Connect</h2>
+  <div class="url-row"><span class="url-label">Public</span><code>https://mcp.xlrd.org</code></div>
+  <div class="url-row"><span class="url-label">LAN</span><code>http://10.13.92.100:23375</code></div>
+  <div class="url-row"><span class="url-label">Loopback</span><code>http://127.0.0.1:23375</code></div>
+  <div class="url-row"><span class="url-label">Protocol</span><code>JSON-RPC 2.0 over HTTP POST</code></div>
+  <div style="margin-top:14px;font-size:12px;font-weight:700;color:var(--mute);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Quick test</div>
+  <div class="method-box">curl -X POST https://mcp.xlrd.org \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'</div>
+</div>
+
+<div class="connect-box">
+  <h2>Supported Clients</h2>
+  <div class="clients">
+    <div class="client"><div class="name">Claude Code</div><div class="hint">add to .claude.json mcpServers</div></div>
+    <div class="client"><div class="name">claude.ai web</div><div class="hint">connect as remote MCP</div></div>
+    <div class="client"><div class="name">xql / Windows</div><div class="hint">point at LAN IP:23375</div></div>
+    <div class="client"><div class="name">Cursor</div><div class="hint">HTTP MCP server URL</div></div>
+    <div class="client"><div class="name">Sintra</div><div class="hint">any MCP-compatible AI</div></div>
+    <div class="client"><div class="name">Mobile</div><div class="hint">https://mcp.xlrd.org</div></div>
+    <div class="client"><div class="name">Cline</div><div class="hint">HTTP MCP endpoint</div></div>
+    <div class="client"><div class="name">Any Agent</div><div class="hint">JSON-RPC 2.0 POST</div></div>
+  </div>
+</div>
+
+<div style="margin:28px 0 16px;font-size:20px;font-weight:800">Tool Registry</div>
+<div class="section"><div class="section-head"><span class="icon">💬</span><div><div class="section-title">Beeper</div><div class="section-sub">WhatsApp, Google Voice, iMessage, Google Messages — all threads — 12 tools</div></div></div><table class="tool-table"><thead><tr><th>Namespaced ID</th><th>Tool Name</th><th>Description</th></tr></thead><tbody><tr><td class="ns">beeper__focus_app</td><td class="nm">focus_app</td><td>Focus Beeper Desktop and optionally navigate to a specific chat, message, or pre</td></tr><tr><td class="ns">beeper__search</td><td class="nm">search</td><td>Search for chats, participant name matches in groups, and the first page of mess</td></tr><tr><td class="ns">beeper__get_accounts</td><td class="nm">get_accounts</td><td>List connected accounts on this device.</td></tr><tr><td class="ns">beeper__get_chat</td><td class="nm">get_chat</td><td>Get chat details: metadata, participants (limited), last activity.</td></tr><tr><td class="ns">beeper__archive_chat</td><td class="nm">archive_chat</td><td>Archive or unarchive a chat.</td></tr><tr><td class="ns">beeper__search_chats</td><td class="nm">search_chats</td><td>Search chats by title/network or participants using Beeper Desktop's renderer al</td></tr><tr><td class="ns">beeper__set_chat_reminder</td><td class="nm">set_chat_reminder</td><td>Set a reminder for a chat at a specific time.</td></tr><tr><td class="ns">beeper__clear_chat_reminder</td><td class="nm">clear_chat_reminder</td><td>Clear a chat reminder.</td></tr><tr><td class="ns">beeper__list_messages</td><td class="nm">list_messages</td><td>List messages from a specific chat with pagination support.</td></tr><tr><td class="ns">beeper__search_messages</td><td class="nm">search_messages</td><td>Search messages across chats using Beeper's message index.
+- When to use: find m</td></tr><tr><td class="ns">beeper__send_message</td><td class="nm">send_message</td><td>Send a text message to a specific chat. Supports replying to existing messages. </td></tr><tr><td class="ns">beeper__search_docs</td><td class="nm">search_docs</td><td>Search for documentation for how to use the client to interact with the API.
+The</td></tr></tbody></table></div><div class="section"><div class="section-head"><span class="icon">⚡</span><div><div class="section-title">Godmode Mac</div><div class="section-sub">Full Mac shell access — run any command, read/write files, automation — 29 tools</div></div></div><table class="tool-table"><thead><tr><th>Namespaced ID</th><th>Tool Name</th><th>Description</th></tr></thead><tbody><tr><td class="ns">godmode__run_command</td><td class="nm">run_command</td><td>Execute a shell command on the Mac. Returns stdout + stderr.</td></tr><tr><td class="ns">godmode__read_file</td><td class="nm">read_file</td><td>Read a file's contents as text</td></tr><tr><td class="ns">godmode__write_file</td><td class="nm">write_file</td><td>Write content to a file (creates parent directories)</td></tr><tr><td class="ns">godmode__list_directory</td><td class="nm">list_directory</td><td>List files and folders in a directory</td></tr><tr><td class="ns">godmode__screenshot</td><td class="nm">screenshot</td><td>Take a screenshot of the entire screen or a specific window</td></tr><tr><td class="ns">godmode__send_keys</td><td class="nm">send_keys</td><td>Send keystrokes to the frontmost application. Supports modifiers.</td></tr><tr><td class="ns">godmode__mouse_click</td><td class="nm">mouse_click</td><td>Move mouse to coordinates and click</td></tr><tr><td class="ns">godmode__get_windows</td><td class="nm">get_windows</td><td>List all visible windows with their titles, apps, positions, and sizes</td></tr><tr><td class="ns">godmode__focus_window</td><td class="nm">focus_window</td><td>Bring a window/app to the foreground</td></tr><tr><td class="ns">godmode__get_clipboard</td><td class="nm">get_clipboard</td><td>Get current clipboard text</td></tr><tr><td class="ns">godmode__set_clipboard</td><td class="nm">set_clipboard</td><td>Set clipboard text</td></tr><tr><td class="ns">godmode__open_url</td><td class="nm">open_url</td><td>Open a URL in the default browser</td></tr><tr><td class="ns">godmode__open_app</td><td class="nm">open_app</td><td>Launch an application by name</td></tr><tr><td class="ns">godmode__type_text</td><td class="nm">type_text</td><td>Type text into the frontmost application</td></tr><tr><td class="ns">godmode__manage_window</td><td class="nm">manage_window</td><td>Resize, move, minimize, maximize, or close a window</td></tr><tr><td class="ns">godmode__get_screen_text</td><td class="nm">get_screen_text</td><td>Get text content from the frontmost window using Accessibility APIs</td></tr><tr><td class="ns">godmode__get_processes</td><td class="nm">get_processes</td><td>List running processes</td></tr><tr><td class="ns">godmode__kill_process</td><td class="nm">kill_process</td><td>Kill a process by PID or name</td></tr><tr><td class="ns">godmode__system_info</td><td class="nm">system_info</td><td>Get Mac system info</td></tr><tr><td class="ns">godmode__notification</td><td class="nm">notification</td><td>Show a macOS notification</td></tr><tr><td class="ns">godmode__speak</td><td class="nm">speak</td><td>Speak text aloud</td></tr><tr><td class="ns">godmode__file_search</td><td class="nm">file_search</td><td>Search for files using Spotlight (mdfind)</td></tr><tr><td class="ns">godmode__run_shortcut</td><td class="nm">run_shortcut</td><td>Run a macOS Shortcut by name</td></tr><tr><td class="ns">godmode__gpu_info</td><td class="nm">gpu_info</td><td>Get GPU/Metal info</td></tr><tr><td class="ns">godmode__cpu_manager</td><td class="nm">cpu_manager</td><td>CPU management</td></tr><tr><td class="ns">godmode__disk_analyzer</td><td class="nm">disk_analyzer</td><td>Analyze disk usage</td></tr><tr><td class="ns">godmode__storage_cleanup</td><td class="nm">storage_cleanup</td><td>Clean up storage</td></tr><tr><td class="ns">godmode__cloud_storage</td><td class="nm">cloud_storage</td><td>Manage cloud storage</td></tr><tr><td class="ns">godmode__process_priority</td><td class="nm">process_priority</td><td>Manage process priorities</td></tr></tbody></table></div>
+
+<footer>SELmcp · Xen Universal MCP Hub · qi 2026-05-30 · <code>mcp.xlrd.org</code></footer>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variation Vault | East Allen Studios</title>
+    
+    <!-- Tailwind CSS (Utility classes) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM (Core libraries) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (To parse React/JSX in the browser) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Custom Fonts & Styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0px); }
+        }
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 0.8; }
+        }
+        
+        /* Custom Range Slider Styling */
+        input[type=range] {
+          -webkit-appearance: none; 
+          width: 100%; 
+          background: transparent; 
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 28px;
+          width: 28px;
+          border-radius: 50%;
+          background: #f59e0b;
+          cursor: pointer;
+          margin-top: -12px; 
+          box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2), 0 0 20px rgba(245, 158, 11, 0.5);
+          border: 2px solid white;
+          transition: transform 0.1s ease, box-shadow 0.2s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.3), 0 0 30px rgba(245, 158, 11, 0.7);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+          width: 100%;
+          height: 4px;
+          cursor: pointer;
+          background: rgba(255,255,255,0.1);
+          border-radius: 2px;
+        }
+
+        /* Firefox Support */
+        input[type=range]::-moz-range-thumb {
+          height: 28px;
+          width: 28px;
+          border: 2px solid white;
+          border-radius: 50%;
+          background: #f59e0b;
+          cursor: pointer;
+          box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+        }
+        
+        .glass-card {
+          background: rgba(15, 23, 42, 0.6);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .input-field {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+            background: rgba(15, 23, 42, 1);
+        }
+        
+        /* Smooth fade for error messages */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 selection:bg-amber-500 selection:text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icons ---
+        const Crown = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
+        );
+        const ShieldCheck = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+        );
+        const Gem = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
+        );
+        const ChevronRight = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
+        );
+        const TrendingUp = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        );
+        const Sparkles = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 9h4"/><path d="M3 5h4"/></svg>
+        );
+        const Layers = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        );
+        const User = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        );
+        const Mail = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        );
+        const DollarSign = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        );
+        const ExternalLink = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        );
+        const Paperclip = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        );
+
+        // --- Helper: Email Validation ---
+        const validateEmail = (email) => {
+            return String(email)
+                .toLowerCase()
+                .match(
+                    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+                );
+        };
+
+        // --- Main App Component ---
+        const App = () => {
+          const [variationCount, setVariationCount] = useState(25);
+          const [isHovering, setIsHovering] = useState(false);
+          const [form, setForm] = useState({ name: '', email: '' });
+          const [error, setError] = useState('');
+          const [isSubmitting, setIsSubmitting] = useState(false);
+          
+          const pricePerVariation = 10;
+          const totalCost = variationCount * pricePerVariation;
+
+          // Calculate percentage for the slider background fill
+          const percentage = ((variationCount - 1) / 99) * 100;
+
+          const handleInputChange = (e) => {
+            const { name, value } = e.target;
+            setForm(prev => ({ ...prev, [name]: value }));
+            if (error) setError(''); // Clear error on type
+          };
+
+          const handleOrderSubmit = () => {
+            // 1. Validation
+            if (!form.name || !form.email) {
+                setError('Please enter your name and email to proceed.');
+                return;
+            }
+            if (!validateEmail(form.email)) {
+                setError('Please enter a valid email address.');
+                return;
+            }
+
+            setIsSubmitting(true);
+
+            // 2. Construct Data
+            const subject = encodeURIComponent(`VVS Order: ${form.name}`);
+            const body = encodeURIComponent(
+                `CLIENT DETAILS\n` +
+                `Name: ${form.name}\n` +
+                `Email: ${form.email}\n\n` +
+                `ORDER CONFIGURATION\n` +
+                `Quantity: ${variationCount} Variations\n` +
+                `Total Investment: $${totalCost}\n\n` +
+                `PAYMENT STATUS\n` +
+                `I have sent $${totalCost} via the payment links provided.\n\n` +
+                `*** ACTION REQUIRED ***\n` +
+                `I have attached my Logo file to this email for VVS processing.\n`
+            );
+
+            // 3. Trigger Mailto URI with slight delay for visual feedback
+            setTimeout(() => {
+                window.location.href = `mailto:admin@selfexec.com?subject=${subject}&body=${body}`;
+                setIsSubmitting(false);
+            }, 800);
+          };
+
+          return (
+            <div className="min-h-screen bg-slate-950 text-slate-200 font-sans flex items-center justify-center p-4 relative overflow-hidden">
+              
+              {/* Background Ambience */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(245,158,11,0.15),_transparent_70%)] pointer-events-none" />
+              <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
+
+              <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-12 gap-0 shadow-[0_0_100px_-20px_rgba(0,0,0,0.7)] rounded-3xl overflow-hidden border border-slate-800 relative z-10">
+                
+                {/* Left Side: The Premium Brand Column */}
+                <div className="md:col-span-5 relative bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 p-10 flex flex-col justify-between overflow-hidden text-white">
+                  
+                  {/* Animated Mesh/Grid Overlay */}
+                  <div className="absolute inset-0 opacity-10 pointer-events-none">
+                     <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                           <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="white" strokeWidth="0.5"/>
+                           </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#smallGrid)" />
+                     </svg>
+                  </div>
+
+                  {/* Header */}
+                  <div className="relative z-10 animate-[float_6s_ease-in-out_infinite]">
+                    <div className="flex items-center gap-2 mb-6">
+                      <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
+                        <Crown size={18} className="text-white" />
+                      </div>
+                      <span className="text-xs font-bold tracking-[0.2em] uppercase text-white/90">East Allen Studios</span>
+                    </div>
+                    
+                    <h1 className="text-5xl font-black mb-4 leading-[0.95] tracking-tight">
+                      The<br/>Variation<br/><span className="text-amber-200">Vault.</span>
+                    </h1>
+                    
+                    <p className="text-amber-100/90 font-medium leading-relaxed max-w-sm">
+                      Strategic design evolution. I don't just iterate; I explore the multiverse of your brand's potential.
+                    </p>
+                  </div>
+
+                  {/* Features List */}
+                  <div className="relative z-10 space-y-6 mt-12">
+                    <div className="group flex items-start space-x-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-default">
+                      <div className="bg-amber-950/30 p-2 rounded-lg text-amber-200 group-hover:scale-110 transition-transform duration-300">
+                        <ShieldCheck size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-sm uppercase tracking-wide mb-1">Director Control</h3>
+                        <p className="text-xs text-amber-100/70 leading-relaxed">
+                          Full creative authority. Every variation is a calculated move, not a random guess.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="group flex items-start space-x-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-default">
+                      <div className="bg-amber-950/30 p-2 rounded-lg text-amber-200 group-hover:scale-110 transition-transform duration-300">
+                        <Gem size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-sm uppercase tracking-wide mb-1">Human Vetted</h3>
+                        <p className="text-xs text-amber-100/70 leading-relaxed">
+                          Zero automation artifacts. 100% curated output for immediate production use.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side: The Configurator */}
+                <div className="md:col-span-7 bg-slate-900 p-6 md:p-10 flex flex-col justify-center relative">
+                  {/* Subtle Glow Behind */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-900/10 blur-[100px] pointer-events-none rounded-full" />
+                  
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-6 pb-4 border-b border-slate-800">
+                      <div>
+                        <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+                          Configure Output <Sparkles size={16} className="text-amber-500 animate-pulse"/>
+                        </h2>
+                        <p className="text-slate-400 text-sm">Define scope & provide delivery details.</p>
+                      </div>
+                    </div>
+
+                    {/* Slider Section */}
+                    <div className="mb-6">
+                       <div className="flex justify-between items-end mb-4">
+                        <label className="flex items-center gap-2 text-amber-500 font-bold text-xs uppercase tracking-wider">
+                          <Layers size={14} />
+                          Quantity
+                        </label>
+                        <div className="text-right">
+                          <span className="text-5xl font-light text-white tracking-tighter transition-all duration-300 inline-block min-w-[3ch] text-right">
+                            {variationCount}
+                          </span>
+                          <span className="text-xs font-medium text-slate-500 block uppercase tracking-widest mt-1">Variations</span>
+                        </div>
+                      </div>
+
+                      <div className="relative h-8 flex items-center">
+                        {/* Active Track Background (Dynamic Width) */}
+                        <div 
+                          className="absolute h-1 top-1/2 -mt-0.5 left-0 bg-gradient-to-r from-amber-700 to-amber-500 rounded-l-full pointer-events-none z-0" 
+                          style={{ width: `${percentage}%` }}
+                        />
+                        
+                        <input
+                          type="range"
+                          min="1"
+                          max="100"
+                          value={variationCount}
+                          onChange={(e) => setVariationCount(parseInt(e.target.value))}
+                          className="relative z-10"
+                          aria-label="Quantity Slider"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Cost & Payment Info */}
+                    <div className="glass-card rounded-2xl p-5 mb-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">Estimated Cost</span>
+                        <span className="text-3xl font-bold text-amber-500 font-mono">
+                          ${totalCost.toLocaleString()}
+                        </span>
+                      </div>
+                      
+                      {/* Payment Channels */}
+                      <div className="border-t border-slate-700/50 pt-4 mt-2">
+                         <div className="flex items-center gap-2 mb-2">
+                             <DollarSign size={14} className="text-emerald-500" />
+                             <span className="text-xs font-bold text-white uppercase tracking-wide">Pay & Donate</span>
+                         </div>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                             <a 
+                                href={`https://cash.app/$x9ea/${totalCost}`} 
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-slate-800/50 p-2 rounded border border-slate-700 flex flex-col hover:bg-slate-800 hover:border-emerald-500/50 transition-colors group/cash"
+                             >
+                                 <span className="text-xs text-slate-400 flex items-center gap-1 group-hover/cash:text-emerald-400">
+                                    CashApp <ExternalLink size={10} />
+                                 </span>
+                                 <span className="font-mono text-white">$x9ea</span>
+                             </a>
+                             <a 
+                                href={`https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&no_recurring=0&item_name=%2410+per+Logo+Variation&currency_code=USD&amount=${totalCost}`}
+                                target="_blank"
+                                rel="noopener noreferrer" 
+                                className="bg-slate-800/50 p-2 rounded border border-slate-700 flex flex-col hover:bg-slate-800 hover:border-blue-500/50 transition-colors group/paypal"
+                             >
+                                 <span className="text-xs text-slate-400 flex items-center gap-1 group-hover/paypal:text-blue-400">
+                                    PayPal <ExternalLink size={10} />
+                                 </span>
+                                 <span className="font-mono text-white text-xs truncate">xlrdtech@gmail.com</span>
+                             </a>
+                         </div>
+                      </div>
+                    </div>
+
+                    {/* Delivery Details Inputs */}
+                    <div className="space-y-3 mb-6">
+                        <div className="relative">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                                <User size={16} />
+                            </div>
+                            <input 
+                                type="text" 
+                                name="name"
+                                placeholder="Your Full Name" 
+                                value={form.name}
+                                onChange={handleInputChange}
+                                className="input-field w-full pl-10 pr-4 py-3 rounded-lg text-sm"
+                                aria-label="Full Name"
+                            />
+                        </div>
+                        <div className="relative">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                                <Mail size={16} />
+                            </div>
+                            <input 
+                                type="email" 
+                                name="email"
+                                placeholder="Delivery Email Address" 
+                                value={form.email}
+                                onChange={handleInputChange}
+                                className="input-field w-full pl-10 pr-4 py-3 rounded-lg text-sm"
+                                aria-label="Email Address"
+                            />
+                        </div>
+                        {error && (
+                            <p className="text-red-400 text-xs text-center font-medium fade-in bg-red-900/20 py-1 rounded">
+                                {error}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* CTA Button */}
+                    <div className="relative">
+                        <div className="flex items-center justify-center gap-2 mb-3 text-[10px] text-amber-500 font-medium opacity-90 animate-pulse bg-amber-950/30 py-1 rounded-full border border-amber-500/20 max-w-xs mx-auto">
+                            <Paperclip size={12} />
+                            <span>Don't forget to attach your logo to the email!</span>
+                        </div>
+                        
+                        <button 
+                          onClick={handleOrderSubmit}
+                          disabled={isSubmitting}
+                          onMouseEnter={() => setIsHovering(true)}
+                          onMouseLeave={() => setIsHovering(false)}
+                          className={`w-full relative overflow-hidden bg-white text-slate-950 font-bold py-4 rounded-xl transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] group ${isSubmitting ? 'opacity-80 cursor-wait' : ''}`}
+                        >
+                          <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-slate-200 to-transparent transform transition-transform duration-1000 ${isHovering && !isSubmitting ? 'translate-x-full' : '-translate-x-full'}`} />
+                          
+                          <div className="relative flex items-center justify-center gap-3">
+                             <span className="tracking-wide uppercase text-sm">
+                                {isSubmitting ? 'Opening Mail Client...' : 'Initialize Order'}
+                             </span>
+                             {!isSubmitting && (
+                                 <div className="bg-slate-900 text-white rounded-full p-1 group-hover:translate-x-1 transition-transform">
+                                    <ChevronRight size={14} />
+                                 </div>
+                             )}
+                          </div>
+                        </button>
+                    </div>
+
+                    {/* Footer Support */}
+                    <div className="text-center border-t border-slate-800 pt-4 mt-6">
+                        <p className="text-[11px] text-slate-500">
+                            Support: <a href="mailto:admin@selfexec.com" className="text-amber-500 hover:text-amber-400 transition-colors">admin@selfexec.com</a>
+                        </p>
+                        <p className="text-[10px] text-slate-600 mt-1">
+                            Fulfillment begins immediately upon receipt of payment and logo file.
+                        </p>
+                    </div>
+
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>
+
+

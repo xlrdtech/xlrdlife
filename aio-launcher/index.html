@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AIO Launcher — Everything at a glance</title>
+<meta name="description" content="AIO Launcher — an information-dense, function-over-flash home screen. Everything at a glance: weather, notifications, tickers, agenda, system stats.">
+<style>
+  :root{
+    --bg:#0a0b0d;
+    --panel:#101216;
+    --panel-2:#14171c;
+    --line:#1e232b;
+    --ink:#e6e9ef;
+    --dim:#8a93a2;
+    --faint:#5b636f;
+    --accent:#4ea1ff;
+    --up:#3ad19b;
+    --down:#ff5d6c;
+    --warn:#ffb648;
+    --pro:#c58bff;
+    --mono:"SF Mono",ui-monospace,"Cascadia Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:#050608;
+    color:var(--ink);
+    font-family:var(--sans);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px 12px;
+    background-image:radial-gradient(1200px 700px at 50% -10%,#12161d 0%,#050608 60%);
+  }
+
+  /* ---- phone frame ---- */
+  .phone{
+    width:390px;max-width:100%;height:844px;max-height:calc(100vh - 32px);
+    background:var(--bg);border-radius:46px;position:relative;
+    box-shadow:0 0 0 11px #16181c,0 0 0 13px #26292f,0 40px 90px -20px #000,0 10px 30px -10px #000;
+    overflow:hidden;display:flex;flex-direction:column;
+  }
+  .island{
+    position:absolute;top:11px;left:50%;transform:translateX(-50%);
+    width:118px;height:32px;background:#000;border-radius:20px;z-index:40;
+  }
+
+  /* ---- status bar ---- */
+  .statusbar{
+    height:52px;flex:0 0 auto;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 26px 6px;font:600 14px/1 var(--sans);color:var(--ink);z-index:30;
+    font-variant-numeric:tabular-nums;
+  }
+  .statusbar .sig{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink)}
+  .bars{display:inline-flex;gap:2px;align-items:flex-end;height:11px}
+  .bars i{width:3px;background:var(--ink);border-radius:1px;display:block}
+  .bars i:nth-child(1){height:4px}.bars i:nth-child(2){height:6px}
+  .bars i:nth-child(3){height:8px}.bars i:nth-child(4){height:11px}
+  .batt{display:inline-flex;align-items:center;gap:4px}
+  .batt .shell{width:24px;height:12px;border:1.5px solid var(--ink);border-radius:3px;position:relative;padding:1.5px}
+  .batt .shell::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:6px;background:var(--ink);border-radius:0 1px 1px 0}
+  .batt .fill{height:100%;background:var(--up);border-radius:1px}
+
+  /* ---- toolbar ---- */
+  .toolbar{
+    flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:2px 16px 10px;
+  }
+  .brand{font:800 15px/1 var(--sans);letter-spacing:-.3px;color:var(--ink);margin-right:auto}
+  .brand b{color:var(--accent)}
+  .tbtn{
+    font:600 12px/1 var(--sans);color:var(--dim);background:var(--panel);border:1px solid var(--line);
+    padding:7px 10px;border-radius:9px;cursor:pointer;user-select:none;transition:.15s;
+  }
+  .tbtn:hover{color:var(--ink);border-color:#2c333d}
+  .tbtn.on{color:#04121f;background:var(--accent);border-color:var(--accent)}
+
+  /* ---- feed ---- */
+  .feed{
+    flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding:0 14px 26px;
+    scrollbar-width:thin;scrollbar-color:#232830 transparent;
+  }
+  .feed::-webkit-scrollbar{width:6px}
+  .feed::-webkit-scrollbar-thumb{background:#232830;border-radius:3px}
+
+  .block{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    margin-top:12px;overflow:hidden;
+  }
+  .block-h{
+    display:flex;align-items:center;gap:8px;padding:11px 14px 9px;
+  }
+  .block-h .t{font:700 11px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .block-h .meta{margin-left:auto;font:600 11px/1 var(--mono);color:var(--faint);font-variant-numeric:tabular-nums}
+  .pro{
+    font:800 9px/1 var(--sans);letter-spacing:.08em;color:var(--pro);
+    border:1px solid #3a2f4d;background:#1a1424;padding:3px 5px;border-radius:5px;margin-left:6px;
+  }
+  .block-b{padding:2px 14px 14px}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* status/system meters */
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;padding-top:4px}
+  .metric{display:flex;flex-direction:column;gap:5px}
+  .metric .lab{font:600 10px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between}
+  .metric .lab b{color:var(--ink);font-weight:700}
+  .bar{height:6px;background:#191d24;border-radius:4px;overflow:hidden}
+  .bar > i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#7bc0ff);transition:width .6s cubic-bezier(.22,1,.36,1)}
+  .bar.warn > i{background:linear-gradient(90deg,var(--warn),#ffd08a)}
+  .bar.hot > i{background:linear-gradient(90deg,var(--down),#ff9aa4)}
+
+  /* weather */
+  .wx-top{display:flex;align-items:baseline;gap:12px}
+  .wx-temp{font:300 46px/1 var(--sans);letter-spacing:-2px;font-variant-numeric:tabular-nums}
+  .wx-cond{font:600 13px/1.3 var(--sans);color:var(--ink)}
+  .wx-cond span{display:block;color:var(--dim);font-weight:500;margin-top:3px}
+  .wx-hi{margin-left:auto;text-align:right;font:600 12px/1.5 var(--mono);color:var(--dim)}
+  .wx-hi b{color:var(--ink)}
+  .wx-hours{display:flex;justify-content:space-between;gap:4px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .wx-hr{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1}
+  .wx-hr .h{font:600 10px/1 var(--mono);color:var(--faint)}
+  .wx-hr .i{font-size:16px}
+  .wx-hr .d{font:700 12px/1 var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+
+  /* notifications & messages list */
+  .list{display:flex;flex-direction:column}
+  .row{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-top:1px solid var(--line);position:relative}
+  .row:first-child{border-top:0}
+  .ic{width:30px;height:30px;border-radius:8px;flex:0 0 auto;display:grid;place-items:center;font-size:14px;font-weight:700;color:#fff}
+  .rc{flex:1 1 auto;min-width:0}
+  .rc .top{display:flex;align-items:baseline;gap:8px}
+  .rc .app{font:700 12.5px/1 var(--sans);color:var(--ink)}
+  .rc .ago{margin-left:auto;font:600 10px/1 var(--mono);color:var(--faint);flex:0 0 auto}
+  .rc .prev{font:500 12px/1.35 var(--sans);color:var(--dim);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row.expanded .prev{white-space:normal}
+  .dismiss{position:absolute;right:0;top:9px;width:20px;height:20px;border:0;background:transparent;color:var(--faint);font-size:15px;cursor:pointer;line-height:1;opacity:0;transition:.15s}
+  .row:hover .dismiss{opacity:1}
+  .dismiss:hover{color:var(--down)}
+
+  /* tickers */
+  .tk{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+  .tk:first-child{border-top:0}
+  .tk .sym{font:800 13px/1 var(--mono);width:52px;color:var(--ink)}
+  .tk .name{font:500 11px/1 var(--sans);color:var(--faint);flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tk .px{font:700 13px/1 var(--mono);color:var(--ink);font-variant-numeric:tabular-nums;text-align:right;width:78px}
+  .tk .ch{font:700 11.5px/1 var(--mono);font-variant-numeric:tabular-nums;text-align:right;width:66px;padding:3px 0}
+  .up{color:var(--up)}.down{color:var(--down)}
+  .spark{width:44px;height:20px;flex:0 0 auto}
+
+  /* agenda */
+  .ev{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+  .ev:first-child{border-top:0}
+  .ev .when{font:700 11px/1.3 var(--mono);color:var(--accent);width:58px;flex:0 0 auto;font-variant-numeric:tabular-nums}
+  .ev .when span{display:block;color:var(--faint);font-weight:600;margin-top:2px}
+  .ev .rail{width:3px;border-radius:2px;flex:0 0 auto}
+  .ev .txt{font:600 13px/1.3 var(--sans);color:var(--ink)}
+  .ev .txt span{display:block;font-weight:500;font-size:11.5px;color:var(--dim);margin-top:3px}
+
+  /* quick apps + search */
+  .search{
+    display:flex;align-items:center;gap:9px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:11px;padding:10px 13px;margin-top:2px;
+  }
+  .search input{flex:1;background:none;border:0;color:var(--ink);font:500 13.5px var(--sans);outline:none}
+  .search input::placeholder{color:var(--faint)}
+  .search .mag{color:var(--faint);font-size:14px}
+  .apps{display:flex;gap:9px;margin-top:11px;flex-wrap:wrap}
+  .app-chip{
+    flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;
+    padding:10px 4px;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;cursor:pointer;transition:.15s;
+  }
+  .app-chip:active{transform:scale(.94)}
+  .app-chip:hover{border-color:#2c333d}
+  .app-chip .g{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px;color:#fff}
+  .app-chip .n{font:600 10px/1 var(--sans);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+  .hint{font:500 11px/1.4 var(--sans);color:var(--faint);text-align:center;padding:16px 20px 4px}
+  .hint b{color:var(--dim)}
+
+  /* edit mode add-menu */
+  .addmenu{padding:2px 0}
+  .add-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+  .add-row:first-child{border-top:0}
+  .add-row .nm{font:600 13px/1 var(--sans);color:var(--ink);flex:1}
+  .add-row .lock{font-size:12px;color:var(--pro)}
+  .toggle{width:38px;height:22px;border-radius:12px;background:#232830;border:0;position:relative;cursor:pointer;flex:0 0 auto;transition:.2s}
+  .toggle.on{background:var(--accent)}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .toggle.on::after{left:18px}
+  .toggle.locked{opacity:.4;cursor:not-allowed}
+
+  .editing .block{cursor:default}
+  .editing .block[data-block]{outline:1px dashed #2c333d;outline-offset:-1px}
+  .block-x{display:none}
+  .editing .block-x{display:inline-flex;margin-left:6px;width:18px;height:18px;border-radius:5px;border:1px solid var(--line);background:var(--panel-2);color:var(--faint);align-items:center;justify-content:center;font-size:12px;cursor:pointer}
+  .editing .block-x:hover{color:var(--down);border-color:var(--down)}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="island"></div>
+
+  <div class="statusbar">
+    <span class="num" id="sbTime">9:41</span>
+    <span class="sig">
+      <span class="bars"><i></i><i></i><i></i><i></i></span>
+      <span>5G</span>
+      <span class="batt"><span class="num" id="sbBatt">82</span>%
+        <span class="shell"><span class="fill" id="sbFill" style="width:82%"></span></span>
+      </span>
+    </span>
+  </div>
+
+  <div class="toolbar">
+    <div class="brand">AIO <b>Launcher</b></div>
+    <button class="tbtn" id="btnRefresh">↻ Sync</button>
+    <button class="tbtn" id="btnEdit">✎ Edit</button>
+  </div>
+
+  <div class="feed" id="feed">
+    <!-- STATUS / SYSTEM -->
+    <section class="block" data-block="system">
+      <div class="block-h"><span class="t">System</span><span class="meta" id="upStr">up 3d 04:12</span><span class="block-x" data-x="system">✕</span></div>
+      <div class="block-b">
+        <div class="metrics">
+          <div class="metric"><div class="lab">CPU <b><span class="num" id="cpuV">18</span>%</b></div><div class="bar" id="cpuBar"><i style="width:18%"></i></div></div>
+          <div class="metric"><div class="lab">RAM <b><span class="num" id="ramV">61</span>%</b></div><div class="bar warn" id="ramBar"><i style="width:61%"></i></div></div>
+          <div class="metric"><div class="lab">Storage <b>148 / 256 GB</b></div><div class="bar" id="stoBar"><i style="width:58%"></i></div></div>
+          <div class="metric"><div class="lab">Battery <b><span class="num" id="batV">82</span>%</b></div><div class="bar" id="batBar"><i style="width:82%"></i></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WEATHER -->
+    <section class="block" data-block="weather">
+      <div class="block-h"><span class="t">Weather · Fort Wayne</span><span class="meta" id="wxUpd">now</span><span class="block-x" data-x="weather">✕</span></div>
+      <div class="block-b">
+        <div class="wx-top">
+          <div class="wx-temp num">47°</div>
+          <div class="wx-cond">Partly Cloudy<span>Feels 43° · Wind 8mph NW</span></div>
+          <div class="wx-hi">H <b>52°</b><br>L <b>38°</b></div>
+        </div>
+        <div class="wx-hours" id="wxHours"></div>
+      </div>
+    </section>
+
+    <!-- NOTIFICATIONS -->
+    <section class="block" data-block="notifs">
+      <div class="block-h"><span class="t">Notifications</span><span class="meta" id="notifCount">4 new</span><span class="block-x" data-x="notifs">✕</span></div>
+      <div class="block-b"><div class="list" id="notifList"></div></div>
+    </section>
+
+    <!-- MESSAGES / CALLS -->
+    <section class="block" data-block="comms">
+      <div class="block-h"><span class="t">Messages &amp; Calls</span><span class="meta">2 missed</span><span class="block-x" data-x="comms">✕</span></div>
+      <div class="block-b"><div class="list" id="commList"></div></div>
+    </section>
+
+    <!-- MARKETS -->
+    <section class="block" data-block="markets">
+      <div class="block-h"><span class="t">Markets</span><span class="meta" id="mkClock">live</span><span class="block-x" data-x="markets">✕</span></div>
+      <div class="block-b"><div class="list" id="tickList"></div></div>
+    </section>
+
+    <!-- AGENDA -->
+    <section class="block" data-block="agenda">
+      <div class="block-h"><span class="t">Today's Agenda</span><span class="meta">Thu · 4 events</span><span class="block-x" data-x="agenda">✕</span></div>
+      <div class="block-b"><div class="list" id="agendaList"></div></div>
+    </section>
+
+    <!-- FLIGHT TRACKER (PRO) -->
+    <section class="block" data-block="flight">
+      <div class="block-h"><span class="t">Flight Tracker</span><span class="pro">PRO</span><span class="meta">DL2231</span><span class="block-x" data-x="flight">✕</span></div>
+      <div class="block-b">
+        <div class="ev" style="border:0">
+          <div class="when">14:05<span>Gate B12</span></div>
+          <div class="rail" style="background:var(--pro)"></div>
+          <div class="txt">FWA → ATL · On time<span>Boarding 13:35 · Seat 14C · Delta</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUICK APPS + SEARCH -->
+    <section class="block" data-block="apps">
+      <div class="block-h"><span class="t">Apps</span><span class="meta" id="appMeta">frequent</span><span class="block-x" data-x="apps">✕</span></div>
+      <div class="block-b">
+        <div class="search">
+          <span class="mag">⌕</span>
+          <input id="appSearch" placeholder="Search apps, contacts, web…" autocomplete="off">
+        </div>
+        <div class="apps" id="appRow"></div>
+      </div>
+    </section>
+
+    <div class="hint">AIO Launcher · <b>Everything at a glance — function over flash.</b><br>Base free · <b>PRO</b> unlocks extra widgets &amp; integrations.</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const pad=n=>String(n).padStart(2,"0");
+
+/* ---------- clock + status bar ---------- */
+function tick(){
+  const d=new Date();
+  let h=d.getHours(), m=pad(d.getMinutes());
+  const hr12=((h+11)%12)+1;
+  $("#sbTime").textContent=`${hr12}:${m}`;
+}
+tick(); if(!reduce) setInterval(tick,10000);
+
+/* ---------- weather hours ---------- */
+const wxIcons=["☀️","🌤️","⛅","🌥️","☁️","🌦️"];
+(function(){
+  const now=new Date().getHours();
+  const box=$("#wxHours"); let html="";
+  const base=47;
+  for(let i=0;i<6;i++){
+    const hh=(now+i*2)%24;
+    const t=base+Math.round(Math.sin(i)*4)-i;
+    html+=`<div class="wx-hr"><span class="h">${pad(hh)}</span><span class="i">${wxIcons[(i+1)%wxIcons.length]}</span><span class="d">${t}°</span></div>`;
+  }
+  box.innerHTML=html;
+})();
+
+/* ---------- notifications ---------- */
+const notifs=[
+  {app:"Messages",   ic:"💬",c:"#33c15a",ago:"2m",  prev:"Sarah: are we still on for lunch at 1? I can push it back if you're slammed."},
+  {app:"Gmail",      ic:"✉️",c:"#ea4335",ago:"11m", prev:"Stripe — Your payout of $4,210.00 has been sent to Chase ••4471."},
+  {app:"Slack",      ic:"#", c:"#4a154b",ago:"24m", prev:"#eng-alerts: deploy prod-142 finished · 0 errors · 3m41s"},
+  {app:"Calendar",   ic:"📅",c:"#1a73e8",ago:"38m", prev:"Reminder: 1:1 with Marcus in 20 minutes (Zoom)."}
+];
+function renderNotifs(){
+  const L=$("#notifList"); L.innerHTML="";
+  notifs.forEach((n,idx)=>{
+    const row=document.createElement("div"); row.className="row";
+    row.innerHTML=`<span class="ic" style="background:${n.c}">${n.ic}</span>
+      <div class="rc"><div class="top"><span class="app">${n.app}</span><span class="ago num">${n.ago}</span></div>
+      <div class="prev">${n.prev}</div></div>
+      <button class="dismiss" title="Dismiss">✕</button>`;
+    row.querySelector(".rc").onclick=()=>row.classList.toggle("expanded");
+    row.querySelector(".dismiss").onclick=e=>{e.stopPropagation();notifs.splice(idx,1);renderNotifs();};
+    L.appendChild(row);
+  });
+  $("#notifCount").textContent=notifs.length?`${notifs.length} new`:"clear";
+}
+renderNotifs();
+
+/* live notification arrival */
+const incoming=[
+  {app:"Uber",ic:"🚗",c:"#000",ago:"now",prev:"Your driver Andre is 3 min away · Black Tesla Model 3 · 7KXJ221"},
+  {app:"Robinhood",ic:"📈",c:"#00c805",ago:"now",prev:"BTC is up 4.1% today — your watchlist moved."},
+  {app:"Ring",ic:"🔔",c:"#1c8fe3",ago:"now",prev:"Front Door · Motion detected · tap to view clip"}
+];
+if(!reduce){
+  let ii=0;
+  setInterval(()=>{ if(document.hidden)return;
+    notifs.unshift({...incoming[ii%incoming.length]}); ii++;
+    if(notifs.length>7) notifs.pop();
+    renderNotifs();
+  },14000);
+}
+
+/* ---------- messages & calls ---------- */
+const comms=[
+  {app:"Sarah Chen", ic:"SC",c:"#7c5cff",ago:"2m", prev:"Lunch at 1 still good?"},
+  {app:"Missed · Dad",ic:"📞",c:"#ff5d6c",ago:"41m",prev:"Missed call · tap to call back"},
+  {app:"Marcus Lee", ic:"ML",c:"#0ea5e9",ago:"1h", prev:"Sent the deck — lmk what you think"},
+  {app:"Missed · Bank",ic:"📞",c:"#ff5d6c",ago:"2h",prev:"Missed call · voicemail (0:32)"}
+];
+(function(){
+  const L=$("#commList");
+  comms.forEach(n=>{
+    const row=document.createElement("div"); row.className="row";
+    row.innerHTML=`<span class="ic" style="background:${n.c};font-size:${n.ic.length<=2?'11px':'14px'}">${n.ic}</span>
+      <div class="rc"><div class="top"><span class="app">${n.app}</span><span class="ago num">${n.ago}</span></div>
+      <div class="prev">${n.prev}</div></div>`;
+    row.querySelector(".rc").onclick=()=>row.classList.toggle("expanded");
+    L.appendChild(row);
+  });
+})();
+
+/* ---------- markets ---------- */
+const tickers=[
+  {sym:"AAPL",name:"Apple Inc.",       px:229.14,ch:1.12},
+  {sym:"TSLA",name:"Tesla Inc.",       px:412.80,ch:-2.35},
+  {sym:"NVDA",name:"NVIDIA Corp.",     px:141.62,ch:3.08},
+  {sym:"BTC", name:"Bitcoin",          px:98420, ch:4.11},
+  {sym:"ETH", name:"Ethereum",         px:3512.4,ch:-0.84}
+];
+function spark(dir){
+  const w=44,h=20,n=12; let d="";
+  let y=h/2;
+  for(let i=0;i<n;i++){
+    const x=(i/(n-1))*w;
+    y+= (Math.sin(i*1.3)+ (dir>0?0.5:-0.5))* (reduce?0:2);
+    y=Math.max(3,Math.min(h-3,y));
+    d+=(i===0?"M":"L")+x.toFixed(1)+" "+y.toFixed(1)+" ";
+  }
+  const col=dir>=0?"#3ad19b":"#ff5d6c";
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}"><path d="${d}" fill="none" stroke="${col}" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+}
+function fmt(px){ return px>=1000? px.toLocaleString(undefined,{maximumFractionDigits:0}) : px.toFixed(2); }
+function renderTickers(){
+  const L=$("#tickList"); L.innerHTML="";
+  tickers.forEach(t=>{
+    const up=t.ch>=0;
+    const row=document.createElement("div"); row.className="tk";
+    row.innerHTML=`<span class="sym">${t.sym}</span>
+      <span class="name">${t.name}</span>
+      ${spark(t.ch)}
+      <span class="px">${t.sym==="BTC"?"$":""}${fmt(t.px)}</span>
+      <span class="ch ${up?'up':'down'}">${up?'▲':'▼'}${Math.abs(t.ch).toFixed(2)}%</span>`;
+    L.appendChild(row);
+  });
+}
+renderTickers();
+if(!reduce){
+  setInterval(()=>{ if(document.hidden)return;
+    tickers.forEach(t=>{
+      const drift=(Math.random()-0.48)*(t.px>1000?t.px*0.002:0.6);
+      t.px=Math.max(0.5,t.px+drift);
+      t.ch=+(t.ch+(Math.random()-0.5)*0.25).toFixed(2);
+    });
+    renderTickers();
+    const d=new Date(); $("#mkClock").textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  },3200);
+}
+
+/* ---------- agenda ---------- */
+const agenda=[
+  {when:"13:00",sub:"1h",   rail:"#4ea1ff",t:"Lunch with Sarah",     sub2:"Bistro Nautique · 2.1mi"},
+  {when:"14:30",sub:"30m",  rail:"#3ad19b",t:"1:1 with Marcus",       sub2:"Zoom · deck review"},
+  {when:"16:00",sub:"45m",  rail:"#ffb648",t:"Design sync",           sub2:"Conf Room B · launcher v2"},
+  {when:"19:30",sub:"2h",   rail:"#c58bff",t:"Flight FWA → ATL",      sub2:"DL2231 · Gate B12"}
+];
+(function(){
+  const L=$("#agendaList");
+  agenda.forEach(e=>{
+    const ev=document.createElement("div"); ev.className="ev";
+    ev.innerHTML=`<div class="when">${e.when}<span>${e.sub}</span></div>
+      <div class="rail" style="background:${e.rail}"></div>
+      <div class="txt">${e.t}<span>${e.sub2}</span></div>`;
+    L.appendChild(ev);
+  });
+})();
+
+/* ---------- quick apps + search ---------- */
+const apps=[
+  {n:"Phone",g:"📞",c:"#33c15a"},{n:"Messages",g:"💬",c:"#2f6bff"},
+  {n:"Camera",g:"📷",c:"#4b5563"},{n:"Maps",g:"🗺️",c:"#1a9e5b"},
+  {n:"Browser",g:"🌐",c:"#0ea5e9"},{n:"Wallet",g:"💳",c:"#111827"},
+  {n:"Music",g:"🎵",c:"#fa2d48"},{n:"Notes",g:"📝",c:"#f6b40a"}
+];
+function renderApps(filter=""){
+  const row=$("#appRow"); row.innerHTML="";
+  const f=filter.trim().toLowerCase();
+  const list=apps.filter(a=>a.n.toLowerCase().includes(f));
+  (list.length?list:apps).slice(0,8).forEach(a=>{
+    const c=document.createElement("div"); c.className="app-chip";
+    c.innerHTML=`<span class="g" style="background:${a.c}">${a.g}</span><span class="n">${a.n}</span>`;
+    row.appendChild(c);
+  });
+  $("#appMeta").textContent=f?`${list.length} match`:"frequent";
+}
+renderApps();
+$("#appSearch").addEventListener("input",e=>renderApps(e.target.value));
+
+/* ---------- refresh (sync) ---------- */
+$("#btnRefresh").onclick=function(){
+  this.textContent="↻ Syncing";
+  tickers.forEach(t=>{ t.ch=+((Math.random()-0.5)*5).toFixed(2); });
+  renderTickers();
+  const c=Math.round(8+Math.random()*40), r=Math.round(45+Math.random()*40);
+  $("#cpuV").textContent=c; $("#ramV").textContent=r;
+  $("#cpuBar").querySelector("i").style.width=c+"%";
+  $("#ramBar").querySelector("i").style.width=r+"%";
+  $("#ramBar").className="bar"+(r>75?" hot":r>55?" warn":"");
+  $("#wxUpd").textContent="now";
+  setTimeout(()=>{this.textContent="↻ Sync";},700);
+};
+
+/* ---------- edit mode: toggle blocks ---------- */
+const feed=$("#feed"), phone=$("#phone");
+const optional=[
+  {key:"system",nm:"System monitor",locked:false,on:true},
+  {key:"weather",nm:"Weather",locked:false,on:true},
+  {key:"notifs",nm:"Notifications",locked:false,on:true},
+  {key:"comms",nm:"Messages & Calls",locked:false,on:true},
+  {key:"markets",nm:"Markets",locked:false,on:true},
+  {key:"agenda",nm:"Agenda",locked:false,on:true},
+  {key:"flight",nm:"Flight Tracker",locked:true,on:true},
+  {key:"apps",nm:"Quick apps",locked:false,on:true},
+  {key:"news",nm:"News feed",locked:true,on:false},
+  {key:"tasks",nm:"Tasks / to-do",locked:true,on:false}
+];
+let addPanel=null;
+$("#btnEdit").onclick=function(){
+  const editing=phone.classList.toggle("editing");
+  this.classList.toggle("on",editing);
+  this.textContent=editing?"✓ Done":"✎ Edit";
+  if(editing){
+    addPanel=document.createElement("section");
+    addPanel.className="block"; addPanel.id="addPanel";
+    addPanel.innerHTML=`<div class="block-h"><span class="t">Manage blocks</span><span class="meta">tap to toggle</span></div>
+      <div class="block-b"><div class="addmenu" id="addMenu"></div></div>`;
+    feed.insertBefore(addPanel,feed.firstElementChild);
+    const menu=$("#addMenu");
+    optional.forEach(o=>{
+      const r=document.createElement("div"); r.className="add-row";
+      r.innerHTML=`<span class="nm">${o.nm}</span>${o.locked?'<span class="lock">PRO ✦</span>':''}
+        <button class="toggle ${o.on?'on':''} ${o.locked?'locked':''}"></button>`;
+      const tg=r.querySelector(".toggle");
+      tg.onclick=()=>{
+        if(o.locked){ tg.animate?tg.animate([{transform:"translateX(-2px)"},{transform:"translateX(2px)"},{transform:"translateX(0)"}],{duration:180}):0; return; }
+        o.on=!o.on; tg.classList.toggle("on",o.on);
+        const blk=$(`[data-block="${o.key}"]`);
+        if(blk) blk.style.display=o.on?"":"none";
+      };
+      menu.appendChild(r);
+    });
+  }else{
+    if(addPanel){addPanel.remove();addPanel=null;}
+  }
+};
+/* per-block quick remove (X in edit mode) */
+$$(".block-x").forEach(x=>{
+  x.onclick=e=>{
+    e.stopPropagation();
+    const key=x.dataset.x, blk=$(`[data-block="${key}"]`);
+    if(blk) blk.style.display="none";
+    const o=optional.find(o=>o.key===key); if(o)o.on=false;
+    const menu=$("#addMenu"); // reflect in menu if open
+    if(menu){ /* rebuild toggles state next open */ }
+  };
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical Organization Dashboard (The King's System)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap');
+        
+        /* Default Base Theme (Obsidian Gold) */
+        :root {
+            --color-bg-main: #0A0A0A;
+            --color-bg-panel: #1C1C1C;
+            --color-accent-1: #E5E5E5; /* Before/Chaos Accent */
+            --color-accent-2: #FFD700; /* After/Order Accent (Gold) */
+            --color-text-highlight: #FFD700;
+            --color-text-secondary: #9CA3AF; /* Gray 400 */
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg-main);
+            color: #F3F4F6;
+            transition: background-color 0.5s;
+        }
+
+        /* Themed Components */
+        .dashboard-header {
+            color: var(--color-text-highlight);
+        }
+        .file-explorer {
+            background-color: var(--color-bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+        }
+        .h2-before {
+            color: var(--color-accent-1);
+            border-bottom-color: var(--color-accent-1);
+        }
+        .h2-after {
+            color: var(--color-accent-2);
+            border-bottom-color: var(--color-accent-2);
+        }
+
+        /* --- Map View (Tree) Specific Styles --- */
+        .map-view ul { list-style-type: none; padding-left: 0; }
+        .map-view .nested {
+            display: none;
+            padding-left: 1.25rem;
+            border-left: 1px dashed var(--color-text-secondary); 
+            margin-left: 10px;
+        }
+        .map-view .active { display: block; }
+        .map-view .folder-item { cursor: pointer; user-select: none; font-weight: 500; display: flex; align-items: center; padding: 4px 8px; border-radius: 6px; }
+        .map-view .folder-item:hover { background-color: rgba(255, 255, 255, 0.05); }
+        .map-view .icon-arrow::before { content: "▶"; display: inline-block; margin-right: 8px; font-size: 0.75rem; color: var(--color-text-secondary); transition: transform 0.2s; }
+        .map-view .is-open > .icon-arrow::before { transform: rotate(90deg); }
+        .map-view .icon-folder { margin-right: 8px; color: var(--color-text-highlight); }
+        .map-view .file-entry { display: flex; align-items: center; font-weight: 300; padding: 2px 8px; border-radius: 4px; color: var(--color-text-secondary); }
+        .map-view .file-entry:hover { background-color: rgba(255, 255, 255, 0.05); }
+        .map-view .icon-file { margin-right: 8px; }
+
+        /* --- Icon View Specific Styles --- */
+        .icon-view { display: none; }
+        .icon-view .icon-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+        .icon-view .icon-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .icon-view .icon-card:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        .icon-view .icon-svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 0.5rem;
+        }
+        .icon-view .folder-icon { color: var(--color-accent-2); }
+        .icon-view .file-icon { color: var(--color-text-highlight); }
+        
+        /* Type-Specific Icon Colors */
+        .ext-mp3, .ext-wav, .ext-flp { color: #A78BFA; } /* Violet for audio */
+        .ext-exec, .ext-lnk { color: #34D399; } /* Emerald for software */
+        .ext-zip { color: #FCA5A5; } /* Red for archives */
+    </style>
+</head>
+<body class="p-4 md:p-10" data-view="map">
+
+    <header class="text-center mb-8">
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tighter dashboard-header">
+            Tactical Organization Dashboard
+        </h1>
+        <p class="text-lg text-gray-400 mt-2">Structure & Strategy for East Allen</p>
+    </header>
+    
+    <!-- Controls Bar -->
+    <div class="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
+        <div class="flex space-x-2">
+            <button id="map-view-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-200">
+                Map View (Tree)
+            </button>
+            <button id="icon-view-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-200">
+                Icon View (Desktop)
+            </button>
+        </div>
+        <div class="flex space-x-2">
+            <button id="randomize-theme-btn" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-200">
+                <span class="mr-1">🎨</span> Random Theme
+            </button>
+            <button id="save-theme-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-200">
+                <span id="save-status">💾 Save Theme</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- --- MAP VIEW (DEFAULT) --- -->
+    <div class="map-view max-w-4xl mx-auto comparison-grid" id="map-view-container">
+        
+        <!-- BEFORE STATE -->
+        <div class="file-explorer p-6 lg:p-8">
+            <h2 class="h2-before mb-6">❌ BEFORE: Chaotic Root</h2>
+            
+            <ul id="before-tree" class="text-sm">
+                <!-- Data inserted by script -->
+            </ul>
+        </div>
+        
+        <!-- AFTER STATE -->
+        <div class="file-explorer p-6 lg:p-8">
+            <h2 class="h2-after mb-6">✨ AFTER: Strategic Hubs</h2>
+
+            <ul id="after-tree" class="text-sm">
+                <!-- Data inserted by script -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- --- ICON VIEW (HIDDEN BY DEFAULT) --- -->
+    <div class="icon-view max-w-4xl mx-auto file-explorer p-6 lg:p-8" id="icon-view-container">
+        <h2 class="h2-after mb-6">ICON VIEW: Clean Desktop</h2>
+        <div id="current-folder-path" class="text-sm text-gray-400 mb-4 border-b border-gray-700 pb-2">/Desktop</div>
+        
+        <div id="icon-view-grid" class="icon-grid grid gap-4">
+            <!-- Icons rendered by JavaScript -->
+        </div>
+
+        <button id="icon-view-back-btn" class="mt-6 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-200 hidden">
+            <span class="mr-1">⬅️</span> Back
+        </button>
+    </div>
+
+
+<script>
+    // --- Data Definition (Exhaustive File Structure) ---
+    const FILE_STRUCTURE = {
+        "Desktop": {
+            "Music Production": {
+                "!Mike Zara's Stash": {
+                    "Open Hats": { "_files": ["MZ Open Hat [Accent].wav", "MZ Open Hat [Repko].wav", "MZ Open Hat [Zara].wav", "...153 more files..."] },
+                    "Percs": { "_files": ["MZ Perc [5%].wav", "MZ Perc [Angelica].wav", "MZ Perc [Ethnic Rim].wav", "...42 more files..."] },
+                },
+                "9 SHADES OF PANYE": {},
+                "9SHADESOFPAIN": {},
+                "ACID LOOP KIT BY SMOKE FUSION(1)": {},
+                "FL Studios": {},
+                "_files": [
+                    "[ FREE ] Gunna X Money Man Type Beat - BETTER ALONE.mp3", "[ FREE ] Money Man Type Beat - TOP OUT.mp3", "[ FREE ] Young Thug Type Beat 2025 UNE FILLE.mp3", "[ FREE ] Young Thug x Gunna Type Beat 2025 BEAT THE CASE.mp3", "[FREE] DRAKE X ASAP ROCKY TYPE BEAT - NO LIES.mp3", "[FREE] G Herbo Sample Type Beat - No Witnesses.mp3", "[FREE] Gunna Type Beat - Fake Love.mp3", "[FREE] Gunna Type Beat - Guaranteed.mp3", "[FREE] Gunna Type Beat - Obsession.mp3", "[FREE] Gunna Type Beat - Olympian - Part_1.wav", "[FREE] Gunna Type Beat - Olympian.mp3", "[FREE] Gunna Type Beat - Overcame.mp3", "[FREE] Gunna Type Beat - Praise.mp3", "[FREE] Gunna Type Beat - Walking Alone.mp3", "[FREE] Gunna Type Beat – “Maybach” [DNklVNBOH9I].mp3", "[FREE] Gunna x Young Thug Type Beat - _Akronym_.mp3", "[FREE] Hunxho Type Beat - _Heartbeat_.mp3", "[FREE] Lil Durk Type Beat - Broken Promises.mp3", "[FREE] Lil Uzi Vert x Future Type Beat 2025 - _Atleast_.mp3", "[FREE] LIL WAYNE TYPE BEAT - TRAUMATIZED.mp3", "[FREE] NBA Youngboy Type Beat- “Dyin’ Bout It”.mp3", "[FREE] NoCap Type Beat - Won't Be Waiting.mp3", "[FREE] NoCap Type Beat - _Carry My Pain_.mp3", "[FREE] Rylo Rodriguez Sample Type Beat Miss Your Voice - Copy.mp3", "[FREE] Rylo Rodriguez Sample Type Beat Miss Your Voice.mp3", "[FREE] Young Thug Type Beat 2025 - Benjamin's.mp3", "[FREE] Young Thug Type Beat 2025 - Stop Playin(1).mp3", "[FREE]Future x Will-A-Fool x Polo G type beat [Prod. by Prolifik] [3yF0VyrrVck].mp3", "[Free] (GUITAR) Kodak Black x Roddy Ricch x Yungeen Ace Type Beat New Things (Prod. Palaze).mp3", "[GUITAR ONLY] NoCap Type Beat - Thunder NO DRUMS TYPE BEAT.mp3", "[GUITAR] NBA Youngboy x NoCap Type Beat - Desicion.mp3", "Project_11.mp3", "Project_5.mp3", "Project_57.mp3", "Project_80.mp3", "Rack Attact - Feat Juu Pablo.mp3", "REFLECTION.mp3", "RISKTAKER.mp3", "SB13.mp3", "SwitchPASE.mp3", "TRUSNOBODY.mp3", "TWIN.mp3", "TWISTED FT.VETTEPETEK.mp3", "TWISTED MAS.mp3", "TWISTED_2.mp3", "TwinFlame.flp", "TwinFlame.mp3", "UDAONEIWANT.mp3", "WEONNEW.mp3", "WHATIMON.mp3", "WHIRLWIND.mp3", "YFN Lucci Type Beat 2025 - Tears In The Night (prod. by Buckroll x Gabe Lucas).mp3", "Zaytoven Type Beat Swisher [Prod. Deezy Beats] - Part_1.wav", "Zaytoven Type Beat Swisher [Prod. Deezy Beats].mp3", "su.mp3", "tana.mp3", "Trumatized.mp3", "vettenew.mp3", "why not.mp3"
+                ]
+            },
+            "Software": {
+                "_files": ["FL Studio 2024.lnk", "a4apanel.exe"]
+            },
+            "Zipped Files": {
+                "_files": ["ACID LOOP KIT BY SMOKE FUSION(1).zip", "TWISTED SECTION.zip"]
+            },
+        },
+        // The original cluttered state (Desktop root) before organization
+        "BeforeRoot": {
+            "_files": [
+                "[ FREE ] Gunna X Money Man Type Beat - BETTER ALONE.mp3", "[ FREE ] Money Man Type Beat - TOP OUT.mp3", "[ FREE ] Young Thug Type Beat 2025 UNE FILLE.mp3", "[ FREE ] Young Thug x Gunna Type Beat 2025 BEAT THE CASE.mp3", "[FREE] DRAKE X ASAP ROCKY TYPE BEAT - NO LIES.mp3", "[FREE] G Herbo Sample Type Beat - No Witnesses.mp3", "[FREE] Gunna Type Beat - Fake Love.mp3", "[FREE] Gunna Type Beat - Guaranteed.mp3", "[FREE] Gunna Type Beat - Obsession.mp3", "[FREE] Gunna Type Beat - Olympian - Part_1.wav", "[FREE] Gunna Type Beat - Olympian.mp3", "[FREE] Gunna Type Beat - Overcame.mp3", "[FREE] Gunna Type Beat - Praise.mp3", "[FREE] Gunna Type Beat - Walking Alone.mp3", "[FREE] Gunna Type Beat – “Maybach” [DNklVNBOH9I].mp3", "[FREE] Gunna x Young Thug Type Beat - _Akronym_.mp3", "[FREE] Hunxho Type Beat - _Heartbeat_.mp3", "[FREE] Lil Durk Type Beat - Broken Promises.mp3", "[FREE] Lil Uzi Vert x Future Type Beat 2025 - _Atleast_.mp3", "[FREE] LIL WAYNE TYPE BEAT - TRAUMATIZED.mp3", "[FREE] NBA Youngboy Type Beat- “Dyin’ Bout It”.mp3", "[FREE] NoCap Type Beat - Won't Be Waiting.mp3", "[FREE] NoCap Type Beat - _Carry My Pain_.mp3", "[FREE] Rylo Rodriguez Sample Type Beat Miss Your Voice - Copy.mp3", "[FREE] Rylo Rodriguez Sample Type Beat Miss Your Voice.mp3", "[FREE] Young Thug Type Beat 2025 - Benjamin's.mp3", "[FREE] Young Thug Type Beat 2025 - Stop Playin(1).mp3", "[FREE]Future x Will-A-Fool x Polo G type beat [Prod. by Prolifik] [3yF0VyrrVck].mp3", "[Free] (GUITAR) Kodak Black x Roddy Ricch x Yungeen Ace Type Beat New Things (Prod. Palaze).mp3", "[GUITAR ONLY] NoCap Type Beat - Thunder NO DRUMS TYPE BEAT.mp3", "[GUITAR] NBA Youngboy x NoCap Type Beat - Desicion.mp3", "Project_11.mp3", "Project_5.mp3", "Project_57.mp3", "Project_80.mp3", "Rack Attact - Feat Juu Pablo.mp3", "REFLECTION.mp3", "RISKTAKER.mp3", "SB13.mp3", "SwitchPASE.mp3", "TRUSNOBODY.mp3", "TWIN.mp3", "TWISTED FT.VETTEPETEK.mp3", "TWISTED MAS.mp3", "TWISTED_2.mp3", "TwinFlame.flp", "TwinFlame.mp3", "UDAONEIWANT.mp3", "WEONNEW.mp3", "WHATIMON.mp3", "WHIRLWIND.mp3", "YFN Lucci Type Beat 2025 - Tears In The Night (prod. by Buckroll x Gabe Lucas).mp3", "Zaytoven Type Beat Swisher [Prod. Deezy Beats] - Part_1.wav", "Zaytoven Type Beat Swisher [Prod. Deezy Beats].mp3", "su.mp3", "tana.mp3", "Trumatized.mp3", "vettenew.mp3", "why not.mp3",
+                "FL Studio 2024.lnk", "a4apanel.exe",
+                "ACID LOOP KIT BY SMOKE FUSION(1).zip", "TWISTED SECTION.zip"
+            ],
+            "Music Production": {
+                "!Mike Zara's Stash": {
+                    "Open Hats": { "_files": ["...156 files...",] },
+                    "Percs": { "_files": ["...45 files...",] },
+                },
+                "9 SHADES OF PANYE": {},
+                "9SHADESOFPAIN": {},
+                "ACID LOOP KIT BY SMOKE FUSION(1)": {},
+                "FL Studios": {},
+            }
+        }
+    };
+
+    // --- Theme Palettes ---
+    const THEMES = [
+        { name: 'Obsidian Gold', bg_main: '#0A0A0A', bg_panel: '#1C1C1C', acc_1: '#E5E5E5', acc_2: '#FFD700', text_highlight: '#FFD700' },
+        { name: 'Cyberpunk Neon', bg_main: '#00001A', bg_panel: '#0A0A33', acc_1: '#FF005D', acc_2: '#00FFCC', text_highlight: '#00FFCC' },
+        { name: 'Midnight Quartz', bg_main: '#130F40', bg_panel: '#2C2C54', acc_1: '#FF793F', acc_2: '#17E0C3', text_highlight: '#17E0C3' },
+        { name: 'Deep Nebula', bg_main: '#0B0B1A', bg_panel: '#1A1A30', acc_1: '#A5B4FC', acc_2: '#FDBA74', text_highlight: '#FDBA74' },
+        { name: 'Crimson Data', bg_main: '#120000', bg_panel: '#300000', acc_1: '#FEE2E2', acc_2: '#DC2626', text_highlight: '#DC2626' },
+    ];
+    let currentThemeIndex = 0;
+
+    // --- Core Utility Functions ---
+
+    // Function to extract file extension and return an icon class
+    function getFileIcon(fileName) {
+        const parts = fileName.split('.');
+        if (parts.length > 1) {
+            const ext = parts.pop().toLowerCase();
+            switch (ext) {
+                case 'mp3':
+                case 'wav':
+                    return { icon: '🎶', class: 'ext-mp3' };
+                case 'flp':
+                    return { icon: '💾', class: 'ext-flp' };
+                case 'lnk':
+                case 'exe':
+                    return { icon: '⚙️', class: 'ext-exec' };
+                case 'zip':
+                    return { icon: '🗜️', class: 'ext-zip' };
+                default:
+                    return { icon: '📄', class: 'ext-file' };
+            }
+        }
+        return { icon: '📄', class: 'ext-file' };
+    }
+
+    // --- Map View Renderer (Recursive Tree) ---
+    function renderMapView(tree, title) {
+        let html = '';
+        const isRoot = title.includes("Root");
+        const folderClass = isRoot ? 'is-open' : '';
+
+        // File-only list for the messy Before state root
+        if (title.includes("Chaotic Root")) {
+            html += `<li><div class="folder-item icon-arrow ${folderClass}" data-target="b-root-files"><span class="icon-folder">📁</span> Loose Desktop Files</div><ul class="nested ${folderClass}" id="b-root-files">`;
+            tree._files.forEach(fileName => {
+                const icon = getFileIcon(fileName);
+                html += `<li class="file-entry ${icon.class}"><span class="icon-file">${icon.icon}</span>${fileName}</li>`;
+            });
+            html += `</ul></li>`;
+
+            // Existing folders in the root
+            const folders = Object.keys(tree).filter(k => k !== "_files");
+             html += `<li><div class="folder-item icon-arrow ${folderClass}" data-target="b-root-folders"><span class="icon-folder">📁</span> Existing Folders (Stayed)</div><ul class="nested ${folderClass}" id="b-root-folders">`;
+            folders.forEach(folderName => {
+                html += renderMapView(tree[folderName], folderName);
+            });
+            html += `</ul></li>`;
+
+        } else if (isRoot) {
+             // Clean After state root only shows main folders
+             const folders = Object.keys(tree);
+             folders.forEach(folderName => {
+                 html += renderMapView(tree[folderName], folderName);
+             });
+
+        } else {
+            // Standard folder rendering for recursive calls
+            const folders = Object.keys(tree).filter(k => k !== "_files");
+            const files = tree._files || [];
+            const itemCount = folders.length + files.length;
+            const itemText = itemCount > 0 ? ` (${itemCount} Items)` : '';
+
+            html += `<li><div class="folder-item icon-arrow ${folderClass}" data-target="${title.replace(/[^a-zA-Z0-9]/g, '-')}-list"><span class="icon-folder">📁</span> ${title} <span class="ml-auto text-xs text-gray-400">${itemText}</span></div>`;
+            
+            if (itemCount > 0) {
+                html += `<ul class="nested ${folderClass}" id="${title.replace(/[^a-zA-Z0-9]/g, '-')}-list">`;
+                
+                // Render sub-folders recursively
+                folders.forEach(folderName => {
+                    html += renderMapView(tree[folderName], folderName);
+                });
+                
+                // Render files
+                files.forEach(fileName => {
+                    const icon = getFileIcon(fileName);
+                    const displayFileName = fileName.length > 50 ? fileName.substring(0, 47) + '...' : fileName;
+                    html += `<li class="file-entry ${icon.class}"><span class="icon-file">${icon.icon}</span>${displayFileName}</li>`;
+                });
+                
+                html += `</ul>`;
+            }
+            html += `</li>`;
+        }
+        return html;
+    }
+
+    // --- Icon View Renderer ---
+    let currentPath = [];
+    const ICON_VIEW_GRID = document.getElementById('icon-view-grid');
+    const PATH_DISPLAY = document.getElementById('current-folder-path');
+    const BACK_BTN = document.getElementById('icon-view-back-btn');
+
+    function getFolderByPath(path) {
+        let current = FILE_STRUCTURE.Desktop;
+        if (path.length === 0) return current;
+        
+        for (const segment of path) {
+            if (current[segment]) {
+                current = current[segment];
+            } else {
+                return null; 
+            }
+        }
+        return current;
+    }
+
+    function renderIconView() {
+        ICON_VIEW_GRID.innerHTML = '';
+        
+        let currentFolder = getFolderByPath(currentPath);
+        if (!currentFolder) {
+            currentFolder = FILE_STRUCTURE.Desktop;
+            currentPath = [];
+        }
+
+        const folderContent = {
+            ...currentFolder,
+            _files: currentFolder._files || [] 
+        };
+        
+        // Update path display
+        PATH_DISPLAY.textContent = '/Desktop' + (currentPath.length > 0 ? '/' + currentPath.join('/') : '');
+        BACK_BTN.classList.toggle('hidden', currentPath.length === 0);
+
+        // Render Folders
+        Object.keys(folderContent).filter(k => k !== "_files").forEach(folderName => {
+            const folderElement = document.createElement('div');
+            folderElement.className = 'icon-card';
+            folderElement.innerHTML = `
+                <span class="icon-svg folder-icon text-4xl">📁</span>
+                <span class="text-xs text-gray-300 font-medium">${folderName}</span>
+            `;
+            folderElement.addEventListener('click', () => {
+                currentPath.push(folderName);
+                renderIconView();
+            });
+            ICON_VIEW_GRID.appendChild(folderElement);
+        });
+
+        // Render Files
+        folderContent._files.forEach(fileName => {
+            const icon = getFileIcon(fileName);
+            const fileElement = document.createElement('div');
+            fileElement.className = 'icon-card cursor-default';
+            fileElement.innerHTML = `
+                <span class="icon-svg file-icon ${icon.class} text-3xl">${icon.icon}</span>
+                <span class="text-xs text-gray-400 truncate w-full">${fileName}</span>
+            `;
+            ICON_VIEW_GRID.appendChild(fileElement);
+        });
+    }
+
+    // --- Theming Logic ---
+
+    function applyTheme(theme) {
+        const root = document.documentElement;
+        root.style.setProperty('--color-bg-main', theme.bg_main);
+        root.style.setProperty('--color-bg-panel', theme.bg_panel);
+        root.style.setProperty('--color-accent-1', theme.acc_1);
+        root.style.setProperty('--color-accent-2', theme.acc_2);
+        root.style.setProperty('--color-text-highlight', theme.text_highlight);
+
+        const status = document.getElementById('save-status');
+        status.textContent = `💾 Save Theme (${theme.name})`;
+        currentThemeIndex = THEMES.findIndex(t => t.name === theme.name);
+    }
+
+    function loadTheme() {
+        const savedTheme = localStorage.getItem('tactical-dashboard-theme');
+        if (savedTheme) {
+            const theme = JSON.parse(savedTheme);
+            applyTheme(theme);
+        } else {
+            // Apply a default 'fire' theme on first load
+            applyTheme(THEMES[0]); 
+        }
+    }
+
+    function randomizeTheme() {
+        let newIndex;
+        do {
+            newIndex = Math.floor(Math.random() * THEMES.length);
+        } while (newIndex === currentThemeIndex); 
+        
+        currentThemeIndex = newIndex;
+        applyTheme(THEMES[currentThemeIndex]);
+    }
+
+    function saveTheme() {
+        const themeToSave = THEMES[currentThemeIndex];
+        try {
+            localStorage.setItem('tactical-dashboard-theme', JSON.stringify(themeToSave));
+            const status = document.getElementById('save-status');
+            status.textContent = `✅ Saved! (${themeToSave.name})`;
+            setTimeout(() => {
+                status.textContent = `💾 Save Theme (${themeToSave.name})`;
+            }, 2000);
+        } catch (e) {
+            console.error("Could not save theme to local storage:", e);
+        }
+    }
+
+    // --- View Controller ---
+    function setView(viewName) {
+        const isMap = viewName === 'map';
+        document.getElementById('map-view-container').style.display = isMap ? 'grid' : 'none';
+        document.getElementById('icon-view-container').style.display = isMap ? 'none' : 'block';
+        
+        // Update button styles
+        document.getElementById('map-view-btn').className = isMap 
+            ? 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-200'
+            : 'bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-200';
+        document.getElementById('icon-view-btn').className = !isMap 
+            ? 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-200'
+            : 'bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-200';
+            
+        if (!isMap) {
+            // Reset and render Icon View every time it's selected
+            currentPath = [];
+            renderIconView();
+        }
+    }
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Load the saved theme first
+        loadTheme();
+
+        // Render the Map Views
+        document.getElementById('before-tree').innerHTML = renderMapView(FILE_STRUCTURE.BeforeRoot, "Chaotic Root");
+        document.getElementById('after-tree').innerHTML = renderMapView(FILE_STRUCTURE.Desktop, "Desktop Root");
+
+        // Attach Map View click handlers
+        document.querySelectorAll('.map-view .folder-item.icon-arrow').forEach(toggler => {
+            toggler.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const nestedList = document.getElementById(targetId);
+                if (nestedList) {
+                    nestedList.classList.toggle('active');
+                }
+                this.classList.toggle('is-open');
+            });
+        });
+
+        // Attach Control Handlers
+        document.getElementById('map-view-btn').addEventListener('click', () => setView('map'));
+        document.getElementById('icon-view-btn').addEventListener('click', () => setView('icon'));
+        document.getElementById('randomize-theme-btn').addEventListener('click', randomizeTheme);
+        document.getElementById('save-theme-btn').addEventListener('click', saveTheme);
+        document.getElementById('icon-view-back-btn').addEventListener('click', () => {
+            currentPath.pop();
+            renderIconView();
+        });
+        
+        // Initial setup for Icon View back button (since it's not a folder)
+        BACK_BTN.addEventListener('click', () => {
+            currentPath.pop();
+            renderIconView();
+        });
+
+        // Set initial view
+        setView('map');
+    });
+
+</script>
+
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

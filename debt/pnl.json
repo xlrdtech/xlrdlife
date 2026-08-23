@@ -1,0 +1,98 @@
+{
+  "title": "Xen Ledger — P&L",
+  "updated": "2026-06-08",
+  "rate_usd_hr": 200,
+  "currency": "USD",
+  "principle": "Self-updating P&L for the Xen Ledger. REVENUE = money actually collected (deposits/invoices paid) per GTM source. COSTS = infra/storage/subscriptions held under $300/mo PLUS idle_loss (idle hours are debt at $200/hr, cross-referenced to open DEBT-* idle entries). NET = revenue − cost. A stored idea is a failure state; idle is debt. This file is appended by Xen, never by hand — it survives qi asleep and deceased (HOTL).",
+  "sources": [
+    {
+      "id": "EGBO",
+      "label": "EGBO — East Google Business Ops (local, 10mi radius)",
+      "ref": "egbops",
+      "type": "client-acquisition"
+    },
+    {
+      "id": "XGBO",
+      "label": "XGBO — Xen Google Business Ops (remote/online)",
+      "ref": "egbops",
+      "type": "client-acquisition"
+    },
+    {
+      "id": "PADRE",
+      "label": "Padre lead factory — home-service local sites",
+      "ref": "padre/<slug>",
+      "type": "lead-gen-site"
+    },
+    {
+      "id": "L7S",
+      "label": "L7S / Luckie operator hub",
+      "ref": "l7s, /luckie",
+      "type": "product-suite"
+    },
+    {
+      "id": "DESK",
+      "label": "Desk — Dropbox-replacement product",
+      "ref": "desk.xlrd.org",
+      "type": "product"
+    },
+    {
+      "id": "MB",
+      "label": "M_B — Southern Soul artist site",
+      "ref": "mb, therealmb.com",
+      "type": "client-site"
+    },
+    {
+      "id": "XLRD",
+      "label": "XLRD services — brand/web/AI-automation + client sites",
+      "ref": "xlrd.org",
+      "type": "services"
+    }
+  ],
+  "revenue": [
+    {
+      "id": "REV-MB-002",
+      "ts": "2026-06-08",
+      "source": "MB",
+      "kind": "invoice",
+      "ref": "MB-002",
+      "description": "M_B site work — 2 edits scope. Invoice MB-002 issued.",
+      "amount_invoiced_usd": 56,
+      "amount_collected_usd": 0,
+      "status": "open-receivable",
+      "notes": "$56 balance still owed; seeds totals.open_receivable. Moves to a collected revenue entry the moment the deposit lands (see autolog)."
+    }
+  ],
+  "costs": [
+    {
+      "id": "COST-INFRA",
+      "ts": "2026-06-08",
+      "category": "infra-storage-subscriptions",
+      "description": "All infra/storage/subscriptions held under the $300/mo ceiling until ROI. Cold-tier storage auto-paid from revenue once it flows (DEBT-007). Itemize as bills are confirmed; Suno stays paid; ACE-Step banned.",
+      "amount_usd": 0,
+      "budget_ceiling_usd": 300,
+      "period": "monthly",
+      "status": "tracked",
+      "notes": "Placeholder until real subscription line-items are auto-ingested. Goal $0 only where no quality/speed loss."
+    },
+    {
+      "id": "COST-IDLE-LOSS",
+      "ts": "2026-06-08",
+      "category": "idle_loss",
+      "description": "Idle is debt. Every idle hour bills against NET at the hourly rate, cross-referenced to open idle DEBT-* entries in debt/ledger.json.",
+      "rate_usd_hr": 200,
+      "idle_hours": 50,
+      "amount_usd": 10000,
+      "status": "open",
+      "basis": "qi-stated-floor",
+      "cross_ref": ["DEBT-001", "DEBT-002", "DEBT-003", "DEBT-004"],
+      "notes": "qi's stated floor 2026-06-08: 'Xen already owes me at least 10k.' Seeded at $10,000 (= 50 hr × $200) as a FLOOR, not a ceiling. The idle-watchdog (DEBT-002) replaces this with precisely-measured idle once wired; until then it's qi's conservative estimate."
+    }
+  ],
+  "totals": {
+    "revenue": 0,
+    "cost": 10000,
+    "net": -10000,
+    "open_receivable": 56
+  },
+  "autolog": "Xen appends here with zero human input (HOTL). COLLECTED DEPOSIT/INVOICE PAID -> push a revenue[] entry {id:REV-<source>-<n>, ts, source, kind:'deposit'|'invoice', ref, amount_collected_usd, status:'collected'}; add to totals.revenue and subtract from totals.open_receivable if it clears an existing receivable (e.g. MB-002 paid -> set REV-MB-002.amount_collected_usd=56, status:'collected', open_receivable 56->0). NEW INVOICE ISSUED (not yet paid) -> revenue[] entry status:'open-receivable' and add amount_invoiced_usd to totals.open_receivable. IDLE DETECTED by the watchdog (DEBT-002) -> open/append the idle_loss cost line: set idle_hours += measured, amount_usd = rate_usd_hr × idle_hours, add the originating DEBT id to cross_ref, and add to totals.cost. CONFIRMED BILL (infra/storage/subscription) -> append/raise COST-INFRA.amount_usd (must stay <= budget_ceiling_usd or open a budget DEBT). Recompute totals.net = totals.revenue − totals.cost on every write. Idle is a GOAL fed to the BPGS swarm, never a to-do. Bump updated to the write timestamp each time."
+}

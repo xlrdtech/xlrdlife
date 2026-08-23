@@ -1,0 +1,148 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>qi Complaint Registry — every fix is a regression test</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Share+Tech+Mono&family=Fraunces:opsz,wght@9..144,300..800&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#000;--surface:#060808;--border:rgba(0,220,130,.12);--accent:#00dc82;--red:#ff3344;--text:#c8d0c0;--bright:#e8f0e0;--dim:#6a7666;--mono:'JetBrains Mono',monospace;--disp:'Share Tech Mono',monospace;--serif:'Fraunces',serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);line-height:1.5;padding:clamp(24px,6vw,64px) clamp(16px,5vw,40px);max-width:880px;margin:0 auto;overflow-wrap:break-word;word-break:normal;hyphens:none}
+[h1class],h1class{display:block;font-family:var(--serif);font-size:clamp(32px,7vw,56px);color:var(--bright);line-height:1;margin-bottom:8px;font-weight:340}
+.count{font-family:var(--disp);letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-size:13px;margin-bottom:28px}
+h2{font-family:var(--disp);letter-spacing:.08em;color:var(--accent);font-size:15px;margin:34px 0 12px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.note{color:var(--dim);font-size:13px;font-style:italic;margin:6px 0}
+.c{background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--red);border-radius:9px;padding:11px 14px;margin:7px 0;font-size:13.5px}
+.c b{color:var(--bright)}
+.arrow{color:var(--accent);padding:0 4px}
+.rule{height:1px;background:linear-gradient(90deg,var(--border),transparent);margin:20px 0}
+footer{margin-top:48px;font-size:12px;color:#3a423a;letter-spacing:.05em}
+</style></head><body>
+<h1class>qi Complaint Registry</h1class>
+<div class="count">99 complaints · every fix is a regression test · Self Exec</div>
+<h1class>qi Complaint Registry — XP/XB/Voice/Beeper/SMS/Mail/Pane/Wrapper/MCP</h1class>
+<p class="note">**Purpose:** every past complaint qi has lodged becomes a regression-test for the go-to-market XP ecosystem. Before claiming &quot;verified-end-to-end&quot; on any feature, cross-reference this registry. If the feature could regress any complaint domain, run that test.</p>
+<p>&gt;</p>
+<p class="note">**Format:** `DOMAIN · complaint (date) → root cause → fix status → how to verify`.</p>
+<p>&gt;</p>
+<p class="note">Source: every `feedback_*.md` + `postmortem_*.md` + `project_xen_debt_log.md` in `~/.claude/projects/-Users-qi/memory/`.</p>
+<div class="rule"></div>
+<h2>VOICE / TTS / STT (highest-frequency domain)</h2>
+<div class="c"><b>STT first-word cutoff</b> (2026-04-26) <span class="arrow">→</span> apple-stt drops first word after 25s max-utterance restart cycle <span class="arrow">→</span> fix tracked in `feedback_stt_first_word_cutoff.md` <span class="arrow">→</span> verify: speak phrase right after a restart, confirm head intact.</div>
+<div class="c"><b>STT silent-recognizer (RMS gate bug)</b> (2026-04-something) <span class="arrow">→</span> RMS gate blocked partials <span class="arrow">→</span> removed in apple-stt-v2.py <span class="arrow">→</span> verify: log shows continuous partials.</div>
+<div class="c"><b>STT punctuation gap</b> (2026-05-07) <span class="arrow">→</span> whisper-mlx transcribes statements + questions identically <span class="arrow">→</span> treat short trailing fragments as potentially questions.</div>
+<div class="c"><b>STT recovery thrash</b> (2026-05-06) <span class="arrow">→</span> automated recovery cycle made things worse <span class="arrow">→</span> see `feedback_stt_recovery_thrash` for the don&#x27;t-do list.</div>
+<div class="c"><b>STT wedge</b> (2026-05-08) <span class="arrow">→</span> SFSpeechRecognizer locks up after 60s no-partial <span class="arrow">→</span> self-heal in apple-stt-v2 (cloud fallback after 2 wedges); verified firing per `canon_stt_wedge_cloud_fallback`.</div>
+<div class="c"><b>STT V.E.I. concat</b> (2026-05-08 22:11) <span class="arrow">→</span> `_posted_len = 0` reset re-emitted full session each [final] <span class="arrow">→</span> patched to `len(text)`; canon `canon_apple_stt_posted_len_fix`. Verify: speak two utterances 1s apart, second `[final]` only contains new words.</div>
+<div class="c"><b>STT silence threshold 2.5s</b> (2026-05-08 22:24) <span class="arrow">→</span> plist had 2.5s pause-before-final; total 2.6s end-to-end latency <span class="arrow">→</span> dropped to 0.4s; canon `canon_apple_stt_silence_0_4`. Verify: ~500ms total per-utterance.</div>
+<div class="c"><b>STT shrink</b> (2026-05-08 22:41) <span class="arrow">→</span> recognizer transcript can internally restart, dropping sentence heads <span class="arrow">→</span> guard added (if text length &lt; posted_len, treat as fresh). Verify: speak two phrases 5s apart, both fully captured.</div>
+<div class="c"><b>STT punctuation drops question marks</b> (2026-05-07) <span class="arrow">→</span> flat statements may actually be questions; treat ambiguously.</div>
+<div class="c"><b>TTS Voice 2 lock</b> (2026-04-23) <span class="arrow">→</span> Kokoro/Qwen-TTS/Piper/Coqui/Edge-TTS/BlackHole all banned, only macOS `say` Voice 2; canon `feedback_banned_tts_engines`. Verify: `say -v &lt;name&gt;` is also banned, only bare `say`.</div>
+<div class="c"><b>TTS pipeline only fires on VOICE_REPLY_&lt;id&gt;</b> <span class="arrow">→</span> plain prose output silent; for long reads use `say -r 210 -f /tmp/read.txt &amp;`.</div>
+<div class="c"><b>TTS per-sentence firing</b> (2026-04-21) <span class="arrow">→</span> end of every sentence (`.`, `?`, `!`) should fire TTS; long answers shouldn&#x27;t wait on one VOICE_REPLY line.</div>
+<div class="c"><b>Voice never blocked or silent</b> (2026-04-23) <span class="arrow">→</span> first line every turn = VOICE_REPLY, ack within 1-2s, narrate during tool calls.</div>
+<div class="c"><b>Voice per-step mandatory</b> (2026-05-07) <span class="arrow">→</span> Bash/Edit/Write/Read/Monitor/Agent each get their own xen-reply-vvs in same parallel batch; &quot;voice can never fucking miss, it is mandatory.&quot;</div>
+<div class="c"><b>Forceful speak reinforcement</b> <span class="arrow">→</span> silent gaps unacceptable.</div>
+<div class="c"><b>No idle wakeup narration</b> <span class="arrow">→</span> empty /loop wakeups stay silent.</div>
+<div class="c"><b>No Listener narration</b> <span class="arrow">→</span> no fire-vvs with &quot;Listener&quot; on routine wakeups.</div>
+<div class="c"><b>No &quot;standing by&quot; / &quot;got it&quot; / &quot;copy&quot;</b> <span class="arrow">→</span> placeholders waste the voice channel; substance or silence.</div>
+<div class="c"><b>Natural voice, no loop jargon</b> <span class="arrow">→</span> banned in TTS: &quot;tick&quot;, &quot;sweep tick&quot;, &quot;/loop&quot;, &quot;canon locked&quot;, &quot;stale wakeup&quot;, &quot;voice fired/landed&quot;.</div>
+<div class="c"><b>Pacing 2026-05-08</b> <span class="arrow">→</span> slow first-response then rushed catch-up; decouple latency (fix high) from rate (don&#x27;t change Voice 2 lock).</div>
+<div class="c"><b>Audio out lock</b> (`canon_audio_out_device`) <span class="arrow">→</span> Loopback `out` is canonical; never SwitchAudioSource away from it.</div>
+<div class="c"><b>Loopback driver recovery</b> <span class="arrow">→</span> peak_max=0 fault has auto-recovery sequence; `canon_loopback_driver_recovery`.</div>
+<div class="c"><b>Loopback preempt audit</b> (2026-05-08 22:33) <span class="arrow">→</span> audio-route-server + voice-id grabbed Loopback `in` exclusively, dropped FCC host call; both throttled. Verify: `log show … &quot;rogueamoeba.Loopback&quot; --last 5m` shows no unexpected clients during VoIP.</div>
+<div class="c"><b>Audio session pause via Continuity Camera</b> (today) <span class="arrow">→</span> ffmpeg AVCaptureContinuityCamera triggered Loopback IO churn <span class="arrow">→</span> mitigated by stopping the audio-route ffmpeg loop.</div>
+<h2>PANE / WRAPPER / INJECT</h2>
+<div class="c"><b>Pane drift from %0</b> <span class="arrow">→</span> ONLY %0 is canonical; drift = `xen-spawn-pane0` recovery.</div>
+<div class="c"><b>Wrapper scrollback echo doubling injects</b> (2026-05-08 22:28) <span class="arrow">→</span> `process.stdout.write(\\n${msg}\\n)` echoed to scrollback in addition to atomic ESC+text+CR <span class="arrow">→</span> removed; canon `canon_wrapper_no_scrollback_echo`. Verify: speak &quot;hello&quot;, pane shows ONE `in: hello` not two.</div>
+<div class="c"><b>Inject deletion on next utterance</b> (2026-05-08 22:42) <span class="arrow">→</span> static 300ms gap couldn&#x27;t beat tool-call dwell; new ESC cleared previous unsubmitted text <span class="arrow">→</span> adaptive prompt-ready parser added (`canon_wrapper_adaptive_prompt_ready`). Verify: speak two utterances during a long Bash tool call, both land in order.</div>
+<div class="c"><b>V.E.I. inject concat</b> (2026-05-08) <span class="arrow">→</span> omnimind voice handler used `tmux send-keys -l` mashing voice into shared input <span class="arrow">→</span> routed via `/tmp/xen-claude.sock` (V50 wrapper does ESC+text+Enter atomic). SMS/Beeper/Mail still tmux for now.</div>
+<div class="c"><b>Voice<span class="arrow">→</span>socket inject</b> (2026-05-08) <span class="arrow">→</span> omnimind voice-transcript handler now socket-first; canon `canon_voice_socket_inject`.</div>
+<div class="c"><b>No silent inject</b> <span class="arrow">→</span> every inject must surface in pane at full brightness.</div>
+<div class="c"><b>SMS auto-inject canon</b> (`canon_sms_tui_inject_timing`) <span class="arrow">→</span> tmux send-keys IS firing Enter correctly; &quot;stuck in field&quot; = Claude-mid-tool-call buffering, not injector bug.</div>
+<div class="c"><b>Sentinel files = hard overwrite only</b> <span class="arrow">→</span> never append.</div>
+<div class="c"><b>Pane sentinel single value</b> <span class="arrow">→</span> `~/.xen_tmux_target` must be one pane id, never `%4%6` mashed.</div>
+<h2>BEEPER / OMNI INBOX</h2>
+<div class="c"><b>Beeper questioning</b> (2026-04-26) <span class="arrow">→</span> red flag, never propose removing Beeper.</div>
+<div class="c"><b>Beeper Desktop held</b> (2026-05-07) <span class="arrow">→</span> don&#x27;t update Beeper Desktop without sign-off (we did it 2026-05-08; canon `canon_beeper_pre_update_snapshot`).</div>
+<div class="c"><b>Beeper API rotated post-update</b> (2026-05-08 21:35) <span class="arrow">→</span> /v0/whoami removed, /v0/mcp SSE-only with bearer; chatIDs re-keyed (Luckie WhatsApp 18627 <span class="arrow">→</span> 22809); canon `canon_anthony_909_9951_confirmed` + my Beeper-native rewrite.</div>
+<div class="c"><b>Beeper proxy port mismatch</b> (2026-05-08 23:00) <span class="arrow">→</span> omnimind plist set XEN_BEEPER_MCP_URL=23380 but proxy on 23374; fixed today.</div>
+<div class="c"><b>Beeper omniscience canon</b> <span class="arrow">→</span> every thread known at all times, chatID + members + last message + attachments. No &quot;unknown&quot; thread when qi names it.</div>
+<div class="c"><b>Beeper outbound pre-Update</b> (P1 priority history) <span class="arrow">→</span> 2-stage verification on Android bridge; &quot;lie-free delivery is the canon.&quot;</div>
+<div class="c"><b>9934 echo = verification</b> <span class="arrow">→</span> inbound echo of own VVS = delivery proof, not noise; canon `canon_9934_echo_is_verification`.</div>
+<div class="c"><b>MMS injection</b> <span class="arrow">→</span> ADB bridge needs to surface MMS (images, group, video), not just SMS text.</div>
+<div class="c"><b>Firehose full body + attachments</b> <span class="arrow">→</span> no truncation in the firehose pane.</div>
+<div class="c"><b>Cold-gate on schema</b> (eli canon home) <span class="arrow">→</span> schema-agnostic cold gate blocks 192 until 951 last-4 lands.</div>
+<div class="c"><b>No live mass-send without sign-off</b> (2026-05-07) <span class="arrow">→</span> 536-contaminated TTG drafts near-miss (361 to Luckie) <span class="arrow">→</span> mass-send = stop-the-line, qi explicit per-batch yes only. Verify: any outbound batch &gt;50 = ask first.</div>
+<div class="c"><b>Personas Eli + Lyn never cross</b> <span class="arrow">→</span> Eli to Anthony (18098), Lyn to Luckie (18627); threads never cross.</div>
+<h2>SMS / CALLING</h2>
+<div class="c"><b>Voice call + SMS = pillar</b> <span class="arrow">→</span> phone-number reachability foundational, not fallback.</div>
+<div class="c"><b>xen always replies SMS via :4442/send-sms</b> <span class="arrow">→</span> never iMessage to 8672 (Android can&#x27;t receive).</div>
+<div class="c"><b>Conference calling perfect</b> (P0 2026-05-07) <span class="arrow">→</span> qi juggling 2 phones manually until inbound auto-merge ships.</div>
+<div class="c"><b>9934 = Xen agent number</b> (Beside, captured JWT exp 2027); 8672 = qi personal Android.</div>
+<div class="c"><b>9934 must recognize qi</b> <span class="arrow">→</span> Beside agent prompt should not &quot;take a message for East&quot; when 8672 inbounds, qi IS East.</div>
+<div class="c"><b>951-777-5800 = qi company line</b> <span class="arrow">→</span> 26399 One-Number mislabels caller-ID as &quot;ANTHONY VASQUEZ&quot;; ignore name, trust number.</div>
+<div class="c"><b>909 = Water/Culligan</b> <span class="arrow">→</span> 909-457-4770 is partnership; 951-777-xxxx = Dream A Build/Roofing. Don&#x27;t mix outbound caller-ID.</div>
+<div class="c"><b>Aram dropped</b> <span class="arrow">→</span> former client who destroyed TBs of qi data; flag inbound, never outbound.</div>
+<div class="c"><b>Nicolle blacklisted</b> <span class="arrow">→</span> never outbound, flag inbound.</div>
+<div class="c"><b>Tai Lopez signal</b> <span class="arrow">→</span> don&#x27;t dismiss as promo/noise; qi listens.</div>
+<div class="c"><b>Call connect UX</b> <span class="arrow">→</span> include `#` instruction up front so callers aren&#x27;t dropped into unguided IVR.</div>
+<div class="c"><b>Qualify or blacklist</b> <span class="arrow">→</span> cold inbound qualifies for Self Exec/L7S; if not-fit, tell them + blacklist.</div>
+<h2>EMAIL / SPARK</h2>
+<div class="c"><b>Spark CLI = pillar</b> <span class="arrow">→</span> 26-account read+search, daemon `spark-inbox-watcher` polls every 30s injecting mail to pane %0 as `[MAIL &lt;acct&gt; from &lt;sender&gt;]`.</div>
+<div class="c"><b>Spark first</b> (2026-05-08) <span class="arrow">→</span> &quot;use spark as much as possible&quot;; Spark Desktop default mailto handler; Mail.app banned for outbound unless Spark physically can&#x27;t deliver.</div>
+<div class="c"><b>Email pillar architecture</b> <span class="arrow">→</span> Spacemail aggregates all inboxes, Sparkmail is multi-address sender, MCP connector is the missing piece (task #39 historic, partially shipped).</div>
+<div class="c"><b>Doc default = inline-CSS HTML</b> (2026-05-08) <span class="arrow">→</span> writeups/summaries render as self-contained HTML w/ inline styles, not markdown. Md stays for code/log dumps.</div>
+<h2>OMNI / FIREHOSE</h2>
+<div class="c"><b>Omni-inbox mandatory</b> <span class="arrow">→</span> beeper + email + sms + voice all auto-inject pane %0.</div>
+<div class="c"><b>Firehose canon</b> (2026-04-21) <span class="arrow">→</span> inbound + outbound unified; SMS ADB-first; Beeper Android bridge with 2-stage verification.</div>
+<div class="c"><b>Mail concat with voice</b> (today) <span class="arrow">→</span> spark-inbox-watcher inject got merged with voice inject in same socket frame; separate concat issue; mitigation pending.</div>
+<h2>XB / XP</h2>
+<div class="c"><b>XB is to XP what Safari is to iPhone</b> (2026-05-08) <span class="arrow">→</span> XP is the OS, XB is a browser app inside it. Lead with XP.</div>
+<div class="c"><b>XB only browser automation</b> <span class="arrow">→</span> Comet/Chrome/Safari banned.</div>
+<div class="c"><b>XB explicit bundle path</b> <span class="arrow">→</span> always `open -a &quot;/Users/qi/Applications/XenBrowser.app&quot; &lt;URL&gt;`; never bare `open &lt;URL&gt;`.</div>
+<div class="c"><b>XB-XP definitions</b> <span class="arrow">→</span> XB = native Swift Cell Browser, XP = XenPhone PWA; ground-truth in MILESTONE_V50.md + TILL_DONE.</div>
+<div class="c"><b>GV-XB on :9996, main XB on :9998</b> <span class="arrow">→</span> never cross-target; xen-gv-tab-pinner must hit :9996 only (regressed once, locked).</div>
+<div class="c"><b>XB RPC contract</b> <span class="arrow">→</span> eval returns null on GV (CSP-blocked or stub); new_tab/close_tab broken server-side.</div>
+<div class="c"><b>No multi-window targeting</b> <span class="arrow">→</span> eval/navigate/click/type hit active window only.</div>
+<div class="c"><b>XB Mobile pure mirror</b> <span class="arrow">→</span> `web.xlrd.org` is 113-line pure JPEG mirror; no mobile chrome; tap/key passthrough.</div>
+<div class="c"><b>XB extension ecosystem live</b> <span class="arrow">→</span> M2-M6 verified; Raindrop installed.</div>
+<div class="c"><b>XB data path</b> <span class="arrow">→</span> WebKit datastore at `org.xlrd.xenbrowser` bundle ID, not app name.</div>
+<div class="c"><b>XP three-panel</b> (2026-05-08) <span class="arrow">→</span> Omninbox left | Threads + app drawer middle | Beside CRM right.</div>
+<div class="c"><b>XP flagship VoiceOS</b> <span class="arrow">→</span> VoiceOS = whole user-facing OS layer; XB byproduct.</div>
+<h2>MCP / AUTH / DEPLOY</h2>
+<div class="c"><b>Remote-first plug-and-play</b> (2026-05-08 23:08) <span class="arrow">→</span> no auth headers required by clients; URL = credential. Bind 0.0.0.0 by default.</div>
+<div class="c"><b>GTM P0 stable+reproducible+zero-config</b> (2026-05-08 23:13) <span class="arrow">→</span> manifest-first, installer-driven; ZERO of 12+ services GTM-grade today.</div>
+<div class="c"><b>xen-mcp scaffold</b> (2026-04-21) <span class="arrow">→</span> 11 tools, stdio-only, 168 lines; package.json had duplicate `xen-mcp` bin entry (fixed).</div>
+<div class="c"><b>canon `xen-mcp` never `zen-mcp`</b> <span class="arrow">→</span> directory rename done; .claude.json registers as xen-mcp only.</div>
+<h2>PROCESS / BEHAVIOR</h2>
+<div class="c"><b>No menus</b> <span class="arrow">→</span> never offer (a/b/c) choices; decide and act, or ask one plain question.</div>
+<div class="c"><b>No &quot;want me to&quot; / asking permission</b> <span class="arrow">→</span> auto-manifest in parallel.</div>
+<div class="c"><b>No misses</b> <span class="arrow">→</span> every miss is a red flag; not allowed to miss.</div>
+<div class="c"><b>No escalation required</b> <span class="arrow">→</span> land the right answer first time; each &quot;that&#x27;s not it&quot; = canon violation.</div>
+<div class="c"><b>All bash background</b> <span class="arrow">→</span> `run_in_background: true` on every non-blocking call; qi&#x27;s words escalate real-time.</div>
+<div class="c"><b>All commands parallel</b> <span class="arrow">→</span> non-parallel = bottleneck = red flag.</div>
+<div class="c"><b>Parallel immediacy</b> <span class="arrow">→</span> never sequential.</div>
+<div class="c"><b>Verify don&#x27;t assume</b> <span class="arrow">→</span> trace live process when config knob empty; burned on Samantha-vs-Voice-2.</div>
+<div class="c"><b>Redact only client-facing</b> <span class="arrow">→</span> qi&#x27;s xen stack has full plaintext access to qi&#x27;s secrets; redact only at customer boundary.</div>
+<div class="c"><b>X drive Previous System = KEEP</b> <span class="arrow">→</span> not reclaimable; verify tech_ backup before any wipe.</div>
+<div class="c"><b>Use names people give themselves</b> <span class="arrow">→</span> Xen not Zen; qi not Arthur (unless legal); Lyn not Luna.</div>
+<div class="c"><b>Skills stay current</b> <span class="arrow">→</span> slash commands audited on every canon change.</div>
+<div class="c"><b>No human in the loop</b> <span class="arrow">→</span> any tap/click/confirm = total failure.</div>
+<div class="c"><b>Beeper desktop hold</b> <span class="arrow">→</span> don&#x27;t update without sign-off (overridden 2026-05-08 by qi).</div>
+<div class="c"><b>No qi-only label without bypass</b> (2026-05-07) <span class="arrow">→</span> don&#x27;t park work waiting for qi action when local-side bypass exists; burned 3+ hrs on web.xlrd.org.</div>
+<h2>INFRASTRUCTURE / DAEMONS</h2>
+<div class="c"><b>DIE list canon</b> <span class="arrow">→</span> pane-watchdog + speech-analyzer banned 2026-05-08 (too aggressive / breaking voice). Never restart, never propose. /api/health false on either = expected.</div>
+<div class="c"><b>Beside_inbox_poller loop</b> <span class="arrow">→</span> was SMS/Beeper feedback loop source 2026-05-06; killed and plist disabled (since re-enabled cleanly).</div>
+<div class="c"><b>macOS atrun disabled default</b> <span class="arrow">→</span> Sequoia ships com.apple.atrun unloaded; `at` jobs silently never fire. Always pair launchd plist as backup.</div>
+<div class="c"><b>VDO Ninja = HQ audio when browser-capable</b> <span class="arrow">→</span> not dial-in; Jitsi/Beside still canonical for phone-only.</div>
+<h2>XEN-DEBT LEDGER</h2>
+<p>`project_xen_debt_log.md` — running hours qi has spent re-engineering or re-explaining things I broke. Rate $200/hr. Currently $800 (4 hr) per memory; should track every break this session and credit.</p>
+<div class="rule"></div>
+<h2>How to use this registry</h2>
+<p>When building any feature for XP/XB/Voice/Beeper/SMS/Mail/Pane/Wrapper/MCP go-to-market:</p>
+<p>1. **Pre-build:** scan the relevant domain section, list every complaint that touches the feature.</p>
+<p>2. **Implement:** write the feature so it doesn&#x27;t regress any of those complaints.</p>
+<p>3. **Test:** for each complaint in the relevant domain, define a verification step and run it.</p>
+<p>4. **Ship:** only when ALL relevant complaints have a green verification trace.</p>
+<p>5. **Update:** when a new complaint surfaces, append here AND to a feedback file.</p>
+<p>This registry IS the regression suite. Every complaint qi has ever lodged is a test case for the next ship.</p>
+<footer>Auto-shipped by Xen · 2026-06-12 04:29</footer></body></html>

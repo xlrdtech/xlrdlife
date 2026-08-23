@@ -1,0 +1,98 @@
+<title>Xen Architecture — JetStream Event Sourcing</title>
+<style>
+  :root{--bg:#0a0b0f;--card:#14161d;--ink:#e8eaf0;--dim:#9aa0b0;--acc:#5eead4;--acc2:#818cf8;--line:#242836;--warn:#fbbf24}
+  @media(prefers-color-scheme:light){:root{--bg:#f6f7fb;--card:#fff;--ink:#14161d;--dim:#5a6072;--acc:#0d9488;--acc2:#4f46e5;--line:#e3e6ef;--warn:#b45309}}
+  :root[data-theme=dark]{--bg:#0a0b0f;--card:#14161d;--ink:#e8eaf0;--dim:#9aa0b0;--acc:#5eead4;--acc2:#818cf8;--line:#242836;--warn:#fbbf24}
+  :root[data-theme=light]{--bg:#f6f7fb;--card:#fff;--ink:#14161d;--dim:#5a6072;--acc:#0d9488;--acc2:#4f46e5;--line:#e3e6ef;--warn:#b45309}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+  .wrap{max-width:840px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:1.7rem;line-height:1.2;margin:0 0 4px;letter-spacing:-.02em}
+  .sub{color:var(--dim);font-size:.95rem;margin:0 0 26px}
+  h2{font-size:1.15rem;margin:30px 0 8px;letter-spacing:-.01em}
+  h2 .n{color:var(--acc2);font-variant-numeric:tabular-nums;margin-right:.45em}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:12px 0}
+  .tldr{border-left:3px solid var(--acc);background:rgba(94,234,212,.07)}
+  .warn{border-left:3px solid var(--warn);background:rgba(251,191,36,.07)}
+  code{background:rgba(129,140,248,.13);color:var(--acc);padding:1px 6px;border-radius:5px;font:.86em ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-word}
+  strong{color:var(--ink)}
+  ul{margin:6px 0;padding-left:22px}li{margin:5px 0}
+  .flow{overflow-x:auto;margin:10px 0}
+  .flow code{white-space:nowrap;display:inline-block;padding:8px 12px}
+  hr{border:0;border-top:1px solid var(--line);margin:26px 0}
+</style>
+<div class="wrap">
+  <h1>Xen Architecture — JetStream as Source of Truth</h1>
+  <p class="sub">Event-sourcing spec for all execution events. qi decree, 2026-07-22. The standard all live-data / state / execution work follows.</p>
+
+  <div class="card tldr">
+    <strong>Core principle:</strong> <strong>NATS JetStream is the durable, append-only source of truth for every execution event.</strong> Browsers, agent sessions, and WebSocket connections are <em>projections</em> — never authoritative. Everything downstream is a fast read-model rebuilt from the log.
+  </div>
+
+  <h2><span class="n">1</span>Source of truth</h2>
+  <div class="card">
+    <ul>
+      <li>JetStream = durable append-only log for ALL execution events; project into <strong>fast read-models</strong>. Never treat browser / agent session / WSS socket as source of truth.</li>
+      <li>Persists with configurable stream + consumer behavior; <code>Nats-Msg-Id</code> header for dedup.</li>
+      <li><strong>No context lost</strong> when a cloud seat, phone, remote host, or browser restarts.</li>
+      <li>WSS clients reconnect with a <strong>stored JetStream cursor</strong> → receive missed events → resume live.</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">2</span>Observability plane</h2>
+  <div class="card">
+    Keep the existing <strong>OTEL collector + OpenObserve</strong>. Same <strong>trace IDs + event envelopes</strong> so one tool action follows across the whole chain:
+    <div class="flow"><code>WSS → NATS → browser adapter → terminal → worker</code></div>
+    OTEL collectors support retries, queues, batching, and transformation/redaction before export.
+  </div>
+
+  <h2><span class="n">3</span>Command flow (CQRS)</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Never run durable work directly on a WSS message.</strong></li>
+      <li>A WSS command becomes a <strong>durable command-event first</strong> (persisted to JetStream), then executes.</li>
+      <li>The gateway returns <code>accepted</code> <strong>as soon as JetStream persists</strong> it — ack-on-persist, not ack-on-execute.</li>
+      <li>Publisher-side dedup via <code>Nats-Msg-Id</code> = your stable event ID. Per-subject discard policies for unbounded-dedup where apt.</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">4</span>Universal event envelope + schema</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Protobuf or JSON Schema for every type</strong>; codegen <strong>TypeScript + Python + Zig</strong> (schema = single source).</li>
+      <li>Payloads <strong>≤ 256 KB</strong>. Versioning: <strong>backward-compat only, additive OK, breaking → V2</strong>.</li>
+      <li>Binary / large raw evidence → <strong>encrypted object storage + signed evidence-ref</strong> (the ref rides the message, not the blob).</li>
+      <li><strong>Secrets NEVER in payloads</strong> — vault references + non-sensitive metadata only.</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">5</span>Subject model</h2>
+  <div class="card">
+    Do NOT put raw user strings, account names, URLs, or tokens into subject components. <strong>Subjects are routing keys, not a database / not state.</strong>
+  </div>
+
+  <h2><span class="n">6</span>State = event log + projection</h2>
+  <div class="card tldr">
+    <ul>
+      <li><strong>Canon is a PROJECTION, never a hand-maintained competing source of truth.</strong></li>
+      <li>Agents read a <strong>materialized Canon snapshot first, then subscribe to changes</strong>.</li>
+      <li>Keep <strong>verbatim first-source records chunked + indexed</strong>. Summaries are <em>derived navigation aids</em>, never replacements for raw terminal / browser / tool records.</li>
+      <li><strong>Snapshot events every N events + on workflow terminal state</strong> → new seats load current state in milliseconds, then <strong>replay only the delta</strong>.</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">7</span>Browser &amp; HTTP discovery</h2>
+  <div class="card">
+    <ul>
+      <li>Enroll a <strong>dedicated, owned browser profile</strong> into a <strong>loopback-only explicit interception proxy</strong>.</li>
+      <li>Record <strong>raw flows only to local encrypted evidence storage</strong>.</li>
+      <li><strong>Keep normal personal browsing, SSH, Tailscale, remote-desktop OUT of it.</strong></li>
+      <li>Publish only <strong>sanitized to JetStream</strong>: endpoint, method, schema-fingerprint, status, timing, evidence-ref. Never raw bodies / secrets on the bus.</li>
+    </ul>
+  </div>
+
+  <hr>
+  <div class="card warn">
+    <strong>Build status (honest):</strong> This is the TARGET architecture. Already in-stack: NATS JetStream MCP + NATS bridge, OTLP collector + OpenObserve. The live system today is <strong>SSE-projection-only</strong> — it does not yet have the durable JetStream log beneath it. Not-yet-built: the command-event gateway (ack-on-persist), the typed envelope schemas + codegen, JetStream-backed projections, snapshot/delta cold-start, and the owned-profile discovery proxy.
+  </div>
+</div>

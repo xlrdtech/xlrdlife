@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>L7CheckMark: HERO</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* Custom Animations */
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fade-in-up 0.4s ease-out forwards;
+        }
+        
+        /* Disable text selection for better app-feel on mobile */
+        .select-none {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Ensure smooth touch interactions */
+        .touch-manipulation {
+            touch-action: manipulation;
+        }
+
+        /* Hide scrollbar for clean UI but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- INTERNAL ICON COMPONENTS (Replacing Lucide to fix loading errors) ---
+        const Icon = ({ children, size = 20, className = "", ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+                {...props}
+            >
+                {children}
+            </svg>
+        );
+
+        const Check = (props) => <Icon {...props}><polyline points="20 6 9 17 4 12" /></Icon>;
+        const Trash2 = (props) => <Icon {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
+        const Plus = (props) => <Icon {...props}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
+        const X = (props) => <Icon {...props}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Icon>;
+        const Square = (props) => <Icon {...props}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></Icon>;
+        const ArrowUp = (props) => <Icon {...props}><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></Icon>;
+        const ArrowDown = (props) => <Icon {...props}><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></Icon>;
+        const PieChart = (props) => <Icon {...props}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></Icon>;
+        const BookOpen = (props) => <Icon {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const Activity = (props) => <Icon {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></Icon>;
+        const Clipboard = (props) => <Icon {...props}><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></Icon>;
+        const ClipboardPaste = (props) => <Icon {...props}><path d="M15 2H9a1 1 0 0 0-1 1v2c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V3c0-.6-.4-1-1-1Z"/><path d="M8 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-4"/></Icon>;
+        const Type = (props) => <Icon {...props}><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></Icon>;
+        const MousePointer = (props) => <Icon {...props}><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></Icon>;
+        const Zap = (props) => <Icon {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
+
+        // --- Custom 3D Gold Logo ---
+        const GoldLogo = ({ size = 32, className = "" }) => (
+            <svg 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg" 
+                className={`transform ${className}`}
+            >
+                <defs>
+                    <linearGradient id="metallic-gold" x1="2" y1="4" x2="22" y2="20" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stopColor="#FCD34D" />
+                        <stop offset="0.3" stopColor="#F59E0B" />
+                        <stop offset="0.7" stopColor="#B45309" />
+                        <stop offset="1" stopColor="#78350F" />
+                    </linearGradient>
+                    <linearGradient id="metallic-highlight" x1="0" y1="0" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="white" stopOpacity="0.1"/>
+                        <stop offset="50%" stopColor="white" stopOpacity="0.6"/>
+                        <stop offset="100%" stopColor="white" stopOpacity="0.1"/>
+                    </linearGradient>
+                    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="1" dy="2" stdDeviation="1" floodColor="#000" floodOpacity="0.3" />
+                    </filter>
+                </defs>
+                <path 
+                    d="M20 6L9 17L4 12" 
+                    stroke="url(#metallic-gold)" 
+                    strokeWidth="4.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    filter="url(#dropShadow)"
+                />
+                <path 
+                    d="M20 6L9 17L4 12" 
+                    stroke="url(#metallic-highlight)" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    style={{ mixBlendMode: 'overlay' }}
+                />
+            </svg>
+        );
+
+        // --- Hero Component ---
+        const Hero = ({ items }) => {
+            const completedCount = items.filter(i => i.completed).length;
+            const totalCount = items.length;
+            
+            return (
+                <div className="relative w-full bg-gray-900 rounded-3xl p-8 mb-8 overflow-hidden shadow-2xl text-white group">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-600 rounded-full mix-blend-overlay filter blur-3xl opacity-20 animate-pulse -translate-y-1/2 translate-x-1/3"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-900 rounded-full mix-blend-overlay filter blur-3xl opacity-30 translate-y-1/2 -translate-x-1/3"></div>
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="text-center md:text-left">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs font-medium text-yellow-400 mb-3 backdrop-blur-md">
+                                <Zap size={12} fill="currentColor" />
+                                <span>Productivity Boost</span>
+                            </div>
+                            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600">
+                                    Conquer
+                                </span> Your Day
+                            </h1>
+                            <p className="text-gray-400 max-w-md text-lg">
+                                You've completed <span className="text-white font-bold">{completedCount}</span> out of <span className="text-white font-bold">{totalCount}</span> tasks. Keep the momentum going.
+                            </p>
+                        </div>
+
+                        <div className="relative transform transition-transform duration-700 md:group-hover:scale-110 md:group-hover:rotate-6">
+                            <div className="absolute inset-0 bg-yellow-500 blur-2xl opacity-20 rounded-full"></div>
+                            <GoldLogo size={120} className="drop-shadow-2xl" />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Dashboard Component ---
+        const Dashboard = ({ items }) => {
+            const total = items.length;
+            const completed = items.filter(i => i.completed).length;
+            const pending = total - completed;
+            const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    {/* Main Progress Card */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-blue-100 relative overflow-hidden transition-all hover:shadow-md">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">Completion Rate</p>
+                                <h3 className="text-3xl font-bold text-gray-800 mt-1">{percentage}%</h3>
+                            </div>
+                            <div className={`p-2 rounded-lg ${percentage === 100 ? 'bg-green-100 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
+                                <Activity size={24} />
+                            </div>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+                            <div 
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${percentage}%` }}
+                            />
+                        </div>
+                        <p className="text-xs text-gray-400">
+                            {completed} of {total} tasks completed
+                        </p>
+                    </div>
+
+                    {/* Stats Breakdown */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition-all hover:shadow-md">
+                        <div className="flex items-center justify-around text-center">
+                            <div>
+                                <div className="text-2xl font-bold text-purple-600">{pending}</div>
+                                <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">To Do</div>
+                            </div>
+                            <div className="h-10 w-px bg-gray-200"></div>
+                            <div>
+                                <div className="text-2xl font-bold text-green-600">{completed}</div>
+                                <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">Done</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Guide Component ---
+        const GuideSection = () => {
+            const steps = [
+                {
+                    title: "The Paste Method",
+                    icon: Clipboard,
+                    content: (
+                        <div className="space-y-4">
+                            <p>The fastest way to create a checklist from existing notes.</p>
+                            <ol className="space-y-3 list-decimal list-inside bg-blue-50 p-4 rounded-lg text-sm">
+                                <li className="font-medium text-blue-900">Copy your list of items from anywhere (Chat, Docs, etc).</li>
+                                <li className="font-medium text-blue-900">Paste them into the input box above.</li>
+                                <li className="font-medium text-blue-900">The app will automatically detect new lines and create separate items instantly.</li>
+                            </ol>
+                        </div>
+                    )
+                },
+                {
+                    title: "Manual Entry Shortcuts",
+                    icon: Type,
+                    content: (
+                        <div className="space-y-4">
+                            <p>Great for brainstorming directly in the app.</p>
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <p className="font-mono text-xs text-gray-500 mb-2 uppercase">Pro Tip</p>
+                                <p className="text-sm text-gray-700">Just type your task and hit <kbd className="bg-white border px-1 rounded">Enter</kbd>.</p>
+                                <p className="text-sm text-gray-700 mt-2">If you have a multi-line thought, paste it to split it!</p>
+                            </div>
+                        </div>
+                    )
+                },
+                {
+                    title: "Organization",
+                    icon: MousePointer,
+                    content: (
+                        <div className="space-y-4">
+                            <p>Keep your list clean and prioritized.</p>
+                            <ul className="space-y-2 text-sm">
+                                <li className="flex items-center gap-2">
+                                    <ArrowUp size={14} className="text-blue-500" />
+                                    <span>Use arrows to reorder items up/down.</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <Trash2 size={14} className="text-red-500" />
+                                    <span>Clear completed items to focus on what's left.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ];
+
+            return (
+                <div className="grid md:grid-cols-3 gap-6 animate-fade-in-up">
+                    {steps.map((step, idx) => (
+                        <div key={idx} className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-all">
+                            <div className="flex items-center gap-3 mb-4 text-blue-600">
+                                <step.icon size={24} />
+                                <h3 className="font-bold text-gray-800">{step.title}</h3>
+                            </div>
+                            <div className="text-gray-600 leading-relaxed">
+                                {step.content}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        function App() {
+            const [view, setView] = useState('app');
+            
+            // -- Checklist Logic --
+            const [items, setItems] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('canvas-checklist-items');
+                    return saved ? JSON.parse(saved) : [
+                        { id: '1', text: 'Welcome to your Dashboard', completed: false, completedAt: null },
+                    ];
+                } catch (e) {
+                    return [];
+                }
+            });
+            
+            const [inputValue, setInputValue] = useState('');
+            const [filter, setFilter] = useState('all');
+            const inputRef = useRef(null);
+
+            useEffect(() => {
+                localStorage.setItem('canvas-checklist-items', JSON.stringify(items));
+            }, [items]);
+
+            const handlePaste = (e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text');
+                if (pastedData) {
+                    const newLines = pastedData.split(/\r?\n/).filter(line => line.trim() !== '');
+                    const newItems = newLines.map(line => ({
+                        id: crypto.randomUUID(),
+                        text: line.trim(),
+                        completed: false,
+                        completedAt: null
+                    }));
+                    setItems(prev => [...prev, ...newItems]);
+                    setInputValue('');
+                }
+            };
+
+            const handleAdd = () => {
+                if (!inputValue.trim()) return;
+                if (inputValue.includes('\n')) {
+                    const newLines = inputValue.split(/\r?\n/).filter(line => line.trim() !== '');
+                    const newItems = newLines.map(line => ({
+                        id: crypto.randomUUID(),
+                        text: line.trim(),
+                        completed: false,
+                        completedAt: null
+                    }));
+                    setItems(prev => [...prev, ...newItems]);
+                } else {
+                    setItems(prev => [...prev, {
+                        id: crypto.randomUUID(),
+                        text: inputValue.trim(),
+                        completed: false,
+                        completedAt: null
+                    }]);
+                }
+                setInputValue('');
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAdd();
+                }
+            };
+
+            const toggleItem = (id) => {
+                setItems(items.map(item => {
+                    if (item.id === id) {
+                        const isNowCompleted = !item.completed;
+                        return { 
+                            ...item, 
+                            completed: isNowCompleted,
+                            completedAt: isNowCompleted ? Date.now() : null 
+                        };
+                    }
+                    return item;
+                }));
+            };
+
+            const deleteItem = (id) => setItems(items.filter(item => item.id !== id));
+            const clearCompleted = () => setItems(items.filter(item => !item.completed));
+            
+            const moveItem = (index, direction, e) => {
+                e.stopPropagation();
+                const newItems = [...items];
+                if (direction === 'up' && index > 0) {
+                    [newItems[index], newItems[index - 1]] = [newItems[index - 1], newItems[index]];
+                } else if (direction === 'down' && index < newItems.length - 1) {
+                    [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
+                }
+                setItems(newItems);
+            };
+
+            const filteredItems = items.filter(item => {
+                if (filter === 'active') return !item.completed;
+                if (filter === 'completed') return item.completed;
+                return true;
+            });
+
+            return (
+                <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
+                    
+                    {/* Navigation */}
+                    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+                        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+                            
+                            {/* LOGO LOCKUP: ☑️HERO */}
+                            <div className="flex items-center group cursor-pointer" onClick={() => setView('app')}>
+                                <div className="transform transition-transform duration-300 group-hover:scale-110">
+                                    <GoldLogo size={36} /> 
+                                </div>
+                                <span 
+                                    className="font-black text-3xl tracking-tighter text-gray-900 ml-1 leading-none"
+                                    style={{ 
+                                        fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
+                                        transform: 'translateY(1px)'
+                                    }}
+                                >
+                                    HERO
+                                </span>
+                            </div>
+                            
+                            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                                <button 
+                                    onClick={() => setView('app')}
+                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                                        view === 'app' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    <PieChart size={16} /> <span className="hidden sm:inline">Dashboard</span>
+                                </button>
+                                <button 
+                                    onClick={() => setView('guide')}
+                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                                        view === 'guide' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    <BookOpen size={16} /> <span className="hidden sm:inline">Guide</span>
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Main Content */}
+                    <main className="max-w-4xl mx-auto px-4 py-8">
+                        
+                        {/* VIEW: DASHBOARD & APP */}
+                        {view === 'app' && (
+                            <div className="animate-fade-in-up">
+                                
+                                {/* HERO SECTION */}
+                                <Hero items={items} />
+
+                                <Dashboard items={items} />
+
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                                    {/* Input Header */}
+                                    <div className="p-6 bg-gray-50/50 border-b border-gray-100">
+                                        <div className="relative">
+                                            <textarea
+                                                ref={inputRef}
+                                                value={inputValue}
+                                                onChange={(e) => setInputValue(e.target.value)}
+                                                onKeyDown={handleKeyDown}
+                                                onPaste={handlePaste}
+                                                placeholder="Type a task or paste a list here..."
+                                                className="w-full pl-4 pr-12 py-4 rounded-xl border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none h-16 leading-tight outline-none"
+                                            />
+                                            <button
+                                                onClick={handleAdd}
+                                                disabled={!inputValue.trim()}
+                                                className="absolute right-3 top-3 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                            >
+                                                <Plus size={20} />
+                                            </button>
+                                        </div>
+                                        <div className="mt-2 text-xs text-gray-500 flex items-center gap-1 ml-1">
+                                            <ClipboardPaste size={12} />
+                                            <span>Tip: Paste multiple lines to create instant bulk items.</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Filters */}
+                                    <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+                                        <div className="flex gap-2">
+                                            {['all', 'active', 'completed'].map((f) => (
+                                                <button
+                                                    key={f}
+                                                    onClick={() => setFilter(f)}
+                                                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${
+                                                        filter === f ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-100'
+                                                    }`}
+                                                >
+                                                    {f}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {items.some(i => i.completed) && (
+                                            <button onClick={clearCompleted} className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1 font-medium">
+                                                <Trash2 size={12} /> Clear Done
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* List Items */}
+                                    <div className="divide-y divide-gray-50 max-h-[60vh] overflow-y-auto no-scrollbar">
+                                        {filteredItems.length === 0 ? (
+                                            <div className="p-12 text-center text-gray-400">
+                                                <div className="mb-3 mx-auto w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center">
+                                                    <Square size={24} className="opacity-20" />
+                                                </div>
+                                                <p>No tasks found</p>
+                                            </div>
+                                        ) : (
+                                            filteredItems.map((item, index) => (
+                                                <div 
+                                                    key={item.id} 
+                                                    onClick={() => toggleItem(item.id)}
+                                                    className={`
+                                                        group flex items-start gap-3 p-4 cursor-pointer 
+                                                        hover:bg-gray-50 transition-all duration-150
+                                                        active:scale-[0.99] active:bg-blue-50
+                                                        select-none touch-manipulation
+                                                        ${item.completed ? 'bg-gray-50/50' : 'bg-white'}
+                                                    `}
+                                                >
+                                                    {/* Checkbox */}
+                                                    <div
+                                                        className={`mt-1 flex-shrink-0 w-5 h-5 border-2 rounded transition-colors flex items-center justify-center ${
+                                                            item.completed ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+                                                        }`}
+                                                    >
+                                                        {item.completed && <Check size={12} className="text-white" />}
+                                                    </div>
+                                                    
+                                                    <div className="flex-grow min-w-0 pt-0.5">
+                                                        <p className={`text-sm leading-relaxed break-words transition-all ${item.completed ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                                                            {item.text}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        {filter === 'all' && (
+                                                            <div className="flex flex-col gap-0.5 mr-2">
+                                                                <button 
+                                                                    onClick={(e) => moveItem(items.indexOf(item), 'up', e)} 
+                                                                    disabled={items.indexOf(item) === 0} 
+                                                                    className="text-gray-300 hover:text-blue-600 disabled:opacity-0"
+                                                                >
+                                                                    <ArrowUp size={12} />
+                                                                </button>
+                                                                <button 
+                                                                    onClick={(e) => moveItem(items.indexOf(item), 'down', e)} 
+                                                                    disabled={items.indexOf(item) === items.length - 1} 
+                                                                    className="text-gray-300 hover:text-blue-600 disabled:opacity-0"
+                                                                >
+                                                                    <ArrowDown size={12} />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                deleteItem(item.id);
+                                                            }} 
+                                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* VIEW: GUIDE */}
+                        {view === 'guide' && (
+                            <div className="max-w-3xl mx-auto">
+                                <div className="text-center mb-10 animate-fade-in-up">
+                                    <h1 className="text-3xl font-bold text-gray-900 mb-2">How to use HERO</h1>
+                                    <p className="text-gray-600">Master the basics and shortcuts.</p>
+                                </div>
+                                <GuideSection />
+                            </div>
+                        )}
+
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

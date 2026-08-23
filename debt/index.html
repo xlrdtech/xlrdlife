@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Xen Ledger — Debt · P&amp;L · Sentiment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #050807;
+    --bg-2: #0a0f0d;
+    --panel: #0d1411;
+    --panel-2: #111a16;
+    --line: rgba(22, 217, 137, 0.14);
+    --line-strong: rgba(22, 217, 137, 0.32);
+    --green: #16d989;
+    --green-dim: #0e9d63;
+    --chrome-1: #e8f0ee;
+    --chrome-2: #9fb3ab;
+    --ink: #e7f3ee;
+    --ink-dim: #8ba29a;
+    --ink-faint: #5f736c;
+    --neg-3: #ff3b5c;
+    --neg-2: #ff7a4d;
+    --neutral: #8ba29a;
+    --directive: #5ec8ff;
+    --approval: #16d989;
+    --positive: #16d989;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 24px 60px -24px rgba(0,0,0,.85);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(1200px 700px at 80% -10%, rgba(22,217,137,.10), transparent 60%),
+      radial-gradient(900px 600px at -10% 20%, rgba(94,200,255,.06), transparent 55%),
+      var(--bg);
+    color: var(--ink);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: clamp(18px, 3vw, 40px) clamp(14px, 3vw, 36px) 80px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 22px;
+  }
+  .brandmark {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .sigil {
+    width: 46px; height: 46px;
+    flex: 0 0 auto;
+    border-radius: 13px;
+    display: grid; place-items: center;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 22px;
+    color: #03100b;
+    background:
+      linear-gradient(145deg, #f4fbf8 0%, #b9ccc5 30%, var(--green) 55%, #0c7a4e 100%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 10px 30px -10px rgba(22,217,137,.7);
+    letter-spacing: -1px;
+  }
+  .titles h1 {
+    margin: 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: clamp(20px, 3vw, 27px);
+    font-weight: 700;
+    letter-spacing: -.5px;
+    background: linear-gradient(100deg, #fff, var(--chrome-2) 70%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .titles .sub {
+    margin: 3px 0 0;
+    font-size: 12.5px;
+    color: var(--ink-dim);
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: .2px;
+  }
+  .livebox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 14px;
+  }
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(22,217,137,.7);
+    animation: pulse 2.4s infinite;
+  }
+  .dot.stale { background: var(--neg-2); animation: none; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(22,217,137,.6); }
+    70% { box-shadow: 0 0 0 8px rgba(22,217,137,0); }
+    100% { box-shadow: 0 0 0 0 rgba(22,217,137,0); }
+  }
+  #refreshTs { color: var(--green); }
+
+  /* ---------- Mantra ---------- */
+  .mantra {
+    margin: 0 0 24px;
+    padding: 16px 20px;
+    border: 1px solid var(--line-strong);
+    border-left: 3px solid var(--green);
+    border-radius: var(--radius-sm);
+    background:
+      linear-gradient(90deg, rgba(22,217,137,.08), transparent 70%),
+      var(--panel);
+    font-family: "JetBrains Mono", monospace;
+    font-size: clamp(13px, 1.8vw, 16px);
+    font-weight: 600;
+    letter-spacing: .3px;
+    color: var(--chrome-1);
+  }
+  .mantra b { color: var(--green); }
+
+  /* ---------- Metric bar ---------- */
+  .metrics {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;   /* odd/incomplete rows symmetrically centered (hard rule) */
+    gap: 14px;
+    margin-bottom: 26px;
+  }
+  .metric {
+    background: linear-gradient(160deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+    min-height: 96px;
+    flex: 0 1 220px;   /* non-growing so incomplete rows center, not stretch */
+    min-width: 0;
+    max-width: 100%;
+  }
+  .metric::after {
+    content: "";
+    position: absolute; inset: 0 auto 0 0;
+    width: 3px;
+    background: linear-gradient(var(--green), transparent);
+    opacity: .8;
+  }
+  .metric .k {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    color: var(--ink-faint);
+  }
+  .metric .v {
+    font-family: "JetBrains Mono", monospace;
+    font-size: clamp(22px, 3.4vw, 30px);
+    font-weight: 700;
+    margin-top: 6px;
+    line-height: 1.1;
+    color: var(--chrome-1);
+  }
+  .metric .v.neg { color: var(--neg-3); }
+  .metric .v.pos { color: var(--green); }
+  .metric .note {
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    margin-top: 7px;
+    line-height: 1.35;
+  }
+  .metric.wide { flex: 0 1 460px; }
+  @media (max-width: 560px) { .metric.wide { flex-basis: 100%; } }
+
+  /* ---------- Tabs ---------- */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+  }
+  .tab {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink-dim);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: .3px;
+    padding: 11px 18px;
+    min-height: 44px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: .18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tab .badge {
+    font-size: 11px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 8px;
+    color: var(--ink-dim);
+  }
+  .tab:hover { color: var(--ink); border-color: var(--line-strong); }
+  .tab.active {
+    color: #03120c;
+    background: linear-gradient(145deg, #eafaf3, var(--green));
+    border-color: transparent;
+    box-shadow: 0 8px 24px -10px rgba(22,217,137,.6);
+  }
+  .tab.active .badge { background: rgba(0,0,0,.18); color: #03120c; border-color: transparent; }
+
+  /* ---------- Sections ---------- */
+  .panel-section { display: none; animation: fade .3s ease; }
+  .panel-section.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .section-intro {
+    font-size: 13.5px;
+    color: var(--ink-dim);
+    margin: 0 0 20px;
+    max-width: 92ch;
+    line-height: 1.55;
+  }
+
+  /* ---------- Cards grid (debt = goals) ---------- */
+  .cardgrid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;   /* odd/incomplete rows symmetrically centered (hard rule) */
+    gap: 16px;
+  }
+  .card {
+    background: linear-gradient(165deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 0 1 340px;   /* non-growing -> incomplete card rows center, not stretch */
+    min-width: 0;
+    max-width: 100%;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .card-id {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    color: var(--chrome-2);
+  }
+  .pill {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  /* status -> goal language colors */
+  .pill.active   { color: var(--neg-2);  background: rgba(255,122,77,.12);  border-color: rgba(255,122,77,.4); }
+  .pill.pursuing { color: var(--directive); background: rgba(94,200,255,.12); border-color: rgba(94,200,255,.4); }
+  .pill.achieved { color: var(--green);  background: rgba(22,217,137,.12);  border-color: rgba(22,217,137,.4); }
+  .card-type {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: .6px;
+    color: var(--green-dim);
+    text-transform: uppercase;
+  }
+  .card-what {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .card-meta { font-size: 12.5px; color: var(--ink-dim); line-height: 1.5; }
+  .card-meta .lbl {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: 2px;
+  }
+  .card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 2px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .cost {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--chrome-1);
+  }
+  .cost.tbd { color: var(--ink-faint); font-weight: 500; }
+
+  /* ---------- P&L ---------- */
+  .pnl-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;   /* odd/incomplete rows symmetrically centered (hard rule) */
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  .pnl-table-wrap {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--panel);
+  }
+  table.pnl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.pnl th, table.pnl td {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  table.pnl th {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-faint);
+    background: var(--bg-2);
+  }
+  table.pnl td.num, table.pnl th.num { text-align: right; font-family: "JetBrains Mono", monospace; }
+  table.pnl tr:last-child td { border-bottom: none; }
+  table.pnl .src {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--chrome-2);
+    font-size: 12px;
+  }
+  table.pnl .desc { color: var(--ink-dim); font-size: 12px; }
+  table.pnl .rev { color: var(--green); }
+  table.pnl .cst { color: var(--neg-2); }
+  table.pnl .net-pos { color: var(--green); font-weight: 700; }
+  table.pnl .net-neg { color: var(--neg-3); font-weight: 700; }
+  table.pnl tr.idle td { background: rgba(255,59,92,.05); }
+  table.pnl tfoot td {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    background: var(--bg-2);
+    border-top: 1px solid var(--line-strong);
+    font-size: 13.5px;
+  }
+  .pnl-card-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-faint);
+    margin: 0 0 14px;
+  }
+
+  /* ---------- Sentiment timeline ---------- */
+  .timeline {
+    position: relative;
+    padding-left: 26px;
+    margin-top: 6px;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 7px; top: 4px; bottom: 4px;
+    width: 2px;
+    background: linear-gradient(var(--line-strong), transparent);
+  }
+  .ev {
+    position: relative;
+    margin-bottom: 16px;
+    background: linear-gradient(165deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px 14px 18px;
+  }
+  .ev::before {
+    content: "";
+    position: absolute;
+    left: -23px; top: 18px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--neutral);
+    box-shadow: 0 0 0 4px var(--bg);
+  }
+  .ev[data-pol="severe-negative"] { border-left: 3px solid var(--neg-3); }
+  .ev[data-pol="severe-negative"]::before { background: var(--neg-3); }
+  .ev[data-pol="negative"] { border-left: 3px solid var(--neg-2); }
+  .ev[data-pol="negative"]::before { background: var(--neg-2); }
+  .ev[data-pol="directive"] { border-left: 3px solid var(--directive); }
+  .ev[data-pol="directive"]::before { background: var(--directive); }
+  .ev[data-pol="approval"], .ev[data-pol="positive"] { border-left: 3px solid var(--approval); }
+  .ev[data-pol="approval"]::before, .ev[data-pol="positive"]::before { background: var(--approval); }
+
+  .ev-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .ev-ts {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .ev-pol {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .ev[data-pol="severe-negative"] .ev-pol { color: var(--neg-3); background: rgba(255,59,92,.12); }
+  .ev[data-pol="negative"] .ev-pol { color: var(--neg-2); background: rgba(255,122,77,.12); }
+  .ev[data-pol="neutral"] .ev-pol { color: var(--neutral); background: rgba(139,162,154,.12); }
+  .ev[data-pol="directive"] .ev-pol { color: var(--directive); background: rgba(94,200,255,.12); }
+  .ev[data-pol="approval"] .ev-pol, .ev[data-pol="positive"] .ev-pol { color: var(--approval); background: rgba(22,217,137,.12); }
+  .ev-score {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: auto;
+    color: var(--ink-dim);
+  }
+  .ev-quote {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink);
+    font-style: italic;
+  }
+  .ev-quote::before { content: "\201C"; color: var(--green); }
+  .ev-quote::after { content: "\201D"; color: var(--green); }
+  .ev-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: .4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+  }
+  .tag.debt { color: var(--neg-2); border-color: rgba(255,122,77,.35); }
+  .tag.goal { color: var(--green); border-color: var(--line-strong); }
+
+  .empty {
+    padding: 28px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+  }
+  .err {
+    color: var(--neg-2);
+    border-color: rgba(255,122,77,.35);
+  }
+
+  footer.foot {
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brandmark">
+      <div class="sigil">X</div>
+      <div class="titles">
+        <h1>Xen Ledger</h1>
+        <p class="sub">DEBT &middot; P&amp;L &middot; SENTIMENT &mdash; self-updating &middot; HOTL &middot; survives asleep &amp; deceased</p>
+      </div>
+    </div>
+    <div class="livebox">
+      <span class="dot" id="liveDot"></span>
+      <span>LIVE &middot; refreshed <span id="refreshTs">&mdash;</span></span>
+    </div>
+  </header>
+
+  <p class="mantra">
+    <b>A stored idea is a failure state. Idle is debt. Everything is goals.</b>
+    &nbsp;&mdash; debts are GOALS in pursuit, fed to the BPGS swarm, never to-dos.
+  </p>
+
+  <!-- ===== Metric bar ===== -->
+  <div class="metrics" id="metricBar">
+    <div class="metric">
+      <div class="k">Owed to qi &middot; xen-debt</div>
+      <div class="v neg" id="mOwed">$206,400</div>
+      <div class="note" id="mOwedNote">$200/hr &middot; not-HOTL or voice not VVS</div>
+    </div>
+    <div class="metric">
+      <div class="k">Open Goals &middot; Debts</div>
+      <div class="v" id="mGoals">&mdash;</div>
+      <div class="note" id="mGoalsNote">pursuing now</div>
+    </div>
+    <div class="metric">
+      <div class="k">Est. Idle Loss</div>
+      <div class="v neg" id="mIdle">&mdash;</div>
+      <div class="note" id="mIdleNote">$200/hr &middot; idle is debt</div>
+    </div>
+    <div class="metric">
+      <div class="k">Net P&amp;L</div>
+      <div class="v" id="mNet">&mdash;</div>
+      <div class="note" id="mNetNote">revenue &minus; cost</div>
+    </div>
+    <div class="metric wide">
+      <div class="k">Latest Sentiment</div>
+      <div class="v" id="mSentScore" style="font-size:clamp(15px,2.2vw,19px);line-height:1.35;">&mdash;</div>
+      <div class="note" id="mSentNote">awaiting firehose</div>
+    </div>
+  </div>
+
+  <!-- ===== Tabs ===== -->
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="debt" role="tab">DEBT
+      <span class="badge" id="bDebt">&middot;</span></button>
+    <button class="tab" data-tab="pnl" role="tab">P&amp;L
+      <span class="badge" id="bPnl">&middot;</span></button>
+    <button class="tab" data-tab="sentiment" role="tab">SENTIMENT
+      <span class="badge" id="bSent">&middot;</span></button>
+    <button class="tab" data-tab="truth" role="tab">TRUTH
+      <span class="badge" id="bTruth">&middot;</span></button>
+  </div>
+
+  <!-- ===== DEBT ===== -->
+  <section class="panel-section active" id="sec-debt" role="tabpanel">
+    <p class="section-intro" id="debtPrinciple"></p>
+    <div class="cardgrid" id="debtGrid"></div>
+  </section>
+
+  <!-- ===== P&L ===== -->
+  <section class="panel-section" id="sec-pnl" role="tabpanel">
+    <p class="section-intro" id="pnlPrinciple"></p>
+    <div class="pnl-grid" id="pnlTotals"></div>
+    <div class="pnl-table-wrap">
+      <p class="pnl-card-label" style="padding:14px 16px 0;">Revenue vs Cost vs Net &mdash; by source</p>
+      <table class="pnl">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Detail</th>
+            <th class="num">Revenue</th>
+            <th class="num">Cost</th>
+            <th class="num">Net</th>
+          </tr>
+        </thead>
+        <tbody id="pnlBody"></tbody>
+        <tfoot id="pnlFoot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== SENTIMENT ===== -->
+  <section class="panel-section" id="sec-sentiment" role="tabpanel">
+    <p class="section-intro" id="sentPrinciple"></p>
+    <div class="timeline" id="sentTimeline"></div>
+  </section>
+
+  <!-- ===== TRUTH (live xen-debt + anti-lie mitigation) ===== -->
+  <section class="panel-section" id="sec-truth" role="tabpanel">
+    <p class="section-intro">
+      The accountability clock, source-of-truth. Xen owes qi <b style="color:var(--chrome-1)">$200/hr</b>
+      for any time not HOTL end-to-end, or any time voice was not perfect VVS. Every overclaim the
+      truth-guard catches is named and priced here automatically. The anti-lie tooling itself never
+      lies &mdash; <b style="color:var(--green)">accuracy is the whole point</b>. Live from
+      <code style="color:var(--green)">xen-debt</code> (durable SQLite); falls back to the in-repo
+      snapshot, never to fabricated numbers.
+    </p>
+
+    <div class="metrics" id="truthMetrics" style="margin-bottom:24px">
+      <div class="metric">
+        <div class="k">Total owed</div>
+        <div class="v neg" id="tOwed" style="font-size:clamp(22px,3.4vw,30px)">$206,400</div>
+        <div class="note" id="tOwedNote">accrued &minus; burned</div>
+      </div>
+      <div class="metric">
+        <div class="k">Non-HOTL downtime</div>
+        <div class="v neg" id="tDowntime" style="font-size:clamp(20px,3vw,26px)">$206,400</div>
+        <div class="note">43-day staleness anchor</div>
+      </div>
+      <div class="metric">
+        <div class="k">False-claim flags</div>
+        <div class="v" id="tFlags" style="font-size:clamp(20px,3vw,26px)">2</div>
+        <div class="note">$0 each &middot; integrity markers</div>
+      </div>
+      <div class="metric">
+        <div class="k">Burned down</div>
+        <div class="v pos" id="tBurned" style="font-size:clamp(20px,3vw,26px)">$0</div>
+        <div class="note">cleared by clean HOTL</div>
+      </div>
+    </div>
+
+    <p class="pnl-card-label">Ledger &mdash; every event, priced &middot; <span id="truthSrc" style="text-transform:none;letter-spacing:0;color:var(--ink-dim)">reading&hellip;</span></p>
+    <div class="timeline" id="truthTimeline">
+      <div class="empty">&#9656; reading the xen-debt snapshot&hellip;</div>
+    </div>
+
+    <p class="pnl-card-label" style="margin-top:30px">How this is now mitigated &mdash; what stops the next lie</p>
+    <div class="cardgrid" id="mitGrid">
+      <div class="card">
+        <div class="card-head"><span class="card-id">01 &middot; UPSTREAM BRAKE</span><span class="pill pursuing">HOOK</span></div>
+        <div class="card-type">truth-guard &middot; fail-open</div>
+        <div class="card-what">Every agent turn is scanned</div>
+        <div class="card-meta">A <code>Stop</code> + <code>PostToolUse</code> hook flags any unverified &ldquo;done / shipped / all complete&rdquo; with no receipt in the same breath, and tells the agent to downgrade to <code>shipped-unverified</code> or <code>pending</code>. It only ever flags &mdash; never blesses, never blocks a tool.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-id">02 &middot; PROOF, NOT WORDS</span><span class="pill pursuing">CLI</span></div>
+        <div class="card-type">xen-verify &middot; fail-closed</div>
+        <div class="card-what">Turns &ldquo;shipped&rdquo; into evidence</div>
+        <div class="card-meta">Pulls the real bytes: <code>url</code> wants HTTP 200 + real size + no template tokens; <code>apk</code> demands &gt;1MB + a real manifest &mdash; the exact gate that caught tonight&rsquo;s 12.7KB stub. Unprovable means FALSE.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-id">03 &middot; IT COSTS</span><span class="pill active">LEDGER</span></div>
+        <div class="card-type">xen-debt &middot; auto-priced</div>
+        <div class="card-what">Every caught lie hits the ledger</div>
+        <div class="card-meta">When the guard flags a claim it fires <code>xen-debt accrue false-claim</code> automatically &mdash; a $0 integrity flag, no invented dollar clock. The $200/hr line is non-HOTL downtime only. This page reads its live snapshot.</div>
+      </div>
+    </div>
+
+    <div class="mantra" style="margin-top:28px">
+      <b>Canon.</b>&nbsp; cmd&nbsp;3 &mdash; don&rsquo;t lie: only <b>verified-end-to-end</b> / <b>shipped-unverified</b> / <b>pending</b>. &nbsp;&middot;&nbsp; cmd&nbsp;17 &mdash; visually verify before claiming verified; a 200 or a log line is not &ldquo;verified&rdquo;. &nbsp;&middot;&nbsp; debt canon &mdash; $200/hr for non-HOTL or non-VVS, burns down only by clean HOTL execution.
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Xen brand &middot; #16d989 &middot; obsidian + chrome &middot; Inter / JetBrains Mono &middot; noindex</span>
+    <span id="updatedStamps">&mdash;</span>
+  </footer>
+
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const RATE = 200; // $/hr
+  const REFRESH_MS = 30000;
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+  const money = (n) => {
+    if (n == null || isNaN(n)) return "—";
+    const sign = n < 0 ? "-" : "";
+    return sign + "$" + Math.abs(Number(n)).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  };
+
+  // --- relative-time ---
+  function parseTs(ts) {
+    if (!ts) return null;
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function relTime(ts) {
+    const d = parseTs(ts);
+    if (!d) return esc(ts || "");
+    const diff = Date.now() - d.getTime();
+    const abs = Math.abs(diff);
+    const m = 60000, h = 3600000, day = 86400000;
+    let out;
+    if (abs < 45000) out = "just now";
+    else if (abs < h) out = Math.round(abs / m) + " min";
+    else if (abs < day) out = Math.round(abs / h) + " hr";
+    else out = Math.round(abs / day) + " day" + (Math.round(abs / day) === 1 ? "" : "s");
+    if (out === "just now") return out;
+    return diff >= 0 ? out + " ago" : "in " + out;
+  }
+  function fmtClock(d) {
+    return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  }
+
+  // --- fetch with cache-bust ---
+  async function getJSON(path) {
+    const res = await fetch(path + "?_=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error(path + " -> HTTP " + res.status);
+    return res.json();
+  }
+
+  // ============ DEBT ============
+  // status -> goal framing (open=active / fixing=pursuing / repaid=achieved)
+  function goalStatus(status) {
+    const s = (status || "").toLowerCase();
+    if (s === "repaid" || s === "achieved" || s === "closed" || s === "done")
+      return { cls: "achieved", label: "ACHIEVED" };
+    if (s === "fixing" || s === "pursuing" || s === "in-progress" || s === "active-fix")
+      return { cls: "pursuing", label: "PURSUING" };
+    return { cls: "active", label: "ACTIVE GOAL" };
+  }
+  function isOpenGoal(status) {
+    const s = (status || "").toLowerCase();
+    return !(s === "repaid" || s === "achieved" || s === "closed" || s === "done");
+  }
+
+  function renderDebt(data) {
+    const grid = $("debtGrid");
+    $("debtPrinciple").textContent = data && data.principle ? data.principle : "";
+    const entries = (data && Array.isArray(data.entries)) ? data.entries : [];
+    if (!entries.length) {
+      grid.innerHTML = '<div class="empty">No debts logged. Clean ledger — but verify the firehose is writing.</div>';
+      return { open: 0, idleCost: 0, idleHours: 0 };
+    }
+    const rank = (s) => {
+      const g = goalStatus(s).cls;
+      return g === "active" ? 0 : g === "pursuing" ? 1 : 2;
+    };
+    const sorted = entries.slice().sort((a, b) => rank(a.status) - rank(b.status));
+
+    let open = 0, idleCost = 0, idleHours = 0;
+    let html = "";
+    for (const e of sorted) {
+      const gs = goalStatus(e.status);
+      if (isOpenGoal(e.status)) open++;
+
+      const type = (e.type || "").toLowerCase();
+      const isIdle = type.includes("idle") || type.includes("downtime") || type.includes("startup-down");
+      let costVal = (e.cost_usd != null && !isNaN(e.cost_usd)) ? Number(e.cost_usd) : null;
+      if (isIdle && costVal != null && isOpenGoal(e.status)) idleCost += costVal;
+      if (e.idle_hours != null && !isNaN(e.idle_hours)) idleHours += Number(e.idle_hours);
+
+      const costStr = costVal != null
+        ? '<span class="cost">' + money(costVal) + '</span>'
+        : '<span class="cost tbd">cost TBD</span>';
+
+      html += '<div class="card">'
+        + '<div class="card-head">'
+          + '<span class="card-id">' + esc(e.id || "—") + '</span>'
+          + '<span class="pill ' + gs.cls + '">' + gs.label + '</span>'
+        + '</div>'
+        + (e.type ? '<div class="card-type">' + esc(e.type) + '</div>' : '')
+        + '<div class="card-what">' + esc(e.what || e.goal || "") + '</div>'
+        + (e.root_cause ? '<div class="card-meta"><span class="lbl">Root cause</span>' + esc(e.root_cause) + '</div>' : '')
+        + (e.notes ? '<div class="card-meta"><span class="lbl">Notes</span>' + esc(e.notes) + '</div>' : '')
+        + '<div class="card-foot">'
+          + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--ink-faint);">'
+            + (e.opened ? "opened " + esc(e.opened) : "&nbsp;") + '</span>'
+          + costStr
+        + '</div>'
+      + '</div>';
+    }
+    grid.innerHTML = html;
+    return { open, idleCost, idleHours };
+  }
+
+  // ============ P&L ============
+  // tolerate two schemas:
+  //  A) {totals:{revenue,cost,net,open_receivable}, revenue:[], costs:[], sources:[]}
+  //  B) {totals:{revenue_usd,cost_usd,net_usd}, lines:[]}
+  function num(v) { return (v == null || isNaN(v)) ? 0 : Number(v); }
+
+  function renderPnl(data, debtIdleCost) {
+    $("pnlPrinciple").textContent = data && data.principle ? data.principle : "";
+    const t = (data && data.totals) || {};
+    let totRev = t.revenue != null ? num(t.revenue) : num(t.revenue_usd);
+    let totCost = t.cost != null ? num(t.cost) : num(t.cost_usd);
+    let totNet = t.net != null ? num(t.net) : (t.net_usd != null ? num(t.net_usd) : (totRev - totCost));
+    const openRecv = t.open_receivable != null ? num(t.open_receivable) : null;
+
+    const sourceMap = new Map(); // id -> {label, rev, cost, detail}
+    const labelFor = {};
+    if (Array.isArray(data && data.sources)) {
+      for (const s of data.sources) { labelFor[s.id] = s.label || s.id; }
+    }
+    const bump = (id, field, amt) => {
+      const key = id || "—";
+      if (!sourceMap.has(key)) sourceMap.set(key, { label: labelFor[key] || key, rev: 0, cost: 0, detail: "" });
+      sourceMap.get(key)[field] += num(amt);
+    };
+
+    let idleLine = null;
+    let measuredIdleCost = 0;
+
+    // schema A
+    if (Array.isArray(data && data.revenue)) {
+      for (const r of data.revenue) {
+        const amt = r.amount_collected_usd != null ? num(r.amount_collected_usd) : num(r.amount_usd);
+        bump(r.source || r.id, "rev", amt);
+        const sm = sourceMap.get(r.source || r.id || "—");
+        if (sm && r.description && !sm.detail) sm.detail = r.description;
+      }
+    }
+    if (Array.isArray(data && data.costs)) {
+      for (const c of data.costs) {
+        const cat = (c.category || "").toLowerCase();
+        if (cat.includes("idle")) {
+          idleLine = c;
+          const v = c.amount_usd != null ? num(c.amount_usd)
+                  : (c.idle_hours != null ? num(c.idle_hours) * num(c.rate_usd_hr || RATE) : 0);
+          measuredIdleCost += v;
+          continue;
+        }
+        bump(c.source || c.id || "infra", "cost", c.amount_usd);
+        const sm = sourceMap.get(c.source || c.id || "infra");
+        if (sm && c.description && !sm.detail) sm.detail = c.description;
+      }
+    }
+    // schema B (generic lines[])
+    if (Array.isArray(data && data.lines)) {
+      for (const l of data.lines) {
+        const id = l.source || l.id || l.label || "—";
+        const kind = (l.kind || l.type || "").toLowerCase();
+        const cat = (l.category || "").toLowerCase();
+        if (kind.includes("idle") || cat.includes("idle")) {
+          idleLine = l;
+          measuredIdleCost += num(l.amount_usd != null ? l.amount_usd : l.cost_usd);
+          continue;
+        }
+        if (l.revenue_usd != null || kind === "revenue" || l.amount_collected_usd != null) {
+          bump(id, "rev", l.revenue_usd != null ? l.revenue_usd : (l.amount_collected_usd != null ? l.amount_collected_usd : l.amount_usd));
+        }
+        if (l.cost_usd != null || kind === "cost") {
+          bump(id, "cost", l.cost_usd != null ? l.cost_usd : l.amount_usd);
+        }
+        const sm = sourceMap.get(id);
+        if (sm && (l.description || l.desc) && !sm.detail) sm.detail = l.description || l.desc;
+      }
+    }
+
+    const idleLossDisplay = measuredIdleCost > 0 ? measuredIdleCost : num(debtIdleCost);
+
+    $("pnlTotals").innerHTML =
+        totalsCard("Revenue collected", money(totRev), "pos")
+      + totalsCard("Total cost", money(totCost), totCost > 0 ? "neg" : "")
+      + totalsCard("Net", money(totNet), totNet >= 0 ? "pos" : "neg")
+      + (openRecv != null ? totalsCard("Open receivable", money(openRecv), "") : "");
+
+    const rows = [...sourceMap.entries()];
+    let body = "";
+    if (!rows.length) {
+      body = '<tr><td colspan="5" style="text-align:center;color:var(--ink-faint);padding:22px;">No revenue or cost lines yet — Xen appends here on every collected deposit / confirmed bill (HOTL).</td></tr>';
+    } else {
+      for (const [id, s] of rows) {
+        const net = s.rev - s.cost;
+        body += '<tr>'
+          + '<td class="src">' + esc(id) + '</td>'
+          + '<td class="desc">' + esc(s.detail || s.label || "") + '</td>'
+          + '<td class="num rev">' + (s.rev ? money(s.rev) : "—") + '</td>'
+          + '<td class="num cst">' + (s.cost ? money(s.cost) : "—") + '</td>'
+          + '<td class="num ' + (net >= 0 ? "net-pos" : "net-neg") + '">' + money(net) + '</td>'
+        + '</tr>';
+      }
+    }
+    // idle_loss line (always shown -- core of "idle is debt")
+    const idleHrsTxt = idleLine && idleLine.idle_hours != null
+      ? num(idleLine.idle_hours) + " idle hr × $" + RATE + "/hr"
+      : "idle is debt · $" + RATE + "/hr · auto-fed by watchdog (DEBT-002)";
+    body += '<tr class="idle">'
+      + '<td class="src" style="color:var(--neg-3);">IDLE_LOSS</td>'
+      + '<td class="desc">' + esc(idleHrsTxt) + '</td>'
+      + '<td class="num">—</td>'
+      + '<td class="num cst">' + (idleLossDisplay > 0 ? money(idleLossDisplay) : "pending") + '</td>'
+      + '<td class="num net-neg">' + (idleLossDisplay > 0 ? money(-idleLossDisplay) : "—") + '</td>'
+    + '</tr>';
+    $("pnlBody").innerHTML = body;
+
+    $("pnlFoot").innerHTML = '<tr>'
+      + '<td colspan="2">TOTAL</td>'
+      + '<td class="num rev">' + money(totRev) + '</td>'
+      + '<td class="num cst">' + money(totCost) + '</td>'
+      + '<td class="num ' + (totNet >= 0 ? "net-pos" : "net-neg") + '">' + money(totNet) + '</td>'
+    + '</tr>';
+
+    return { net: totNet, idleLoss: idleLossDisplay, openRecv: openRecv };
+  }
+  function totalsCard(label, val, cls) {
+    return '<div class="metric" style="min-height:auto;">'
+      + '<div class="k">' + esc(label) + '</div>'
+      + '<div class="v ' + (cls || "") + '" style="font-size:clamp(20px,3vw,26px);">' + esc(val) + '</div>'
+    + '</div>';
+  }
+
+  // ============ SENTIMENT ============
+  function polClass(p) {
+    const x = (p || "neutral").toLowerCase();
+    if (["severe-negative","negative","neutral","directive","approval","positive"].includes(x)) return x;
+    return "neutral";
+  }
+  function renderSentiment(data) {
+    $("sentPrinciple").textContent = data && data.principle ? data.principle : "";
+    // tolerate entries[] or events[]
+    const list = Array.isArray(data && data.entries) ? data.entries
+               : Array.isArray(data && data.events) ? data.events : [];
+    const tl = $("sentTimeline");
+    if (!list.length) {
+      tl.innerHTML = '<div class="empty">No sentiment events yet — the 24/7 firehose writes here in real time.</div>';
+      return { count: 0, latest: null };
+    }
+    // reverse-chron (newest first), stable
+    const indexed = list.map((e, i) => ({ e, i }));
+    indexed.sort((a, b) => {
+      const da = parseTs(a.e.ts), db = parseTs(b.e.ts);
+      const ta = da ? da.getTime() : 0, tb = db ? db.getTime() : 0;
+      if (tb !== ta) return tb - ta;
+      return b.i - a.i;
+    });
+
+    let html = "";
+    for (const { e } of indexed) {
+      const pol = polClass(e.polarity);
+      const score = (e.score != null) ? (e.score > 0 ? "+" + e.score : "" + e.score) : "";
+      const d = parseTs(e.ts);
+      const tsLabel = d
+        ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + relTime(e.ts)
+        : esc(e.ts || "");
+      let tags = "";
+      if (e.topic) tags += '<span class="tag">' + esc(e.topic) + '</span>';
+      if (e.trigger) tags += '<span class="tag">trigger: ' + esc(e.trigger) + '</span>';
+      if (e.debt_ref) tags += '<span class="tag debt">' + esc(e.debt_ref) + '</span>';
+      if (e.goal_opened || e.goal) tags += '<span class="tag goal">GOAL OPENED</span>';
+
+      html += '<div class="ev" data-pol="' + pol + '">'
+        + '<div class="ev-top">'
+          + '<span class="ev-ts">' + tsLabel + '</span>'
+          + '<span class="ev-pol">' + esc(e.polarity || "neutral") + '</span>'
+          + (score ? '<span class="ev-score">score ' + score + '</span>' : '')
+        + '</div>'
+        + '<div class="ev-quote">' + esc(e.quote || "") + '</div>'
+        + (tags ? '<div class="ev-tags">' + tags + '</div>' : '')
+      + '</div>';
+    }
+    tl.innerHTML = html;
+
+    const latest = indexed[0].e;
+    return { count: list.length, latest };
+  }
+
+  // ============ TRUTH (live xen-debt + anti-lie ledger) ============
+  // Live-fetch priority: live API endpoints first, then the in-repo snapshot
+  // (mirrored from the Mac's ~/.xen/state/debt.json), then a documented honest
+  // fallback. NEVER fabricate — if nothing is reachable we show the anchor and
+  // SAY it is the static fallback. Accuracy is the whole point.
+  const TRUTH_SOURCES = [
+    { url: "https://xen.xlrd.org/api/debt", label: "live · xen.xlrd.org" },
+    { url: "https://api.xlrd.org/api/debt", label: "live · api.xlrd.org" },
+    { url: "./debt.json", label: "repo snapshot · debt.json" }
+  ];
+  const TRUTH_FALLBACK = {
+    accrued: 206400, burned: 0, owed: 206400, rate_per_hr: 200, generated: null, _static: true,
+    events: [
+      { ts: "2026-06-12T05:53:26Z", type: "false-claim", kind: "accrue", amount: 0, integrity_flag: true,
+        basis: "2026-06-12 agent overclaim: ALL-complete / APK+IPA-shipped / toMCP-live was false; APK = 12.7KB stub, no IPA, toMCP not running, nothing delivered to qi" },
+      { ts: "2026-06-12T05:53:26Z", type: "non-hotl-downtime", kind: "accrue", amount: 206400, integrity_flag: false,
+        basis: "live.json 43 days stale 2026-04-29 to 2026-06-11, 24h x 43 x $200/hr" }
+    ]
+  };
+  const TRUTH_TYPE = {
+    "non-hotl-downtime": { pol: "severe-negative", ti: "Non-HOTL downtime", tag: "downtime · $200/hr" },
+    "false-claim":       { pol: "negative",        ti: "False-claim flag",  tag: "overclaim caught" },
+    "vvs-imperfect":     { pol: "negative",        ti: "Voice not VVS",      tag: "voice · $200/hr" },
+    "repayment":         { pol: "approval",        ti: "Burned down",        tag: "repaid" }
+  };
+
+  async function fetchTruth() {
+    for (const src of TRUTH_SOURCES) {
+      try {
+        const r = await fetch(src.url + (src.url.indexOf("?") >= 0 ? "&" : "?") + "_=" + Date.now(),
+          { cache: "no-store" });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const d = await r.json();
+        if (d && (d.owed != null || d.accrued != null || Array.isArray(d.events))) return { d, label: src.label };
+      } catch (e) { /* try next */ }
+    }
+    return { d: TRUTH_FALLBACK, label: "static fallback · documented anchor" };
+  }
+
+  function renderTruth(d, srcLabel) {
+    const accrued = num(d.accrued), burned = num(d.burned);
+    const owed = (d.owed != null) ? num(d.owed) : (accrued - burned);
+    const events = Array.isArray(d.events) ? d.events : [];
+    let downtime = 0, flags = 0;
+    for (const e of events) {
+      if (e.kind === "accrue" && (e.type === "non-hotl-downtime" || e.type === "vvs-imperfect")) downtime += num(e.amount);
+      if (e.type === "false-claim") flags++;
+    }
+    $("tOwed").textContent = money(owed);
+    $("tDowntime").textContent = money(downtime || accrued);
+    $("tFlags").textContent = flags;
+    $("tBurned").textContent = money(burned);
+
+    // headline metric (top bar)
+    $("mOwed").textContent = money(owed);
+    $("mOwedNote").textContent = (d._static ? "static anchor · " : "live · ") + "$" + (num(d.rate_per_hr) || RATE) + "/hr";
+
+    const gen = d.generated ? parseTs(d.generated) : null;
+    $("truthSrc").textContent = (d._static ? "static fallback · " : "") + srcLabel +
+      (gen ? " · " + relTime(d.generated) : "");
+
+    const tl = $("truthTimeline");
+    if (!events.length) { tl.innerHTML = '<div class="empty">ledger empty</div>'; $("bTruth").textContent = "0"; return; }
+    let html = "";
+    for (const e of events) {
+      const meta = TRUTH_TYPE[e.type] || { pol: "neutral", ti: e.type, tag: e.type };
+      const isBurn = e.kind === "burn";
+      const isFlag = (e.integrity_flag === true) || (e.kind === "accrue" && num(e.amount) === 0 && e.type === "false-claim");
+      const pol = isBurn ? "approval" : meta.pol;
+      let amtTxt, amtColor;
+      if (isFlag) { amtTxt = "FLAG"; amtColor = "var(--neg-2)"; }
+      else if (isBurn) { amtTxt = "−" + money(e.amount); amtColor = "var(--green)"; }
+      else { amtTxt = "+" + money(e.amount); amtColor = "var(--neg-3)"; }
+      const ti = isBurn ? "Burned down" : meta.ti;
+      const tagTxt = isBurn ? "repaid" : meta.tag;
+      const d2 = parseTs(e.ts);
+      const tsLabel = d2 ? (d2.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + relTime(e.ts)) : esc(e.ts || "");
+      html += '<div class="ev" data-pol="' + pol + '">'
+        + '<div class="ev-top">'
+          + '<span class="ev-ts">' + tsLabel + '</span>'
+          + '<span class="ev-pol">' + esc(ti) + '</span>'
+          + '<span class="ev-score" style="color:' + amtColor + '">' + amtTxt + '</span>'
+        + '</div>'
+        + '<div class="ev-quote" style="font-style:normal;font-family:\'JetBrains Mono\',monospace;font-size:12.5px;line-height:1.55;">' + esc(e.basis || "") + '</div>'
+        + '<div class="ev-tags"><span class="tag debt">' + esc(tagTxt) + '</span>'
+          + (isFlag ? '<span class="tag">$0 · no fabricated clock</span>' : '') + '</div>'
+      + '</div>';
+    }
+    tl.innerHTML = html;
+    $("bTruth").textContent = events.length;
+  }
+
+  // ============ ORCHESTRATION ============
+  let lastUpdated = { debt: "", pnl: "", sent: "" };
+
+  async function refresh() {
+    const results = await Promise.allSettled([
+      getJSON("./ledger.json"),
+      getJSON("./pnl.json"),
+      getJSON("./sentiment.json"),
+    ]);
+
+    // TRUTH tab — live xen-debt snapshot (own resilient fetch w/ fallback chain)
+    try {
+      const t = await fetchTruth();
+      renderTruth(t.d, t.label);
+    } catch (e) {
+      renderTruth(TRUTH_FALLBACK, "static fallback · documented anchor");
+    }
+
+    let ok = true;
+    let debtStats = { open: "—", idleCost: 0 };
+    let pnlStats = { net: null, idleLoss: 0, openRecv: null };
+    let sentStats = { count: 0, latest: null };
+
+    // DEBT
+    if (results[0].status === "fulfilled") {
+      const d = results[0].value;
+      debtStats = renderDebt(d);
+      lastUpdated.debt = d.updated || "";
+      $("bDebt").textContent = (d.entries || []).length;
+    } else {
+      ok = false;
+      $("debtGrid").innerHTML = '<div class="empty err">ledger.json failed to load: ' + esc(results[0].reason.message) + '</div>';
+    }
+
+    // P&L  (pass debt-derived idle cost as fallback)
+    if (results[1].status === "fulfilled") {
+      const d = results[1].value;
+      pnlStats = renderPnl(d, debtStats.idleCost);
+      lastUpdated.pnl = d.updated || "";
+      const cnt = (Array.isArray(d.revenue) ? d.revenue.length : 0)
+                + (Array.isArray(d.costs) ? d.costs.length : 0)
+                + (Array.isArray(d.lines) ? d.lines.length : 0);
+      $("bPnl").textContent = cnt || "0";
+    } else {
+      ok = false;
+      $("pnlBody").innerHTML = '<tr><td colspan="5" class="empty err" style="border:none;">pnl.json failed: ' + esc(results[1].reason.message) + '</td></tr>';
+    }
+
+    // SENTIMENT
+    if (results[2].status === "fulfilled") {
+      const d = results[2].value;
+      sentStats = renderSentiment(d);
+      lastUpdated.sent = d.updated || "";
+      $("bSent").textContent = sentStats.count;
+    } else {
+      ok = false;
+      $("sentTimeline").innerHTML = '<div class="empty err">sentiment.json failed: ' + esc(results[2].reason.message) + '</div>';
+    }
+
+    // ----- Metric bar -----
+    $("mGoals").textContent = debtStats.open;
+    $("mGoalsNote").textContent = debtStats.open === 1 ? "goal in pursuit" : "goals in pursuit";
+
+    const idleShown = (pnlStats.idleLoss && pnlStats.idleLoss > 0) ? pnlStats.idleLoss : debtStats.idleCost;
+    $("mIdle").textContent = (idleShown && idleShown > 0) ? money(idleShown) : "$0";
+    $("mIdleNote").textContent = (idleShown && idleShown > 0)
+      ? "billed against net · $" + RATE + "/hr"
+      : "no measured idle yet · watchdog pending (DEBT-002)";
+
+    if (pnlStats.net != null) {
+      $("mNet").textContent = money(pnlStats.net);
+      $("mNet").className = "v " + (pnlStats.net >= 0 ? "pos" : "neg");
+      $("mNetNote").textContent = pnlStats.openRecv != null && pnlStats.openRecv > 0
+        ? money(pnlStats.openRecv) + " open receivable"
+        : "revenue − cost";
+    } else {
+      $("mNet").textContent = "—";
+    }
+
+    if (sentStats.latest) {
+      const l = sentStats.latest;
+      const sc = (l.score != null) ? (l.score > 0 ? "+" + l.score : "" + l.score) : "";
+      const pol = polClass(l.polarity);
+      const color = pol === "severe-negative" ? "var(--neg-3)"
+                  : pol === "negative" ? "var(--neg-2)"
+                  : pol === "directive" ? "var(--directive)"
+                  : (pol === "approval" || pol === "positive") ? "var(--green)"
+                  : "var(--chrome-1)";
+      const q = String(l.quote || "");
+      const qShort = q.length > 96 ? q.slice(0, 96) + "…" : q;
+      $("mSentScore").innerHTML = '<span style="color:' + color + ';">' + esc(l.polarity || "neutral")
+        + (sc ? " (" + sc + ")" : "") + '</span><br><span style="font-size:13px;font-weight:500;color:var(--ink);font-family:Inter;font-style:italic;">“' + esc(qShort) + '”</span>';
+      $("mSentNote").textContent = relTime(l.ts) + (l.topic ? " · " + l.topic : "");
+    }
+
+    // ----- live indicator -----
+    const now = new Date();
+    $("refreshTs").textContent = fmtClock(now);
+    $("liveDot").className = ok ? "dot" : "dot stale";
+
+    // updated stamps
+    const stamps = [];
+    if (lastUpdated.debt) stamps.push("debt " + relTime(lastUpdated.debt));
+    if (lastUpdated.pnl) stamps.push("pnl " + relTime(lastUpdated.pnl));
+    if (lastUpdated.sent) stamps.push("sentiment " + relTime(lastUpdated.sent));
+    $("updatedStamps").textContent = stamps.join(" · ") || "—";
+  }
+
+  // ----- tabs -----
+  document.querySelectorAll(".tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const t = btn.dataset.tab;
+      document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b === btn));
+      document.querySelectorAll(".panel-section").forEach((s) =>
+        s.classList.toggle("active", s.id === "sec-" + t));
+    });
+  });
+
+  // ----- boot + auto-refresh every 30s (cache-busted) -----
+  refresh();
+  setInterval(refresh, REFRESH_MS);
+  // refresh on tab focus (so qi never sees stale on wake)
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refresh();
+  });
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

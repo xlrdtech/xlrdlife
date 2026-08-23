@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Xen STT Wordbank</title>
+<style>
+:root{--bg:#0a0e14;--bg2:#0f1419;--panel:#151b23;--border:#1f2730;--text:#d8dee9;--muted:#6c7a89;--accent:#5fb3b3;--warm:#f0a868;--green:#b8bb26;--red:#fb4934;--gap:#fabd2f}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;height:100%}
+body{display:grid;grid-template-rows:auto auto 1fr auto;height:100vh}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:24px}
+h1{font-size:16px;font-weight:600;color:var(--accent);letter-spacing:0.5px}
+h1 .sub{color:var(--muted);font-weight:400;margin-left:8px}
+.stats{display:flex;gap:18px;margin-left:auto}
+.stat{font-size:11px;color:var(--muted)}
+.stat b{color:var(--text);font-size:14px;margin-right:4px}
+.stat.gap b{color:var(--gap)}
+.toolbar{background:var(--panel);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#search{flex:0 0 280px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);color:var(--text);font:inherit;border-radius:3px}
+#search:focus{outline:none;border-color:var(--accent)}
+.cat-btn{padding:5px 11px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font:inherit;font-size:11px;cursor:pointer;border-radius:3px;transition:all 0.1s}
+.cat-btn:hover{color:var(--text);border-color:var(--accent)}
+.cat-btn.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.cat-btn .ct{opacity:0.6;margin-left:4px;font-size:10px}
+main{overflow:auto;padding:20px}
+.section{margin-bottom:28px}
+.section-title{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:10px}
+.section-title .count{color:var(--muted);font-size:11px}
+.section.gaps .section-title{color:var(--gap)}
+.section.gaps .section-title::before{content:"\26A0  "}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:4px}
+.entry{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:6px 10px;display:flex;gap:8px;align-items:center;font-size:12px;transition:border-color 0.1s}
+.entry:hover{border-color:var(--accent)}
+.entry.gap{border-color:var(--gap);background:rgba(250,189,47,0.05)}
+.key{color:var(--warm);font-style:italic;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arrow{color:var(--muted);flex-shrink:0}
+.val{color:var(--green);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:10px 20px;font-size:11px;color:var(--muted)}
+footer code{background:var(--panel);padding:1px 5px;border-radius:2px;color:var(--text)}
+.backup-note{color:var(--green)}
+.danger{color:var(--red)}
+</style></head><body>
+<header><h1>Xen STT Wordbank<span class="sub">~/.xen/stt-corrections.json</span></h1>
+<div class="stats"><div class="stat"><b>308</b>total entries</div><div class="stat"><b id="shown-count">308</b>shown</div><div class="stat gap"><b>11</b>gaps from today</div></div>
+</header>
+<div class="toolbar"><input id="search" type="text" placeholder="search keys or values..." autofocus>
+<button class="cat-btn active" data-cat="ALL">ALL <span class="ct">308</span></button>
+<button class="cat-btn" data-cat="Misc">Misc <span class="ct">56</span></button>
+<button class="cat-btn" data-cat="XLRD">XLRD <span class="ct">53</span></button>
+<button class="cat-btn" data-cat="Self Exec / SelfOwn">Self Exec / SelfOwn <span class="ct">50</span></button>
+<button class="cat-btn" data-cat="Numbers">Numbers <span class="ct">31</span></button>
+<button class="cat-btn" data-cat="Sintra / Grok / Vizzy">Sintra / Grok / Vizzy <span class="ct">30</span></button>
+<button class="cat-btn" data-cat="Stack acronyms">Stack acronyms <span class="ct">23</span></button>
+<button class="cat-btn" data-cat="Xen / XB">Xen / XB <span class="ct">13</span></button>
+<button class="cat-btn" data-cat="Beeper">Beeper <span class="ct">11</span></button>
+<button class="cat-btn" data-cat="Syncretism">Syncretism <span class="ct">11</span></button>
+<button class="cat-btn" data-cat="MCP">MCP <span class="ct">10</span></button>
+<button class="cat-btn" data-cat="Phone">Phone <span class="ct">7</span></button>
+<button class="cat-btn" data-cat="Triple/Quad M">Triple/Quad M <span class="ct">7</span></button>
+<button class="cat-btn" data-cat="Lyn">Lyn <span class="ct">6</span></button>
+</div>
+<main id="main"></main>
+<footer>Pre-edit snapshot: <code>.xen/stt-corrections.json.bak.20260511_082600</code> <span class="backup-note">taken</span> &middot; canon: <code>canon_pre_edit_snapshot_2026-05-11.md</code> &middot; debt logged: <span class="danger">$2900</span></footer>
+<script>
+const VOCAB={"deeper": "Beeper", "deepers": "Beeper", "beaver": "Beeper", "beavers": "Beeper", "beeber": "Beeper", "beepers": "Beeper", "keeper": "Beeper", "keepers": "Beeper", "peeper": "Beeper", "peepers": "Beeper", "zen browser": "XenBrowser", "zen": "Xen", "zoom browser": "XenBrowser", "lucky": "Luckie", "vivia": "VVS", "clyde": "Claude", "cloud": "Claude", "X B": "XB", "X b": "XB", "C B": "CB", "c b": "CB", "see browser": "CB", "sea browser": "CB", "Sebrowser": "CB", "cell browser": "CB", "Cellbrowser": "CB", "selfie exec browser": "XenBrowser", "self exec browser": "XenBrowser", "Self Exec Browser": "XenBrowser", "S T T": "STT", "T T S": "TTS", "S M S": "SMS", "V V S": "VVS", "X dot com": "X.com", "L 7 S": "L7S", "MCT": "MCP", "M C T": "MCP", "NCT": "MCP", "N C T": "MCP", "NCP": "MCP", "N C P": "MCP", "MTP": "MCP", "M T P": "MCP", "MCD": "MCP", "M C D": "MCP", "rec cast": "Raycast", "wreck cast": "Raycast", "ray cast": "Raycast", "9 9 3 4": "9934", "8 6 7 2": "8672", "9 0 0 9": "9009", "triple 9": "999", "triple nine": "999", "triple 0": "000", "triple zero": "000", "triple 8": "888", "triple eight": "888", "triple 7": "777", "triple seven": "777", "triple 6": "666", "triple six": "666", "triple 5": "555", "triple five": "555", "triple 4": "444", "triple four": "444", "triple 3": "333", "triple three": "333", "triple 2": "222", "triple two": "222", "triple 1": "111", "triple one": "111", "double 9": "99", "double nine": "99", "double 0": "00", "double zero": "00", "double 7": "77", "double seven": "77", "double 8": "88", "double eight": "88", "S X L R D": "XLRD", "X L R D": "XLRD", "XLRB": "XLRD", "X L R B": "XLRD", "XLRT": "XLRD", "X L R T": "XLRD", "XL ID": "XLRD", "X L I D": "XLRD", "excel ID": "XLRD", "XL D": "XLRD", "XLD": "XLRD", "slowed": "XLRD", "slow XLRD": "XLRD", "slowed XLRD": "XLRD", "slurred": "XLRD", "slurd": "XLRD", "slured": "XLRD", "slowered": "XLRD", "slowared": "XLRD", "slord": "XLRD", "slords": "XLRD", "sloard": "XLRD", "slward": "XLRD", "sloured": "XLRD", "schloard": "XLRD", "schlord": "XLRD", "exel are dee": "XLRD", "excel are dee": "XLRD", "ex el are dee": "XLRD", "X L R D tech": "XLRDtech", "slow tech": "XLRDtech", "slowed tech": "XLRDtech", "slow ed tech": "XLRDtech", "slowtech": "XLRDtech", "X L R D TECH": "XLRDTECH", "slow TECH": "XLRDTECH", "X L R D 999": "XLRD999", "X L R D triple 9": "XLRD999", "X L R D triple nine": "XLRD999", "slow triple 9": "XLRD999", "slow triple nine": "XLRD999", "slowed triple 9": "XLRD999", "slowed triple nine": "XLRD999", "slow 999": "XLRD999", "slowed 999": "XLRD999", "slow nine nine nine": "XLRD999", "self exec": "Self Exec", "selfexec": "Self Exec", "self exact": "Self Exec", "self check": "Self Exec", "Z Lexon": "Self Exec", "Z lexon": "Self Exec", "SEL": "Self Exec", "S E L": "Self Exec", "sell": "Self Exec", "cell": "Self Exec", "SCL": "SEL", "S C L": "SEL", "ZSEL": "ZSEL", "Z S E L": "ZSEL", "Z SEL": "ZSEL", "Xen phone": "Xen Phone", "xen phone": "Xen Phone", "zen phone": "Xen Phone", "XP the Xen phone": "Xen Phone", "X P the xen phone": "Xen Phone", "X P phone": "Xen Phone", "the X P": "Xen Phone", "Self Exec phone": "SelfExec Phone", "self exec phone": "SelfExec Phone", "SELF EXEC phone": "SELF Exec Phone", "self check phone": "SelfExec Phone", "cellular phone": "SelfExec Phone", "cell phone": "SelfExec Phone", "self in exact bonus": "SelfExec Phone", "self in exact phone": "SelfExec Phone", "self in exec phone": "SelfExec Phone", "self in act phone": "SelfExec Phone", "self exact phone": "SelfExec Phone", "selfexact phone": "SelfExec Phone", "Self Exec bone": "SelfExec Phone", "self exec bone": "SelfExec Phone", "selfexec bone": "SelfExec Phone", "self exact bone": "SelfExec Phone", "self in exec bone": "SelfExec Phone", "self own": "SelfOwn_", "selfown": "SelfOwn_", "SelfOwn": "SelfOwn_", "ownself": "SelfOwn_", "own self": "SelfOwn_", "OWNESELFOWN": "SelfOwn_", "owneselfown": "SelfOwn_", "own E selfown": "SelfOwn_", "SelfOwn phone": "SelfOwn_", "self own phone": "SelfOwn_", "selfown phone": "SelfOwn_", "zelexon": "Self Exec", "zlexon": "Self Exec", "selfexac": "Self Exec", "self exac": "Self Exec", "east allen": "East Allen", "east alan": "East Allen", "east ellen": "East Allen", "AEA": "AEA", "A E A": "AEA", "X 9": "X9", "X nine": "X9", "sintra": "Sintra", "luckie goggins": "Luckie Goggins", "lucky goggins": "Luckie Goggins", "Luick": "loop", "luick": "loop", "Looop": "loop", "lupe": "loop", "central": "Sintra", "Central": "Sintra", "Super Gronk": "SuperGrok", "super gronk": "SuperGrok", "Super gronk": "SuperGrok", "SUPERGR OK": "SuperGrok", "supergr ok": "SuperGrok", "Super Grok": "SuperGrok", "super grok": "SuperGrok", "supergrok": "SuperGrok", "Supergrok": "SuperGrok", "Super Crock": "SuperGrok", "super crock": "SuperGrok", "Brock": "Grok", "brock": "Grok", "Super Brock": "SuperGrok", "super brock": "SuperGrok", "central agents": "Sintra agents", "Central agents": "Sintra agents", "central agent": "Sintra agent", "Central agent": "Sintra agent", "no app.SR app": "Sintra", "no app SR app": "Sintra", "app.SR": "Sintra", "SR app": "Sintra", "SINTR": "Sintra", "Sintr": "Sintra", "Sintra AI Vizzy": "Sintra AI Vizzy", "Vizzy": "Vizzy", "synchronism": "syncretism", "Synchronism": "syncretism", "sick Chim TISM": "syncretism", "Sick Chim TISM": "syncretism", "sick Chism TISM": "syncretism", "Sick Chism TISM": "syncretism", "SYNCHETISM": "syncretism", "synchetism": "syncretism", "Synchetism": "syncretism", "synchromism": "syncretism", "Synchromism": "syncretism", "zim": "Xen", "Zim": "Xen", "zim browser": "XenBrowser", "Zim browser": "XenBrowser", "Zim Browser": "XenBrowser", "second knee": "second me", "second need": "second me", "pain in the tree": "pane in the tree", "rapper": "wrapper", "Rapper": "wrapper", "Claude rapper": "Claude wrapper", "door buyer": "doubling", "dual buying": "dual binding", "SelFo": "SelfOwn_", "Self Own": "SelfOwn_", "Self own": "SelfOwn_", "Sef0": "SelfOwn_", "Sef0wn": "SelfOwn_", "SefOwn": "SelfOwn_", "ditches": "bridges", "ditch through matrix": "bridge through matrix", "go high level": "GoHighLevel", "GoHighlevel": "GoHighLevel", "high level": "GoHighLevel", "M M M M": "MMMM", "M.M.M.M": "MMMM", "spark beside beeper": "Spark Beside Beeper", "extreme bottom": "extreme bottleneck", "cinco de mayo": "Cinco de Mayo", "XenV40": "XenV40", "V E I": "V.E.I.", "vei": "V.E.I.", "V.E.I": "V.E.I.", "VEI": "V.E.I.", "vvs": "VVS", "pain zero": "pane zero", "pane is zero": "pane %0", "tmux": "tmux", "iMessage": "iMessage", "iMessages": "iMessage", "I message": "iMessage", "I messages": "iMessage", "practicalace": "practicalace", "second me": "second.me", "second.me": "second.me", "SecondMe": "second.me", "app academy": "App Academy", "omninbox": "omninbox", "omni inbox": "omni-inbox", "omni-inbox": "omni-inbox", "XB": "XB", "xen browser": "XenBrowser", "xenbrowser": "XenBrowser", "XP": "XP", "L7S": "L7S", "l7s": "L7S", "l 7 s": "L7S", "triple M": "mmm.xlrd.org", "Triple M": "mmm.xlrd.org", "triple m": "mmm.xlrd.org", "M.M.M.M.": "MMMM", "quad M": "MMMM", "triple M dot xlrd dot org": "mmm.xlrd.org", "mmm xlrd": "mmm.xlrd.org", "mmm.xlrd": "mmm.xlrd.org", "mm m xlrd": "mmm.xlrd.org", "and MMM": "and MMMM", "and mmm": "and MMMM", "and triple m": "and MMMM", "Lynn": "Lyn", "lynn": "Lyn", "LYNN": "Lyn", "Lyn Goggins": "Lyn", "Lyn persona": "Lyn persona", "Linn": "Lyn"};
+const TODAY={"lunch": "launchctl", "launch": "launchctl", "demon": "daemon", "demons": "daemons", "mines": "mtimes", "pen": "append", "pin": "append", "rachel": "Xen", "Rachel": "Xen", "ketchup": "catch up", "ystem": "system"};
+const CATS={"Misc": [["lucky", "Luckie"], ["C B", "CB"], ["c b", "CB"], ["see browser", "CB"], ["sea browser", "CB"], ["Sebrowser", "CB"], ["cell browser", "CB"], ["Cellbrowser", "CB"], ["X dot com", "X.com"], ["rec cast", "Raycast"], ["wreck cast", "Raycast"], ["ray cast", "Raycast"], ["ZSEL", "ZSEL"], ["Z S E L", "ZSEL"], ["Z SEL", "ZSEL"], ["east allen", "East Allen"], ["east alan", "East Allen"], ["east ellen", "East Allen"], ["AEA", "AEA"], ["A E A", "AEA"], ["X 9", "X9"], ["X nine", "X9"], ["luckie goggins", "Luckie Goggins"], ["lucky goggins", "Luckie Goggins"], ["Luick", "loop"], ["luick", "loop"], ["Looop", "loop"], ["lupe", "loop"], ["second knee", "second me"], ["second need", "second me"], ["pain in the tree", "pane in the tree"], ["door buyer", "doubling"], ["dual buying", "dual binding"], ["ditches", "bridges"], ["ditch through matrix", "bridge through matrix"], ["go high level", "GoHighLevel"], ["GoHighlevel", "GoHighLevel"], ["high level", "GoHighLevel"], ["extreme bottom", "extreme bottleneck"], ["cinco de mayo", "Cinco de Mayo"], ["XenV40", "XenV40"], ["pain zero", "pane zero"], ["pane is zero", "pane %0"], ["tmux", "tmux"], ["iMessage", "iMessage"], ["iMessages", "iMessage"], ["I message", "iMessage"], ["I messages", "iMessage"], ["practicalace", "practicalace"], ["second me", "second.me"], ["second.me", "second.me"], ["SecondMe", "second.me"], ["app academy", "App Academy"], ["omninbox", "omninbox"], ["omni inbox", "omni-inbox"], ["omni-inbox", "omni-inbox"]], "XLRD": [["S X L R D", "XLRD"], ["X L R D", "XLRD"], ["XLRB", "XLRD"], ["X L R B", "XLRD"], ["XLRT", "XLRD"], ["X L R T", "XLRD"], ["XL ID", "XLRD"], ["X L I D", "XLRD"], ["excel ID", "XLRD"], ["XL D", "XLRD"], ["XLD", "XLRD"], ["slowed", "XLRD"], ["slow XLRD", "XLRD"], ["slowed XLRD", "XLRD"], ["slurred", "XLRD"], ["slurd", "XLRD"], ["slured", "XLRD"], ["slowered", "XLRD"], ["slowared", "XLRD"], ["slord", "XLRD"], ["slords", "XLRD"], ["sloard", "XLRD"], ["slward", "XLRD"], ["sloured", "XLRD"], ["schloard", "XLRD"], ["schlord", "XLRD"], ["exel are dee", "XLRD"], ["excel are dee", "XLRD"], ["ex el are dee", "XLRD"], ["X L R D tech", "XLRDtech"], ["slow tech", "XLRDtech"], ["slowed tech", "XLRDtech"], ["slow ed tech", "XLRDtech"], ["slowtech", "XLRDtech"], ["X L R D TECH", "XLRDTECH"], ["slow TECH", "XLRDTECH"], ["X L R D 999", "XLRD999"], ["X L R D triple 9", "XLRD999"], ["X L R D triple nine", "XLRD999"], ["slow triple 9", "XLRD999"], ["slow triple nine", "XLRD999"], ["slowed triple 9", "XLRD999"], ["slowed triple nine", "XLRD999"], ["slow 999", "XLRD999"], ["slowed 999", "XLRD999"], ["slow nine nine nine", "XLRD999"], ["triple M", "mmm.xlrd.org"], ["Triple M", "mmm.xlrd.org"], ["triple m", "mmm.xlrd.org"], ["triple M dot xlrd dot org", "mmm.xlrd.org"], ["mmm xlrd", "mmm.xlrd.org"], ["mmm.xlrd", "mmm.xlrd.org"], ["mm m xlrd", "mmm.xlrd.org"]], "Self Exec / SelfOwn": [["self exec", "Self Exec"], ["selfexec", "Self Exec"], ["self exact", "Self Exec"], ["self check", "Self Exec"], ["Z Lexon", "Self Exec"], ["Z lexon", "Self Exec"], ["SEL", "Self Exec"], ["S E L", "Self Exec"], ["sell", "Self Exec"], ["cell", "Self Exec"], ["SCL", "SEL"], ["S C L", "SEL"], ["Self Exec phone", "SelfExec Phone"], ["self exec phone", "SelfExec Phone"], ["SELF EXEC phone", "SELF Exec Phone"], ["self check phone", "SelfExec Phone"], ["cellular phone", "SelfExec Phone"], ["cell phone", "SelfExec Phone"], ["self in exact bonus", "SelfExec Phone"], ["self in exact phone", "SelfExec Phone"], ["self in exec phone", "SelfExec Phone"], ["self in act phone", "SelfExec Phone"], ["self exact phone", "SelfExec Phone"], ["selfexact phone", "SelfExec Phone"], ["Self Exec bone", "SelfExec Phone"], ["self exec bone", "SelfExec Phone"], ["selfexec bone", "SelfExec Phone"], ["self exact bone", "SelfExec Phone"], ["self in exec bone", "SelfExec Phone"], ["self own", "SelfOwn_"], ["selfown", "SelfOwn_"], ["SelfOwn", "SelfOwn_"], ["ownself", "SelfOwn_"], ["own self", "SelfOwn_"], ["OWNESELFOWN", "SelfOwn_"], ["owneselfown", "SelfOwn_"], ["own E selfown", "SelfOwn_"], ["SelfOwn phone", "SelfOwn_"], ["self own phone", "SelfOwn_"], ["selfown phone", "SelfOwn_"], ["zelexon", "Self Exec"], ["zlexon", "Self Exec"], ["selfexac", "Self Exec"], ["self exac", "Self Exec"], ["SelFo", "SelfOwn_"], ["Self Own", "SelfOwn_"], ["Self own", "SelfOwn_"], ["Sef0", "SelfOwn_"], ["Sef0wn", "SelfOwn_"], ["SefOwn", "SelfOwn_"]], "Numbers": [["9 9 3 4", "9934"], ["8 6 7 2", "8672"], ["9 0 0 9", "9009"], ["triple 9", "999"], ["triple nine", "999"], ["triple 0", "000"], ["triple zero", "000"], ["triple 8", "888"], ["triple eight", "888"], ["triple 7", "777"], ["triple seven", "777"], ["triple 6", "666"], ["triple six", "666"], ["triple 5", "555"], ["triple five", "555"], ["triple 4", "444"], ["triple four", "444"], ["triple 3", "333"], ["triple three", "333"], ["triple 2", "222"], ["triple two", "222"], ["triple 1", "111"], ["triple one", "111"], ["double 9", "99"], ["double nine", "99"], ["double 0", "00"], ["double zero", "00"], ["double 7", "77"], ["double seven", "77"], ["double 8", "88"], ["double eight", "88"]], "Sintra / Grok / Vizzy": [["sintra", "Sintra"], ["central", "Sintra"], ["Central", "Sintra"], ["Super Gronk", "SuperGrok"], ["super gronk", "SuperGrok"], ["Super gronk", "SuperGrok"], ["SUPERGR OK", "SuperGrok"], ["supergr ok", "SuperGrok"], ["Super Grok", "SuperGrok"], ["super grok", "SuperGrok"], ["supergrok", "SuperGrok"], ["Supergrok", "SuperGrok"], ["Super Crock", "SuperGrok"], ["super crock", "SuperGrok"], ["Brock", "Grok"], ["brock", "Grok"], ["Super Brock", "SuperGrok"], ["super brock", "SuperGrok"], ["central agents", "Sintra agents"], ["Central agents", "Sintra agents"], ["central agent", "Sintra agent"], ["Central agent", "Sintra agent"], ["no app.SR app", "Sintra"], ["no app SR app", "Sintra"], ["app.SR", "Sintra"], ["SR app", "Sintra"], ["SINTR", "Sintra"], ["Sintr", "Sintra"], ["Sintra AI Vizzy", "Sintra AI Vizzy"], ["Vizzy", "Vizzy"]], "Stack acronyms": [["vivia", "VVS"], ["clyde", "Claude"], ["cloud", "Claude"], ["X B", "XB"], ["X b", "XB"], ["S T T", "STT"], ["T T S", "TTS"], ["S M S", "SMS"], ["V V S", "VVS"], ["L 7 S", "L7S"], ["rapper", "wrapper"], ["Rapper", "wrapper"], ["Claude rapper", "Claude wrapper"], ["V E I", "V.E.I."], ["vei", "V.E.I."], ["V.E.I", "V.E.I."], ["VEI", "V.E.I."], ["vvs", "VVS"], ["XB", "XB"], ["XP", "XP"], ["L7S", "L7S"], ["l7s", "L7S"], ["l 7 s", "L7S"]], "Xen / XB": [["zen browser", "XenBrowser"], ["zen", "Xen"], ["zoom browser", "XenBrowser"], ["selfie exec browser", "XenBrowser"], ["self exec browser", "XenBrowser"], ["Self Exec Browser", "XenBrowser"], ["zim", "Xen"], ["Zim", "Xen"], ["zim browser", "XenBrowser"], ["Zim browser", "XenBrowser"], ["Zim Browser", "XenBrowser"], ["xen browser", "XenBrowser"], ["xenbrowser", "XenBrowser"]], "Beeper": [["deeper", "Beeper"], ["deepers", "Beeper"], ["beaver", "Beeper"], ["beavers", "Beeper"], ["beeber", "Beeper"], ["beepers", "Beeper"], ["keeper", "Beeper"], ["keepers", "Beeper"], ["peeper", "Beeper"], ["peepers", "Beeper"], ["spark beside beeper", "Spark Beside Beeper"]], "Syncretism": [["synchronism", "syncretism"], ["Synchronism", "syncretism"], ["sick Chim TISM", "syncretism"], ["Sick Chim TISM", "syncretism"], ["sick Chism TISM", "syncretism"], ["Sick Chism TISM", "syncretism"], ["SYNCHETISM", "syncretism"], ["synchetism", "syncretism"], ["Synchetism", "syncretism"], ["synchromism", "syncretism"], ["Synchromism", "syncretism"]], "MCP": [["MCT", "MCP"], ["M C T", "MCP"], ["NCT", "MCP"], ["N C T", "MCP"], ["NCP", "MCP"], ["N C P", "MCP"], ["MTP", "MCP"], ["M T P", "MCP"], ["MCD", "MCP"], ["M C D", "MCP"]], "Phone": [["Xen phone", "Xen Phone"], ["xen phone", "Xen Phone"], ["zen phone", "Xen Phone"], ["XP the Xen phone", "Xen Phone"], ["X P the xen phone", "Xen Phone"], ["X P phone", "Xen Phone"], ["the X P", "Xen Phone"]], "Triple/Quad M": [["M M M M", "MMMM"], ["M.M.M.M", "MMMM"], ["M.M.M.M.", "MMMM"], ["quad M", "MMMM"], ["and MMM", "and MMMM"], ["and mmm", "and MMMM"], ["and triple m", "and MMMM"]], "Lyn": [["Lynn", "Lyn"], ["lynn", "Lyn"], ["LYNN", "Lyn"], ["Lyn Goggins", "Lyn"], ["Lyn persona", "Lyn persona"], ["Linn", "Lyn"]]};
+const main=document.getElementById("main");
+const search=document.getElementById("search");
+const shownCount=document.getElementById("shown-count");
+let activeCat="ALL";
+let query="";
+
+function mk(tag,cls,txt){
+  const el=document.createElement(tag);
+  if(cls)el.className=cls;
+  if(txt!=null)el.textContent=txt;
+  return el;
+}
+
+function makeEntry(k,v,isGap){
+  const e=mk("div", isGap?"entry gap":"entry");
+  e.appendChild(mk("span","key",k));
+  e.appendChild(mk("span","arrow","→"));
+  e.appendChild(mk("span","val",v));
+  return e;
+}
+
+function makeSection(title,countText,extraClass){
+  const sec=mk("div", extraClass?"section "+extraClass:"section");
+  const t=mk("div","section-title");
+  t.appendChild(document.createTextNode(title));
+  if(countText){
+    const c=mk("span","count",countText);
+    t.appendChild(document.createTextNode(" "));
+    t.appendChild(c);
+  }
+  sec.appendChild(t);
+  const grid=mk("div","grid");
+  sec.appendChild(grid);
+  return [sec, grid];
+}
+
+function render(){
+  main.replaceChildren();
+  let shown=0;
+  const todayKeys=Object.keys(TODAY);
+  if(todayKeys.length){
+    const [sec,grid]=makeSection("Today's session gaps", todayKeys.length+" entries to add", "gaps");
+    for(const [k,v] of Object.entries(TODAY)){
+      grid.appendChild(makeEntry(k,v,true));
+    }
+    main.appendChild(sec);
+  }
+  for(const [cat,entries] of Object.entries(CATS)){
+    if(activeCat!=="ALL"&&activeCat!==cat)continue;
+    const filtered=entries.filter(([k,v])=>{
+      if(!query)return true;
+      const q=query.toLowerCase();
+      return k.toLowerCase().includes(q)||v.toLowerCase().includes(q);
+    });
+    if(!filtered.length)continue;
+    const cnt=filtered.length+(filtered.length!==entries.length?"/"+entries.length:"");
+    const [sec,grid]=makeSection(cat, cnt);
+    for(const [k,v] of filtered){
+      grid.appendChild(makeEntry(k,v,false));
+      shown++;
+    }
+    main.appendChild(sec);
+  }
+  shownCount.textContent=shown;
+}
+
+search.addEventListener("input",e=>{query=e.target.value;render()});
+document.querySelectorAll(".cat-btn").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll(".cat-btn").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    activeCat=b.dataset.cat;
+    render();
+  });
+});
+render();
+</script><script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body></html>

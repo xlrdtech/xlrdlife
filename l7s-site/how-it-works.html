@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>How It All Works — L7S | Enrollment, Getting Started &amp; the HERO C.A.R.E CALL</title>
+<meta name="description" content="The simple breakdown of how L7S works — discover, book a HERO C.A.R.E CALL, get your R&amp;R™ Audit and AIR Recap, choose your tier, and onboard. Meet the League of 7 Superheroes: Credit Hero HoT 7™, CEO Hero, Loan Hero, Cashflow Hero, Crypto Hero, Coverage Hero and Community Hero. THE BEST by Design, THE HERO by Demand.">
+<style>
+  :root{
+    /* LIGHT IS THE DEFAULT (East 2026-08-01: "L7S websites must default in light mode").
+       color-scheme:light also stops an OS dark preference from restyling native form controls.
+       There is deliberately NO prefers-color-scheme:dark block in this file — light must render
+       for every viewer, including one whose OS is set to dark. */
+    color-scheme:light;
+    --bg:#f6f7f9;        /* near-white ground   */
+    --panel:#ffffff;     /* raised cards        */
+    --sunken:#eef1f5;    /* fields, empty slots */
+    --line:#e3e6eb;      /* hairline borders    */
+    --ink:#0a0c10;       /* BRAND BLACK — now the text + dark bands, no longer the ground */
+    --muted:#4f5866;     /* 7.4:1 on --bg — passes AA for body text */
+    /* L7S brand — Red · White · Blue · Black · Gold (Luckie 2026-08-01) */
+    --brand:#1f5cff;     /* blue — 4.86:1 on --bg, safe for link text */
+    --brand-2:#e6ba3c;   /* GOLD — signature accent: fills, rules, the mark, the flag stripe.
+                            Only 1.7:1 on a light ground, so it is NEVER used for text here. */
+    --gold-ink:#8a6410;  /* darkened gold for gold-COLOURED TEXT — 5.0:1 on --bg, passes AA */
+    --accent:#d7263d;    /* red */
+    --radius:16px; --maxw:1080px;
+    /* Neutral elevation only — NO colored/glowing shadows (design hook flags "dark-glow") */
+    --elev:0 1px 2px rgba(10,12,16,.06); --elev-2:0 4px 14px rgba(10,12,16,.10);
+    /* Stepped type scale — every step is >=1.25x the one below it
+       (design hook flags "flat-type-hierarchy"). 12 -> 16 -> 20 -> 25 -> 32 -> 50 */
+    --fs-1:12px;   /* micro: eyebrow, tags, fine print   */
+    --fs-2:16px;   /* body                    16/12 =1.33 */
+    --fs-3:20px;   /* card + step headings    20/16 =1.25 */
+    --fs-4:25px;   /* lede, step numerals     25/20 =1.25 */
+    --fs-5:32px;   /* h2                      32/25 =1.28 */
+    --fs-6:50px;   /* h1                      50/32 =1.56 */
+  }
+  *{box-sizing:border-box} html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);overflow-x:hidden;
+    font:var(--fs-2)/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif}
+  img,svg{max-width:100%}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  a{color:var(--brand);text-decoration:none} a:hover{text-decoration:underline}
+  header{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);
+    background:rgba(255,255,255,.86);border-bottom:1px solid var(--line);
+    border-top:3px solid transparent;
+    border-image:linear-gradient(90deg,var(--brand),#fff,var(--accent),var(--brand-2)) 1}
+  .nav{display:flex;align-items:center;justify-content:space-between;min-height:64px;gap:16px;
+    flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+  .logo{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.2px}
+  .logo .mark{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;
+    background:var(--ink);border-radius:9px;flex:none}
+  /* PLACEHOLDER gold-lightning mark — inline SVG on purpose so this page makes ZERO external
+     requests and renders offline. East: the real L7S mark lives at l7sinc.com/assets/logo.svg —
+     do NOT hotlink it; download it, then paste its SVG source in place of the <svg> below. */
+  .nav-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .nav-links a.txt{color:var(--muted);font-weight:600;font-size:14px;padding:8px 6px}
+  .nav-links a.txt:hover{color:var(--ink);text-decoration:none}
+  .nav-links a.txt.active{color:var(--gold-ink)}
+  .nav-cta{white-space:nowrap}
+  /* Phone: keep the sticky header to two compact rows — logo + CTA, then the links.
+     Without this the 5 items wrap to 3 rows and eat ~20% of the viewport. */
+  @media(max-width:820px){
+    .nav{row-gap:6px;column-gap:8px;padding-top:8px;padding-bottom:8px}
+    .nav-links{order:3;width:100%;justify-content:space-between;gap:2px}
+    .nav-links a.txt{font-size:13px;padding:4px 2px}
+    .nav-cta{order:2;padding:10px 14px;font-size:14px}
+  }
+  .btn{display:inline-block;padding:12px 20px;border-radius:12px;font-weight:600;cursor:pointer;border:0}
+  /* Primary = gold-forward (L7S black+gold); blue lives in the flag stripe + focus rings */
+  .btn-primary{background:linear-gradient(135deg,var(--brand-2),#c8971f);color:#141007}
+  .btn-ghost{background:var(--panel);border:1px solid var(--line);color:var(--ink)}
+  .btn-primary:hover,.btn-ghost:hover{text-decoration:none;filter:brightness(1.05)}
+  .btn-block{display:block;width:100%;text-align:center}
+  .hero{padding:80px 0 48px;text-align:center}
+  .eyebrow{color:var(--gold-ink);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:var(--fs-1)}
+  h1{font-size:clamp(32px,6vw,50px);line-height:1.06;margin:14px 0 12px;letter-spacing:-.02em}
+  .lede{color:var(--muted);font-size:clamp(20px,2.4vw,25px);line-height:1.45;max-width:680px;margin:0 auto 20px}
+  .motto{color:var(--gold-ink);font-weight:700;letter-spacing:.02em;font-size:var(--fs-3);margin:0 0 26px}
+  .cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  section{padding:56px 0;border-top:1px solid var(--line)}
+  h2{font-size:clamp(25px,4vw,32px);line-height:1.15;letter-spacing:-.01em;margin:0 0 8px}
+  h3{font-size:var(--fs-3);line-height:1.3;margin:0 0 8px}
+  .sub{color:var(--muted);margin:0 0 28px;max-width:640px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:24px;box-shadow:var(--elev)}
+  .card p{margin:0;color:var(--muted)}
+  .grid{display:grid;gap:20px}
+  @media(min-width:760px){.grid.cols-2{grid-template-columns:1fr 1fr}
+    .grid.cols-3{grid-template-columns:repeat(3,1fr)}}
+  .lead-in{color:var(--gold-ink);font-weight:700}
+
+  /* ---- Numbered steps ---- */
+  .steps{list-style:none;padding:0;margin:0;display:grid;gap:18px}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:24px;box-shadow:var(--elev);display:grid;gap:16px;align-items:start;
+    grid-template-columns:52px 1fr}
+  .step-n{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    font-size:var(--fs-4);font-weight:800;line-height:1;color:#141007;
+    background:linear-gradient(135deg,var(--brand-2),#c8971f)}
+  .step h3{margin:0 0 6px}
+  .step p{margin:0;color:var(--muted)}
+  .step p + p{margin-top:10px}
+  .step-note{display:block;color:var(--gold-ink);font-size:var(--fs-1);font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+
+  /* ---- Explainer-video placeholder ---- */
+  /* width:100% is load-bearing — without a definite width, aspect-ratio + min-height
+     inflates the box wider than the viewport on phones (caused a 5px horizontal overflow). */
+  .video-slot{width:100%;border:2px dashed var(--line);border-radius:var(--radius);background:var(--sunken);
+    aspect-ratio:16/9;min-height:200px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+  .video-slot .play{width:64px;height:64px;border-radius:50%;border:2px solid var(--gold-ink);
+    display:flex;align-items:center;justify-content:center}
+  .video-slot .cap{font-weight:700;font-size:var(--fs-3)}
+  .video-slot .fine{margin:0;max-width:420px}
+
+  /* ---- Ladder (DIY -> DWY -> DFY) ---- */
+  .ladder{display:grid;gap:20px}
+  @media(min-width:820px){.ladder{grid-template-columns:repeat(3,1fr)}}
+  .rung{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:24px;box-shadow:var(--elev);display:flex;flex-direction:column}
+  .rung.top{border-color:var(--gold-ink);box-shadow:var(--elev-2)}
+  /* Scoped with the parent class on purpose: bare `.rung-key` (0,1,0) loses to `.rung p`
+     (0,1,1) below, which silently rendered DIY/DWY/DFY muted instead of gold. */
+  .rung .rung-key{font-size:var(--fs-4);font-weight:800;letter-spacing:.06em;color:var(--gold-ink);
+    line-height:1.1;margin:0 0 4px}
+  .rung-name{font-size:var(--fs-1);font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 14px}
+  .rung p{margin:0;color:var(--muted);flex:1}
+  .rung .tag{margin-top:16px}
+  .tag{display:inline-block;padding:5px 11px;border:1px solid var(--line);border-radius:999px;
+    color:var(--gold-ink);font-size:var(--fs-1);font-weight:600;margin:0 6px 8px 0}
+  .pill{display:inline-block;padding:6px 12px;border:1px solid var(--line);border-radius:999px;
+    color:var(--muted);font-size:var(--fs-1);margin:4px 6px 0 0}
+
+  /* ---- The League of 7 Superheroes + A.B.C.S. cards ---- */
+  /* minmax min stays under the 390px phone content width (390 - 48 padding = 342) so the
+     grid never forces a horizontal scrollbar. */
+  .sevens{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));margin-top:6px}
+  .seven{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:18px;
+    box-shadow:var(--elev)}
+  .seven b{display:block;font-size:var(--fs-1);font-weight:800;letter-spacing:.16em;
+    color:var(--gold-ink);line-height:1.1}
+  .seven strong{display:block;color:var(--ink);font-size:var(--fs-3);line-height:1.25;margin:7px 0 6px}
+  .seven span{display:block;color:var(--muted);font-size:var(--fs-2);line-height:1.55}
+  .seven .tag{margin-top:12px}
+  /* A.B.C.S. is four letters — keep all four on one row on desktop instead of a 3+1 orphan. */
+  @media(min-width:940px){#abcs .sevens{grid-template-columns:repeat(4,1fr)}}
+
+  /* ---- Checklist ---- */
+  .checks{list-style:none;padding:0;margin:0}
+  .checks li{position:relative;padding:0 0 0 26px;margin:12px 0;color:var(--muted)}
+  .checks li::before{content:"";position:absolute;left:0;top:9px;width:11px;height:11px;border-radius:3px;
+    background:linear-gradient(135deg,var(--brand-2),#c8971f)}
+  .checks li strong{color:var(--ink)}
+
+  .note{border:1px dashed var(--line);border-radius:12px;padding:14px 16px;color:var(--muted);
+    margin-top:18px;background:var(--sunken)}
+  .note strong{color:var(--ink)}
+  .fine{color:var(--muted);font-size:var(--fs-1);margin-top:14px}
+  /* Footer is a deliberate BRAND BLACK band — the one place true gold reads at 10.3:1, so the
+     "primary black with gold lightning" identity still lands on a light-mode page. */
+  footer{padding:40px 0;background:var(--ink);color:#c3ccd6;font-size:var(--fs-1);border-top:0}
+  footer .brand-line{color:#fff;font-weight:700;font-size:var(--fs-2);margin:0 0 8px}
+  footer a{color:var(--brand-2)}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+  <div class="logo"><span class="mark"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="#e6ba3c"/></svg></span> L7S</div>
+  <nav class="nav-links">
+    <a class="txt" href="index.html">Who we are</a>
+    <a class="txt active" href="how-it-works.html">How it works</a>
+    <a class="txt" href="onboarding.html">Onboarding</a>
+    <a class="txt" href="pricing.html">Pricing</a>
+  </nav>
+  <!-- CTA points at the existing booking form on pricing.html — no new endpoint here -->
+  <a class="btn btn-primary nav-cta" href="pricing.html#book">Book a HERO C.A.R.E CALL</a>
+</div></header>
+
+<main>
+  <section class="hero" style="border-top:0">
+    <div class="wrap">
+      <div class="eyebrow">How it all works</div>
+      <h1>How It All Works.</h1>
+      <p class="lede">START. SCALE. STREAMLINE. YOUR SERVICES LIKE A SUPERHERO! Here is the whole path in
+        plain English — from the first time you find us to the day your systems are running.</p>
+      <p class="motto">Answer the Call, Be the Hero!</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#steps">See the 5 steps</a>
+        <a class="btn btn-ghost" href="#seven">Meet the League of 7</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ THE FIVE STEPS ============ -->
+  <section id="steps">
+    <div class="wrap">
+      <h2>The path, start to finish</h2>
+      <p class="sub">Five steps. Nothing hidden, nothing you have to guess at.</p>
+
+      <ol class="steps">
+
+        <li class="step">
+          <div class="step-n">1</div>
+          <div>
+            <h3>Discover</h3>
+            <p>You find L7S — a referral, an event, a post, a search. Read
+              <a href="index.html">who we are</a>, look over the
+              <a href="pricing.html">four tiers</a>, and see whether the way we work fits the way you work.</p>
+            <p>Nothing is asked of you at this stage but a look.</p>
+          </div>
+        </li>
+
+        <li class="step">
+          <div class="step-n">2</div>
+          <div>
+            <span class="step-note">This is the front door</span>
+            <h3>Book a HERO C.A.R.E CALL</h3>
+            <p><strong style="color:var(--ink)">C</strong>onsulting and
+              <strong style="color:var(--ink)">C</strong>oaching Session
+              <strong style="color:var(--ink)">C</strong>all for
+              <strong style="color:var(--ink)">C</strong>larity,
+              <strong style="color:var(--ink)">C</strong>onfidence and a
+              <strong style="color:var(--ink)">C</strong>lear Path to
+              <strong style="color:var(--ink)">C</strong>onscious
+              <strong style="color:var(--ink)">C</strong>hoices for
+              <strong style="color:var(--ink)">C</strong>hange.</p>
+            <p>You pick the "C" category the call is about — Business Credit, Cashflow Confidence,
+              Capital Consulting / Funding, Cryptocurrency Education, Corporation Structuring,
+              Currency Exchange / FX, Community, or another "C". It is not just about credit, and no
+              active credit monitoring is required.</p>
+            <p>Booking runs on the <strong style="color:var(--ink)">W.O.M.E.N.™</strong> intake profile —
+              your business details and objectives, entered once, so the call opens on the real
+              conversation instead of the basics.</p>
+            <!-- ⚠ CONTRADICTION WITH THE LIVE SITE — East, this one matters.
+                 l7sinc.com's W.O.M.E.N.™ intake HARD-GATES every visitor on credit monitoring:
+                 "Do you have active credit monitoring? *" with a required provider dropdown and
+                 "Credit monitoring is required for assessment" (l7sinc-live.md lines 400–414).
+                 Our copy says the opposite — "no active credit monitoring is required" — and that is
+                 the correct, converting position, because the live gate ALSO contradicts the live
+                 site's own compliance block ("NOT a credit repair company") and its own FAQ
+                 ("Do you directly provide credit repair? No."). Kept our version. Luckie must
+                 either drop the gate on the live intake or stop claiming the seven are not
+                 credit-led. Flagged in the handoff report. -->
+          </div>
+        </li>
+
+        <li class="step">
+          <div class="step-n">3</div>
+          <div>
+            <h3>Get your R&amp;R™ Audit and AIR Recap</h3>
+            <p><strong class="lead-in">R&amp;R™ — Review &amp; Recommendation.</strong>
+              In full, the way L7S registers it: the <em>Review &amp; Recommendation Audit &amp; Analysis
+              Awareness Evaluation</em>. In plain English — a straight look at where things stand, an
+              honest read on what you are and are not yet aware of, and the specific moves we would
+              make next.</p>
+            <p><strong class="lead-in">AIR Recap — Analytical Insights Report.</strong>
+              Your session distilled into insights you can act on and revisit.</p>
+            <p>You also leave with a personalised <strong style="color:var(--ink)">A.B.C.S.™</strong>
+              roadmap and your hero deployment plan — which of the
+              <a href="#seven">7 Core Heroes</a> goes to work first.</p>
+            <p>All of it comes out of every HERO C.A.R.E CALL. It is yours either way — even if you decide
+              L7S is not your next move.</p>
+          </div>
+        </li>
+
+        <li class="step">
+          <div class="step-n">4</div>
+          <div>
+            <h3>Choose your tier — this is enrollment</h3>
+            <p>With the audit in hand you pick the level that matches where you are: Low Ticket,
+              Mid Ticket, High Ticket, or Enterprise. Each one is a real path forward — see the
+              <a href="pricing.html#tiers">full tier breakdown and pricing</a>.</p>
+            <p>Not sure which fits? That is exactly what the call is for. We map it with you —
+              no pressure, just clarity.</p>
+          </div>
+        </li>
+
+        <li class="step">
+          <div class="step-n">5</div>
+          <div>
+            <span class="step-note">Getting started</span>
+            <h3>Onboard and go</h3>
+            <p>You are welcomed in, given access to the <strong style="color:var(--ink)">Skool</strong>
+              Community and <strong style="color:var(--ink)">L7S University</strong>, and your systems get
+              installed and implemented at your tier level.</p>
+            <p>The full sequence lives on its own page —
+              <a href="onboarding.html">see what onboarding looks like</a>.</p>
+          </div>
+        </li>
+
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ ENROLLMENT ============ -->
+  <section id="enrollment">
+    <div class="wrap">
+      <div class="eyebrow">For enrollment</div>
+      <h2>How enrollment actually happens</h2>
+      <p class="sub">Enrollment is step 4, spelled out. No surprises, no fine-print games.</p>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>What you do</h3>
+          <ul class="checks">
+            <li><strong>Book the call.</strong> Enrollment starts on a HERO C.A.R.E CALL, not on a checkout page.</li>
+            <li><strong>Pick your tier</strong> with your R&amp;R Audit in front of you.</li>
+            <li><strong>Confirm the terms</strong> for that tier — membership, deposit, or agreement,
+              depending on the level you choose.</li>
+            <li><strong>Get your access</strong> to the Skool Community and L7S University.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What we do</h3>
+          <ul class="checks">
+            <li><strong>Run the call</strong> and deliver your R&amp;R Audit and AIR Recap.</li>
+            <li><strong>Recommend a tier</strong> — the honest one, not the biggest one.</li>
+            <li><strong>Set up your access</strong> and hand you a starting point on day one.</li>
+            <li><strong>Schedule your kickoff</strong> so momentum does not stall after you sign.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>Tiers and amounts live on one page, on purpose.</strong> So nothing here goes stale,
+        every figure — memberships, deposits, and what is included at each level — is kept on the
+        <a href="pricing.html#tiers">pricing page</a>. Higher tiers add an agreement and signature step;
+        Enterprise is by application and includes a compatibility and reputation review plus a
+        Predictive Index assessment.
+      </div>
+      <!-- PLACEHOLDER: no payment is collected anywhere on this site. Stripe is planned but NOT live.
+           Do not add card fields, Stripe buttons, or API keys until East says it is wired. -->
+    </div>
+  </section>
+
+  <!-- ============ EXPLAINER VIDEO SLOT ============ -->
+  <section id="video">
+    <div class="wrap">
+      <div class="eyebrow">For explainer video</div>
+      <h2>Watch the two-minute version</h2>
+      <p class="sub">Prefer to be walked through it? The explainer covers the same five steps out loud.</p>
+
+      <!-- ============================================================================
+           PLACEHOLDER — EXPLAINER VIDEO SLOT
+           Deliberately NOT an iframe. This page must render fully offline with zero
+           external requests, so no YouTube / Vimeo / CDN embed is allowed here yet.
+           East: when Luckie's explainer is finalised, replace the .video-slot block
+           below with EITHER
+             (a) a self-hosted <video controls poster="..."> pointing at a local file
+                 dropped next to this HTML, or
+             (b) the platform embed, only if the no-external-requests rule is lifted.
+           Keep the surrounding <section> and headings as they are.
+           ============================================================================ -->
+      <div class="video-slot">
+        <span class="play" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5v14l11-7z" fill="#8a6410"/></svg>
+        </span>
+        <span class="cap">Explainer video — dropping soon</span>
+        <p class="fine">This slot is reserved for Luckie's "How It All Works" explainer. Until the file
+          lands, the written breakdown above is the full version.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ THE LEAGUE OF 7 SUPERHEROES ============ -->
+  <section id="seven">
+    <div class="wrap">
+      <div class="eyebrow">The League of 7 Superheroes</div>
+      <h2>7 Core Heroes · 7 Solutions</h2>
+      <p class="sub">Calling all Aware-Wolfs, Founders and Commanders — your strategic assets, ready for
+        deployment. Seven distinct problems a service business runs into, each with a Hero assigned to it.
+        Whatever tier you enter at, you are working the same seven.</p>
+
+      <div class="sevens">
+        <!-- Hero names and one-liners are Luckie's own live l7sinc.com copy, trimmed for the web.
+             Source of truth: .firecrawl/l7sinc-live.md lines 20–84. Nothing invented here.
+             NOTE FOR EAST — naming conflict on the LIVE site: the hero cards call #03 "Loan Hero",
+             but the live footer's "Our Heroes" list and the Captain bio both call it "Capital Hero"
+             (the 7 C's are Credit, CEO, Capital, Cashflow, Crypto, Coverage, Community). Kept the
+             card name "Loan Hero" because that is the product name (there is also a "Loan Hero CRM"
+             and a "Become A Loan Hero" product) — Luckie should pick ONE and we mirror it. -->
+        <div class="seven"><b>01</b><strong>Credit Hero HoT 7™</strong>
+          <span>Coordinates productivity tools and trackers across three credit systems — Consumer
+            (Personal), Commercial (Business) and Tax (Corporate / IRS). Profile reconstruction,
+            debt-instrument negotiation and credibility optimization, all under HoT 7™ tracking.</span></div>
+        <!-- Keep trademark names as PLAIN TEXT inside .seven span — a nested <strong> here is
+             captured by the `.seven strong` hero-name rule and reads as an eighth hero. -->
+        <div class="seven"><b>02</b><strong>CEO Hero</strong>
+          <span>Corporate structuring, brand strategy, operational scaling and executive-level tactical
+            planning via BXBlueprints™.</span></div>
+        <div class="seven"><b>03</b><strong>Loan Hero</strong>
+          <span>Capital acquisition, sourcing funding solutions and customizing financial instruments
+            for mission success.</span></div>
+        <div class="seven"><b>04</b><strong>Cashflow Hero</strong>
+          <span>Manages operational liquidity via P.I.E.S.™ — Profit, Income, Equity, Savings — for
+            financial agility during all mission phases.</span></div>
+        <div class="seven"><b>05</b><strong>Crypto Hero</strong>
+          <span>Leverages decentralized technologies, blockchain intelligence and digital-asset
+            strategies for wealth creation.</span></div>
+        <div class="seven"><b>06</b><strong>Coverage Hero</strong>
+          <span>Risk mitigation, asset protection and the strategic deployment of insurance protocols
+            for long-term stability.</span></div>
+        <div class="seven"><b>07</b><strong>Community Hero</strong>
+          <span>Builds strategic alliances, fosters collaborative networks and expands operational
+            influence for collective success.</span></div>
+      </div>
+
+      <div class="note">
+        <strong>One operating system, seven heroes.</strong> They deploy through the
+        <strong>L7S Hero S.O.S.™</strong> Superhero Operating System — covering Credit, CEO services,
+        Capital, Cashflow, Crypto, Coverage and Community — are walked through on your
+        HERO C.A.R.E CALL, and are taught inside <strong>L7S University</strong>. The
+        <strong>7 Core Heroes</strong> program itself comes in at the Mid Ticket level —
+        <a href="pricing.html#tiers">see the tiers</a>.
+      </div>
+      <p class="fine">Built for F.O.O.D.I.E.S.™ — Founders, Owners, Operators, Directors, Incorporators,
+        Entrepreneurs, Executives &amp; Self-Employed Specialists.
+        <!-- The live site expands F.O.O.D.I.E.S.™ two different ways: the footer reads
+             "Founders, Owners, Operators, Directors, Incorporators, Entrepreneurs, Executives &
+             Self-Employed Specialists" (used here) and the Captain bio reads "Founders, Owners,
+             Operations Directors, Incorporators, Executives, Entrepreneurs, Self-Employed
+             Specialists". Our pricing page had a third variant. Luckie must lock ONE. --></p>
+    </div>
+  </section>
+
+  <!-- ============ A.B.C.S. PROTOCOL ============ -->
+  <section id="abcs">
+    <div class="wrap">
+      <div class="eyebrow">The protocol underneath</div>
+      <h2>The A.B.C.S.™ Protocol</h2>
+      <p class="sub">The proprietary foundation framework for every engagement. Every tier, every Hero,
+        every call runs on the same four moves — so the work is never improvised.</p>
+
+      <div class="sevens">
+        <!-- A.B.C.S.™ definitions verbatim-trimmed from the live site (l7sinc-live.md lines 96–114). -->
+        <div class="seven"><b>A</b><strong>Analytics</strong>
+          <span>Data-driven insights, credit-report analysis, business audits and performance scorecards
+            to establish your baseline.</span></div>
+        <div class="seven"><b>B</b><strong>Blueprints</strong>
+          <span>Custom business plans, BXBlueprints™, buildout bundles and strategic roadmaps tailored
+            to your mission.</span></div>
+        <div class="seven"><b>C</b><strong>Checklists</strong>
+          <span>Progress trackers, compliance checklists, P.A.T. D.O.W.N.S.™ protocols and
+            accountability dashboards.</span></div>
+        <div class="seven"><b>S</b><strong>Scaling</strong>
+          <span>Systems, sequences, SOPs and L7S automation frameworks to multiply your results and
+            streamline operations.</span></div>
+      </div>
+
+      <div class="note">
+        <strong>Your A.B.C.S.™ roadmap comes out of the call.</strong> Your R&amp;R™ Audit produces a
+        personalised A.B.C.S.™ roadmap plus the hero deployment plan — which of the seven you are
+        putting to work first, and in what order.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DIY -> DWY -> DFY ============ -->
+  <section id="ladder">
+    <div class="wrap">
+      <h2>How much of it do we do?</h2>
+      <p class="sub">The same seven Heroes at every level. The only thing that changes is whose hands are
+        on the build — that is the service-level ladder.</p>
+
+      <div class="ladder">
+        <div class="rung">
+          <p class="rung-key">DIY</p>
+          <p class="rung-name">Do-It-Yourself</p>
+          <p>You build it. We hand you the digital products, the Skool Community, and access to
+            L7S University so you are never guessing at the next step.</p>
+          <span class="tag">Low Ticket entry</span>
+        </div>
+        <div class="rung">
+          <p class="rung-key">DWY</p>
+          <p class="rung-name">Done-With-You</p>
+          <p>We build it beside you. Systems and Models <strong style="color:var(--ink)">Installation
+            &amp; Implementation</strong> at the DWY level, with the 7 Core Heroes program running
+            alongside.</p>
+          <span class="tag">Mid Ticket</span>
+        </div>
+        <div class="rung top">
+          <p class="rung-key">DFY</p>
+          <p class="rung-name">Done-For-You</p>
+          <p>We build it for you. DFY implementation plus 1-on-1 and cohort hybrid mentorship — the
+            F.A.M.E level, for busy F.O.O.D.I.E.S who need the result more than the reps.</p>
+          <span class="tag">High Ticket · F.A.M.E</span>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>Past DFY there is Enterprise.</strong> That one is a Joint Venture — a JV agreement,
+        defined roles and responsibilities, rev-share or equity allocation, and pricing set in
+        consultation with the founders. It is by application.
+        <a href="pricing.html#tiers">See the Enterprise tier</a>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GETTING STARTED ============ -->
+  <section id="getting-started">
+    <div class="wrap">
+      <div class="eyebrow">For getting started</div>
+      <h2>Getting started, today</h2>
+      <p class="sub">One move, and it is the same move at every tier.</p>
+
+      <div class="grid cols-2">
+        <div>
+          <h3>Bring these to your call</h3>
+          <ul class="checks">
+            <li><strong>The "C" you care about most</strong> — the one category you would fix first.</li>
+            <li><strong>Where you are now</strong> — a plain description, no polish needed.</li>
+            <li><strong>What "handled" looks like</strong> in 90 days.</li>
+            <li><strong>What is already in place</strong> — tools, team, entity, anything running.</li>
+          </ul>
+          <span class="pill">No prep documents required</span>
+          <span class="pill">No credit monitoring required</span>
+          <span class="pill">No payment on the call</span>
+        </div>
+        <div class="card">
+          <h3>Answer the Call</h3>
+          <p>Book the HERO C.A.R.E CALL and you leave with your R&amp;R Audit and AIR Recap in hand —
+            whichever way you decide to go afterward.</p>
+          <div style="margin-top:20px">
+            <!-- CTA points at the existing booking form on pricing.html — endpoint still unwired there -->
+            <a class="btn btn-primary btn-block" href="pricing.html#book">Book a HERO C.A.R.E CALL</a>
+          </div>
+          <div style="margin-top:10px">
+            <a class="btn btn-ghost btn-block" href="onboarding.html">See what happens after you sign</a>
+          </div>
+          <p class="motto" style="margin:22px 0 0;text-align:center">Be the Hero!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <p class="brand-line">L7S, Inc.</p>
+  © <span id="yr"></span> L7S, Inc. All rights reserved. · THE BEST by Design, THE HERO by Demand ·
+  <a href="index.html">Who we are</a> · <a href="how-it-works.html">How it works</a> ·
+  <a href="onboarding.html">Onboarding</a> · <a href="pricing.html">Pricing</a>
+  <!-- PLACEHOLDER: contact / socials -->
+</div></footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

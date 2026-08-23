@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XLRD TECH · $111 Menu · Build Your Operation One Unit At A Time</title>
+<meta name="description" content="XLRD TECH — every unit $111 flat. AI receptionist, speed-build sites, automation, branding, music ops, voice agents. Add what you need to the cart and order.">
+<meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode:'class', theme:{ extend:{
+    colors:{ background:'#000000', surface:'#0A0A0A' },
+    fontFamily:{ sans:['Inter','sans-serif'], heading:['Figtree','sans-serif'] }
+  }}}
+</script>
+<style>
+  body { background-color: transparent; color:#fff; font-family:'Inter',sans-serif; overflow-x:hidden; margin:0; padding:0; }
+  html { background-color:#000; scroll-behavior:smooth; scroll-padding-top:92px; }
+
+  .bgv { position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:-2; display:block; pointer-events:none; }
+  .bg-scrim { position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(ellipse 1200px 600px at 50% 0%, rgba(255,255,255,0.05), transparent 60%),
+      linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.72) 45%, rgba(0,0,0,0.84)); }
+
+  /* nav */
+  nav { position:fixed; top:0; left:0; width:100%; z-index:50;
+    background:rgba(0,0,0,0.28); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
+    border-bottom:1px solid rgba(255,255,255,0.08); }
+  .nav-in { max-width:1180px; margin:0 auto; padding:0 20px; height:72px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .brand { font-family:'Figtree',sans-serif; font-weight:900; font-size:20px; letter-spacing:-0.01em; color:#fff; text-decoration:none; white-space:nowrap; }
+  .nav-links { display:flex; align-items:center; gap:4px; }
+  .nav-links button.link { background:none; border:0; color:#9ca3af; font:inherit; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; padding:8px 12px; cursor:pointer; transition:color .2s; }
+  .nav-links button.link:hover { color:#fff; }
+  .cart-btn { display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; font-weight:700; font-size:13px; color:#fff; cursor:pointer;
+    background:linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04)); border:1px solid rgba(255,255,255,0.18); border-radius:999px; padding:9px 16px; transition:all .25s; white-space:nowrap; }
+  .cart-btn:hover { border-color:rgba(255,255,255,0.4); transform:translateY(-1px); box-shadow:0 8px 30px rgba(0,191,255,0.15); }
+  .cart-btn .ct { font-family:'JetBrains Mono',monospace; font-size:12px; color:#A5F3FC; }
+  .hamb { display:none; width:42px; height:42px; align-items:center; justify-content:center; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:#fff; cursor:pointer; }
+  .hamb i { font-size:20px; }
+  @media (max-width:860px){ .nav-links .link { display:none; } .hamb { display:inline-flex; } }
+
+  /* mobile sheet */
+  #msheet { position:fixed; inset:0; z-index:70; display:none; }
+  #msheet.open { display:block; }
+  #msheet .mbg { position:absolute; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(6px); }
+  #msheet .mcard { position:absolute; top:0; right:0; height:100%; width:min(82vw,340px);
+    background:#0A0A0A; border-left:1px solid rgba(255,255,255,0.1); box-shadow:-20px 0 60px rgba(0,0,0,0.6);
+    transform:translateX(100%); transition:transform .35s cubic-bezier(0.16,1,0.3,1); padding:84px 26px 26px; display:flex; flex-direction:column; gap:6px; }
+  #msheet.open .mcard { transform:translateX(0); }
+  #msheet .mcard button { background:none; border:0; color:#e5e7eb; font:inherit; font-size:18px; font-weight:700; text-align:left; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer; }
+  #msheet .mclose { position:absolute; top:22px; right:22px; width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#fff; font-size:18px; cursor:pointer; }
+
+  /* side dots */
+  .progress-bar { position:fixed; right:16px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:9px; z-index:40; }
+  .dot { width:8px; height:8px; background:rgba(255,255,255,0.2); border-radius:50%; transition:all .3s; cursor:pointer; }
+  .dot.active { background:#fff; box-shadow:0 0 10px #fff; transform:scale(1.25); }
+  @media (max-width:980px){ .progress-bar { display:none; } }
+
+  /* glass */
+  .glass-panel { position:relative; overflow:hidden; background:rgba(0,0,0,0.22);
+    backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
+    border:1px solid rgba(255,255,255,0.08); border-radius:24px; box-shadow:0 8px 32px rgba(0,0,0,0.3); }
+  .glass-panel::after { content:''; position:absolute; top:0; left:-100%; width:50%; height:100%;
+    background:linear-gradient(to right, transparent, rgba(255,255,255,0.03), transparent); transform:skewX(-25deg); pointer-events:none; animation:panelGlare 9s infinite ease-in-out; }
+  @keyframes panelGlare { 0%,42%{ left:-100%; opacity:0; } 50%{ opacity:1; } 60%,100%{ left:200%; opacity:0; } }
+  .glass-button { position:relative; overflow:hidden; font-weight:600; letter-spacing:0.06em; color:#fff; cursor:pointer; text-decoration:none;
+    background:linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03)); border:1.5px solid transparent; border-radius:12px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2); transition:all .4s cubic-bezier(0.4,0,0.2,1);
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .glass-button::before { content:''; position:absolute; inset:0; border-radius:inherit; padding:1.5px;
+    background:linear-gradient(135deg, rgba(255,255,255,0.4), rgba(138,43,226,0.4) 25%, rgba(0,191,255,0.4) 50%, rgba(255,255,255,0.4));
+    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; opacity:0.6; transition:opacity .4s; pointer-events:none; }
+  .glass-button:hover { background:linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05)); transform:translateY(-2px); box-shadow:0 12px 44px rgba(138,43,226,0.25), 0 0 70px rgba(0,191,255,0.15); }
+  .glass-button:hover::before { opacity:1; }
+  .glow-text { color:rgba(255,255,255,0.96); text-shadow:0 0 5px rgba(255,255,255,0.5), 0 0 30px rgba(255,255,255,0.12); animation:glowPulse 3.4s ease-in-out infinite alternate; }
+  @keyframes glowPulse { 0%{ filter:drop-shadow(0 0 18px rgba(255,255,255,0.1)); } 100%{ filter:drop-shadow(0 0 42px rgba(255,255,255,0.26)); } }
+  .text-liquid-steel { background-image:linear-gradient(180deg,#FFFFFF 0%,#E4E4E7 45%,#71717A 50%,#E4E4E7 55%,#FFFFFF 100%); background-size:200% auto; color:white; background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  #preloader { position:fixed; inset:0; background:#000; z-index:9999; display:flex; align-items:center; justify-content:center; transition:opacity .8s; }
+  #preloader.loaded { opacity:0; visibility:hidden; }
+  .hidden { display:none !important; }
+  ::-webkit-scrollbar { width:8px; } ::-webkit-scrollbar-track { background:#000; } ::-webkit-scrollbar-thumb { background:#333; border-radius:4px; }
+
+  /* layout — one anchor per page (xlrd.org-style scroll-snap, each bucket = one viewport).
+     Section height = VISIBLE area (viewport - nav), not full viewport — that was the off-center bug:
+     a 100dvh section under a 72px fixed nav makes the section's BOTTOM hide past the fold,
+     and asymmetric padding (96/60) skewed justify-content:center DOWN by ~74px. */
+  html { scroll-snap-type: y mandatory; scroll-padding-top: 72px; }
+  /* padding-top:72px shifts the FIRST section's offsetTop to 72 so it can snap-align under the nav at scrollY=0
+     (otherwise scrollY can't go negative and the first section's top 72px stays hidden under the fixed nav). */
+  .wrap { max-width:1180px; margin:0 auto; padding:72px 20px 60px; position:relative; z-index:1; }
+  .section-container { scroll-snap-align:start; scroll-snap-stop:always;
+    min-height: calc(100vh - 72px); min-height: calc(100svh - 72px); min-height: calc(100dvh - 72px);
+    padding: 40px 20px; display:flex; flex-direction:column;
+    justify-content: center; justify-content: safe center; align-items: center; box-sizing: border-box; }
+  /* sections still fade in as they snap, but each one owns its own page */
+  body.reveal-on .section-container { opacity:0; transform:translateY(28px); filter:blur(6px);
+    transition: opacity .6s cubic-bezier(0.16,1,0.3,1), transform .6s cubic-bezier(0.16,1,0.3,1), filter .6s ease; will-change: opacity, transform, filter; }
+  body.reveal-on .section-container.in { opacity:1; transform:none; filter:none; }
+  /* short-screen + reduced-motion: keep the centering, only relax the snap so usability isn't trapped */
+  @media (max-height: 720px) { html { scroll-snap-type: y proximity; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-snap-type: none; } }
+
+  /* .hero takes natural content height; the section centers it. (Removing the old min-height:86vh that was
+     forcing hero to overflow the section content area on most viewports → safe-center falling back to top-anchor.) */
+  .hero { width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+  .hero .kicker { font-family:'Figtree',sans-serif; font-style:italic; font-size:clamp(15px,2vw,21px); color:#A5F3FC; letter-spacing:0.03em; margin-bottom:20px; }
+  .hero h1 { font-family:'Figtree',sans-serif; font-weight:900; font-size:clamp(58px,12vw,160px); line-height:0.9; letter-spacing:-0.02em; margin-bottom:14px; }
+  .hero .lede { color:#cbd5e1; font-size:clamp(16px,2.2vw,21px); max-width:620px; margin:10px auto 0; line-height:1.5; }
+  .hero .lede b { color:#fff; }
+  .pricetag { display:inline-flex; align-items:center; margin:24px auto 0; padding:12px 30px; font-family:'Inter',sans-serif; font-weight:700; font-size:13px; letter-spacing:0.22em; text-transform:uppercase; border-radius:12px; }
+  .hero-cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:30px; }
+  .hero-cta .glass-button { padding:15px 26px; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; }
+  .law { margin-top:28px; font-family:'Inter',sans-serif; font-size:11px; letter-spacing:0.32em; color:#71717A; text-transform:uppercase; }
+  .law span { color:#fff; }
+
+  .bucket { padding:8px 24px 22px; max-width: 1080px; margin: 0 auto; width: 100%; }
+  /* header stacks vertically + centered: NUMBER (big) above NAME above COUNT chip — balanced 3-row composition */
+  .bucket-header { display:flex; flex-direction:column; align-items:center; gap:6px; padding:24px 0 8px; text-align:center; }
+  .bucket-header .num { font-family:'Figtree',sans-serif; font-weight:900; font-size:clamp(28px,4vw,38px); line-height:1; opacity:0.85; }
+  .bucket-header .name { font-family:'Figtree',sans-serif; font-weight:700; font-size:clamp(20px,2.6vw,28px); letter-spacing:0.01em; color:#fff; }
+  .bucket-header .count { font-family:'Inter',sans-serif; font-size:10px; letter-spacing:0.28em; color:#A5F3FC; text-transform:uppercase; padding:3px 10px; border:1px solid rgba(165,243,252,0.25); border-radius:999px; }
+  .bucket-blurb { color:#cbd5e1; font-size:15px; font-style:italic; font-family:'Figtree',sans-serif; padding:6px 2px 18px; margin: 6px auto 18px; text-align:center; max-width:560px; position:relative; }
+  /* centered short rule under the blurb (replaces the awkward border-bottom tab-line) */
+  .bucket-blurb::after { content:''; display:block; width:48px; height:1px; background:rgba(255,255,255,0.18); margin:18px auto 0; }
+  /* keep the section content centered horizontally inside its viewport */
+  .section-container { align-items: center; }
+
+  /* ITEM CARDS — caption stacked UNDERNEATH the title.
+     flex-wrap + justify-content:center solves the grid-orphan rule (last-row tiles center instead of stacking flush-left). */
+  .items { display:flex; flex-wrap:wrap; justify-content:center; gap:14px; width:100%; }
+  .item { flex: 1 1 280px; max-width: 340px; min-width: 0; display:flex; flex-direction:column; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:16px 16px 14px; transition:border-color .2s, background .2s; }
+  .item:hover { border-color:rgba(255,255,255,0.2); background:rgba(255,255,255,0.05); }
+  .item .iid { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#52525B; margin-bottom:7px; }
+  .item .ititle { font-family:'Figtree',sans-serif; font-weight:700; font-size:16px; color:#fff; line-height:1.2; }
+  .item .icap { color:#A5F3FC; font-size:13px; line-height:1.45; margin-top:6px; flex:1; }   /* caption underneath */
+  .item .ifoot { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.07); }
+  .item .iprice { font-family:'Figtree',sans-serif; font-weight:800; font-size:17px; color:#fff; }
+  .item .iprice::before { content:'$'; opacity:0.55; font-weight:600; margin-right:1px; }
+  .add-btn { display:inline-flex; align-items:center; gap:6px; font-family:'Inter',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.04em; color:#0A0A0A;
+    background:linear-gradient(135deg,#ffffff,#d1d5db); border:0; border-radius:9px; padding:9px 14px; cursor:pointer; transition:transform .15s, box-shadow .2s; white-space:nowrap; }
+  .add-btn:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(255,255,255,0.18); }
+  .add-btn.added { background:linear-gradient(135deg,#A5F3FC,#22d3ee); color:#04222b; }
+
+  .panel-pad { padding:34px 30px; text-align:center; }
+  .panel-pad h3 { font-family:'Figtree',sans-serif; font-weight:800; font-size:clamp(26px,4vw,44px); margin-bottom:8px; }
+  .panel-pad p.sub { color:#a1a1aa; font-size:14px; margin-bottom:22px; }
+  /* Model rows: same orphan-fix — flex-wrap centers any odd-count last row */
+  .rows { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; text-align:left; width:100%; }
+  .row { flex: 1 1 240px; max-width: 320px; display:flex; flex-direction:column; gap:4px; padding:16px 18px; border:1px solid rgba(255,255,255,0.1); border-radius:14px; }
+  .row.best { border-color:rgba(165,243,252,0.35); background:rgba(165,243,252,0.04); }
+  .row .k { font-family:'Figtree',sans-serif; font-weight:700; font-size:15px; color:#fff; }
+  .row .d { color:#9aa3af; font-size:13px; line-height:1.4; }
+
+  .cta-foot { text-align:center; }
+  .cta-foot h2 { font-family:'Figtree',sans-serif; font-weight:800; font-size:clamp(28px,4.5vw,50px); margin-bottom:16px; }
+  .cta-foot h2 em { font-weight:400; font-style:italic; color:#A5F3FC; }
+  .cta-row { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+  .cta-row .glass-button { padding:16px 26px; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; }
+  .foot-line { margin-top:38px; padding-top:22px; border-top:1px solid rgba(255,255,255,0.08); font-family:'Inter',sans-serif; font-size:10px; letter-spacing:0.3em; text-transform:uppercase; color:#52525B; text-align:center; }
+  .foot-line .tag { display:block; margin-bottom:12px; font-family:'Figtree',sans-serif; font-style:italic; font-size:14px; color:#cbd5e1; letter-spacing:0.01em; text-transform:none; }
+  .foot-line a { color:#A5F3FC; text-decoration:none; }
+
+  /* CART / ORDER MODAL — sized to fit, scroll list + sticky footer */
+  #cart-modal { position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:16px; }
+  #cart-modal.open { display:flex; }
+  #cart-modal .cbg { position:absolute; inset:0; background:rgba(0,0,0,0.82); backdrop-filter:blur(10px); }
+  #cart-modal .ccard { position:relative; width:100%; max-width:520px; max-height:88vh; display:flex; flex-direction:column; background:#0A0A0A; border:1px solid rgba(255,255,255,0.12); border-radius:24px; overflow:hidden; }
+  .ccard-head { padding:24px 26px 16px; border-bottom:1px solid rgba(255,255,255,0.08); }
+  .ccard-head h3 { font-family:'Figtree',sans-serif; font-weight:800; font-size:24px; color:#fff; }
+  .ccard-head p { color:#9aa3af; font-size:13px; margin-top:4px; }
+  .ccard-x { position:absolute; top:20px; right:20px; width:38px; height:38px; border-radius:10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); color:#fff; font-size:16px; cursor:pointer; }
+  .cart-list { overflow-y:auto; padding:10px 26px; flex:1; }
+  .cart-empty { color:#71717A; text-align:center; padding:40px 0; font-style:italic; }
+  .cline { display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .cline .cn { flex:1; min-width:0; }
+  .cline .cn .t { font-family:'Figtree',sans-serif; font-weight:600; font-size:14px; color:#fff; }
+  .cline .cn .s { font-size:11px; color:#71717A; font-family:'JetBrains Mono',monospace; margin-top:2px; }
+  .qty { display:flex; align-items:center; gap:8px; }
+  .qty button { width:26px; height:26px; border-radius:7px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.14); color:#fff; font-size:14px; cursor:pointer; line-height:1; }
+  .qty span { min-width:18px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:13px; color:#fff; }
+  .cline .cp { font-family:'Figtree',sans-serif; font-weight:700; font-size:14px; color:#fff; min-width:54px; text-align:right; }
+  .ccard-foot { padding:18px 26px 22px; border-top:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.02); }
+  .ctot { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; }
+  .ctot .lbl { color:#9aa3af; font-size:13px; text-transform:uppercase; letter-spacing:0.12em; }
+  .ctot .amt { font-family:'Figtree',sans-serif; font-weight:900; font-size:30px; color:#fff; }
+  .checkout { width:100%; padding:16px; border-radius:14px; font-family:'Inter',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.04em;
+    background:linear-gradient(135deg,#ffffff,#cbd5e1); color:#0A0A0A; border:0; cursor:pointer; transition:transform .15s, box-shadow .2s; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .checkout:hover { transform:translateY(-2px); box-shadow:0 10px 34px rgba(255,255,255,0.2); }
+  .checkout.disabled { opacity:0.4; pointer-events:none; }
+  .ccard-foot .alt { display:flex; gap:10px; margin-top:10px; }
+  .ccard-foot .alt a { flex:1; text-align:center; padding:12px; border-radius:11px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#e5e7eb; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); text-decoration:none; }
+  .ccard-foot .note { color:#71717A; font-size:11px; text-align:center; margin-top:12px; line-height:1.4; }
+
+  @media (max-width:600px){ .bucket { padding:8px 14px 18px; } .items { grid-template-columns:1fr; } }
+</style>
+</head>
+<body class="antialiased selection:bg-white selection:text-black">
+
+<div id="preloader"><div style="text-align:center">
+  <div class="font-heading font-black text-3xl tracking-[0.3em] text-liquid-steel">XLRD TECH</div>
+  <div class="mt-5 w-32 h-1 bg-white/10 rounded-full overflow-hidden mx-auto"><div class="h-full bg-white w-full animate-pulse"></div></div>
+  <p class="mt-4 text-[10px] font-bold tracking-[0.3em] text-gray-500 uppercase">Initializing Menu</p>
+</div></div>
+
+<video class="bgv" data-scrub-video data-mode="page" data-ease="0.22" muted playsinline webkit-playsinline preload="auto" poster="assets/menu-bg-poster.jpg" src="assets/menu-bg-v2.mp4"></video>
+<div class="bg-scrim"></div>
+
+<nav>
+  <div class="nav-in">
+    <a href="#top" class="brand" onclick="jump(0)">XLRD <span class="text-liquid-steel">TECH</span></a>
+    <div class="nav-links">
+      <button class="link" onclick="jump(0)">Top</button>
+      <button class="link" onclick="jump(1)">Menu</button>
+      <button class="link" onclick="jumpId('model')">The Model</button>
+      <button class="cart-btn" onclick="openCart()"><i class="ph ph-shopping-cart-simple"></i> Cart <span class="ct" id="navCt">0 · $0</span></button>
+      <button class="hamb" id="hamb" aria-label="Menu"><i class="ph ph-list"></i></button>
+    </div>
+  </div>
+</nav>
+
+<!-- mobile sheet -->
+<div id="msheet">
+  <div class="mbg" data-mclose></div>
+  <div class="mcard">
+    <button class="mclose" data-mclose><i class="ph ph-x"></i></button>
+    <button onclick="jump(0)">Top</button>
+    <button onclick="jump(1)">The Menu</button>
+    <button onclick="jumpId('model')">The Model</button>
+    <button onclick="openCart()">View Cart (<span id="mCt">0</span>)</button>
+    <a href="tel:+17709999934" style="margin-top:14px;color:#A5F3FC;text-decoration:none;font-weight:700;font-size:16px"><i class="ph ph-phone"></i> (770) 999-9934</a>
+  </div>
+</div>
+
+<div class="progress-bar" id="dots"></div>
+
+<!-- CART MODAL -->
+<div id="cart-modal">
+  <div class="cbg" onclick="closeCart()"></div>
+  <div class="ccard">
+    <div class="ccard-head">
+      <h3>Your order</h3>
+      <p>$111 per unit. Add what you need — I confirm your turnaround window before the clock starts.</p>
+      <button class="ccard-x" onclick="closeCart()"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="cart-list" id="cartList"></div>
+    <div class="ccard-foot">
+      <div class="ctot"><span class="lbl">Total</span><span class="amt" id="cartTotal">$0</span></div>
+      <a class="checkout disabled" id="checkoutBtn" href="#"><i class="ph ph-paper-plane-tilt"></i> Send my order</a>
+      <div class="alt">
+        <a href="tel:+17709999934"><i class="ph ph-phone"></i> Call</a>
+        <a id="rushBtn" href="#" onclick="return false"><i class="ph ph-lightning"></i> Add rush note</a>
+      </div>
+      <div class="note">Subscriptions (Care Plan, monthly retainer) via PayPal — coming online shortly. Rush premiums move your order to the front.</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="section-container in" id="top" data-dot="Top"><div class="hero">
+    <div class="kicker">No bundles. No retainers. Flat per unit — billed for the time it takes.</div>
+    <h1 class="glow-text">One unit.<br><span class="text-liquid-steel">$111</span>.</h1>
+    <p class="lede">Build your whole operation one <b>$111 unit</b> at a time — AI receptionist, speed-built sites, automation, brand, music ops. <b>Add what you need to the cart</b> and send the order.</p>
+    <div class="hero-cta">
+      <button class="glass-button" onclick="jump(1)">Browse the Menu <i class="ph-bold ph-arrow-down"></i></button>
+      <button class="glass-button" onclick="openCart()"><i class="ph ph-shopping-cart-simple"></i> View Cart</button>
+    </div>
+    <div class="law"><span>◆</span>&nbsp; AUTOMATE OR DIE &nbsp;<span>◆</span>&nbsp; QUALITY BEFORE THE CLOCK &nbsp;<span>◆</span></div>
+  </div></div>
+
+  <!-- MENU (rendered) -->
+  <div id="menuRoot"></div>
+
+  <!-- THE MODEL -->
+  <div class="section-container" id="model" data-dot="The Model"><section class="glass-panel panel-pad">
+    <h3 class="glow-text">How the <span class="text-liquid-steel">clock</span> works.</h3>
+    <p class="sub">$111 is the unit. Time is the variable. Read this before you order.</p>
+    <div class="rows">
+      <div class="row"><span class="k"><i class="ph ph-clock"></i> Turnaround = ~2× the work</span><span class="d">Every item's window is quoted at roughly twice the time the work should take. That buffer is deliberate.</span></div>
+      <div class="row"><span class="k"><i class="ph ph-shield-check"></i> Quality before the clock</span><span class="d">No on-time guarantee — final timing stays at my discretion to protect the quality of the build.</span></div>
+      <div class="row best"><span class="k"><i class="ph ph-lightning"></i> Rush premium</span><span class="d">Need it faster? A rush fee moves your order to the front and compresses the turnaround.</span></div>
+      <div class="row"><span class="k"><i class="ph ph-brain"></i> Consulting is billable</span><span class="d">Strategy, advice and direction are charged like any other unit — time on my brain is on the clock.</span></div>
+    </div>
+  </section></div>
+
+  <!-- ORDER / FOOTER -->
+  <div class="section-container" id="order" data-dot="Order"><section class="glass-panel panel-pad cta-foot">
+    <h2>Build your stack. <em>One unit at a time.</em></h2>
+    <div class="cta-row">
+      <button class="glass-button" onclick="openCart()"><i class="ph ph-shopping-cart-simple"></i> Review &amp; Order</button>
+      <a class="glass-button" href="tel:+17709999934"><i class="ph ph-phone"></i> Call · (770) 999-9934</a>
+    </div>
+    <div class="foot-line">
+      <span class="tag">"Billable time. Turnaround quoted long, quality kept high. Rush costs more. Consulting's on the clock."</span>
+      ◆ XLRD TECH · $111 / unit · East Allen · east@xlrd.org · <a href="https://hitthe.link/">hitthe.link</a> ◆
+    </div>
+  </section></div>
+
+</div>
+
+<script src="https://hitthe.link/lib/scroll-scrub-video.js" defer></script>
+<script>
+  // ---------- MENU DATA ----------
+  const MENU = [
+    { n:'01', name:'Front Line · Receptionist', blurb:'Never miss a call again.', items:[
+      ['F-01','AI voice receptionist line','Your number, your persona, your script — answered 24/7.'],
+      ['F-02','Custom voice persona','Name, tone, opening line and escalation rules, built to match you.'],
+      ['F-03','Inbound capture → CRM','Every call transcribed, named, and routed to a lead file.'],
+      ['F-04','After-hours flow','Night/weekend behavior, callback windows, on-call routing.'],
+      ['F-05','Caller-to-text bridge','Caller leaves a message — you read it in SMS within 60 seconds.'],
+    ]},
+    { n:'02', name:'Web · Pages · Hosting', blurb:'Your storefront, live in hours.', items:[
+      ['W-01','Speed-build landing page','Single-page, deployed in ~2 hours — like the Diamond Cut / MB drops.'],
+      ['W-02','Custom domain + tunnel','DNS, SSL, Cloudflare ingress — your subdomain live and secure.'],
+      ['W-03','Logo + brand placement','Swap your logo, pull color from it, retina-ready throughout.'],
+      ['W-04','SEO + OG metadata pass','Title, description, social cards and schema, done right.'],
+      ['W-05','Newsletter capture form','Email-in, wired straight to your list provider.'],
+      ['W-06','Booking widget embed','Calendar slot picker tied to your phone and email.'],
+      ['W-07','Press kit / EPK page','Bio, photos, tracks, tech rider, links — downloadable.'],
+      ['W-08','Music streaming strip','Spotify + Apple + DistroKid hyperfollow on one page.'],
+      ['W-09','Mobile responsiveness audit','iPhone / Android / iPad ironed flat.'],
+      ['W-10','Color / aesthetic pivot','Swap the palette across the whole page (like pink→blue on MB).'],
+    ]},
+    { n:'03', name:'Brand · Identity', blurb:'Look like the brand you are.', items:[
+      ['B-01','Logo concept (1 brief)','Monogram, wordmark, or seal — your call.'],
+      ['B-02','Color palette + type system','5 colors, 2 fonts, and the usage rules to keep it consistent.'],
+      ['B-03','Social banner pack','IG, FB, X, YouTube — sized and delivered.'],
+      ['B-04','Avatar / profile photo prep','Background out, color corrected, square + circular.'],
+      ['B-05','One-pager (HTML + PDF)','Elevator pitch, services, contact — printable.'],
+      ['B-06','Single artwork / cover art','3:3 + 16:9 + 9:16 sizes of the same piece.'],
+    ]},
+    { n:'04', name:'Comms · Email · SMS · Calendar', blurb:'Every message, handled.', items:[
+      ['C-01','Email auto-reply flow','One trigger → one templated response, routed.'],
+      ['C-02','SMS auto-reply flow','Same shape, SMS-side.'],
+      ['C-03','Dual-fire lead routing','One inbound creates email + SMS + calendar event at once.'],
+      ['C-04','Inbox triage pack','5 rules, labels, auto-archive, priority lifts.'],
+      ['C-05','Daily digest summary','Your inbox in 5 bullets every morning, by email or SMS.'],
+      ['C-06','Follow-up sequence','3-touch outreach: day 0, day 3, day 7.'],
+      ['C-07','Voice-to-text intake','You talk, it becomes structured text in your CRM.'],
+    ]},
+    { n:'05', name:'Automation · Integrations', blurb:'Wire your tools together.', items:[
+      ['A-01','Cross-app webhook bridge','One hook connecting two apps (PayPal→Asana, Calendly→Notion).'],
+      ['A-02','Calendar auto-create','"Book me Wed 7pm" → event lands in your calendar.'],
+      ['A-03','Cron / scheduled job','One recurring task, daily or weekly, your spec.'],
+      ['A-04','Webhook receiver endpoint','Your URL accepts POSTs and routes them to an action.'],
+      ['A-05','Form-to-everywhere','One form posts to email + SMS + sheet + CRM at once.'],
+      ['A-06','Spreadsheet pipeline','Sheet → enrichment → outbound, automated.'],
+    ]},
+    { n:'06', name:'AI Agents · Voice · Possession', blurb:'Put an AI on it.', items:[
+      ['X-01','Custom AI assistant skill','One capability bolted onto your Claude / ChatGPT.'],
+      ['X-02','Claude Code hook script','One lifecycle event wired to your behavior.'],
+      ['X-03','MCP server install + wire-up','One server, registered, scoped, ready.'],
+      ['X-04','Voice Gate page (STT)','Talk to your stack from any browser, anywhere.'],
+      ['X-05','Siri Possession shortcut','iOS shortcut that runs your stack hands-free.'],
+      ['X-06','Local LLM swap (Ollama)','Install + register one local model for sovereignty.'],
+      ['X-07','KB ingestion (1 source)','Repo, folder, drive or site → searchable memory.'],
+    ]},
+    { n:'07', name:'Social · Content', blurb:'Show up everywhere.', items:[
+      ['S-01','Social post pack (5 posts)','Copy + image direction, drop-ready.'],
+      ['S-02','Caption + hashtag set','10 captions, 30 hashtags, tone-matched.'],
+      ['S-03','Cross-platform schedule','One platform, 2 weeks queued, auto-post, tracked.'],
+      ['S-04','Bio + Linktree pass','Rewrite + reorder for conversion.'],
+      ['S-05','Auto-DM responder','One platform, one trigger phrase, one response chain.'],
+    ]},
+    { n:'08', name:'Music · Production', blurb:'Studio-grade, shipped.', items:[
+      ['M-01','Track mastering pass','One song — loudness + EQ + spatial polish.'],
+      ['M-02','Mix revision','One song, one round of changes from your notes.'],
+      ['M-03','Beat selection + arrangement','3 beats curated to your direction + a map.'],
+      ['M-04','DistroKid wire-up','Release set up — metadata, art, scheduled drop.'],
+      ['M-05','Hyperfollow / smart link','One link that opens in Spotify/Apple/Amazon/Tidal.'],
+    ]},
+    { n:'09', name:'Ops · CRM · Docs', blurb:'Run the back office.', items:[
+      ['O-01','Lead capture sheet','Structured intake form → contact record.'],
+      ['O-02','Onboarding doc scaffold','Welcome → intake → kickoff, in your tone.'],
+      ['O-03','Booking pipeline (kanban)','Lead → qualified → booked → done, on a board.'],
+      ['O-04','Invoice template (your brand)','Reusable, fillable, sendable.'],
+      ['O-05','Contract template','Service-agreement skeleton, ready to fill.'],
+      ['O-06','Quote → invoice flow','Send a quote; on accept it auto-bills.'],
+    ]},
+    { n:'10', name:'Infra · Build · Deploy', blurb:'Ship it and keep it up.', items:[
+      ['I-01','Cloudflare tunnel hostname','Add one subdomain to your tunnel.'],
+      ['I-02','GitHub Pages wire-up','Repo created, branch pushed, custom domain bound.'],
+      ['I-03','FastAPI / Express boot','One backend — dockered, started, tunneled.'],
+      ['I-04','File explorer surface','One drive folder → public/private URL.'],
+      ['I-05','Backup snapshot rule','One folder mirrored to remote on a schedule.'],
+    ]},
+  ];
+  const PRICE = 111;
+  const NAMES = {}; MENU.forEach(b => b.items.forEach(it => NAMES[it[0]] = it[1]));
+
+  // ---------- RENDER MENU ----------
+  const root = document.getElementById('menuRoot');
+  MENU.forEach((b, bi) => {
+    const sec = document.createElement('div');
+    sec.className = 'section-container'; sec.id = 'b'+b.n; sec.setAttribute('data-dot', b.name.split('·')[0].trim());
+    let cards = b.items.map(it => `
+      <div class="item">
+        <div class="iid">${it[0]}</div>
+        <div class="ititle">${it[1]}</div>
+        <div class="icap">${it[2]}</div>
+        <div class="ifoot"><span class="iprice">111</span><button class="add-btn" data-id="${it[0]}"><i class="ph ph-plus"></i> Add</button></div>
+      </div>`).join('');
+    sec.innerHTML = `<section class="bucket glass-panel">
+      <div class="bucket-header"><span class="num text-liquid-steel">${b.n}</span><span class="name">${b.name}</span><span class="count">${b.items.length} units</span></div>
+      <div class="bucket-blurb">${b.blurb}</div>
+      <div class="items">${cards}</div>
+    </section>`;
+    root.appendChild(sec);
+  });
+
+  // ---------- CART ----------
+  let cart = {};
+  try { cart = JSON.parse(localStorage.getItem('xlrdcart')||'{}'); } catch(e){ cart = {}; }
+  const save = () => { try { localStorage.setItem('xlrdcart', JSON.stringify(cart)); } catch(e){} };
+  const count = () => Object.values(cart).reduce((a,b)=>a+b,0);
+  const total = () => count()*PRICE;
+
+  function addToCart(id){ cart[id]=(cart[id]||0)+1; save(); paintCart(); }
+  function setQty(id,d){ cart[id]=(cart[id]||0)+d; if(cart[id]<=0) delete cart[id]; save(); paintCart(); }
+
+  function paintCart(){
+    const c = count(), t = total();
+    document.getElementById('navCt').textContent = c + ' · $' + t.toLocaleString();
+    document.getElementById('mCt').textContent = c;
+    // list
+    const list = document.getElementById('cartList');
+    const ids = Object.keys(cart);
+    if(!ids.length){ list.innerHTML = '<div class="cart-empty">Your order is empty. Tap <b>Add</b> on any unit.</div>'; }
+    else {
+      list.innerHTML = ids.map(id => `
+        <div class="cline">
+          <div class="cn"><div class="t">${NAMES[id]||id}</div><div class="s">${id} · $${PRICE} ea</div></div>
+          <div class="qty"><button onclick="setQty('${id}',-1)">−</button><span>${cart[id]}</span><button onclick="setQty('${id}',1)">+</button></div>
+          <div class="cp">$${(cart[id]*PRICE).toLocaleString()}</div>
+        </div>`).join('');
+    }
+    document.getElementById('cartTotal').textContent = '$' + t.toLocaleString();
+    // checkout
+    const co = document.getElementById('checkoutBtn');
+    if(c){
+      co.classList.remove('disabled');
+      const lines = ids.map(id => `• ${cart[id]}× ${NAMES[id]||id} (${id}) — $${(cart[id]*PRICE).toLocaleString()}`).join('\n');
+      const body = `My XLRD TECH order (${c} unit${c>1?'s':''}, total $${t.toLocaleString()}):\n\n${lines}\n\nWhat I need / context:\n`;
+      co.href = 'mailto:east@xlrd.org?subject=' + encodeURIComponent('Order · '+c+' units ($'+t.toLocaleString()+')') + '&body=' + encodeURIComponent(body);
+      co.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Send my order · $' + t.toLocaleString();
+    } else {
+      co.classList.add('disabled'); co.removeAttribute('href');
+      co.innerHTML = '<i class="ph ph-paper-plane-tilt"></i> Send my order';
+    }
+  }
+
+  // add-button delegation
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.add-btn'); if(!b) return;
+    addToCart(b.dataset.id);
+    b.classList.add('added'); const o = b.innerHTML; b.innerHTML = '<i class="ph ph-check"></i> Added';
+    setTimeout(()=>{ b.classList.remove('added'); b.innerHTML = o; }, 900);
+  });
+
+  window.openCart = () => { document.getElementById('cart-modal').classList.add('open'); closeSheet(); };
+  window.closeCart = () => document.getElementById('cart-modal').classList.remove('open');
+  document.getElementById('rushBtn').addEventListener('click', () => {
+    const co = document.getElementById('checkoutBtn'); if(co.classList.contains('disabled')) return;
+    const u = new URL(co.href); u.searchParams.set('subject', u.searchParams.get('subject')+' · RUSH');
+    co.href = u.toString(); document.getElementById('rushBtn').innerHTML = '<i class="ph ph-check"></i> Rush added';
+  });
+
+  // ---------- NAV / SHEET ----------
+  const sheet = document.getElementById('msheet');
+  function closeSheet(){ sheet.classList.remove('open'); }
+  document.getElementById('hamb').addEventListener('click', () => sheet.classList.add('open'));
+  sheet.querySelectorAll('[data-mclose]').forEach(el => el.addEventListener('click', closeSheet));
+  sheet.querySelectorAll('.mcard button:not(.mclose), .mcard a').forEach(b => b.addEventListener('click', closeSheet));
+
+  // ---------- SCROLL: reveal + scrollspy dots ----------
+  const sections = Array.from(document.querySelectorAll('.section-container'));
+  const dotsWrap = document.getElementById('dots');
+  sections.forEach((s,i) => { const d=document.createElement('div'); d.className='dot'+(i===0?' active':''); d.title=s.getAttribute('data-dot')||('Section '+i); d.onclick=()=>jump(i); dotsWrap.appendChild(d); });
+  const dots = Array.from(dotsWrap.children);
+  window.jump = (i) => sections[i] && sections[i].scrollIntoView({behavior:'smooth',block:'start'});
+  window.jumpId = (id) => { const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+
+  document.body.classList.add('reveal-on');
+  const revealIO = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); revealIO.unobserve(e.target); } }), { threshold:0.08, rootMargin:'0px 0px -5% 0px' });
+  sections.forEach(s => revealIO.observe(s)); sections[0].classList.add('in');
+  const spyIO = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ const i=sections.indexOf(e.target); dots.forEach((d,j)=>d.classList.toggle('active',j===i)); } }), { rootMargin:'-45% 0px -45% 0px', threshold:0 });
+  sections.forEach(s => spyIO.observe(s));
+
+  // ---------- INIT ----------
+  paintCart();
+  window.addEventListener('load', () => setTimeout(() => document.getElementById('preloader').classList.add('loaded'), 650));
+  document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeCart(); closeSheet(); } });
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

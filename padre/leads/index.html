@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Padre PSO-2 · Lead Sourcing · businesses without websites</title>
+<meta name="description" content="Padre Sales Ops · PSO-2 · lead-sourcing assistant · find local businesses with good reviews but no website · Henry County GA + verticals · structured JSON output.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:#0A0A0C; --ink:#F4EEE4; --cream:#F4EEE4;
+  --bone:#C7C2B6; --dust:#7A7A7A; --line:rgba(244,238,228,.12);
+  --volt:#00FF88; --rust:#E5552A; --gold:#D2AC47;
+  --serif:'Instrument Serif',serif; --sans:'Inter',-apple-system,sans-serif; --mono:'JetBrains Mono',monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:var(--paper); color:var(--cream); font-family:var(--sans); line-height:1.55; }
+.wrap { max-width:1100px; margin:0 auto; padding:60px 28px 100px; }
+.glow { color:var(--volt); }
+header { margin-bottom:48px; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.4em; text-transform:uppercase; color:var(--volt); margin-bottom:16px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:clamp(40px,6vw,80px); line-height:0.98; letter-spacing:-.025em; margin:0 0 16px; }
+h1 em { color:var(--volt); font-style:italic; }
+.lede { font-family:var(--serif); font-style:italic; font-size:clamp(18px,2vw,24px); color:var(--bone); max-width:780px; line-height:1.5; }
+
+section { margin-bottom:48px; padding-top:36px; border-top:1px solid var(--line); }
+section .sn { font-family:var(--mono); font-size:11px; letter-spacing:.36em; text-transform:uppercase; color:var(--volt); margin-bottom:12px; }
+section h2 { font-family:var(--serif); font-weight:400; font-size:clamp(28px,3.4vw,40px); line-height:1.1; letter-spacing:-.02em; margin:0 0 20px; }
+section h2 em { color:var(--volt); font-style:italic; }
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media (max-width:640px) { .form-grid { grid-template-columns:1fr; } }
+label { display:block; font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--dust); margin-bottom:8px; }
+input, textarea, select { width:100%; background:rgba(255,255,255,.03); border:1px solid var(--line); color:var(--cream); padding:14px 16px; font-family:var(--sans); font-size:15px; outline:none; border-radius:0; }
+input:focus, textarea:focus, select:focus { border-color:var(--volt); }
+textarea { min-height:88px; resize:vertical; font-family:var(--mono); font-size:13px; }
+.button-row { display:flex; gap:12px; margin-top:24px; flex-wrap:wrap; }
+button.primary {
+  background:var(--volt); color:var(--paper);
+  border:0; padding:14px 24px;
+  font-family:var(--mono); font-size:11px; font-weight:700;
+  letter-spacing:.2em; text-transform:uppercase;
+  cursor:pointer; transition:transform .15s, background .15s;
+}
+button.primary:hover { transform:translateY(-1px); }
+button.primary:disabled { background:var(--dust); cursor:not-allowed; }
+button.ghost {
+  background:transparent; color:var(--cream);
+  border:1px solid var(--line);
+  padding:14px 24px;
+  font-family:var(--mono); font-size:11px; font-weight:600;
+  letter-spacing:.2em; text-transform:uppercase;
+  cursor:pointer;
+}
+button.ghost:hover { border-color:var(--volt); color:var(--volt); }
+
+.contract {
+  background:rgba(0,255,136,.04); border:1px solid var(--volt); border-left:4px solid var(--volt);
+  padding:24px 28px;
+  font-family:var(--mono); font-size:13px; line-height:1.7;
+}
+.contract .lbl { color:var(--volt); font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+.contract pre { margin:14px 0 0; font-family:var(--mono); font-size:12.5px; color:#D4D4D4; line-height:1.65; white-space:pre-wrap; word-break:break-word; }
+.contract .k { color:var(--volt); }
+.contract .v { color:#A5F3CC; }
+.contract .c { color:var(--dust); font-style:italic; }
+
+.results {
+  background:#0F0F11; border:1px solid var(--line); border-radius:0;
+  padding:0; overflow:hidden;
+}
+.results pre {
+  margin:0; padding:24px 28px;
+  font-family:var(--mono); font-size:12.5px; color:#D4D4D4; line-height:1.65;
+  white-space:pre-wrap; word-break:break-word;
+  max-height:520px; overflow-y:auto;
+}
+.results .hdr {
+  background:#0A0A0C; border-bottom:1px solid var(--line);
+  padding:14px 28px;
+  display:flex; align-items:center; justify-content:space-between;
+  font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--dust);
+}
+.results .hdr .live { color:var(--volt); }
+.results .hdr .copy { cursor:pointer; padding:4px 10px; border:1px solid var(--line); color:var(--cream); }
+.results .hdr .copy:hover { border-color:var(--volt); color:var(--volt); }
+
+.stub-note {
+  background:rgba(255,179,71,.06); border-left:3px solid var(--gold);
+  padding:14px 18px; margin:14px 0; font-size:13px; color:var(--bone);
+  border-radius:0 6px 6px 0;
+}
+.stub-note .h { color:var(--gold); font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; font-weight:700; margin-bottom:6px; }
+
+footer { margin-top:80px; padding-top:32px; border-top:1px solid var(--line); display:flex; justify-content:space-between; gap:16px; font-family:var(--mono); font-size:11px; letter-spacing:.15em; text-transform:uppercase; color:var(--dust); flex-wrap:wrap; }
+footer a { color:var(--volt); text-decoration:none; border-bottom:1px dotted rgba(0,255,136,.3); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">// Padre PSO-2 · Lead Sourcing Surface</div>
+  <h1>Find the <em>businesses</em><br>without websites.</h1>
+  <div class="lede">Given a city/area and optional industry, return businesses with good reviews and NO visible website. Structured JSON output for the orchestrator. Henry County · Hampton · Riverdale · Stockbridge · McDonough · GA.</div>
+</header>
+
+<section>
+  <div class="sn">// 01 · Input</div>
+  <h2>Drop the <em>area + verticals</em>.</h2>
+  <div class="form-grid">
+    <div>
+      <label for="areas">Areas (comma-separated)</label>
+      <input id="areas" type="text" value="Henry County, Hampton, Riverdale, Stockbridge, McDonough" />
+    </div>
+    <div>
+      <label for="verticals">Target verticals (comma-separated)</label>
+      <input id="verticals" type="text" value="dentists, auto repair, plumbers, hvac, salons" />
+    </div>
+  </div>
+  <div style="margin-top:14px;">
+    <label for="minreviews">Min review count</label>
+    <input id="minreviews" type="number" value="20" min="0" />
+  </div>
+  <div class="button-row">
+    <button class="primary" id="sourceBtn">Source leads</button>
+    <button class="ghost" id="exampleBtn">Show example output</button>
+  </div>
+  <div class="stub-note">
+    <div class="h">⚠ PSO-2 backend not yet wired</div>
+    Lead sourcing requires Google Places API key or scrape engine (WebKit / Firefox · no Chromium per canon). Until the backend lands, this surface shows the <strong>contract</strong> · the JSON shape downstream tools consume. mac-xen TXB-6 candidate.
+  </div>
+</section>
+
+<section>
+  <div class="sn">// 02 · Contract</div>
+  <h2>The <em>output schema</em>.</h2>
+  <div class="contract">
+    <div class="lbl">Per candidate (only returned where website_missing = true)</div>
+<pre><span class="k">{</span>
+  <span class="k">"business_name"</span>: <span class="v">"Hampton Family Dental"</span>,
+  <span class="k">"address"</span>:       <span class="v">"123 Main St, Hampton, GA 30228"</span>,
+  <span class="k">"phone"</span>:         <span class="v">"+17708675309"</span>,
+  <span class="k">"category"</span>:      <span class="v">"Dentist"</span>,
+  <span class="k">"short_description"</span>: <span class="v">"Family dentistry · 4.9 stars · 127 reviews · no website on file"</span>,
+  <span class="k">"rating"</span>:        <span class="v">4.9</span>,
+  <span class="k">"review_count"</span>:  <span class="v">127</span>,
+  <span class="k">"website_missing"</span>: <span class="v">true</span>,
+  <span class="k">"source"</span>:        <span class="v">"google_maps"</span>,
+  <span class="k">"scraped_at"</span>:    <span class="v">"2026-05-22T04:15:00-04:00"</span>,
+  <span class="k">"area"</span>:          <span class="v">"Hampton, GA"</span>,
+  <span class="k">"hint_color"</span>:    <span class="v">"#1f6f7a"</span>  <span class="c">// for downstream site gen accent</span>
+<span class="k">}</span></pre>
+  </div>
+</section>
+
+<section>
+  <div class="sn">// 03 · Results</div>
+  <h2>Live <em>output stream</em>.</h2>
+  <div class="results">
+    <div class="hdr">
+      <span><span class="live">●</span> awaiting source · click "source leads"</span>
+      <button class="copy" id="copyBtn">copy JSON</button>
+    </div>
+    <pre id="output">{
+  "input": {
+    "areas": [],
+    "verticals": [],
+    "min_review_count": 20
+  },
+  "status": "idle",
+  "candidates": []
+}</pre>
+  </div>
+</section>
+
+<section>
+  <div class="sn">// 04 · Pipeline</div>
+  <h2>Where each candidate <em>routes</em>.</h2>
+  <p style="font-size:15px; color:var(--bone); margin-bottom:14px;">Per the orchestrator (PSO-6), each <code style="font-family:var(--mono); background:rgba(255,255,255,.06); padding:2px 8px; border-radius:3px;">website_missing: true</code> record flows:</p>
+  <ol style="padding-left:24px; font-size:15px;">
+    <li>→ <strong style="color:var(--volt);">PSO-3 Site Generation</strong> · <code style="font-family:var(--mono); font-size:13px; background:rgba(255,255,255,.06); padding:2px 8px; border-radius:3px;">xen-padre-build</code> renders L7S-style template at <code style="font-family:var(--mono); font-size:13px;">/padre/&lt;slug&gt;/</code></li>
+    <li>→ <strong style="color:var(--volt);">PSO-4 Padre Closing</strong> · <code style="font-family:var(--mono); font-size:13px; background:rgba(255,255,255,.06); padding:2px 8px; border-radius:3px;">xen-padre-script</code> generates call script + SMS template</li>
+    <li>→ <strong style="color:var(--volt);">PSO-5 Logging</strong> · CSV/JSON row with biz info · site URL · call script · SMS · status</li>
+    <li>→ Padre dialer pulls next row · close at $2K / 7-day scope / boomerang ownership</li>
+  </ol>
+</section>
+
+<footer>
+  <div>hitthe.link/padre/leads · PSO-2 · v0.1 contract surface</div>
+  <div>
+    <a href="/padre/">/padre/</a> ·
+    <a href="/padre/offer/">offer canon</a> ·
+    <a href="/padre/template/">template</a> ·
+    <a href="/padre/hampton-family-dental/">demo</a>
+  </div>
+</footer>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SAMPLES = [
+  { business_name:"Hampton Family Dental", address:"45 Main St, Hampton, GA 30228", phone:"+17708675309", category:"Dentist", short_description:"Family dentistry · 4.9★ · 127 reviews · no website", rating:4.9, review_count:127, website_missing:true, source:"google_maps", area:"Hampton, GA", hint_color:"#1f6f7a" },
+  { business_name:"Stockbridge Auto Repair", address:"1804 Hudson Bridge Rd, Stockbridge, GA 30281", phone:"+17705551234", category:"Auto Repair", short_description:"Mom-and-pop garage · 4.8★ · 342 reviews · GMB has no website link", rating:4.8, review_count:342, website_missing:true, source:"google_maps", area:"Stockbridge, GA", hint_color:"#dc2626" },
+  { business_name:"McDonough Lock & Key", address:"112 Keys Ferry St, McDonough, GA 30253", phone:"+16785559822", category:"Locksmith", short_description:"24/7 emergency locksmith · 4.7★ · 89 reviews · no online presence", rating:4.7, review_count:89, website_missing:true, source:"google_maps", area:"McDonough, GA", hint_color:"#0f172a" },
+  { business_name:"Riverdale Family Plumbing", address:"5301 Highway 85, Riverdale, GA 30274", phone:"+14045553301", category:"Plumber", short_description:"30+ years local · 4.6★ · 211 reviews · Yelp only, no site", rating:4.6, review_count:211, website_missing:true, source:"google_maps", area:"Riverdale, GA", hint_color:"#0e7490" }
+];
+
+function buildOutput(areas, verticals, min, showSamples) {
+  return {
+    input: { areas, verticals, min_review_count: min },
+    status: showSamples ? "stubbed · pending PSO-2 backend" : "idle",
+    candidates: showSamples ? SAMPLES : [],
+    note: showSamples ? "These are demo records illustrating the contract. Real candidates land when xen-padre-sourcer is wired (Google Places API or WebKit scrape)." : null
+  };
+}
+
+function render(data) {
+  $('output').textContent = JSON.stringify(data, null, 2);
+}
+
+$('sourceBtn').addEventListener('click', () => {
+  const areas = $('areas').value.split(',').map(s => s.trim()).filter(Boolean);
+  const verticals = $('verticals').value.split(',').map(s => s.trim()).filter(Boolean);
+  const min = parseInt($('minreviews').value || '0', 10);
+  $('sourceBtn').textContent = 'Sourcing...';
+  $('sourceBtn').disabled = true;
+  setTimeout(() => {
+    render(buildOutput(areas, verticals, min, true));
+    $('sourceBtn').textContent = 'Source leads';
+    $('sourceBtn').disabled = false;
+  }, 700);
+});
+
+$('exampleBtn').addEventListener('click', () => {
+  const areas = $('areas').value.split(',').map(s => s.trim()).filter(Boolean);
+  const verticals = $('verticals').value.split(',').map(s => s.trim()).filter(Boolean);
+  render(buildOutput(areas, verticals, 20, true));
+});
+
+$('copyBtn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('output').textContent);
+    $('copyBtn').textContent = 'copied';
+    setTimeout(() => $('copyBtn').textContent = 'copy JSON', 1200);
+  } catch(e) { $('copyBtn').textContent = 'tap blocked'; }
+});
+</script>
+<script src="/_shared/ava-play.js" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

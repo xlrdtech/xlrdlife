@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Omnicom · live event stream</title>
+<meta name="description" content="Omnicom — the live SSE viewer for Xen's omni event stream at xen.xlrd.org/events: beeper, mail, notifications, OTLP steps streaming in real-time, brand-aligned dark console.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:#0A0A0C; --cream:#F4EEE4; --bone:#C7C2B6; --dust:#7A7A7A; --line:rgba(244,238,228,.12);
+  --volt:#00FF88; --gold:#D2AC47; --steel:#6AD4FF; --violet:#A78BFA; --rose:#FF5E9C; --rust:#E5552A;
+  --serif:'Instrument Serif',serif; --sans:'Inter',-apple-system,sans-serif; --mono:'JetBrains Mono',monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; background:var(--paper); color:var(--cream); font-family:var(--sans); }
+.wrap { display:flex; flex-direction:column; height:100vh; max-width:1400px; margin:0 auto; padding:20px 24px; }
+
+header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:16px; border-bottom:1px solid var(--line); margin-bottom:14px; flex-wrap:wrap; }
+.title { font-family:var(--serif); font-style:italic; font-size:32px; color:var(--cream); letter-spacing:-.02em; }
+.title em { color:var(--volt); }
+.controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.status { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; padding:5px 10px; border-radius:50px; border:1px solid var(--line); display:flex; align-items:center; gap:6px; }
+.status .dot { width:8px; height:8px; border-radius:50%; background:var(--dust); }
+.status.open { color:var(--volt); border-color:var(--volt); }
+.status.open .dot { background:var(--volt); box-shadow:0 0 8px var(--volt); animation:pulse 1.6s infinite; }
+.status.err { color:var(--rust); border-color:var(--rust); }
+.status.err .dot { background:var(--rust); }
+@keyframes pulse { 0%, 100% { opacity:1; } 50% { opacity:.4; } }
+
+.filter-btn { font-family:var(--mono); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; padding:5px 10px; border-radius:50px; background:transparent; border:1px solid var(--line); color:var(--bone); cursor:pointer; transition:all .15s; }
+.filter-btn:hover { color:var(--cream); border-color:var(--cream); }
+.filter-btn.on { background:var(--volt); color:var(--paper); border-color:var(--volt); font-weight:700; }
+
+#log { flex:1; overflow-y:auto; font-family:var(--mono); font-size:12.5px; line-height:1.55; background:#0E0E0E; border:1px solid var(--line); border-radius:10px; padding:14px 18px; }
+.event { display:grid; grid-template-columns:80px 78px 130px 1fr; gap:10px; padding:6px 0; border-bottom:1px dotted var(--line); align-items:start; }
+.event:last-child { border-bottom:0; }
+.event .ts { color:var(--dust); font-size:11px; }
+.event .src { font-size:10px; letter-spacing:.14em; text-transform:uppercase; padding:1px 6px; border-radius:3px; align-self:start; }
+.event .src.beeper { background:rgba(106,212,255,.12); color:var(--steel); }
+.event .src.mail { background:rgba(210,172,71,.12); color:var(--gold); }
+.event .src.notif, .event .src.notification { background:rgba(167,139,250,.12); color:var(--violet); }
+.event .src.healthcheck, .event .src.health { background:rgba(0,255,136,.12); color:var(--volt); }
+.event .src.other { background:rgba(244,238,228,.06); color:var(--bone); }
+.event .sender { color:var(--cream); font-weight:600; word-break:break-word; }
+.event .body { color:var(--bone); word-break:break-word; }
+.event .body em { color:var(--volt); font-style:normal; font-weight:600; }
+.event.connected { color:var(--volt); border-bottom:1px solid rgba(0,255,136,.3); padding:10px 0; font-style:italic; }
+.event.error { color:var(--rust); }
+
+footer { padding-top:12px; font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; color:var(--dust); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+footer a { color:var(--volt); text-decoration:none; border-bottom:1px dotted; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="title">Xen <em>Omnicom</em></div>
+  <div class="controls">
+    <span class="status" id="status"><span class="dot"></span><span id="status-text">connecting</span></span>
+    <button class="filter-btn on" data-src="all">All</button>
+    <button class="filter-btn" data-src="beeper">Beeper</button>
+    <button class="filter-btn" data-src="mail">Mail</button>
+    <button class="filter-btn" data-src="notif">Notif</button>
+    <button class="filter-btn" data-src="healthcheck">Health</button>
+    <button class="filter-btn" id="pause-btn">Pause</button>
+    <button class="filter-btn" id="clear-btn">Clear</button>
+  </div>
+</header>
+
+<div id="log"></div>
+
+<footer>
+  <div>SSE source: <code>https://xen.xlrd.org/events</code> · Win-Ezekiel viewer · <span id="count">0</span> events</div>
+  <div>
+    <a href="/sop/2026-05-22-14h-win/?mute=1">SOP</a> ·
+    <a href="/ifttt/">IFTTT</a> ·
+    <a href="/spine/">Spine</a>
+  </div>
+</footer>
+
+</div>
+
+<script>
+const log = document.getElementById('log');
+const status = document.getElementById('status');
+const statusText = document.getElementById('status-text');
+const countEl = document.getElementById('count');
+const pauseBtn = document.getElementById('pause-btn');
+const clearBtn = document.getElementById('clear-btn');
+
+let activeFilters = new Set(['all']);
+let paused = false;
+let count = 0;
+const MAX_EVENTS = 500;
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = ts > 1e12 ? new Date(ts) : new Date(ts * 1000);
+  return d.toLocaleTimeString('en-US', { hour12: false });
+}
+
+function srcClass(src) {
+  if (!src) return 'other';
+  const s = String(src).toLowerCase();
+  if (s.includes('beeper')) return 'beeper';
+  if (s.includes('mail')) return 'mail';
+  if (s.includes('notif')) return 'notif';
+  if (s.includes('health')) return 'healthcheck';
+  return 'other';
+}
+
+function shouldShow(src) {
+  if (activeFilters.has('all')) return true;
+  return activeFilters.has(srcClass(src));
+}
+
+function trimLog() {
+  while (log.children.length > MAX_EVENTS) log.removeChild(log.firstChild);
+}
+
+function append(html, cls = '') {
+  if (paused) return;
+  const div = document.createElement('div');
+  div.className = 'event ' + cls;
+  div.innerHTML = html;
+  log.appendChild(div);
+  trimLog();
+  log.scrollTop = log.scrollHeight;
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+const es = new EventSource('https://xen.xlrd.org/events');
+
+es.onopen = () => {
+  status.className = 'status open';
+  statusText.textContent = 'live';
+};
+
+es.onerror = () => {
+  status.className = 'status err';
+  statusText.textContent = 'err · retry';
+};
+
+es.onmessage = (e) => {
+  count++;
+  countEl.textContent = count;
+  let data;
+  try { data = JSON.parse(e.data); }
+  catch { append(`<div></div><div></div><div class="ts">${esc(e.data).slice(0, 200)}</div>`); return; }
+
+  if (data.event === 'connected') {
+    append(`<div></div><div></div><div></div><div>● connected to ${esc(data.agent || '?')}</div>`, 'connected');
+    return;
+  }
+  const src = data.source || data.kind || 'other';
+  if (!shouldShow(src)) return;
+  const cls = srcClass(src);
+  const ts = fmtTime(data.ts);
+  const sender = data.sender || data.from || data.subject || '';
+  const body = data.body || data.message || data.text || data.title || '';
+  const direction = data.direction === 'in' ? '←' : data.direction === 'out' ? '→' : '';
+  append(`
+    <div class="ts">${esc(ts)}</div>
+    <div class="src ${cls}">${esc(src).slice(0, 8)}</div>
+    <div class="sender">${esc(direction)} ${esc(sender).slice(0, 40)}</div>
+    <div class="body">${esc(body).slice(0, 400)}</div>
+  `);
+};
+
+document.querySelectorAll('.filter-btn[data-src]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const src = btn.dataset.src;
+    if (src === 'all') {
+      activeFilters.clear();
+      activeFilters.add('all');
+      document.querySelectorAll('.filter-btn[data-src]').forEach(b => b.classList.toggle('on', b.dataset.src === 'all'));
+    } else {
+      activeFilters.delete('all');
+      if (activeFilters.has(src)) activeFilters.delete(src); else activeFilters.add(src);
+      if (activeFilters.size === 0) activeFilters.add('all');
+      document.querySelectorAll('.filter-btn[data-src]').forEach(b => {
+        if (b.dataset.src === 'all') b.classList.toggle('on', activeFilters.has('all'));
+        else b.classList.toggle('on', activeFilters.has(b.dataset.src));
+      });
+    }
+  });
+});
+
+pauseBtn.addEventListener('click', () => {
+  paused = !paused;
+  pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+  pauseBtn.classList.toggle('on', paused);
+});
+
+clearBtn.addEventListener('click', () => { log.innerHTML = ''; count = 0; countEl.textContent = '0'; });
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stal'lyon · populate the 9 tokens · half-completion gate</title>
+<meta name="description" content="Token-fill form for Stal'lyon's one-pager. Drop the 9 values, get the populated HTML in your clipboard. Submit, completion-half invoice is due.">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root { --paper:#0A0A0C; --cream:#F4EEE4; --bone:#C7C2B6; --dust:#7A7A7A; --line:rgba(244,238,228,.12); --volt:#00FF88; --gold:#D2AC47; --steel:#6AD4FF; --rust:#E5552A; --serif:'Instrument Serif',serif; --sans:'Inter',-apple-system,sans-serif; --mono:'JetBrains Mono',monospace; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--paper); color:var(--cream); font-family:var(--sans); line-height:1.55; }
+.wrap { max-width:760px; margin:0 auto; padding:60px 28px 100px; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.4em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:clamp(36px,5vw,64px); line-height:1; letter-spacing:-.025em; margin:0 0 14px; }
+h1 em { color:var(--gold); font-style:italic; }
+.lede { font-family:var(--serif); font-style:italic; font-size:18px; color:var(--bone); margin-bottom:28px; }
+form { display:flex; flex-direction:column; gap:14px; }
+label { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dust); display:block; margin-bottom:4px; }
+input, textarea { width:100%; background:rgba(255,255,255,.03); border:1px solid var(--line); color:var(--cream); padding:12px 14px; font-family:var(--sans); font-size:15px; border-radius:6px; outline:none; }
+input:focus, textarea:focus { border-color:var(--gold); }
+textarea { min-height:80px; resize:vertical; font-family:var(--sans); font-size:14px; }
+.buttons { display:flex; gap:10px; margin-top:14px; }
+button { flex:1; padding:14px; font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; border:0; border-radius:6px; cursor:pointer; }
+button.primary { background:var(--gold); color:var(--paper); }
+button.secondary { background:transparent; color:var(--cream); border:1px solid var(--line); }
+button:hover { transform:translateY(-1px); }
+#output { background:#0E0E0E; border:1px solid var(--line); border-radius:10px; padding:18px 22px; margin-top:24px; font-family:var(--mono); font-size:12px; color:var(--cream); line-height:1.5; max-height:400px; overflow-y:auto; display:none; }
+#output.show { display:block; }
+.status { font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--volt); margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">// stal'lyon · populate · 2026-05-23</div>
+<h1>Drop the <em>9 tokens</em>.</h1>
+<div class="lede">Fill in Stal'lyon's artist info. Page generates the populated HTML, copies it to your clipboard. Paste over <code style="font-family:var(--mono); background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:var(--steel);">/c/Users/selfe/hitthe.link/stal-lyon/index.html</code>, commit, push, completion-half invoice fires.</div>
+
+<form id="tokenForm">
+  <div>
+    <label for="STAGE_NAME">Stage name (what fans search)</label>
+    <input id="STAGE_NAME" required placeholder="e.g. Stal'lyon">
+  </div>
+  <div>
+    <label for="FULL_NAME">Full / legal name</label>
+    <input id="FULL_NAME" required placeholder="e.g. First Last">
+  </div>
+  <div>
+    <label for="LOCATION">Location</label>
+    <input id="LOCATION" required placeholder="e.g. Atlanta GA / Douglasville GA">
+  </div>
+  <div>
+    <label for="GENRE_TAGLINE">Genre / tagline (short)</label>
+    <input id="GENRE_TAGLINE" required placeholder="e.g. Southern Soul · Hip-Hop · Storyteller">
+  </div>
+  <div>
+    <label for="BIO_QUOTE">Bio quote (one sentence, the line)</label>
+    <textarea id="BIO_QUOTE" required placeholder="The single line that captures the artist's positioning"></textarea>
+  </div>
+  <div>
+    <label for="CATALOG">Catalog (one track per line · format: "Title — Year — Link or note")</label>
+    <textarea id="CATALOG" required placeholder="Trail Ride (feat. MB) — 2026 — Apple Music
+Other Track — 2025 — SoundCloud"></textarea>
+  </div>
+  <div>
+    <label for="SOCIAL_HANDLES">Social handles (one per line)</label>
+    <textarea id="SOCIAL_HANDLES" placeholder="@stallyon · Instagram
+@stallyon · TikTok
+youtube.com/@stallyon"></textarea>
+  </div>
+  <div>
+    <label for="BOOKING_EMAIL">Booking email</label>
+    <input id="BOOKING_EMAIL" type="email" placeholder="booking@…">
+  </div>
+  <div>
+    <label for="BOOKING_PHONE">Booking phone</label>
+    <input id="BOOKING_PHONE" type="tel" placeholder="+1 …">
+  </div>
+
+  <div class="buttons">
+    <button type="button" class="primary" onclick="generate()">Generate HTML + copy</button>
+    <button type="button" class="secondary" onclick="downloadHTML()">Download .html</button>
+  </div>
+</form>
+
+<div class="status" id="status"></div>
+<pre id="output"></pre>
+
+</div>
+
+<script>
+let templateHtml = null;
+let generatedHtml = null;
+
+async function loadTemplate() {
+  if (templateHtml) return templateHtml;
+  const res = await fetch('https://hitthe.link/stal-lyon/');
+  templateHtml = await res.text();
+  return templateHtml;
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function generate() {
+  const status = document.getElementById('status');
+  status.textContent = 'loading template…';
+  try {
+    const html = await loadTemplate();
+    const data = {
+      STAGE_NAME: document.getElementById('STAGE_NAME').value.trim(),
+      FULL_NAME: document.getElementById('FULL_NAME').value.trim(),
+      LOCATION: document.getElementById('LOCATION').value.trim(),
+      GENRE_TAGLINE: document.getElementById('GENRE_TAGLINE').value.trim(),
+      BIO_QUOTE: document.getElementById('BIO_QUOTE').value.trim(),
+      CATALOG: document.getElementById('CATALOG').value.trim().split('\n').filter(Boolean).map(l => `<li>${escapeHtml(l)}</li>`).join('\n'),
+      SOCIAL_HANDLES: document.getElementById('SOCIAL_HANDLES').value.trim().split('\n').filter(Boolean).map(l => `<li>${escapeHtml(l)}</li>`).join('\n'),
+      BOOKING_EMAIL: document.getElementById('BOOKING_EMAIL').value.trim(),
+      BOOKING_PHONE: document.getElementById('BOOKING_PHONE').value.trim(),
+    };
+    let filled = html;
+    for (const [k, v] of Object.entries(data)) {
+      filled = filled.replaceAll(`{{${k}}}`, v);
+    }
+    generatedHtml = filled;
+    document.getElementById('output').textContent = filled.slice(0, 4000) + (filled.length > 4000 ? '\n…\n[' + (filled.length - 4000) + ' more chars truncated in preview]' : '');
+    document.getElementById('output').classList.add('show');
+    await navigator.clipboard.writeText(filled);
+    status.textContent = '✓ generated + copied to clipboard · paste into /stal-lyon/index.html · commit · push';
+  } catch (e) {
+    status.textContent = 'error: ' + e.message;
+  }
+}
+
+function downloadHTML() {
+  if (!generatedHtml) { generate(); return; }
+  const blob = new Blob([generatedHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'stal-lyon-populated.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

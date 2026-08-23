@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AGY VENOM · Get Started</title>
+<meta name="theme-color" content="#00FF88">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0A0A0A; --bg-deep:#050505; --fg:#FFFFFF; --fg-dim:#E0DCC8; --fg-mute:#8B866B;
+    --accent:#FFD700; --accent-hi:#FFE65F; --accent-glow:rgba(255,215,0,.35);
+    --line:rgba(255, 235, 176, .14); --line-strong:rgba(255, 235, 176, .24);
+    --r-card:18px; --r-pill:9999px;
+    --sans:'Inter',-apple-system,system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body {
+    background:linear-gradient(165deg,#0A0A0A,#050505); color:var(--fg);
+    font-family:var(--sans); min-height:100svh; -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column; align-items:center;
+    padding:env(safe-area-inset-top,32px) 20px 40px;
+  }
+  a { color:inherit; text-decoration:none; }
+  .top { display:flex; align-items:center; gap:10px; font-weight:800; font-size:20px; margin-bottom:8px; }
+  .top .mark { background:linear-gradient(180deg,#fff,#b9c4d6,#8997b4); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .top .dot { width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.5;transform:scale(1.3);} }
+  .sub { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--fg-mute); margin-bottom:34px; }
+
+  /* progress rail */
+  .rail { display:flex; gap:8px; margin-bottom:30px; width:100%; max-width:560px; }
+  .rail .seg { flex:1; height:4px; border-radius:4px; background:var(--line); transition:background .3s; }
+  .rail .seg.done { background:var(--accent); box-shadow:0 0 8px var(--accent-glow); }
+
+  .card {
+    width:100%; max-width:560px;
+    background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+    border:1px solid var(--line-strong); border-radius:var(--r-card);
+    padding:clamp(24px,5vw,40px); backdrop-filter:blur(16px);
+  }
+  .step-n { font-family:var(--mono); font-size:12px; letter-spacing:.14em; color:var(--accent); margin-bottom:12px; }
+  .card h2 { font-size:clamp(22px,4vw,30px); font-weight:700; letter-spacing:-.02em; margin-bottom:12px; }
+  .card p { color:var(--fg-dim); font-size:15.5px; line-height:1.6; margin-bottom:22px; }
+  .cmd {
+    display:flex; align-items:center; gap:10px;
+    background:rgba(3,11,5,.7); border:1px solid var(--line-strong); border-radius:12px;
+    padding:8px 8px 8px 16px; margin-bottom:22px;
+  }
+  .cmd code { font-family:var(--mono); font-size:12.5px; color:var(--accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cmd button { background:var(--accent); color:var(--bg-deep); border:0; font-family:var(--mono); font-weight:700; font-size:11px; padding:8px 14px; border-radius:8px; cursor:pointer; flex-shrink:0; }
+  ol.mini { list-style:none; margin-bottom:22px; }
+  ol.mini li { font-size:14.5px; color:var(--fg-dim); padding:6px 0 6px 28px; position:relative; line-height:1.5; counter-increment:mini; }
+  ol.mini { counter-reset:mini; }
+  ol.mini li::before { content:counter(mini); position:absolute; left:0; top:6px; width:18px; height:18px; border-radius:50%; background:rgba(255,215,0,.14); border:1px solid var(--accent-glow); color:var(--accent); font-family:var(--mono); font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .nav-row { display:flex; gap:12px; margin-top:8px; }
+  button.go {
+    flex:1; background:var(--accent); color:var(--bg-deep); border:0; font-weight:700; font-size:15px;
+    padding:15px; border-radius:var(--r-pill); cursor:pointer; transition:background .15s, transform .15s;
+  }
+  button.go:hover { background:var(--accent-hi); transform:translateY(-1px); }
+  button.back { background:transparent; border:1px solid var(--line-strong); color:var(--fg-dim); font-weight:600; font-size:15px; padding:15px 24px; border-radius:var(--r-pill); cursor:pointer; }
+  .pillbox { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:22px; }
+  .tierpick { border:1px solid var(--line-strong); border-radius:14px; padding:18px; cursor:pointer; transition:all .15s; }
+  .tierpick.sel { border-color:var(--accent); background:rgba(255,215,0,.08); box-shadow:0 0 24px -10px var(--accent-glow); }
+  .tierpick .tn { font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
+  .tierpick .tp { font-size:24px; font-weight:800; }
+  .tierpick .tp small { font-size:13px; font-weight:400; color:var(--fg-mute); }
+  .status-line { font-family:var(--mono); font-size:12px; color:var(--fg-mute); margin-top:14px; min-height:18px; text-align:center; }
+  .status-line.ok { color:var(--accent); }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+  <div class="top"><span class="dot"></span><span class="mark">AGY VENOM</span></div>
+  <div class="sub">Get Started · Voice OS Avatar</div>
+
+  <div class="rail">
+    <div class="seg done" id="seg0"></div>
+    <div class="seg" id="seg1"></div>
+    <div class="seg" id="seg2"></div>
+    <div class="seg" id="seg3"></div>
+  </div>
+
+  <!-- STEP 1 · install -->
+  <div class="card" id="step0">
+    <div class="step-n">STEP 01 / 04</div>
+    <h2>Run one command</h2>
+    <p>Paste this in your terminal. It installs the Ava voice engine, registers auto-start, and downloads the extension.</p>
+    <div class="cmd">
+      <code id="cmd-win">irm https://hitthe.link/agy/agyvenom/install.ps1 | iex</code>
+      <button onclick="cp('cmd-win', this)">COPY</button>
+    </div>
+    <p style="font-size:13px;color:var(--fg-mute);margin-bottom:14px;">macOS / Linux:</p>
+    <div class="cmd">
+      <code id="cmd-nix">curl -fsSL https://hitthe.link/agy/agyvenom/install.sh | bash</code>
+      <button onclick="cp('cmd-nix', this)">COPY</button>
+    </div>
+    <div class="nav-row">
+      <button class="go" onclick="goto(1)">I ran it →</button>
+    </div>
+    <p style="font-size:13px;color:var(--fg-mute);margin-top:16px;text-align:center;">No terminal? <a href="../app/" style="color:var(--accent);">Skip to the web app →</a></p>
+  </div>
+
+  <!-- STEP 2 · load extension -->
+  <div class="card hidden" id="step1">
+    <div class="step-n">STEP 02 / 04</div>
+    <h2>Load the extension</h2>
+    <p>Chrome, Edge, Brave, Arc — or Orion on iOS. The installer already downloaded it to <code style="font-family:var(--mono);font-size:12px;color:var(--accent);">~/.agyvenom/extension</code>.</p>
+    <ol class="mini">
+      <li>Open <strong>chrome://extensions/</strong></li>
+      <li>Toggle <strong>Developer mode</strong> (top-right)</li>
+      <li>Click <strong>Load unpacked</strong> → pick the <code style="font-family:var(--mono);font-size:11px;">~/.agyvenom/extension</code> folder</li>
+      <li>Pin AGY VENOM to the toolbar</li>
+    </ol>
+    <div class="nav-row">
+      <button class="back" onclick="goto(0)">Back</button>
+      <button class="go" onclick="goto(2)">Loaded it →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 · grant mic -->
+  <div class="card hidden" id="step2">
+    <div class="step-n">STEP 03 / 04</div>
+    <h2>Grant the mic</h2>
+    <p>One tap. Ava greets you — that's how you know the voice loop is live.</p>
+    <div class="nav-row">
+      <button class="back" onclick="goto(1)">Back</button>
+      <button class="go" onclick="grantMic()">Enable voice 🎙️</button>
+    </div>
+    <div class="status-line" id="micStatus"></div>
+  </div>
+
+  <!-- STEP 4 · tier -->
+  <div class="card hidden" id="step3">
+    <div class="step-n">STEP 04 / 04</div>
+    <h2>Choose your tier</h2>
+    <p>Start free, no login. Upgrade anytime for hosted voice + cross-device sync.</p>
+    <div class="pillbox">
+      <div class="tierpick sel" id="tier-free" onclick="pickTier('free')">
+        <div class="tn">Free</div><div class="tp">$0</div>
+      </div>
+      <div class="tierpick" id="tier-pro" onclick="pickTier('pro')">
+        <div class="tn">Pro</div><div class="tp">$11<small>/mo</small></div>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="back" onclick="goto(2)">Back</button>
+      <button class="go" id="finishBtn" onclick="finish()">Start using AGY VENOM →</button>
+    </div>
+  </div>
+
+<script>
+  let step = 0, tier = 'free';
+  const params = new URLSearchParams(location.search);
+  if (params.get('tier') === 'pro') tier = 'pro';
+
+  function cp(id, btn) {
+    navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
+      const o = btn.textContent; btn.textContent = 'COPIED ✓';
+      setTimeout(() => btn.textContent = o, 1600);
+    });
+  }
+  function goto(n) {
+    document.getElementById('step'+step).classList.add('hidden');
+    step = n;
+    document.getElementById('step'+step).classList.remove('hidden');
+    for (let i=0;i<4;i++) document.getElementById('seg'+i).classList.toggle('done', i<=step);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  async function grantMic() {
+    const s = document.getElementById('micStatus');
+    s.textContent = 'requesting microphone…'; s.className='status-line';
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+      stream.getTracks().forEach(t=>t.stop());
+      s.textContent = '✓ microphone granted · voice loop ready'; s.className='status-line ok';
+      /* Ava greets via local server if present */
+      try {
+        const r = await fetch('http://localhost:7723/?text=' + encodeURIComponent('I am your voice OS avatar. Together we will reshape the digital world.'), {signal:AbortSignal.timeout(6000)});
+        if (r.ok) { const b = await r.blob(); new Audio(URL.createObjectURL(b)).play().catch(()=>{}); }
+      } catch(_) {}
+      setTimeout(() => goto(3), 1400);
+    } catch(e) {
+      s.textContent = '✗ mic blocked — enable in browser settings, then retry'; s.className='status-line';
+    }
+  }
+  function pickTier(t) {
+    tier = t;
+    document.getElementById('tier-free').classList.toggle('sel', t==='free');
+    document.getElementById('tier-pro').classList.toggle('sel', t==='pro');
+    document.getElementById('finishBtn').textContent = t==='pro · checkout →' : 'Start using AGY VENOM →';
+  }
+  function finish() {
+    if (tier === 'pro') {
+      /* Square Web Checkout hook · placeholder until live link wired */
+      location.href = 'mailto:lord@xlrd.org?subject=AGY VENOM%20Pro&body=Set%20me%20up%20with%20AGY VENOM%20Pro%20%2411%2Fmo';
+    } else {
+      location.href = '../app/';
+    }
+  }
+  if (tier === 'pro') { /* deep-linked from pricing */ goto(0); }
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

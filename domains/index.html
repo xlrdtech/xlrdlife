@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DOMAINS — idea → available, cheap, short</title>
+<meta name="description" content="Type an idea. Get available domains under $10 + free subdomains, generated with every literary device, shortest first.">
+<meta name="theme-color" content="#0a0b0d">
+<style>
+  :root{--bg:#0a0b0d;--card:#13161b;--card2:#0f1216;--line:#23272f;--ink:#eef2f6;--dim:#8b94a3;--faint:#5b6472;
+    --gold:#d8b46a;--good:#3ecf8e;--free:#7aa2ff;--prem:#ffcf6b;--bad:#ff6b6b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 ui-sans-serif,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:26px 16px 90px}
+  h1{font-size:24px;margin:0 0 2px;letter-spacing:-.01em}h1 .g{color:var(--gold)}
+  .sub{color:var(--dim);font-size:13px;margin:0 0 18px}
+  .searchbar{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 14px}
+  #idea{flex:1 1 320px;min-width:200px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--ink);font-size:16px;outline:none}
+  #idea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(216,180,106,.16)}
+  button.go{background:linear-gradient(180deg,#e8c878,var(--gold));color:#1a1407;font-weight:800;border:none;border-radius:12px;padding:14px 22px;font-size:15px;cursor:pointer}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 16px;font-size:13px;color:var(--dim)}
+  .filters label{display:flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 11px;cursor:pointer;user-select:none}
+  .filters input[type=checkbox]{accent-color:var(--gold)}
+  .filters input[type=range]{accent-color:var(--gold);width:120px}
+  select,.filters input[type=number]{background:var(--card);border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:7px 9px;font-size:13px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--faint);margin:0 0 14px}
+  .legend i{font-style:normal}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .d-good{background:var(--good)}.d-free{background:var(--free)}.d-prem{background:var(--prem)}.d-chk{background:var(--faint)}.d-taken{background:var(--bad)}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);margin:24px 0 10px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:11px 13px;display:flex;flex-direction:column;gap:5px;transition:border-color .15s}
+  .card:hover{border-color:#39414e}
+  .nm{font:700 15px/1.2 ui-monospace,Menlo,monospace;word-break:break-all}
+  .meta{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--faint)}
+  .tag{font:700 10px/1 ui-monospace,Menlo,monospace;padding:3px 7px;border-radius:999px;border:1px solid var(--line)}
+  .t-free{color:var(--free);border-color:rgba(122,162,255,.4)}
+  .t-cheap{color:var(--good);border-color:rgba(62,207,142,.4)}
+  .t-dev{color:var(--gold);border-color:rgba(216,180,106,.35);font-size:9px}
+  .act{margin-top:3px;display:flex;gap:6px}
+  .act a,.act button{flex:1;text-align:center;text-decoration:none;font:700 11px/1 ui-monospace,Menlo,monospace;padding:7px 0;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer}
+  .act a.buy{background:linear-gradient(180deg,#e8c878,var(--gold));color:#1a1407;border:none}
+  .act a.free{background:rgba(122,162,255,.14);color:var(--free);border-color:rgba(122,162,255,.35)}
+  .empty{color:var(--faint);font-size:13px;padding:18px;text-align:center;border:1px dashed var(--line);border-radius:11px}
+  .note{background:#15130c;border:1px solid #3a3320;border-radius:11px;padding:12px 14px;color:var(--dim);font-size:12px;margin:18px 0 0}
+  .note b{color:var(--gold)}
+  .count{font:600 12px/1 ui-monospace,Menlo,monospace;color:var(--faint);margin-left:8px}
+  code{background:#1b1f27;border:1px solid #262b34;border-radius:5px;padding:1px 5px;font:12px ui-monospace,Menlo,monospace;color:#cdd6e4}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>DOMAINS <span class="g">·</span> idea → available · cheap · short</h1>
+  <p class="sub">Type an idea. Every literary device fires; shortest names rank first; free subdomains + sub-$10 owned domains only.</p>
+
+  <div class="searchbar">
+    <input id="idea" placeholder="an idea, word, or phrase  (e.g. purgatory, voice ops, diamond cuts)" autocomplete="off">
+    <button class="go" onclick="run()">Generate</button>
+  </div>
+
+  <div class="filters">
+    <label><input type="checkbox" id="f-free" checked> Free subdomains</label>
+    <label><input type="checkbox" id="f-owned" checked> Owned (&lt;$10 TLDs)</label>
+    <label>Max length <input type="number" id="f-max" value="14" min="3" max="40" style="width:56px"></label>
+    <label><input type="checkbox" id="f-availonly" checked> Available only</label>
+    <label>TLD
+      <select id="f-tld"><option value="">any</option></select>
+    </label>
+    <label>Sort
+      <select id="f-sort"><option value="len">shortest first</option><option value="az">A–Z</option></select>
+    </label>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="legend">
+    <i><span class="dot d-good"></span>available &amp; verified</i>
+    <i><span class="dot d-free"></span>free subdomain</i>
+    <i><span class="dot d-chk"></span>not yet checked</i>
+    <i><span class="dot d-prem"></span>premium (excluded)</i>
+    <i><span class="dot d-taken"></span>taken</i>
+  </div>
+
+  <h2>Top picks <span id="tp-h" class="count"></span></h2>
+  <div class="grid" id="top"></div>
+
+  <h2>All generated</h2>
+  <div class="grid" id="all"></div>
+
+  <div class="note">
+    <b>How it works.</b> Names are generated in your browser from your idea using alliteration, portmanteau, rhyme, clipping, vowel-drop, affixation, compounding, reduplication, number-glyphs (angel numbers), and more. <b>Free</b> picks are real subdomains on Public-Suffix providers (Cloudflare Pages, Vercel, Netlify, GitHub, js.org, is-a.dev, eu.org). <b>Owned</b> picks use Spaceship's cheap TLDs — a companion checker (<code>scope-watch/domain-finder</code>) verifies live availability + excludes premium via the Spaceship API (the key stays server-side); verified-available results load from <code>available.json</code>, and each links straight to checkout where the live price (typically &lt;$10 on these TLDs) shows. No fabricated prices.
+  </div>
+</div>
+
+<script>
+// ---- providers / TLDs --------------------------------------------------------
+// FREE: Public Suffix List private-section providers that grant free subdomains.
+const FREE = [
+  {sfx:'pages.dev',  who:'Cloudflare Pages', url:'https://dash.cloudflare.com/?to=/:account/pages'},
+  {sfx:'vercel.app', who:'Vercel',           url:'https://vercel.com/new'},
+  {sfx:'netlify.app',who:'Netlify',          url:'https://app.netlify.com/'},
+  {sfx:'github.io',  who:'GitHub Pages',     url:'https://pages.github.com/'},
+  {sfx:'gitlab.io',  who:'GitLab Pages',     url:'https://docs.gitlab.com/ee/user/project/pages/'},
+  {sfx:'js.org',     who:'JS.org (JS projects)', url:'https://js.org/'},
+  {sfx:'is-a.dev',   who:'is-a.dev (devs)',  url:'https://is-a.dev/'},
+  {sfx:'eu.org',     who:'eu.org (free apex-like)', url:'https://nic.eu.org/'}
+];
+// FreeDNS (afraid.org): 44,000+ shared domains, free subdomains. No public availability API,
+// so it's a claim-link tier — generate the short label, claim it under any of the 44k.
+const FREEDNS = {who:'FreeDNS · 44k+', url:'https://freedns.afraid.org/subdomain/'};
+// OWNED: Spaceship cheap-registration TLDs (premium auto-excluded by the checker).
+const TLDS = ['.xyz','.site','.online','.store','.space','.fun','.live','.lol','.sbs','.click','.link','.pro','.club','.me','.co','.io','.app','.dev','.com'];
+const VOWELS='aeiou';
+const AFFIX_PRE=['get','try','go','my','the','use','join','hey','its','we'];
+const AFFIX_SUF=['hq','app','labs','hub','ly','ify','io','now','co','one','x','ai','os','99','999','box','kit','lab','zone'];
+const NUMGLYPH={to:'2',too:'2',two:'2',for:'4',four:'4',fore:'4',ate:'8',eight:'8',won:'1',one:'1',great:'gr8',late:'l8'};
+
+function clean(s){ return (s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+function dropVowels(w){ if(w.length<5)return w; return w[0]+w.slice(1).replace(new RegExp('['+VOWELS+']','g'),'')||w; }
+function clip(w){ return w.length>5?w.slice(0,Math.max(4,Math.ceil(w.length*0.6))):w; }
+function cap(s){ return s; }
+
+// ---- generator: every device --------------------------------------------------
+function generateRoots(idea){
+  const words = clean(idea).split(' ').filter(Boolean);
+  if(!words.length) return [];
+  const roots = new Set();
+  const w0 = words[0];
+  const add = r => { r = r.replace(/[^a-z0-9]/g,''); if(r && r.length>=2 && r.length<=24) roots.add(r); };
+
+  // raw + compounds
+  add(words.join(''));
+  if(words.length>1) add(words.map(w=>w[0]).join(''));        // acronym/initialism
+  words.forEach(add);                                          // each word
+  // clipping + vowel-drop (short names)
+  words.forEach(w=>{ add(clip(w)); add(dropVowels(w)); });
+  // number-glyph substitution (angel-number flavor)
+  add(words.map(w=>NUMGLYPH[w]||w).join(''));
+  // reduplication
+  add(w0+w0);
+  // affixation (prefix/suffix)
+  AFFIX_PRE.forEach(p=>add(p+w0));
+  AFFIX_SUF.forEach(s=>add(w0+s));
+  // portmanteau / blend of two words
+  if(words.length>1){
+    const a=words[0], b=words[1];
+    add(a+b); add(a.slice(0,Math.ceil(a.length/2))+b.slice(Math.floor(b.length/2)));
+    add(a[0]+b); add(a+b[0]);
+  }
+  // alliteration (echo initial onset)
+  const onset=w0.match(/^[^aeiou]+/); if(onset) AFFIX_SUF.slice(0,6).forEach(s=>add(onset[0]+ (VOWELS.includes(w0[onset[0].length])?w0[onset[0].length]:'a') + s));
+  // rhyme-ish / assonance suffix swaps
+  ['ly','io','ify','sy','zy','er','o'].forEach(suf=>add(clip(w0)+suf));
+  return [...roots];
+}
+
+function buildCandidates(idea){
+  const roots = generateRoots(idea);
+  const out = [];
+  const seen = new Set();
+  // FREE subdomains
+  roots.forEach(r=>{
+    FREE.forEach(f=>{
+      const nm = r+'.'+f.sfx; if(seen.has(nm))return; seen.add(nm);
+      out.push({name:nm, root:r, tld:f.sfx, tier:'free', who:f.who, url:f.url, status:'free', len:r.length});
+    });
+    // FreeDNS claim-link (one per root): label.* across 44k+ shared domains
+    const fk = r+' · FreeDNS'; if(!seen.has(fk)){ seen.add(fk);
+      out.push({name:r, root:r, tld:'·44k free', tier:'free', who:FREEDNS.who, url:FREEDNS.url, status:'free', len:r.length, freedns:true}); }
+  });
+  // OWNED across cheap TLDs
+  roots.forEach(r=>{
+    TLDS.forEach(t=>{
+      const nm = r+t; if(seen.has(nm))return; seen.add(nm);
+      out.push({name:nm, root:r, tld:t, tier:'owned', status:'unchecked', len:r.length});
+    });
+  });
+  return out;
+}
+
+// ---- availability overlay (from companion-produced available.json) ------------
+let AVAIL = {}; // name -> {result:'available'|'taken'|'premium'}
+fetch('available.json?_='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():{}).then(j=>{
+  (j.domains||[]).forEach(d=>{ AVAIL[d.domain]={result:d.result}; });
+  if(window.__lastIdea) draw(window.__lastCands);
+}).catch(()=>{});
+
+function statusOf(c){
+  if(c.tier==='free') return 'free';
+  const a=AVAIL[c.name]; if(!a) return 'unchecked';
+  return a.result; // available | taken | premium
+}
+
+// ---- filter + sort + render ---------------------------------------------------
+function draw(cands){
+  const max=+document.getElementById('f-max').value||40;
+  const wantFree=document.getElementById('f-free').checked;
+  const wantOwned=document.getElementById('f-owned').checked;
+  const availOnly=document.getElementById('f-availonly').checked;
+  const tldF=document.getElementById('f-tld').value;
+  const sort=document.getElementById('f-sort').value;
+
+  let list=cands.filter(c=>{
+    if(c.tier==='free'&&!wantFree)return false;
+    if(c.tier==='owned'&&!wantOwned)return false;
+    if(c.root.length>max)return false;
+    if(tldF && c.tld!==tldF)return false;
+    const s=statusOf(c);
+    if(s==='premium')return false;            // never show premium
+    if(availOnly){ if(c.tier==='owned' && s!=='available') return false; }
+    else { if(c.tier==='owned' && s==='taken') return false; }
+    return true;
+  });
+  list.forEach(c=>c.status=statusOf(c));
+  if(sort==='az') list.sort((a,b)=>a.name.localeCompare(b.name));
+  else list.sort((a,b)=> a.len-b.len || a.name.length-b.name.length || a.name.localeCompare(b.name));
+
+  document.getElementById('count').textContent = list.length+' candidates';
+  const top=list.slice(0,12), rest=list.slice(12);
+  document.getElementById('tp-h').textContent='(shortest available)';
+  render('top', top); render('all', rest);
+}
+
+function card(c){
+  const s=c.status;
+  const dot = s==='available'?'d-good':s==='free'?'d-free':s==='taken'?'d-taken':s==='premium'?'d-prem':'d-chk';
+  const tag = c.tier==='free'
+    ? '<span class="tag t-free">FREE · '+c.who.split(' ')[0]+'</span>'
+    : '<span class="tag t-cheap">'+c.tld+'</span>';
+  let act;
+  if(c.tier==='free') act='<a class="free" href="'+c.url+'" target="_blank" rel="noopener">Claim free</a>';
+  else if(s==='available') act='<a class="buy" href="https://www.spaceship.com/domain-search/?query='+encodeURIComponent(c.name)+'" target="_blank" rel="noopener">Buy · live price</a>';
+  else act='<a href="https://www.spaceship.com/domain-search/?query='+encodeURIComponent(c.name)+'" target="_blank" rel="noopener">Check</a>';
+  return '<div class="card"><div class="nm"><span class="dot '+dot+'"></span>'+c.name+'</div>'+
+    '<div class="meta"><span>'+c.len+' chars</span>'+tag+'</div>'+
+    '<div class="act">'+act+'<button onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+c.name+'\')">copy</button></div></div>';
+}
+function render(id,list){
+  const el=document.getElementById(id);
+  if(!list.length){ el.innerHTML='<div class="empty">no candidates match these filters</div>'; return; }
+  el.innerHTML=list.map(card).join('');
+}
+
+// ---- wire ---------------------------------------------------------------------
+function run(){
+  const idea=document.getElementById('idea').value.trim();
+  if(!idea)return;
+  const cands=buildCandidates(idea);
+  window.__lastIdea=idea; window.__lastCands=cands;
+  draw(cands);
+}
+// populate TLD filter
+const tldSel=document.getElementById('f-tld');
+TLDS.forEach(t=>{ const o=document.createElement('option'); o.value=t;o.textContent=t; tldSel.appendChild(o); });
+['change','input'].forEach(ev=>document.querySelectorAll('.filters input,.filters select').forEach(el=>el.addEventListener(ev,()=>{ if(window.__lastCands)draw(window.__lastCands); })));
+document.getElementById('idea').addEventListener('keydown',e=>{ if(e.key==='Enter')run(); });
+// seed with a demo idea so the page is never blank
+document.getElementById('idea').value='purgatory';
+run();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

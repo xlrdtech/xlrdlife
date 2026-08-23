@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terance x Designer Collaboration</title>
+    <style>
+        /* --- 1. RESET & VARIABLES --- */
+        :root {
+            /* Dark Mode (Default) */
+            --bg-color: #050505;
+            --text-color: #ffffff;
+            --text-muted: #ccc;
+            --accent-color: #333;
+            --card-bg: #111;
+            --hover-bg: #0a0a0a;
+            --border-color: #222;
+            --font-main: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            --easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        :root.light-mode {
+            --bg-color: #ffffff;
+            --text-color: #111111;
+            --text-muted: #666;
+            --accent-color: #e5e5e5;
+            --card-bg: #f5f5f5;
+            --hover-bg: #fafafa;
+            --border-color: #e0e0e0;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none; /* enhance momentum feel */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* --- 2. SMOOTH SCROLL CONTAINER --- */
+        body {
+            height: 100vh;
+        }
+
+        .scroll-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            will-change: transform;
+        }
+
+        /* --- 3. TYPOGRAPHY & UTILITIES --- */
+        h1, h2, h3, p, a {
+            font-weight: 400;
+            color: inherit;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .text-huge {
+            font-size: clamp(3.5rem, 9vw, 11rem);
+            line-height: 0.9;
+            text-transform: uppercase;
+            letter-spacing: -0.04em;
+            margin-bottom: 2rem;
+        }
+
+        .text-large {
+            font-size: clamp(2rem, 5vw, 4.5rem);
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            margin-bottom: 1.5rem;
+        }
+
+        .text-body {
+            font-size: clamp(1rem, 1.2vw, 1.35rem);
+            line-height: 1.6;
+            color: var(--text-muted); 
+            max-width: 50ch;
+        }
+
+        .text-accent {
+            color: var(--text-color); /* Was #fff, now adaptive */
+            font-weight: 500;
+        }
+
+        .flex-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .col-half { flex: 1 1 400px; }
+        .col-full { flex: 1 1 100%; }
+
+        /* --- 4. ANIMATIONS (Scroll Reveal) --- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 1s var(--easing);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .gallery-item.reveal { transition-delay: 0.1s; }
+
+        /* --- 5. SECTIONS --- */
+        section {
+            padding: 8vh 0;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        /* Hero - Force Dark Mode Style for Video Contrast */
+        .hero {
+            height: 95vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding-bottom: 10vh;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+            border-bottom: none; 
+            color: #fff; /* Always white text on video */
+        }
+        
+        /* Ensure specific hero text stays white even in light mode */
+        .hero .text-body { color: #ccc; } 
+        .hero .hero-meta { color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.3); }
+
+        /* Video Background Styles */
+        .video-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .video-wrapper video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.9; 
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, #050505 5%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.3) 100%);
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-meta {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            padding-top: 2rem;
+            margin-top: 4rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 4rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            background: var(--card-bg);
+            overflow: hidden;
+            aspect-ratio: 1; 
+            cursor: pointer; /* Pointer to indicate clickability */
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.8s var(--easing), opacity 0.5s var(--easing);
+            opacity: 0.8;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+            opacity: 0.4; /* Darken image slightly */
+        }
+
+        /* Hover Overlay "View" Text */
+        .gallery-item::after {
+            content: "VIEW";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--text-color);
+            font-size: 0.9rem;
+            letter-spacing: 0.2em;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .gallery-item:hover::after {
+            opacity: 1;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s var(--easing);
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            transform: scale(0.95);
+            transition: transform 0.4s var(--easing);
+        }
+
+        .lightbox.active img {
+            transform: scale(1);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            color: #fff;
+            font-size: 2rem;
+            cursor: pointer;
+            z-index: 10001;
+        }
+
+        /* Process */
+        .process-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 3rem 0;
+            border-top: 1px solid var(--border-color);
+            transition: background 0.3s;
+        }
+        
+        .process-row:hover {
+            background: var(--hover-bg);
+        }
+
+        .process-num { font-size: 1rem; color: #666; width: 10%; }
+        .process-content { width: 80%; }
+        .process-title { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+        /* Contact */
+        .btn-group {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 10; /* Boost z-index to ensure clickability */
+        }
+
+        .btn {
+            padding: 1.5rem 3.5rem;
+            border-radius: 100px;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--text-color);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-color);
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        /* Badge */
+        .badge {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            z-index: 999;
+            color: #fff;
+        }
+        
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 14rem; /* Positioned to the left of the badge (badge is at right: 2rem, width approx 150px) */
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 999;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            background: #fff;
+            color: #000;
+        }
+        
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .sun-icon { display: none; }
+        .moon-icon { display: block; }
+        
+        /* Light mode toggle state */
+        :root.light-mode .theme-toggle {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0,0,0,0.1);
+            color: #000;
+        }
+        
+        :root.light-mode .theme-toggle:hover {
+            background: #000;
+            color: #fff;
+        }
+        
+        :root.light-mode .sun-icon { display: block; }
+        :root.light-mode .moon-icon { display: none; }
+        
+        :root.light-mode .badge {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0,0,0,0.1);
+            color: #000;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="badge">Status: Pitch Deck // Ready</div>
+
+    <!-- Theme Toggle -->
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
+        <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+        <svg class="moon-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+    </button>
+
+    <!-- LIGHTBOX OVERLAY -->
+    <div id="lightbox" class="lightbox">
+        <div class="lightbox-close">&times;</div>
+        <img id="lightbox-img" src="" alt="Full View">
+    </div>
+
+    <!-- SMOOTH SCROLL WRAPPER -->
+    <div class="scroll-container" id="scroll-wrapper">
+        
+        <!-- HERO WITH VIDEO BACKGROUND -->
+        <section class="hero">
+            <div class="video-wrapper">
+                <video autoplay muted loop playsinline>
+                    <source src="https://res.cloudinary.com/dlqudkksg/video/upload/v1765440732/_users_44f9ff31-c5ac-440b-8c2b-ff37701bc42a_generated_8395d3d3-a84d-465b-93ad-0eb24edd976b_generated_video_blorc0.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <div class="video-overlay"></div>
+            </div>
+
+            <div class="container hero-content">
+                <h1 class="text-huge reveal">
+                    Design.<br>
+                    Culture.<br>
+                    Legacy.
+                </h1>
+                
+                <div class="flex-grid reveal">
+                    <div class="col-half">
+                        <p class="text-body" style="color: #eee;">
+                            Prepared exclusively for <span class="text-accent">Terance</span>.
+                            <br>
+                            Merging HBCU tradition with high-fashion streetwear aesthetics.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="hero-meta reveal">
+                    <span>South Fulton, GA</span>
+                    <span>Scroll to Explore</span>
+                    <span>2025 Collection</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- INTRO -->
+        <section class="container">
+            <div class="flex-grid">
+                <div class="col-half reveal">
+                    <p class="text-body" style="margin-bottom: 1rem;">THE OBJECTIVE</p>
+                    <h2 class="text-large">We don't just make merch. We build brand artifacts.</h2>
+                </div>
+                <div class="col-half reveal">
+                    <p class="text-body">
+                        Your vision needs execution that matches the quality of the ideas. 
+                        We specialize in rapid, high-fidelity design for:
+                        <br><br>
+                        <span class="text-accent">+ Custom Cut & Sew Apparel</span><br>
+                        <span class="text-accent">+ Homecoming drops & Event Merch</span><br>
+                        <span class="text-accent">+ Celebrity/Athlete Brand Identity</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- GALLERY -->
+        <section class="container">
+            <h2 class="text-large reveal">Concept Vault</h2>
+            <div id="gallery" class="gallery-grid">
+                <!-- JS will inject images here -->
+            </div>
+        </section>
+
+        <!-- PROCESS -->
+        <section class="container">
+            <h2 class="text-large reveal" style="margin-bottom: 4rem;">Workflow</h2>
+            
+            <div class="process-row reveal">
+                <div class="process-num">01</div>
+                <div class="process-content">
+                    <div class="process-title">Brief</div>
+                    <p class="text-body">You text the idea. We confirm the direction.</p>
+                </div>
+            </div>
+            
+            <div class="process-row reveal">
+                <div class="process-num">02</div>
+                <div class="process-content">
+                    <div class="process-title">Design</div>
+                    <p class="text-body">First round concepts within 48 hours. High fidelity mockups.</p>
+                </div>
+            </div>
+
+            <div class="process-row reveal">
+                <div class="process-num">03</div>
+                <div class="process-content">
+                    <div class="process-title">Production</div>
+                    <p class="text-body">We handle the vendor files or coordinate printing directly.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="container" style="min-height: 80vh; display: flex; align-items: center; justify-content: center; text-align: center;">
+            <div class="reveal">
+                <p class="text-body" style="margin: 0 auto 2rem auto;">LET'S GET TO WORK</p>
+                <h2 class="text-huge" style="font-size: 8vw;">Start Now.</h2>
+                
+                <div class="btn-group" style="justify-content: center;">
+                    <!-- ADDED target="_blank" and rel="noopener" to bypass sandbox restrictions -->
+                    <a href="mailto:admin@selfexec.com?subject=Collab%20Inquiry%20from%20Terance&body=Hey%2C%20I'd%20like%20to%20start%20a%20project." 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       class="btn btn-primary">
+                        Email Project
+                    </a>
+                    
+                    <a href="tel:7707711610" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       class="btn btn-outline">
+                        Call / Text (770) 771-1610
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <footer class="container" style="padding: 4rem 0; color: #333; font-size: 0.9rem; display: flex; justify-content: space-between;">
+            <span>&copy; 2025 SelfExec Design</span>
+            <span>Est. South Fulton</span>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- 1. IMAGE INJECTION ---
+        const imageUrls = [
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_dvdpv3.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_1_ebi5vl.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_2_qpqnfy.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_3_nepzmd.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_4_xepvng.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_5_rlhvvj.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_6_rwzyiu.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_7_d1hhfk.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_8_wemim8.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_9_e1lqcq.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_10_ceywfu.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_11_phvglw.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_12_pmojhi.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_13_rivhy5.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_14_ug9xrd.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_15_nuovox.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_16_fjwrqt.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_17_vpvycb.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_18_w9kfci.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_19_cn5jq5.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_20_lq3wbt.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_21_btlutg.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_22_jf4dnb.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_23_hd3xgc.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_24_xwmgba.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_25_y3tlci.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_26_ibos7p.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_27_gxrw4j.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_28_oiz9pj.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_29_rlhgel.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_30_z4v2pk.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_31_idzd6h.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_32_b4ekdd.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_33_jgfxxz.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_34_riji9b.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_35_wcwunz.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_36_pqaxnl.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_37_v63ryq.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_38_ory0li.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_39_szgikg.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_40_ymler5.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_41_klanfr.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_42_vutw72.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_43_qvckqt.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_44_rlajo5.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_45_sbiqlp.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_46_tldexh.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_47_g2htip.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_48_vorlne.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_49_zmvo2r.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/generated-image-2025-12-11_50_cemy3n.png",
+            "https://res.cloudinary.com/dlqudkksg/image/upload/copy_4EBB1EF0-62A5-4ECE-91B0-77D625B739D5_sbrpwh.png"
+        ];
+
+        const gallery = document.getElementById('gallery');
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const lightboxClose = document.querySelector('.lightbox-close');
+        
+        // Populate Gallery
+        imageUrls.forEach((url, i) => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item reveal';
+            
+            // Randomly make some items span 2 columns if screen is wide
+            if(window.innerWidth > 768 && (i % 4 === 0 || i === 5)) {
+                div.style.gridColumn = "span 2";
+            }
+            
+            const img = document.createElement('img');
+            img.src = url;
+            img.loading = "lazy";
+            img.alt = "Design Concept";
+            
+            // Click to Open Lightbox
+            div.addEventListener('click', () => {
+                lightboxImg.src = url;
+                lightbox.classList.add('active');
+            });
+
+            div.appendChild(img);
+            gallery.appendChild(div);
+        });
+
+        // Close Lightbox
+        lightboxClose.addEventListener('click', () => {
+            lightbox.classList.remove('active');
+        });
+        
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                lightbox.classList.remove('active');
+            }
+        });
+
+        // --- 2. SMOOTH MOMENTUM SCROLLING ---
+        const body = document.body;
+        const main = document.getElementById('scroll-wrapper');
+        
+        // Linear interpolation function
+        const lerp = (start, end, t) => start * (1 - t) + end * t;
+        
+        let current = 0;
+        let target = 0;
+        let ease = 0.08; 
+
+        function setHeight() {
+            body.style.height = `${main.getBoundingClientRect().height}px`;
+        }
+
+        function smoothScroll() {
+            target = window.scrollY;
+            current = lerp(current, target, ease);
+            
+            main.style.transform = `translate3d(0, ${-current}px, 0)`;
+            
+            requestAnimationFrame(smoothScroll);
+        }
+
+        // Init Smooth Scroll
+        window.addEventListener('resize', setHeight);
+        window.addEventListener('load', () => {
+            setHeight();
+            smoothScroll();
+        });
+        setInterval(setHeight, 1000);
+
+
+        // --- 3. INTERSECTION OBSERVER FOR ANIMATIONS ---
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        setTimeout(() => {
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        }, 100);
+
+        // --- 4. THEME TOGGLE ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const rootElement = document.documentElement; // Target <html> to set class on root
+        
+        // Check for saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            rootElement.classList.add('light-mode');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            rootElement.classList.toggle('light-mode');
+            
+            // Save preference
+            if (rootElement.classList.contains('light-mode')) {
+                localStorage.setItem('theme', 'light');
+            } else {
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

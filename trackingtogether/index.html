@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>TrackingTogether · Track everything. Automate everything.</title>
+<meta name="theme-color" content="#04070a">
+<meta name="description" content="TrackingTogether — automation agency. Owned ventures and client engagements under a single pane of glass.">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#04070a;
+    --panel:rgba(10,17,22,.66);--panel2:rgba(6,20,20,.74);--well:rgba(0,0,0,.42);
+    --line:rgba(255,255,255,.10);--line-a:rgba(45,212,191,.30);
+    --ink:#f2fbf8;--dim:#9db2b4;--faint:#68807f;
+    --accent:#2dd4bf;--accent-2:#6ee7a8;--accent-deep:#0f7a70;
+    --chrome:linear-gradient(135deg,#bff6ec,#2dd4bf 38%,#dcfff4 58%,#0f7a70);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    --r:14px;--blur:26px;
+  }
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--bg);color:var(--dim);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;overflow-x:hidden}
+  .glow{position:fixed;border-radius:50%;filter:blur(150px);opacity:.16;z-index:0;pointer-events:none;mix-blend-mode:screen}
+  .g1{top:-24%;left:-18%;width:72vw;height:72vw;background:var(--accent)}
+  .g2{bottom:-16%;right:-16%;width:62vw;height:62vw;background:var(--accent-2)}
+  .grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35;
+    background-image:linear-gradient(rgba(45,212,191,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(45,212,191,.05) 1px,transparent 1px);
+    background-size:64px 64px;mask-image:radial-gradient(ellipse at 50% 0%,#000 0%,transparent 72%);
+    -webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 0%,transparent 72%)}
+
+  .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;
+    padding:clamp(1.8rem,5vw,3.4rem) clamp(.9rem,3vw,2rem) 4.5rem;text-align:center}
+
+  /* ---------- header ---------- */
+  .eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.26em;text-transform:uppercase;color:var(--faint);margin-bottom:1rem}
+  .emblem{display:block;width:clamp(64px,14vw,86px);height:auto;margin:0 auto 1rem;
+    filter:drop-shadow(0 6px 26px rgba(45,212,191,.42))}
+  .emblem .ring{transform-origin:50% 50%;animation:spin 18s linear infinite}
+  .emblem .ring2{transform-origin:50% 50%;animation:spin 26s linear infinite reverse}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .mark{display:inline-flex;align-items:center;justify-content:center;gap:.55rem;margin-bottom:1.1rem}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 0 4px rgba(110,231,168,.14),0 0 22px rgba(110,231,168,.7);animation:pulse 2.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+  .mark span{font-family:var(--mono);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent)}
+  h1{font-size:clamp(2rem,6.4vw,3.3rem);font-weight:800;letter-spacing:-.035em;line-height:1.02;
+    background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--dim);margin:1rem auto 0;max-width:44rem;font-size:clamp(.95rem,2.4vw,1.06rem)}
+  .sub b{color:var(--ink);font-weight:600}
+
+  .chips{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:1.6rem 0 .4rem}
+  .chip{font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;color:var(--dim);
+    border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:.4rem .85rem;
+    -webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur))}
+  .chip b{color:var(--accent-2);font-weight:600}
+
+  /* ---------- section frame ---------- */
+  .band{margin-top:clamp(2.6rem,7vw,4.2rem)}
+  .h2{font-size:clamp(1.15rem,3.4vw,1.5rem);font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+  .lede{color:var(--faint);font-size:.88rem;margin:.5rem auto 0;max-width:40rem}
+  .rule{width:64px;height:2px;margin:1rem auto 1.6rem;border-radius:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+
+  /* ---------- two lanes ---------- */
+  .lanes{display:grid;grid-template-columns:1fr 1fr;gap:1rem;justify-content:center}
+  .lane{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1.3rem 1.2rem;text-align:left;
+    -webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur));
+    box-shadow:0 12px 42px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05)}
+  .lane.owned{border-color:var(--line-a);box-shadow:0 0 0 1px rgba(45,212,191,.14),0 12px 42px rgba(0,0,0,.55)}
+  .ltag{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:.55rem}
+  .lane.owned .ltag{color:var(--accent)}
+  .lname{font-weight:700;font-size:1.02rem;color:var(--ink);letter-spacing:-.01em}
+  .lsub{font-family:var(--mono);font-size:.72rem;color:var(--faint);margin-top:.2rem}
+  .ldesc{font-size:.87rem;color:var(--dim);margin-top:.7rem}
+  .tree{margin-top:.9rem;padding:.7rem .8rem;background:var(--well);border:1px solid var(--line);border-radius:10px;
+    font-family:var(--mono);font-size:.74rem;color:var(--accent-2);line-height:1.9;overflow-x:auto}
+  .tree i{color:var(--faint);font-style:normal}
+  /* ---------- convergence schematic ---------- */
+  .pane{margin-top:1.2rem;padding:1.2rem 1rem 1.1rem;background:var(--panel2);border:1px solid var(--line);border-radius:18px;
+    -webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur))}
+  .feeds{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;max-width:520px;margin:0 auto}
+  .feed{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:var(--dim);
+    border:1px solid var(--line);border-radius:10px;padding:.55rem .6rem;background:var(--well)}
+  .feed.own{border-color:var(--line-a);color:var(--accent-2)}
+  .funnel{position:relative;height:46px;max-width:520px;margin:0 auto}
+  .funnel::before,.funnel::after{content:"";position:absolute;top:6px;width:2px;height:34px;background:linear-gradient(180deg,var(--line-a),transparent)}
+  .funnel::before{left:25%;transform:skewX(20deg)}
+  .funnel::after{right:25%;transform:skewX(-20deg)}
+  .master{max-width:520px;margin:0 auto;padding:.75rem .9rem;border-radius:12px;
+    border:1px solid var(--line-a);background:rgba(45,212,191,.07);
+    font-family:var(--mono);font-size:.76rem;letter-spacing:.08em;color:var(--accent-2);
+    box-shadow:0 0 0 1px rgba(45,212,191,.10),0 10px 30px rgba(0,0,0,.45)}
+  .pane-cap{font-size:.82rem;color:var(--faint);margin-top:.85rem}
+
+  /* ---------- capability tiles ---------- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.9rem;justify-content:center}
+  .tile{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:1.05rem 1.05rem 1.1rem;text-align:left;
+    -webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur));transition:border-color .18s,transform .18s}
+  .tile:hover{border-color:var(--line-a);transform:translateY(-2px)}
+  .tnum{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;color:var(--accent-deep);margin-bottom:.5rem}
+  .tname{font-weight:700;font-size:.96rem;color:var(--ink);letter-spacing:-.01em}
+  .tdesc{font-size:.85rem;color:var(--dim);margin-top:.4rem}
+
+  /* ---------- pipeline ---------- */
+  .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:.55rem;margin-top:.4rem}
+  .step{background:var(--well);border:1px solid var(--line);border-radius:12px;padding:.85rem .7rem;position:relative}
+  .step .ico{display:block;width:22px;height:22px;margin:0 auto .5rem;stroke:var(--accent);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+  .step .n{font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;color:var(--accent);display:block;margin-bottom:.35rem}
+  .step p{font-size:.78rem;color:var(--dim);line-height:1.45}
+  .step::after{content:"";position:absolute;top:50%;right:-.42rem;width:.3rem;height:.3rem;border-top:1px solid var(--line-a);border-right:1px solid var(--line-a);transform:translateY(-50%) rotate(45deg)}
+  .step:last-child::after{display:none}
+  .spine{margin-top:1rem;font-family:var(--mono);font-size:.76rem;color:var(--accent-2)}
+
+  /* ---------- agent ---------- */
+  .agent{background:var(--panel);border:1px solid var(--line-a);border-radius:18px;padding:1.4rem 1.2rem;
+    -webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur));
+    box-shadow:0 14px 46px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
+  .aname{font-weight:800;font-size:clamp(1.4rem,4vw,1.9rem);letter-spacing:.06em;
+    background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .arole{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-top:.35rem}
+  .aspecs{display:flex;flex-wrap:wrap;gap:.45rem;justify-content:center;margin-top:1rem}
+  .spec{font-family:var(--mono);font-size:.68rem;color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:.35rem .7rem}
+  .spec b{color:var(--accent);font-weight:600}
+  .adesc{font-size:.88rem;color:var(--dim);margin-top:1rem;max-width:40rem;margin-left:auto;margin-right:auto}
+
+  /* ---------- workstreams ---------- */
+  .work{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.9rem;justify-content:center}
+  .wcard{background:var(--well);border:1px solid var(--line);border-radius:var(--r);padding:1rem;text-align:left}
+  .wnum{font-family:var(--mono);font-weight:700;font-size:1.5rem;color:var(--accent-deep);line-height:1}
+  .wname{font-weight:700;font-size:.94rem;color:var(--ink);margin-top:.45rem}
+  .wdesc{font-size:.84rem;color:var(--dim);margin-top:.35rem}
+
+  /* ---------- rail ---------- */
+  .rail{display:flex;flex-wrap:wrap;gap:.55rem;justify-content:center}
+  .rl{font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--accent);text-decoration:none;
+    border:1px solid var(--line-a);border-radius:10px;padding:.6rem 1rem;transition:background .16s,color .16s,transform .16s}
+  .rl:hover{background:rgba(45,212,191,.10);color:var(--ink);transform:translateY(-1px)}
+
+  footer{margin-top:clamp(2.6rem,7vw,4rem);padding-top:1.3rem;border-top:1px solid var(--line);
+    color:var(--faint);font-size:.74rem;font-family:var(--mono);line-height:2}
+
+  a:focus-visible,.rl:focus-visible{outline:2px solid var(--accent-2);outline-offset:3px;border-radius:8px}
+  .skip{position:absolute;left:-9999px;top:0;font-family:var(--mono);font-size:.78rem;
+    background:var(--accent);color:#04070a;padding:.6rem 1rem;border-radius:0 0 10px 0;z-index:20}
+  .skip:focus{left:0}
+  ::selection{background:rgba(45,212,191,.28);color:var(--ink)}
+
+  .rv{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease}
+  .rv.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){
+    .rv{opacity:1;transform:none;transition:none}
+    .dot,.emblem .ring,.emblem .ring2{animation:none}
+    .tile{transition:none}
+  }
+
+  @media(max-width:760px){
+    .flow{grid-template-columns:1fr 1fr}
+    .step::after{display:none}
+  }
+  @media(max-width:600px){
+    .lanes{grid-template-columns:1fr}
+    .flow{grid-template-columns:1fr}
+    .tree{font-size:.7rem}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="glow g1"></div><div class="glow g2"></div><div class="grid-bg"></div>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">// trackingtogether · automation agency · 2026-05-23</div>
+    <svg class="emblem" viewBox="0 0 100 100" role="img" aria-label="TrackingTogether">
+      <defs>
+        <linearGradient id="tg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#bff6ec"/><stop offset=".45" stop-color="#2dd4bf"/>
+          <stop offset="1" stop-color="#0f7a70"/>
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="44" fill="none" stroke="url(#tg)" stroke-width="1.2" opacity=".38"/>
+      <g class="ring">
+        <circle cx="50" cy="50" r="35" fill="none" stroke="url(#tg)" stroke-width="1.6"
+                stroke-dasharray="34 12 6 12" stroke-linecap="round"/>
+      </g>
+      <g class="ring2">
+        <circle cx="50" cy="50" r="26" fill="none" stroke="#6ee7a8" stroke-width="1"
+                stroke-dasharray="4 9" opacity=".7"/>
+      </g>
+      <path d="M50 10v14M50 76v14M10 50h14M76 50h14" stroke="url(#tg)" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="50" cy="50" r="12" fill="none" stroke="url(#tg)" stroke-width="2"/>
+      <circle cx="50" cy="50" r="4.5" fill="#6ee7a8"/>
+    </svg>
+    <div class="mark"><span class="dot"></span><span>TrackingTogether</span></div>
+    <h1>Track everything.<br>Automate everything.</h1>
+    <p class="sub">TrackingTogether is Anthony's automation-agency brand. Every operation — owned ventures, client work, agent routing, deliverables — lives under a <b>single pane of glass</b>. Eli executes against the whole scope.</p>
+    <div class="chips">
+      <span class="chip">brand <b>TrackingTogether</b></span>
+      <span class="chip">agent <b>Eli</b></span>
+      <span class="chip">canon <b>single pane of glass</b></span>
+      <span class="chip">scope <b>owned + clients</b></span>
+    </div>
+  </header>
+
+  <section id="main">
+
+    <!-- ===== TWO LANES ===== -->
+    <div class="band rv">
+      <div class="h2">Two lanes, one tree</div>
+      <p class="lede">Every project under TrackingTogether is either an Anthony-owned venture or a client engagement. The folder tree enforces the boundary.</p>
+      <div class="rule"></div>
+
+      <div class="lanes">
+        <div class="lane owned">
+          <div class="ltag">owned_/ · equity + IP</div>
+          <div class="lname">Owned ventures</div>
+          <div class="lsub">equity + IP retained</div>
+          <div class="ldesc">Anthony-owned ventures. Internal R&amp;D, equity and brand assets retained. Eli runs automation on the owned side — Net Meter monitoring, PFC Farms agricultural automation, IXL integration.</div>
+          <div class="tree">
+            net_meter_/<br>
+            pfc_farms_/<br>
+            ixl_/ <i>· paired with Net Meter</i>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="ltag">clients_/ · service + deliverables</div>
+          <div class="lname">Client engagements</div>
+          <div class="lsub">IP belongs to the client</div>
+          <div class="ldesc">TrackingTogether runs the automations <b style="color:var(--ink);font-weight:600">for</b> the client. IP belongs to the client. Different access controls, different revenue model.</div>
+          <div class="tree">
+            clients_/ <i>· service + deliverables</i><br>
+            <i>(continued as intake completes)</i>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane">
+        <div class="feeds">
+          <div class="feed own">owned_/</div>
+          <div class="feed">clients_/</div>
+        </div>
+        <div class="funnel" aria-hidden="true"></div>
+        <div class="master">ONE MASTER SHEET · TT SCOPE</div>
+        <p class="pane-cap">Every task across both lanes lives on one master sheet under TT scope. No fragmentation.</p>
+      </div>
+    </div>
+
+    <!-- ===== CAPABILITIES ===== -->
+    <div class="band rv">
+      <div class="h2">What runs</div>
+      <p class="lede">Client-side automation services, executed against client deliverables.</p>
+      <div class="rule"></div>
+
+      <div class="tiles">
+        <div class="tile">
+          <div class="tnum">01 · client-side</div>
+          <div class="tname">Opt-out scrubs</div>
+          <div class="tdesc">Contact lists maintained against client response data, kept current on a schedule.</div>
+        </div>
+        <div class="tile">
+          <div class="tnum">02 · client-side</div>
+          <div class="tname">Contact-list maintenance</div>
+          <div class="tdesc">Ongoing list hygiene across the client's active campaign data.</div>
+        </div>
+        <div class="tile">
+          <div class="tnum">03 · client-side</div>
+          <div class="tname">Campaign management</div>
+          <div class="tdesc">Campaigns run and maintained against the client's deliverables.</div>
+        </div>
+        <div class="tile">
+          <div class="tnum">04 · client-side</div>
+          <div class="tname">Scheduled reporting</div>
+          <div class="tdesc">Reporting on a fixed cadence, run against client deliverables.</div>
+        </div>
+        <div class="tile">
+          <div class="tnum">05 · integration</div>
+          <div class="tname">RingCentral</div>
+          <div class="tdesc">Scheduled scans across client message threads on a 3-day cycle, synced to a Google Sheet.</div>
+        </div>
+        <div class="tile">
+          <div class="tnum">06 · canon</div>
+          <div class="tname">Single pane of glass</div>
+          <div class="tdesc">Every task across both lanes on one master sheet under TT scope. No fragmentation.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PIPELINE ===== -->
+    <div class="band rv">
+      <div class="h2">Universal intake</div>
+      <p class="lede">One context spine across every channel. Inbound lands, context loads, a reply drafts, it ships back out the same channel it came in on.</p>
+      <div class="rule"></div>
+
+      <div class="flow">
+        <div class="step">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v11H3z"/><path d="M3 7l9 7 9-7"/></svg>
+          <span class="n">01 · IN</span><p>Inbound across SMS, Beeper, Beside and mail.</p>
+        </div>
+        <div class="step">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11l5 5v9H4z"/><path d="M15 5v5h5"/><path d="M8 14h8M8 17h5"/></svg>
+          <span class="n">02 · LOAD</span><p>Contact notebook, recent thread and persona-relevant canon load into context.</p>
+        </div>
+        <div class="step">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="5"/><path d="M10 12h4"/></svg>
+          <span class="n">03 · DRAFT</span><p>Nitro Qwen / Llama-70B drafts the reply.</p>
+        </div>
+        <div class="step">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4L3 11l7 3 3 7z"/><path d="M21 4l-11 10"/></svg>
+          <span class="n">04 · SEND</span><p>Sends back out through the inbound channel.</p>
+        </div>
+        <div class="step">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M12 9v6M9 12h6"/></svg>
+          <span class="n">05 · APPEND</span><p>The interaction appends back to the contact notebook.</p>
+        </div>
+      </div>
+      <div class="spine">→ one context spine across all channels</div>
+    </div>
+
+    <!-- ===== AGENT ===== -->
+    <div class="band rv">
+      <div class="agent">
+        <div class="aname">ELI</div>
+        <div class="arole">automation execution</div>
+        <div class="aspecs">
+          <span class="spec">persona <b>ELI</b></span>
+          <span class="spec">org <b>L7S P1 routing</b></span>
+          <span class="spec">function <b>automation execution</b></span>
+          <span class="spec">scope <b>owned + clients</b></span>
+        </div>
+        <p class="adesc">Eli executes against the whole TrackingTogether scope — automation on Anthony's owned ventures, and the client-side services run under engagement.</p>
+      </div>
+    </div>
+
+    <!-- ===== WORKSTREAMS ===== -->
+    <div class="band rv">
+      <div class="h2">Live workstreams</div>
+      <div class="rule"></div>
+      <div class="work">
+        <div class="wcard">
+          <div class="wnum">01</div>
+          <div class="wname">Sheet consolidation</div>
+          <div class="wdesc">Three chronological sheets merge into one master under TT scope. Groups stay on the same sheet, never split.</div>
+        </div>
+        <div class="wcard">
+          <div class="wnum">02</div>
+          <div class="wname">Universal-intake proving ground</div>
+          <div class="wdesc">Anthony V is the first intake target for this pipeline. The TrackingTogether scope is the canonical proving ground before it extends to MB, Stal'lyon and the broader client roster.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RAIL ===== -->
+    <div class="band rv">
+      <div class="h2">Across the scope</div>
+      <div class="rule"></div>
+      <div class="rail">
+        <a class="rl" href="/itinerary/">/itinerary/</a>
+        <a class="rl" href="/context/">/context/</a>
+        <a class="rl" href="/xos/">/xos/</a>
+        <a class="rl" href="/vei/">/vei/</a>
+        <a class="rl" href="/spine/">/spine/</a>
+      </div>
+    </div>
+
+  </section>
+
+  <footer>
+    hitthe.link/trackingtogether · TT canon landing · 2026-05-23<br>
+    internal canon page · noindex
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var els=document.querySelectorAll('.rv');
+  if(!('IntersectionObserver' in window)){for(var i=0;i<els.length;i++)els[i].classList.add('in');return;}
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);} });
+  },{rootMargin:'0px 0px -8% 0px',threshold:.08});
+  els.forEach(function(el){io.observe(el);});
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

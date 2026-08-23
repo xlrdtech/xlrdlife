@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xen — Intelligence Infrastructure</title>
+<meta name="description" content="Xen is a voice-first AI operating layer — always on, always parallel, always shipping.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ground:    #0E0D0B;
+    --ground-2:  #1C1B18;
+    --ivory:     #F8F5EF;
+    --gold:      #B8955A;
+    --gold-dim:  #7A6038;
+    --ash:       #8C8880;
+    --ash-light: #C8C4BC;
+    --rule:      rgba(184,149,90,0.18);
+
+    --f-display: Georgia, 'Times New Roman', serif;
+    --f-body:    'Gill Sans', 'Gill Sans MT', Optima, 'Trebuchet MS', sans-serif;
+    --f-utility: 'Futura', 'Century Gothic', 'Trebuchet MS', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ground);
+    color: var(--ivory);
+    font-family: var(--f-body);
+    font-weight: 300;
+    font-size: 17px;
+    line-height: 1.65;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.6rem clamp(1.5rem, 5vw, 4rem);
+    background: linear-gradient(to bottom, rgba(14,13,11,0.92) 0%, transparent 100%);
+    backdrop-filter: blur(2px);
+  }
+
+  .nav-mark {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: 1.35rem;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    text-decoration: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--f-utility);
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ash);
+    text-decoration: none;
+    transition: color 0.25s;
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active { color: var(--gold); }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    height: 100vh;
+    min-height: 640px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 0 clamp(1.5rem, 5vw, 4rem);
+    overflow: hidden;
+  }
+
+  #hero-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.72;
+  }
+
+  .hero-text {
+    position: relative;
+    z-index: 2;
+    max-width: 520px;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--f-utility);
+    font-size: 0.68rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.4rem;
+  }
+
+  h1 {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: clamp(3rem, 5.5vw, 5.8rem);
+    line-height: 1.02;
+    color: var(--ivory);
+    text-wrap: balance;
+    margin-bottom: 1.8rem;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--gold);
+  }
+
+  .hero-body {
+    font-size: 1.05rem;
+    color: var(--ash-light);
+    max-width: 420px;
+    line-height: 1.72;
+    margin-bottom: 2.4rem;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-family: var(--f-utility);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    text-decoration: none;
+    border-bottom: 1px solid var(--gold-dim);
+    padding-bottom: 0.25rem;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .hero-cta:hover { color: var(--ivory); border-color: var(--ivory); }
+
+  .hero-cta-arrow {
+    display: inline-block;
+    transition: transform 0.2s;
+  }
+
+  .hero-cta:hover .hero-cta-arrow { transform: translateX(4px); }
+
+  .hero-right {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-end;
+    height: 100%;
+    padding-bottom: clamp(3rem, 6vw, 5rem);
+    padding-right: clamp(0px, 2vw, 2rem);
+  }
+
+  .hero-tagline {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: clamp(0.95rem, 1.8vw, 1.45rem);
+    color: var(--ash);
+    text-align: right;
+    line-height: 1.55;
+    max-width: 280px;
+    text-wrap: balance;
+  }
+
+  .hero-tagline strong {
+    font-weight: 200;
+    color: var(--ash-light);
+  }
+
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(184,149,90,0.12), transparent);
+    pointer-events: none;
+    animation: scan 8s linear infinite;
+  }
+
+  @keyframes scan {
+    0%   { top: -2px; opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 0.6; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    padding: clamp(4rem, 8vw, 7rem) clamp(1.5rem, 5vw, 4rem);
+  }
+
+  .section-label {
+    font-family: var(--f-utility);
+    font-size: 0.67rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 2rem;
+  }
+
+  h2 {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: clamp(2rem, 3.5vw, 3.4rem);
+    line-height: 1.08;
+    color: var(--ivory);
+    text-wrap: balance;
+  }
+
+  /* ── STATEMENT ── */
+  #statement {
+    border-top: 1px solid var(--rule);
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .statement-grid {
+    display: grid;
+    grid-template-columns: 1.618fr 1fr;
+    gap: clamp(3rem, 7vw, 7rem);
+    align-items: start;
+  }
+
+  .statement-headline {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: clamp(1.7rem, 3vw, 2.9rem);
+    line-height: 1.12;
+    color: var(--ivory);
+    text-wrap: balance;
+  }
+
+  .statement-aside p {
+    color: var(--ash);
+    font-size: 0.97rem;
+    line-height: 1.75;
+    margin-bottom: 1.2rem;
+  }
+
+  .statement-aside p:last-child { margin-bottom: 0; }
+
+  /* ── STATS ── */
+  #stats {
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .stats-row {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .stat-cell {
+    flex: 1;
+    padding: 2rem clamp(1.5rem, 3vw, 2.5rem);
+    border-right: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .stat-cell:first-child { padding-left: 0; }
+  .stat-cell:last-child { border-right: none; }
+
+  .stat-num {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: clamp(2.2rem, 4vw, 3.8rem);
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: var(--f-utility);
+    font-size: 0.67rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ash);
+  }
+
+  /* ── CAPABILITIES ── */
+  #capabilities {
+    background: var(--ground-2);
+    border-top: 1px solid var(--rule);
+  }
+
+  .cap-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: end;
+    margin-bottom: 4rem;
+  }
+
+  .cap-intro {
+    color: var(--ash);
+    font-size: 1rem;
+    line-height: 1.72;
+    max-width: 380px;
+  }
+
+  .cap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--rule);
+  }
+
+  .cap-card {
+    padding: clamp(1.5rem, 3vw, 2.4rem) clamp(1.2rem, 2.5vw, 2rem);
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s ease, background 0.25s;
+  }
+
+  .cap-card:hover { background: rgba(184,149,90,0.04); }
+  .cap-card.revealed { opacity: 1; transform: translateY(0); }
+  .cap-card:nth-child(3n) { border-right: none; }
+
+  .cap-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 1.2rem;
+    opacity: 0.6;
+  }
+
+  .cap-title {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: 1.15rem;
+    color: var(--ivory);
+    margin-bottom: 0.6rem;
+    line-height: 1.25;
+  }
+
+  .cap-desc {
+    font-size: 0.9rem;
+    color: var(--ash);
+    line-height: 1.68;
+  }
+
+  /* ── HOW ── */
+  #how { border-top: 1px solid var(--rule); }
+
+  .how-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.618fr;
+    gap: clamp(3rem, 7vw, 7rem);
+    align-items: start;
+    margin-top: 4rem;
+  }
+
+  .how-step {
+    padding: 1.4rem 0;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    gap: 1.4rem;
+    align-items: flex-start;
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+
+  .how-step:first-child { border-top: 1px solid var(--rule); }
+  .how-step.revealed { opacity: 1; transform: translateX(0); }
+
+  .how-step-marker {
+    font-family: var(--f-utility);
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    color: var(--gold-dim);
+    padding-top: 0.2rem;
+    flex-shrink: 0;
+    min-width: 1.4rem;
+  }
+
+  .how-step-content h3 {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: 1.1rem;
+    color: var(--ivory);
+    margin-bottom: 0.4rem;
+  }
+
+  .how-step-content p {
+    font-size: 0.92rem;
+    color: var(--ash);
+    line-height: 1.68;
+  }
+
+  .how-visual {
+    position: sticky;
+    top: 30vh;
+  }
+
+  .how-visual canvas {
+    width: 100%;
+    height: 340px;
+    display: block;
+    border: 1px solid var(--rule);
+  }
+
+  .how-visual-label {
+    font-family: var(--f-utility);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ash);
+    margin-top: 0.8rem;
+    opacity: 0.6;
+  }
+
+  /* ── CONTACT ── */
+  #contact {
+    background: var(--ground-2);
+    border-top: 1px solid var(--rule);
+    position: relative;
+    overflow: hidden;
+  }
+
+  #contact-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.35;
+  }
+
+  .contact-inner {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: clamp(3rem, 7vw, 7rem);
+    align-items: start;
+  }
+
+  .contact-headline {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+    line-height: 1.1;
+    color: var(--ivory);
+    text-wrap: balance;
+    margin-bottom: 1.2rem;
+  }
+
+  .contact-sub {
+    color: var(--ash);
+    font-size: 0.97rem;
+    line-height: 1.72;
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .form-field label {
+    font-family: var(--f-utility);
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ash);
+  }
+
+  .form-field input,
+  .form-field textarea {
+    background: rgba(14,13,11,0.7);
+    border: 1px solid var(--rule);
+    border-radius: 0;
+    color: var(--ivory);
+    font-family: var(--f-body);
+    font-size: 0.95rem;
+    font-weight: 300;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .form-field input:focus,
+  .form-field textarea:focus { border-color: var(--gold-dim); }
+
+  .form-field textarea { resize: vertical; min-height: 110px; }
+
+  .form-submit {
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: var(--f-utility);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.9rem 2rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    align-self: flex-start;
+  }
+
+  .form-submit:hover {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ground);
+  }
+
+  .form-submit.sent {
+    background: transparent;
+    border-color: var(--ash);
+    color: var(--ash);
+    cursor: default;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 2rem clamp(1.5rem, 5vw, 4rem);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-mark {
+    font-family: var(--f-display);
+    font-style: italic;
+    font-weight: 200;
+    font-size: 1rem;
+    color: var(--gold-dim);
+    text-decoration: none;
+  }
+
+  .footer-copy {
+    font-family: var(--f-utility);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: var(--ash);
+    opacity: 0.6;
+  }
+
+  /* ── SCROLL REVEALS ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    #hero { grid-template-columns: 1fr; }
+    .hero-right { display: none; }
+    .statement-grid,
+    .cap-header,
+    .how-grid,
+    .contact-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .how-visual { display: none; }
+    .cap-grid { grid-template-columns: 1fr 1fr; }
+    .cap-card:nth-child(3n) { border-right: 1px solid var(--rule); }
+    .cap-card:nth-child(2n) { border-right: none; }
+    .stats-row { flex-wrap: wrap; }
+    .stat-cell { flex: 1 1 45%; min-width: 160px; }
+    .nav-links { display: none; }
+  }
+
+  @media (max-width: 540px) {
+    .cap-grid { grid-template-columns: 1fr; }
+    .cap-card { border-right: none !important; }
+    .stat-cell { flex: 1 1 100%; border-right: none; border-bottom: 1px solid var(--rule); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  :focus-visible { outline: 1px solid var(--gold); outline-offset: 3px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#hero" class="nav-mark">Xen</a>
+  <ul class="nav-links">
+    <li><a href="#capabilities">Capabilities</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="scan-line"></div>
+
+  <div class="hero-text">
+    <p class="hero-eyebrow">Intelligence Infrastructure</p>
+    <h1>The system<br>that never <em>stops</em></h1>
+    <p class="hero-body">Xen is a voice-first AI operating layer — parallelizing every action, shipping without pause, running identically whether you're at the desk or asleep.</p>
+    <a href="#capabilities" class="hero-cta">
+      Explore capabilities
+      <span class="hero-cta-arrow">&#8594;</span>
+    </a>
+  </div>
+
+  <div class="hero-right">
+    <p class="hero-tagline"><strong>Parallel by nature.</strong> Every command fans out. No drainers. No bottlenecks. No state that waits for a human.</p>
+  </div>
+</section>
+
+<!-- STATEMENT -->
+<section id="statement">
+  <div class="statement-grid">
+    <h2 class="statement-headline reveal">Most AI tools hand you a result and wait for your next prompt. Xen doesn't wait — it produces continuously, across every open goal, until the work is done.</h2>
+    <div class="statement-aside reveal">
+      <p>Built on a strict set of operating commandments, Xen treats sequential execution as a failure mode. Every non-trivial task fans out as a Parallel Goal Swarm — diagnosed, built, and shipped in parallel threads that don't block each other.</p>
+      <p>Voice is the primary interface. Barge-in is mandatory. Each reply reaches you through voice, SMS, and a live visual surface simultaneously.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="stats-row">
+    <div class="stat-cell reveal">
+      <span class="stat-num">55+</span>
+      <span class="stat-label">Active agents in the fleet</span>
+    </div>
+    <div class="stat-cell reveal" style="transition-delay:0.08s">
+      <span class="stat-num">~400ms</span>
+      <span class="stat-label">Voice inject to SSE output</span>
+    </div>
+    <div class="stat-cell reveal" style="transition-delay:0.16s">
+      <span class="stat-num">3</span>
+      <span class="stat-label">Simultaneous delivery channels</span>
+    </div>
+    <div class="stat-cell reveal" style="transition-delay:0.24s">
+      <span class="stat-num">&#8734;</span>
+      <span class="stat-label">Active goals &#8212; none dropped</span>
+    </div>
+  </div>
+</section>
+
+<!-- CAPABILITIES -->
+<section id="capabilities">
+  <div class="cap-header">
+    <div>
+      <p class="section-label reveal">Capabilities</p>
+      <h2 class="reveal">What Xen<br>does for you</h2>
+    </div>
+    <p class="cap-intro reveal">A self-governing operating layer with persistent memory, live voice, and a 55-agent fleet that executes without waiting to be asked twice.</p>
+  </div>
+
+  <div class="cap-grid">
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M4 16 Q10 6 16 16 Q22 26 28 16" stroke="#B8955A" stroke-width="1.2" fill="none"></path>
+        <circle cx="16" cy="16" r="2" fill="#B8955A" opacity="0.7"></circle>
+      </svg>
+      <h3 class="cap-title">Voice-first interface</h3>
+      <p class="cap-desc">Barge-in enabled, sub-400ms latency. Xen hears you mid-sentence and responds before you've finished the thought.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M8 8 L16 4 L24 8 L24 20 L16 24 L8 20 Z" stroke="#B8955A" stroke-width="1.1" fill="none"></path>
+        <path d="M8 8 L16 12 L24 8" stroke="#B8955A" stroke-width="0.8" opacity="0.5"></path>
+        <line x1="16" y1="12" x2="16" y2="24" stroke="#B8955A" stroke-width="0.8" opacity="0.5"></line>
+      </svg>
+      <h3 class="cap-title">Parallel Goal Swarms</h3>
+      <p class="cap-desc">Every non-trivial task fans out to a parallel swarm. Hypotheses verified in parallel, synthesized &#8212; never serial.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="16" cy="16" r="10" stroke="#B8955A" stroke-width="1.1" fill="none"></circle>
+        <path d="M16 6 L16 16 L22 16" stroke="#B8955A" stroke-width="1.2" stroke-linecap="round"></path>
+      </svg>
+      <h3 class="cap-title">Persistent memory</h3>
+      <p class="cap-desc">Bastra vault stores durable facts, decisions, and recurring patterns. Memory-first before any multi-step plan.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="6" y="10" width="8" height="12" stroke="#B8955A" stroke-width="1.1" fill="none"></rect>
+        <rect x="18" y="6" width="8" height="16" stroke="#B8955A" stroke-width="1.1" fill="none"></rect>
+        <line x1="10" y1="22" x2="22" y2="22" stroke="#B8955A" stroke-width="0.8" opacity="0.5"></line>
+      </svg>
+      <h3 class="cap-title">Live status surface</h3>
+      <p class="cap-desc">SSE-driven inline HTML &#8212; self-contained, real-time, no SPA framework. Every goal visible, no refresh needed.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M12 8 C12 8 8 12 8 16 C8 21 12 24 12 24" stroke="#B8955A" stroke-width="1.1" fill="none"></path>
+        <path d="M20 8 C20 8 24 12 24 16 C24 21 20 24 20 24" stroke="#B8955A" stroke-width="1.1" fill="none"></path>
+        <circle cx="16" cy="16" r="3" stroke="#B8955A" stroke-width="1.1" fill="none"></circle>
+      </svg>
+      <h3 class="cap-title">Omnimedia delivery</h3>
+      <p class="cap-desc">VVS: Voice + SMS to two lines + visual artifact &#8212; all fired in the same parallel batch, never after the fact.</p>
+    </div>
+    <div class="cap-card">
+      <svg class="cap-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 26 L10 18 L16 22 L22 12 L26 16" stroke="#B8955A" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+        <circle cx="26" cy="16" r="2" fill="#B8955A" opacity="0.7"></circle>
+      </svg>
+      <h3 class="cap-title">Autonomous continuity</h3>
+      <p class="cap-desc">Runs identically whether you're present or absent. Inbound is action. Every wakeup converts to a concrete advance.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section id="how">
+  <p class="section-label reveal">How it works</p>
+  <div class="how-grid">
+    <div>
+      <div class="how-step">
+        <span class="how-step-marker">I</span>
+        <div class="how-step-content">
+          <h3>You speak or type</h3>
+          <p>Voice injection reaches Xen sub-400ms. Text lands the same moment. Either path triggers parallel dispatch &#8212; no queue, no poll loop.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <span class="how-step-marker">II</span>
+        <div class="how-step-content">
+          <h3>Goals fan out immediately</h3>
+          <p>Every non-trivial task spawns a Parallel Goal Swarm. Each sub-task runs as its own background fork. Nothing blocks the main thread.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <span class="how-step-marker">III</span>
+        <div class="how-step-content">
+          <h3>Memory is consulted first</h3>
+          <p>Before any multi-step plan, the Bastra vault surfaces relevant context. Decisions made yesterday are available today without re-explaining.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <span class="how-step-marker">IV</span>
+        <div class="how-step-content">
+          <h3>Output reaches you three ways</h3>
+          <p>Voice reply, SMS to both lines, and a live visual surface &#8212; simultaneously, in the same batch. Silence between commands is a violation.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <span class="how-step-marker">V</span>
+        <div class="how-step-content">
+          <h3>Work continues after you stop</h3>
+          <p>Every wakeup converts to a concrete advance on the next open goal. There is no idle state. No task left pending if it can be moved forward now.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="how-visual reveal">
+      <canvas id="flow-canvas" width="600" height="340"></canvas>
+      <p class="how-visual-label">Live parallel goal activity &#8212; ambient render</p>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <canvas id="contact-canvas"></canvas>
+  <div class="contact-inner">
+    <div>
+      <p class="section-label reveal">Contact</p>
+      <h2 class="contact-headline reveal">Ready to see it run?</h2>
+      <p class="contact-sub reveal">Xen is not a product you configure once and forget. It's an operating layer you inhabit. If that sounds like what you've been building toward, get in touch.</p>
+    </div>
+    <form class="contact-form reveal" id="contactForm" onsubmit="handleSubmit(event)">
+      <div class="form-field">
+        <label for="cname">Name</label>
+        <input type="text" id="cname" name="name" autocomplete="name" required>
+      </div>
+      <div class="form-field">
+        <label for="cemail">Email</label>
+        <input type="email" id="cemail" name="email" autocomplete="email" required>
+      </div>
+      <div class="form-field">
+        <label for="cmessage">Message</label>
+        <textarea id="cmessage" name="message" rows="4" required></textarea>
+      </div>
+      <button type="submit" class="form-submit" id="submitBtn">Send message</button>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <a href="#hero" class="footer-mark">Xen</a>
+  <span class="footer-copy">Intelligence Infrastructure &#8212; Always parallel, never idle</span>
+</footer>
+
+<script>
+/* ── HERO CANVAS — interference wave field ── */
+(function () {
+  var canvas = document.getElementById('hero-canvas');
+  var ctx = canvas.getContext('2d');
+  var mouse = { x: 0.5, y: 0.5 };
+  var t = 0;
+  var W, H;
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  var hero = document.getElementById('hero');
+  hero.addEventListener('mousemove', function (e) {
+    var r = canvas.getBoundingClientRect();
+    mouse.x = (e.clientX - r.left) / r.width;
+    mouse.y = (e.clientY - r.top) / r.height;
+  });
+
+  function sources(time) {
+    return [
+      { x: 0.28 + 0.06 * Math.sin(time * 0.23), y: 0.42 + 0.05 * Math.cos(time * 0.19) },
+      { x: 0.72 + 0.05 * Math.cos(time * 0.17), y: 0.55 + 0.06 * Math.sin(time * 0.21) }
+    ];
+  }
+
+  function draw() {
+    t += 0.008;
+    ctx.clearRect(0, 0, W, H);
+
+    var srcs = sources(t);
+    var ROWS = 64;
+    var COLS = Math.round(ROWS * W / H * 1.1);
+    var cw = W / COLS;
+    var ch = H / ROWS;
+    var mx = mouse.x * W;
+    var my = mouse.y * H;
+
+    for (var row = 0; row < ROWS; row++) {
+      for (var col = 0; col < COLS; col++) {
+        var px = (col + 0.5) * cw;
+        var py = (row + 0.5) * ch;
+
+        var mdx = (px - mx) / W;
+        var mdy = (py - my) / H;
+        var mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+        var warp = mDist < 0.18 ? (0.18 - mDist) / 0.18 * 0.7 : 0;
+
+        var val = 0;
+        for (var s = 0; s < srcs.length; s++) {
+          var sx = srcs[s].x * W;
+          var sy = srcs[s].y * H;
+          var d = Math.sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy));
+          var k = 0.018 + warp * 0.012;
+          val += Math.sin(d * k - t * 3.2 + srcs[s].x * 4);
+        }
+        val /= 2;
+
+        var bright = (val + 1) / 2;
+        if (bright < 0.42) continue;
+
+        var alpha = (bright - 0.42) / 0.58 * 0.55 + warp * 0.15;
+        var r = (184 + (bright - 0.42) * 20) | 0;
+        var g = (149 + (bright - 0.42) * 12) | 0;
+        ctx.fillStyle = 'rgba(' + r + ',' + g + ',90,' + alpha.toFixed(3) + ')';
+        var sz = cw * 0.55 + warp * cw * 0.6;
+        ctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ── FLOW CANVAS — parallel lanes ── */
+(function () {
+  var canvas = document.getElementById('flow-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+
+  function resize() {
+    var r = canvas.parentElement.getBoundingClientRect();
+    canvas.width = r.width || 600;
+    canvas.height = 340;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  var LANES = 6;
+  var pulses = [];
+
+  for (var i = 0; i < LANES * 2; i++) {
+    pulses.push({
+      lane: i % LANES,
+      x: Math.random() * (canvas.width || 600),
+      speed: 1.3 + Math.random() * 1.5,
+      alpha: 0.18 + Math.random() * 0.32,
+      len: 50 + Math.random() * 100
+    });
+  }
+
+  function draw() {
+    var w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.strokeStyle = 'rgba(184,149,90,0.06)';
+    ctx.lineWidth = 0.5;
+    for (var i = 0; i < LANES; i++) {
+      var y = (i + 0.5) * h / LANES;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    for (var p = 0; p < pulses.length; p++) {
+      var pulse = pulses[p];
+      var ly = (pulse.lane + 0.5) * h / LANES;
+
+      var grad = ctx.createLinearGradient(pulse.x - pulse.len, ly, pulse.x, ly);
+      grad.addColorStop(0, 'rgba(184,149,90,0)');
+      grad.addColorStop(0.7, 'rgba(184,149,90,' + pulse.alpha.toFixed(3) + ')');
+      grad.addColorStop(1, 'rgba(248,245,239,' + (pulse.alpha * 0.5).toFixed(3) + ')');
+
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(pulse.x - pulse.len, ly);
+      ctx.lineTo(pulse.x, ly);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(248,245,239,' + (pulse.alpha * 0.8).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(pulse.x, ly, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      pulse.x += pulse.speed;
+      if (pulse.x - pulse.len > w) {
+        pulse.x = -Math.random() * 60;
+        pulse.lane = Math.floor(Math.random() * LANES);
+        pulse.speed = 1.2 + Math.random() * 1.8;
+        pulse.alpha = 0.15 + Math.random() * 0.32;
+        pulse.len = 40 + Math.random() * 100;
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ── CONTACT CANVAS — sine lines ── */
+(function () {
+  var canvas = document.getElementById('contact-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var t = 0;
+
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function draw() {
+    var W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    t += 0.006;
+
+    var lines = 5;
+    for (var i = 0; i < lines; i++) {
+      var phase = (i / lines) * Math.PI * 2;
+      var yBase = (i + 1) * H / (lines + 1);
+      var amp = 18 + i * 6;
+      var freq = 0.006 + i * 0.001;
+      var alpha = 0.06 + i * 0.02;
+
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(184,149,90,' + alpha + ')';
+      ctx.lineWidth = 0.8;
+
+      for (var x = 0; x <= W; x += 2) {
+        var y = yBase + Math.sin(x * freq + t + phase) * amp;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ── INTERSECTION OBSERVERS ── */
+var io = new IntersectionObserver(function (entries) {
+  entries.forEach(function (e) {
+    if (e.isIntersecting) e.target.classList.add('revealed');
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.reveal, .cap-card, .how-step').forEach(function (el) {
+  io.observe(el);
+});
+
+/* Cap card stagger */
+document.querySelectorAll('.cap-card').forEach(function (card, i) {
+  card.style.transitionDelay = (i * 0.07) + 's';
+});
+
+/* How step stagger */
+document.querySelectorAll('.how-step').forEach(function (step, i) {
+  step.style.transitionDelay = (i * 0.09) + 's';
+});
+
+/* Nav active */
+var sections = document.querySelectorAll('section[id]');
+var navLinks = document.querySelectorAll('.nav-links a');
+
+var navIO = new IntersectionObserver(function (entries) {
+  entries.forEach(function (e) {
+    if (e.isIntersecting) {
+      navLinks.forEach(function (a) { a.classList.remove('active'); });
+      var link = document.querySelector('.nav-links a[href="#' + e.target.id + '"]');
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-40% 0px -55% 0px' });
+
+sections.forEach(function (s) { navIO.observe(s); });
+
+/* Form submit */
+function handleSubmit(e) {
+  e.preventDefault();
+  var btn = document.getElementById('submitBtn');
+  btn.textContent = 'Sent';
+  btn.classList.add('sent');
+  btn.disabled = true;
+}
+</script>
+</body>
+</html>

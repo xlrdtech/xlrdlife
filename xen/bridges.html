@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Xen · Bridge Status</title>
+<style>
+  :root{
+    --bg:#0a0c10; --panel:#12161d; --panel2:#171c25; --line:#212936;
+    --txt:#e7ecf3; --dim:#8a94a6; --faint:#5a6473;
+    --green:#2ec26b; --green-bg:#0f2419; --red:#ff5b5b; --red-bg:#2a1114;
+    --accent:#5aa9ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  body{max-width:560px;margin:0 auto;padding:20px 16px 48px;min-height:100vh}
+  header{padding:8px 2px 20px}
+  .kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  h1{font-size:22px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+  .sub{font-size:12.5px;color:var(--dim);margin-top:6px}
+  .hero{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;margin-bottom:18px}
+  .hero-top{display:flex;align-items:baseline;gap:10px}
+  .big{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .big .of{color:var(--faint);font-weight:600}
+  .hero-label{font-size:13px;color:var(--dim);font-weight:600}
+  .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;margin-top:14px;background:var(--line)}
+  .bar .fill{background:linear-gradient(90deg,#2ec26b,#37d97d)}
+  .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  .pill{font-size:11px;font-weight:600;padding:4px 9px;border-radius:99px;border:1px solid var(--line)}
+  .pill.g{color:var(--green);background:var(--green-bg);border-color:#1c4a30}
+  .pill.r{color:var(--red);background:var(--red-bg);border-color:#5a1f24}
+  .list{display:flex;flex-direction:column;gap:10px}
+  .row{display:flex;align-items:flex-start;gap:13px;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:14px 15px}
+  .row.g{border-left:3px solid var(--green)}
+  .row.r{border-left:3px solid var(--red)}
+  .dot{width:11px;height:11px;border-radius:99px;margin-top:5px;flex:0 0 auto}
+  .dot.g{background:var(--green);box-shadow:0 0 0 4px rgba(46,194,107,.14)}
+  .dot.r{background:var(--red);box-shadow:0 0 0 4px rgba(255,91,91,.14)}
+  .rc{flex:1;min-width:0}
+  .rname{font-size:15px;font-weight:650;letter-spacing:-.01em}
+  .rstate{font-size:11.5px;font-weight:600;margin-top:1px}
+  .rstate.g{color:var(--green)} .rstate.r{color:var(--red)}
+  .rdetail{font-size:12px;color:var(--dim);margin-top:5px;line-height:1.45;word-break:break-word}
+  .hosts{margin-top:18px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+  .hosts h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:9px}
+  .hrow{font-size:12px;color:var(--dim);line-height:1.7}
+  .hrow b{color:var(--txt);font-weight:600}
+  footer{margin-top:22px;text-align:center;font-size:11px;color:var(--faint);line-height:1.7}
+  .live{display:inline-flex;align-items:center;gap:6px}
+  .live .ld{width:7px;height:7px;border-radius:99px;background:var(--green);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .err{color:var(--red);font-size:12px}
+</style>
+</head>
+<body>
+  <header>
+    <div class="kicker">Xen · Matrix Comms</div>
+    <h1>Bridge Status</h1>
+    <div class="sub" id="verified">loading…</div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="big"><span id="green">–</span><span class="of">/<span id="total">–</span></span></div>
+      <div class="hero-label">comms legs green</div>
+    </div>
+    <div class="bar"><div class="fill" id="fill" style="width:0%"></div></div>
+    <div class="pills" id="pills"></div>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="hosts">
+    <h2>Topology</h2>
+    <div class="hrow" id="hosts"></div>
+  </div>
+
+  <footer>
+    <div class="live"><span class="ld"></span> live · auto-refresh 15s</div>
+    <div id="stamp"></div>
+  </footer>
+
+<script>
+(function(){
+  var listEl=document.getElementById('list');
+  function esc(s){return String(s==null?'':s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]});}
+  function render(d){
+    var s=d.summary||{};
+    document.getElementById('green').textContent=s.green!=null?s.green:'?';
+    document.getElementById('total').textContent=s.total!=null?s.total:'?';
+    var pct=(s.green&&s.total)?Math.round(s.green/s.total*100):0;
+    document.getElementById('fill').style.width=pct+'%';
+    document.getElementById('verified').textContent='Verified '+(d.verified||d.updated||'');
+
+    var pills=document.getElementById('pills');pills.innerHTML='';
+    (s.green_legs||[]).forEach(function(l){var e=document.createElement('span');e.className='pill g';e.textContent='● '+l;pills.appendChild(e);});
+    (s.needs_human||[]).forEach(function(l){var e=document.createElement('span');e.className='pill r';e.textContent='● '+l+' · human';pills.appendChild(e);});
+
+    listEl.innerHTML='';
+    (d.legs||[]).forEach(function(leg){
+      var g=leg.status==='green';var cls=g?'g':'r';
+      var row=document.createElement('div');row.className='row '+cls;
+      row.innerHTML=
+        '<div class="dot '+cls+'"></div>'+
+        '<div class="rc">'+
+          '<div class="rname">'+esc(leg.name)+'</div>'+
+          '<div class="rstate '+cls+'">'+esc(leg.state)+'</div>'+
+          '<div class="rdetail">'+esc(leg.detail)+'</div>'+
+        '</div>';
+      listEl.appendChild(row);
+    });
+
+    var h=d.hosts||{};
+    document.getElementById('hosts').innerHTML=
+      '<b>Bridges:</b> '+esc(h.bridges)+'<br>'+
+      '<b>Voice:</b> '+esc(h.voice)+'<br>'+
+      '<b>Synapse:</b> '+esc(h.synapse);
+
+    document.getElementById('stamp').textContent='data updated '+(d.updated||'')+' · fetched '+new Date().toISOString().replace(/\.\d+Z$/,'Z');
+  }
+  function pull(){
+    fetch('bridges.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(render)
+      .catch(function(e){var f=document.getElementById('stamp');if(f)f.innerHTML='<span class="err">fetch failed: '+esc(e.message)+'</span>';});
+  }
+  pull();
+  setInterval(pull,15000);
+})();
+</script>
+</body>
+</html>

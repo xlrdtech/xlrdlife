@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Life Note — you don't run programs, you write Notes, and they run you</title>
+<meta name="description" content="Life Note: the note layer of SUIC IDE. Write a .self Note and it executes itself. The G.O.D.S. pipeline, the SEL_ execution lexicon, and how an intention becomes a running process.">
+<style>
+:root{
+  --bg:#06070a; --card:#0e1117; --card2:#0a0c11; --line:#1c212b;
+  --ink:#eaeef5; --dim:#8a94a6; --faint:#586274;
+  --gold:#d8b45f; --gold2:#f4e0a4; --green:#7fd6a8; --steel:#8fb4d9; --rose:#e07a8b;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{background:
+  radial-gradient(1200px 700px at 50% -220px,rgba(216,180,95,.11),transparent 62%),
+  radial-gradient(720px 460px at 88% 12%,rgba(127,214,168,.05),transparent 60%),
+  var(--bg); overflow-x:hidden}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px;text-align:center}
+header{padding:74px 0 20px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--faint);margin:0 0 20px}
+h1{margin:0;font-size:clamp(42px,9vw,84px);line-height:.95;font-weight:800;letter-spacing:-.035em;
+  background:linear-gradient(174deg,#fff 4%,var(--gold2) 40%,var(--gold) 66%,#8a7134 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.tagline{margin:24px auto 0;max-width:660px;font-size:clamp(17px,3vw,25px);line-height:1.4;color:var(--gold2);font-weight:600}
+.sub{margin:18px auto 0;max-width:620px;font-size:15.5px;line-height:1.65;color:var(--dim)}
+.rule{width:56px;height:1px;margin:36px auto;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+h2{font-size:clamp(21px,4vw,30px);letter-spacing:-.02em;margin:0 0 14px;font-weight:750}
+h2 .n{font-family:var(--mono);font-size:.5em;color:var(--gold);vertical-align:middle;margin-right:12px;letter-spacing:.18em}
+section{padding:34px 0}
+p{line-height:1.68;color:var(--dim);max-width:650px;margin:0 auto 15px;font-size:15.5px}
+strong{color:var(--ink);font-weight:650}
+em{color:var(--gold2);font-style:normal}
+blockquote{margin:26px auto;max-width:650px;padding:22px 26px;text-align:left;
+  background:linear-gradient(168deg,rgba(216,180,95,.07),transparent);
+  border-left:2px solid var(--gold);border-radius:0 13px 13px 0}
+blockquote p{margin:0;max-width:none;color:var(--ink);font-size:17px;line-height:1.6}
+blockquote cite{display:block;margin-top:12px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--faint);font-style:normal}
+.gods{display:flex;flex-wrap:wrap;gap:13px;justify-content:center;margin:28px 0;text-align:left}
+.gods > div{flex:1 1 210px;max-width:250px;background:linear-gradient(168deg,var(--card),var(--card2));
+  border:1px solid var(--line);border-radius:14px;padding:19px}
+.gods .l{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1;margin-bottom:9px}
+.gods h3{margin:0 0 7px;font-size:15px}
+.gods p{margin:0;max-width:none;font-size:13px}
+.gods .g .l{color:var(--green)} .gods .o .l{color:var(--gold)}
+.gods .d .l{color:var(--steel)} .gods .s .l{color:var(--rose)}
+.flow{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;align-items:stretch;margin:26px 0}
+.flow div{flex:0 1 auto;background:#0b0e13;border:1px solid var(--line);border-radius:10px;
+  padding:12px 15px;font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.flow div b{color:var(--gold2);font-weight:700}
+.flow span{align-self:center;color:var(--faint);font-size:15px}
+table{width:100%;border-collapse:collapse;margin:22px 0;font-size:13.5px;text-align:left;display:block;overflow-x:auto}
+th,td{padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);font-weight:500}
+td{color:var(--dim)} td:first-child{color:var(--ink);font-weight:620}
+code{font-family:var(--mono);font-size:12.5px;color:var(--gold2);background:rgba(216,180,95,.08);padding:2px 6px;border-radius:5px}
+.note{max-width:650px;margin:24px auto;padding:18px 22px;text-align:left;
+  border-left:2px solid var(--steel);background:rgba(143,180,217,.05);border-radius:0 12px 12px 0}
+.note p{margin:0;max-width:none;font-size:14.5px}
+.cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:30px 0}
+.cta a{background:#0c0f14;border:1px solid var(--line);color:var(--ink);text-decoration:none;
+  padding:14px 22px;border-radius:11px;font-family:var(--mono);font-size:12.5px;transition:.16s}
+.cta a:hover{border-color:var(--gold);color:var(--gold2);transform:translateY(-1px)}
+footer{padding:52px 0 64px;color:var(--faint);font-size:12px;font-family:var(--mono);letter-spacing:.1em}
+footer a{color:var(--gold);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Self Exec · XLRDTECH</p>
+  <h1>Life Note</h1>
+  <p class="tagline">"You don't run programs… you write Notes, and they run you."</p>
+  <p class="sub">The note layer of <a href="suic/" style="color:var(--gold2)">SUIC IDE</a>. A Note is a <code>.self</code> file: you write an intention, and it becomes a running process. The Death Note spinoff for developers — inverted, and pointed at builders.</p>
+  <div class="rule"></div>
+</header>
+
+<section>
+  <h2><span class="n">01</span>The inversion</h2>
+  <p>Death Note is a book with one rule: write a name in it and that life ends. The power is subtraction, and every use costs something irreversible.</p>
+  <p><strong>Life Note runs the other direction.</strong> You write what you intend, and the writing <em>is</em> the execution. Nothing is subtracted; something starts. That is why it is the developer's counterpart — a developer's notebook is already where things get born, and naming it against Death Note makes the direction explicit.</p>
+  <blockquote>
+    <p>"Life Note — the Death Note spinoff for developers."</p>
+    <cite>qi · 2026-05-31 · captured from a logo prompt in Paste history</cite>
+  </blockquote>
+</section>
+
+<section>
+  <h2><span class="n">02</span>What a Note actually is</h2>
+  <p>A Note is a <code>.self</code> file. It is not source code you compile and run — it is an intention written in a declarative notation that carries its own execution.</p>
+  <div class="flow">
+    <div>write a <b>.self</b> Note</div><span>→</span>
+    <div><b>STAX</b> notices it</div><span>→</span>
+    <div><b>SEL_</b> interprets</div><span>→</span>
+    <div><b>agents</b> act</div><span>→</span>
+    <div><b>SPHIX</b> remembers</div>
+  </div>
+  <p>No build tools. No cloud service. No manual trigger. Save the Note and it is already happening — which is the same rule as auto-manifest, written at the level of a file instead of an operator.</p>
+  <div class="note">
+    <p><strong>Why "and they run you"</strong> is not just a slogan: once a Note is written, its agents keep acting on schedule and on trigger without you. The Note becomes the thing driving the day. Authorship and execution collapse into one act.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>G.O.D.S. — the pipeline Notes flow through</h2>
+  <p>Every Note lands somewhere in a four-stage assembly line. <strong>G.O.D.S. = Generate · Operate · Distribute · System</strong> — the "God-buckets", the core folder hub and operational pipeline.</p>
+  <div class="gods">
+    <div class="g"><div class="l">G</div><h3>Generate</h3><p>Creating, drafting, ideation, and pulling in raw context.</p></div>
+    <div class="o"><div class="l">O</div><h3>Operate</h3><p>Execution, management, and refining the generated assets.</p></div>
+    <div class="d"><div class="l">D</div><h3>Distribute</h3><p>Pushing final outputs to their destinations — Spark, Beeper, Beside, published sites.</p></div>
+    <div class="s"><div class="l">S</div><h3>System</h3><p>The underlying infrastructure and orchestration cells, run by Xen, keeping the grid stable.</p></div>
+  </div>
+  <p><strong>1 CB, 4 Tabs, 36 XenCells.</strong> One CellBrowser; each tab is one bucket; each tab opens as a 3×3 grid — so a single browser body runs 36 parallel execution cells. XenCells are the 3×3 panes themselves, <em>"the body tissue, where each individual pane is a cell running specialized sub-agents in parallel."</em></p>
+  <div class="note">
+    <p><strong>Two rulings worth keeping straight.</strong> G.O.D.S. replaced an earlier "Goals, Objectives, Desires" reading — that definition is dead. And "Godsong" is not part of this: <em>A G.O.O.D. S.O.N.G.™</em> belongs to Luckie's L7S scope as her SaaS Stack Sequence Flow, not to G.O.D.S.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>SEL_ — the law a Note obeys</h2>
+  <p><strong>SEL_ is the Self-Execution Lexicon</strong>, the engine and vocabulary inside every <code>.self</code>. Its stated purpose: <em>eliminating manual steps beyond the initial invocation.</em> Two absolutes, then seven requirements.</p>
+  <table>
+    <tr><th>Absolute</th><th>Meaning</th></tr>
+    <tr><td>Fully Autonomous</td><td>Self-creation, self-saving, self-execution — no intervention past the initial command</td></tr>
+    <tr><td>Single-Step Execution</td><td>Everything, including prerequisites like dependencies and configuration, inside one invocation</td></tr>
+  </table>
+  <table>
+    <tr><th>#</th><th>Requirement</th><th>What it forbids</th></tr>
+    <tr><td>1</td><td>No manual file creation</td><td>Opening an editor, saving a <code>.sh</code> or <code>.self</code> by hand</td></tr>
+    <tr><td>2</td><td>No manual permissions</td><td>Any user-run <code>chmod</code> or <code>chown</code></td></tr>
+    <tr><td>3</td><td>No multi-step execution</td><td>Any action required after invocation</td></tr>
+    <tr><td>4</td><td>No manual dependency setup</td><td>Installing packages or editing config by hand</td></tr>
+    <tr><td>5</td><td>Universal accessibility</td><td>Expertise; hardcoded identifiers — user-agnostic by design</td></tr>
+    <tr><td>6</td><td>Cross-platform resilience</td><td>Manual tweaks per OS, shell, or runtime</td></tr>
+    <tr><td>7</td><td>Error handling</td><td>The user ever having to debug</td></tr>
+  </table>
+  <p>Requirement 7 is the one that matters most: <em>"Users should not need to debug or intervene in case of errors."</em> That is human-out-of-the-loop stated as a property of the file, not a promise from the operator.</p>
+  <p style="font-size:13.5px;color:var(--faint)">SEL_ reaches beyond the terminal: it generates platform-specific automations including iOS Shortcuts and Android Tasker tasks. Partitions <code>9_</code>, <code>999_</code>, <code>AEA_</code> activate only on explicit command, so a persona never shifts unintentionally.</p>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Where it came from</h2>
+  <table>
+    <tr><th>Stage</th><th>What it was</th></tr>
+    <tr><td>SEHD</td><td>Self-Executing Here Document — executable code embedded in text that runs itself when handed to a shell</td></tr>
+    <tr><td>SEHD v5</td><td>"Total Environment Dominator" — the last version before the paradigm changed</td></tr>
+    <tr><td>SEL_</td><td>The break from here-doc syntax into a real execution lexicon</td></tr>
+    <tr><td>SUIC IDE</td><td>The environment built to host it — and the home of the Note</td></tr>
+  </table>
+  <p>The lineage explains the shape. SEHD proved text could execute itself; its dependence on here-doc syntax capped it. SEL_ removed that ceiling, and SUIC IDE gave the Notes somewhere to live.</p>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Sources</h2>
+  <table>
+    <tr><th>Claim</th><th>Source</th></tr>
+    <tr><td>Life Note premise</td><td><code>~/.xen/state/auto-fleet.txt</code> · qi 2026-05-31</td></tr>
+    <tr><td>"you write Notes, and they run you"</td><td>SUIC IDE definition, L7X System Architecture audit</td></tr>
+    <tr><td>G.O.D.S. four buckets · 1 CB / 4 Tabs / 36 cells</td><td><code>nblmthread.txt</code> · commandment 31</td></tr>
+    <tr><td>SEL_ Law, all 7 requirements</td><td><code>SEL_ Law</code>, Lark · East Allen · mod. 2025-07-07</td></tr>
+    <tr><td>SEHD → SEL_ → SUIC lineage</td><td>L7X System Architecture audit (Apr 29 — dated, definitions only)</td></tr>
+  </table>
+  <div class="cta">
+    <a href="suic/">SUIC · IDE →</a>
+    <a href="life-note.md">RAW MARKDOWN</a>
+  </div>
+</section>
+
+<footer>
+  LIFE NOTE · SELF EXEC · <a href="suic/">SUIC · IDE</a> · <a href="life-note.md">RAW .MD</a><br>
+  BUILT BY EAST · XLRD TECH
+</footer>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

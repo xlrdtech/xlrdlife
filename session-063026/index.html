@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XEN · Session Overview 6/30 — M drive, Beeper kill, M4 disk fault</title>
+<meta name="description" content="Session overview: M drive SMB credential fix, full Beeper-to-Matrix migration on M4, and a live disk I/O fault found on the M4 volume.">
+<style>
+:root{
+  --bg:#04070b; --panel:#0b121b; --panel2:#0a0f17; --line:#16222e;
+  --cyan:#36e0ff; --gold:#ffce6b; --ink:#eaf3f8; --muted:#8499a8;
+  --good:#46e3a0; --warn:#ffb44d; --bad:#ff5d6c; --hot:#ff8a3d;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+  radial-gradient(120% 80% at 50% -8%,#0a1826 0%,var(--bg) 58%);
+  color:var(--ink);font:16px/1.65 var(--sans);
+  -webkit-font-smoothing:antialiased;padding-bottom:80px}
+.wrap{max-width:860px;margin:0 auto;padding:0 18px}
+header{padding:42px 0 18px;border-bottom:1px solid var(--line)}
+.kick{color:var(--cyan);letter-spacing:.34em;font:600 11px/1 var(--mono);
+  text-transform:uppercase;margin-bottom:14px}
+h1{font:700 30px/1.15 var(--sans);margin:0 0 10px;letter-spacing:-.01em}
+h1 .grad{background:linear-gradient(92deg,var(--cyan),var(--gold));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--muted);font-size:15px;max-width:62ch}
+.meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+.tag{font:600 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;
+  padding:7px 10px;border-radius:7px;border:1px solid var(--line);
+  background:var(--panel);color:var(--muted)}
+.tag.hot{color:var(--hot);border-color:#5a2e16}
+.tag.ok{color:var(--good);border-color:#1c4a3a}
+.tag.warn{color:var(--warn);border-color:#4a3a16}
+
+section{padding:34px 0;border-bottom:1px solid var(--line)}
+h2{font:700 20px/1.2 var(--sans);margin:0 0 6px;display:flex;align-items:center;gap:10px}
+h2 .n{font:700 12px/1 var(--mono);color:var(--bg);background:var(--cyan);
+  width:26px;height:26px;display:grid;place-items:center;border-radius:7px;flex:none}
+.lead{color:var(--muted);margin:0 0 20px;font-size:15px}
+
+.verdict{background:linear-gradient(165deg,#12202e,#0a121b);
+  border:1px solid #1d3243;border-left:4px solid var(--bad);
+  border-radius:14px;padding:22px 22px}
+.verdict b{color:var(--ink)}
+.verdict .big{font:700 19px/1.4 var(--sans);color:var(--ink);margin:0 0 10px}
+.verdict p{margin:0 0 10px;color:#bcccd8}
+.paradox{color:var(--gold);font-weight:600}
+
+.grid{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:8px}
+.card{background:linear-gradient(165deg,var(--panel),var(--panel2));
+  border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;overflow:hidden;
+  flex:1 1 100%}
+.card::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--cyan)}
+.card.kill::before{background:var(--bad)} .card.throttle::before{background:var(--warn)}
+.card.keep::before{background:var(--good)}
+.card h3{font:700 17px/1.25 var(--sans);margin:0 0 2px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.card h3 code{font:600 12px/1 var(--mono);color:var(--cyan);background:#0a1620;
+  padding:4px 7px;border-radius:6px;border:1px solid var(--line)}
+.verb{font:700 10px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;
+  padding:5px 9px;border-radius:20px;margin-left:auto}
+.verb.kill{color:var(--bad);background:#27121620;border:1px solid #4a1c22}
+.verb.throttle{color:var(--warn);background:#2a1f0e;border:1px solid #4a3a16}
+.verb.keep{color:var(--good);background:#0e2620;border:1px solid #1c4a3a}
+.role{color:var(--muted);font-size:13px;margin:2px 0 14px}
+.rows{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;font-size:14px}
+.rows dt{color:var(--cyan);font:600 12px/1.5 var(--mono);text-transform:uppercase;letter-spacing:.05em}
+.rows dd{margin:0;color:#c7d5df}
+.rows dd b{color:var(--ink)}
+.burn{display:inline-block;margin-top:14px;font:600 12px/1 var(--mono);
+  padding:7px 11px;border-radius:8px}
+.burn.hi{color:var(--bad);background:#1d0d10;border:1px solid #4a1c22}
+.burn.med{color:var(--warn);background:#221a0c;border:1px solid #4a3a16}
+.burn.lo{color:var(--good);background:#0c1f1a;border:1px solid #1c4a3a}
+
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13.5px;
+  background:var(--panel);border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+caption{text-align:left;color:var(--muted);font-size:13px;padding:0 0 10px}
+th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--cyan);background:#0a131c}
+td{color:#c7d5df} tr:last-child td{border-bottom:none}
+td code{font:600 12px/1 var(--mono);color:var(--gold)}
+.pill{font:600 10px/1 var(--mono);padding:4px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.pill.bad{color:var(--bad);background:#1d0d10} .pill.warn{color:var(--warn);background:#221a0c}
+.pill.good{color:var(--good);background:#0c1f1a} .pill.cool{color:var(--cyan);background:#08161f}
+
+pre{background:#070b10;border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px;overflow-x:auto;font:13px/1.6 var(--mono);color:#bfe6f2;margin:14px 0}
+pre .c{color:#5e7588}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.fix{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.fix:last-child{border:none}
+.fix .s{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+  font:700 12px/1 var(--mono)}
+.fix .s.done{background:#0e2620;color:var(--good);border:1px solid #1c4a3a}
+.fix .s.todo{background:#221a0c;color:var(--warn);border:1px solid #4a3a16}
+.fix .s.bad{background:#1d0d10;color:var(--bad);border:1px solid #4a1c22}
+.fix div b{color:var(--ink)}
+footer{padding:30px 0 0;color:var(--muted);font-size:13px;text-align:center}
+a{color:var(--cyan)}
+@media(max-width:560px){
+  h1{font-size:24px}.rows{grid-template-columns:1fr;gap:2px 0}
+  .rows dt{margin-top:8px}.verb{margin-left:0}
+  table{font-size:12.5px}th,td{padding:9px 8px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kick">XEN · Nitro + M4 · Session Overview</div>
+  <h1>M drive fixed, Beeper killed <span class="grad">— then M4's disk showed a real fault</span></h1>
+  <p class="sub">Started as "fix my M drive." Ended with the M: SMB mount restored, Beeper fully retired on M4 in favor of Matrix, and a live disk I/O bottleneck on the M4 volume itself surfaced mid-migration — root-caused down to kernel APFS flush stats, not guessed at.</p>
+  <div class="meta">
+    <span class="tag ok">M: drive · fixed + verified</span>
+    <span class="tag ok">Beeper · killed on M4</span>
+    <span class="tag ok">Matrix @qi · verified, 39 rooms</span>
+    <span class="tag hot">M4 disk8 · write-latency fault, open</span>
+    <span class="tag">2026-06-30</span>
+  </div>
+</header>
+
+<section>
+  <h2><span class="n">01</span>M: drive — root cause and fix</h2>
+  <div class="verdict">
+    <p class="big">Not a network problem. Windows Credential Manager had zero stored creds.</p>
+    <p>M: (<code>\\10.13.92.101\M4</code>) showed <b>Unavailable</b>. Ping and port 445 to the host were both fine — the actual fault was that <code>cmdkey /list</code> came back completely empty. The cached SMB login had been wiped, not just gone stale.</p>
+    <p>Fixed with <code>net use M: \\10.13.92.101\M4 /user:lord "0000" /persistent:yes</code> — password confirmed live by qi rather than guessed, per the canon rule to never guess a credential. Verified <code>M:\sync_\brain_</code> readable immediately after.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Beeper retirement on M4</h2>
+  <p class="lead">Comms moved to Matrix; Beeper's job on M4 was to keep running anyway. Found and killed every layer of it.</p>
+  <table>
+    <caption>What was actually running, and what happened to it.</caption>
+    <thead><tr><th>Component</th><th>Type</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><code>Beeper Desktop.app</code></td><td>Electron app + helpers, crashpad, watchdog</td><td><span class="pill bad">Killed</span> — respawned once via macOS session-restore (<code>NSQuitAlwaysKeepsWindows=1</code>), killed again</td></tr>
+      <tr><td><code>com.qi.beeper-mcp-http</code></td><td>launchd agent</td><td><span class="pill bad">Disabled</span> — moved to <code>.disabled-beeper-matrix-migration-20260630/</code></td></tr>
+      <tr><td><code>com.xen.beeper-no-focus-steal</code></td><td>launchd agent</td><td><span class="pill bad">Disabled</span></td></tr>
+      <tr><td><code>com.exedus.beside-beeper-outbound</code></td><td>launchd agent</td><td><span class="pill bad">Disabled</span></td></tr>
+      <tr><td><code>com.xen.beeper-attachment-watcher</code></td><td>launchd agent</td><td><span class="pill bad">Disabled</span></td></tr>
+      <tr><td><code>com.exedus.beeper-mcp-proxy</code></td><td>launchd agent, port 3482</td><td><span class="pill bad">Disabled</span></td></tr>
+      <tr><td><code>com.selfexec.beeper-poll</code></td><td>launchd agent</td><td><span class="pill bad">Disabled</span></td></tr>
+    </tbody>
+  </table>
+  <p class="note">Disabled by relocating the plists rather than deleting — matches the pattern already established in this environment (<code>.beeper-nuked-disablers-20260609/</code> exists from a prior attempt), so a full history of every disable/re-enable cycle stays on disk.</p>
+</section>
+
+<section>
+  <h2><span class="n">03</span>Matrix access verified</h2>
+  <div class="grid">
+    <div class="card keep">
+      <h3>@qi:mymatrix.local<span class="verb keep">Live</span></h3>
+      <div class="role">Verified via whoami against the public homeserver, not assumed from a stale token file.</div>
+      <dl class="rows">
+        <dt>Rooms</dt><dd><b>39 joined</b>, including Andre (DCZ), LaTina (DCZ), Luckie Goggins, the Hittl.ink ship-feed room, and all six bridge management rooms (gvoice/whatsapp/telegram/meta/slack/linkedin).</dd>
+        <dt>Status</dt><dd>Full conversational access confirmed working right now.</dd>
+      </dl>
+      <span class="burn lo">WORKING — this is the fallback in active use</span>
+    </div>
+    <div class="card throttle">
+      <h3>@self:mymatrix.local<span class="verb throttle">Blocked</span></h3>
+      <div class="role">Canon states @self is the account that actually holds the original bridge logins/history (32+ rooms, real backfilled conversations) — the more complete identity for full access.</div>
+      <dl class="rows">
+        <dt>Symptom</dt><dd>Every password-login attempt through <code>matrix.xlrd.org</code> returns Cloudflare <code>error code: 524</code> (origin timeout). GETs (whoami, joined_rooms) work fine — only the login POST hangs.</dd>
+        <dt>Root cause found</dt><dd>Not Cloudflare. Not Synapse config. The M4 disk itself — see next section.</dd>
+      </dl>
+      <span class="burn med">BLOCKED on the M4 disk fault below</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>M4 disk fault — the real find</h2>
+  <div class="verdict">
+    <p class="big">disk8 (the M4 volume) is dropping APFS transaction flushes to 43–221ms, with 100+ operations queued behind each one.</p>
+    <p>Chased the @self login timeout through three layers before finding the actual cause: <span class="paradox">it isn't Cloudflare, it isn't Synapse, it's the physical/external M4 drive itself.</span></p>
+    <pre>kernel: (apfs) tx_flush:1344: disk8 xid 8399232 tx stats:
+  # 6220 owait 105  <span class="c"># 105 ops waiting on this flush</span>
+  115709us          <span class="c"># ~116ms wait</span>
+  flush 221235us     <span class="c"># 221ms to actually flush</span></pre>
+    <p>That pattern repeats every 40–60 seconds. It explains everything downstream: Synapse's restarted process sat in uninterruptible I/O sleep (<code>STAT: U</code>) for 10+ minutes without even opening its database file, system load sat at 7–10 with 16 processes stuck, and even <code>lsof</code> and <code>ps aux</code> started timing out — a sign the kernel's own I/O layer was under real strain, not just CPU contention.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>What was cleared vs. what's still open</h2>
+  <table class="goap">
+    <caption>Contributing load that was found and removed, vs. what's still blocked on the disk itself.</caption>
+    <thead><tr><th>Item</th><th>Finding</th><th>Action taken</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Two stray <code>grep -rliE</code> scans</td>
+        <td>Recursive secret-scans running across the entire <code>/Volumes/M4/sync_</code> tree, one for 15+ minutes</td>
+        <td><span class="pill good">Killed (PIDs 7339/7340/9249/9250)</span></td>
+      </tr>
+      <tr>
+        <td>Synapse homeserver</td>
+        <td>Restarted twice; both times re-entered uninterruptible sleep before opening its DB</td>
+        <td><span class="pill warn">Restarted, still wedges — disk-bound, not process-bound</span></td>
+      </tr>
+      <tr>
+        <td>Disk space</td>
+        <td><code>df</code> shows M4 at 50% used, root at 40% — not a capacity issue</td>
+        <td><span class="pill good">Ruled out</span></td>
+      </tr>
+      <tr>
+        <td>disk8 write latency</td>
+        <td>Confirmed via kernel log, not inferred — sustained 40–220ms flushes with 100+ queued ops</td>
+        <td><span class="pill bad">Open — needs physical/connection check on the M4 drive</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Actions</h2>
+  <div class="fix"><span class="s done">✓</span><div><b>M: drive remounted and verified</b> — <code>M:\sync_\brain_</code> readable, persistent flag set.</div></div>
+  <div class="fix"><span class="s done">✓</span><div><b>Beeper fully killed on M4</b> — app + all 6 launchd daemons disabled by relocation, confirmed not respawning via launchd (still watch for macOS session-restore bringing the app UI back — that's a separate mechanism from the daemons).</div></div>
+  <div class="fix"><span class="s done">✓</span><div><b>Matrix @qi confirmed as working fallback</b> — reaches every contact room that matters right now.</div></div>
+  <div class="fix"><span class="s done">✓</span><div><b>Two I/O-heavy stray greps killed</b> on M4, reducing (but not eliminating) load.</div></div>
+  <div class="fix"><span class="s bad">!</span><div><b>Check the physical M4 drive</b> — cable, enclosure, or drive health. The kernel-level flush latency won't clear by killing more processes; it needs eyes on the actual hardware/connection.</div></div>
+  <div class="fix"><span class="s todo">!</span><div><b>Retry @self login once disk8 clears</b> — the login endpoint itself was never broken, it was just queued behind a saturated disk.</div></div>
+</section>
+
+<footer>
+  XEN · Nitro operates, M4 is the brain · this page reflects live process/kernel state captured during the session, not a guess
+</footer>
+
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

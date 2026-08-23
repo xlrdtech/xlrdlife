@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XEN Model Gateway — docs</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="XEN's OpenAI-compatible model gateway + file webhook. Plug any bring-your-own-model tool into your live Claude Code session.">
+<style>
+  :root{--bg:#070b08;--panel:#0d130e;--panel2:#0b0f0b;--line:#1c2a1e;--green:#39ff7a;--green-dim:#1f7a45;--amber:#ffb347;--ink:#dfeede;--muted:#84988b;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:radial-gradient(120% 80% at 50% -10%,#0c1610 0%,var(--bg) 60%);color:var(--ink);font:14px/1.6 var(--mono);padding:0 0 90px}
+  .wrap{max-width:820px;margin:0 auto;padding:0 18px}
+  header{padding:46px 0 16px;border-bottom:1px solid var(--line)}
+  .kick{color:var(--green);letter-spacing:.3em;font-size:11px;text-transform:uppercase}
+  h1{font-size:29px;margin:.3em 0 .12em}
+  .sub{color:var(--muted);font-size:13px;max-width:640px}
+  h2{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--green);border-left:3px solid var(--green-dim);padding-left:10px;margin:30px 0 12px}
+  .card{background:linear-gradient(165deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0}
+  .kv{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0;font-size:13px}
+  .kv .k{color:var(--muted);flex:0 0 150px}
+  .kv .v{color:var(--ink);flex:1;min-width:200px;overflow-wrap:anywhere}
+  code{background:#0a0f0b;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--green)}
+  pre{background:#0a0f0b;border:1px solid var(--line);border-radius:10px;padding:13px 14px;overflow-x:auto;font-size:12.5px;line-height:1.55;color:var(--ink);white-space:pre}
+  pre .c{color:var(--muted)}
+  .ep{display:flex;gap:10px;align-items:baseline;margin:8px 0;flex-wrap:wrap}
+  .m{font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:5px;border:1px solid}
+  .m.get{color:var(--green);border-color:rgba(57,255,122,.4);background:rgba(57,255,122,.07)}
+  .m.post{color:var(--amber);border-color:rgba(255,179,71,.4);background:rgba(255,179,71,.08)}
+  .ep .p{color:var(--ink);font-weight:600}
+  .ep .d{color:var(--muted);font-size:12px;flex-basis:100%}
+  .warn{background:#13110a;border:1px solid #3a3115;border-radius:10px;padding:11px 14px;margin:12px 0;color:var(--amber);font-size:12.5px;line-height:1.55}
+  footer{margin-top:36px;color:var(--muted);font-size:11px;border-top:1px solid var(--line);padding-top:14px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kick">XEN · Model Gateway</div>
+    <h1>Plug any tool into XEN</h1>
+    <div class="sub">An OpenAI-compatible API backed by your logged-in Claude Code — no separate API key, no console. Any "bring your own model" (BYOM) tool points at it and XEN answers. Plus a file webhook so any file reaches the brain.</div>
+  </header>
+
+  <h2>Connection</h2>
+  <div class="card">
+    <div class="kv"><span class="k">Base URL</span><span class="v"><code>http://100.80.76.79:8020/v1</code> <span style="color:var(--muted)">(Nitro · Tailscale mesh)</span></span></div>
+    <div class="kv"><span class="k">Model</span><span class="v"><code>xen</code> &nbsp;(or <code>xen-warm</code>)</span></div>
+    <div class="kv"><span class="k">API key</span><span class="v">your <code>XEN_API_TOKEN</code> (from secrets.env) — sent as <code>Authorization: Bearer &lt;token&gt;</code>. Never share it.</span></div>
+    <div class="kv"><span class="k">Backed by</span><span class="v"><code>claude</code> on Nitro (<code>E:\.local\bin\claude.exe</code>, config <code>E:\.claude</code>) — your subscription, your session.</span></div>
+  </div>
+  <div class="warn">Reachable on your Tailscale mesh only (not the public internet). Devices off the mesh can't hit it yet — a public route is the next step. The token is required: the gateway is NOT open.</div>
+
+  <h2>Endpoints</h2>
+  <div class="card">
+    <div class="ep"><span class="m get">GET</span><span class="p">/health</span><span class="d">liveness — returns <code>{ok:true, mode}</code>. No auth.</span></div>
+    <div class="ep"><span class="m get">GET</span><span class="p">/v1/models</span><span class="d">lists <code>xen</code>, <code>xen-warm</code>. No auth.</span></div>
+    <div class="ep"><span class="m post">POST</span><span class="p">/v1/chat/completions</span><span class="d">standard OpenAI chat completion (supports <code>stream:true</code> SSE). Auth required.</span></div>
+    <div class="ep"><span class="m post">POST</span><span class="p">/media-inject</span><span class="d">send ANY file to the brain. JSON <code>{filename, contentType, caption, b64}</code> (b64 = base64 of the bytes). Auth required.</span></div>
+  </div>
+
+  <h2>Chat completion</h2>
+  <pre><span class="c"># non-streaming</span>
+curl http://100.80.76.79:8020/v1/chat/completions \
+  -H "Authorization: Bearer $XEN_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"xen","messages":[{"role":"user","content":"hello"}]}'
+
+<span class="c"># streaming (SSE)</span>
+curl -N http://100.80.76.79:8020/v1/chat/completions \
+  -H "Authorization: Bearer $XEN_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"xen","stream":true,"messages":[{"role":"user","content":"hi"}]}'</pre>
+
+  <h2>Plug a BYOM tool in</h2>
+  <div class="card">
+    <div class="kv"><span class="k">OpenAI base URL</span><span class="v"><code>http://100.80.76.79:8020/v1</code></span></div>
+    <div class="kv"><span class="k">API key field</span><span class="v">paste your <code>XEN_API_TOKEN</code></span></div>
+    <div class="kv"><span class="k">Model field</span><span class="v"><code>xen</code></span></div>
+    <div class="kv"><span class="k">Result</span><span class="v">the tool thinks it's calling an API; it's really hitting your live Claude Code.</span></div>
+  </div>
+
+  <h2>File webhook (media-inject)</h2>
+  <pre>curl http://100.80.76.79:8020/media-inject \
+  -H "Authorization: Bearer $XEN_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"filename":"note.pdf","contentType":"application/pdf","caption":"for xen","b64":"&lt;base64&gt;"}'</pre>
+  <div class="sub">Saves the file on the brain box and notifies XEN to read it. This is what the <code>desk</code> PWA (<a href="/desk/" style="color:var(--green)">/desk</a>) and the "Xen Send File" iOS Shortcut post to.</div>
+
+  <h2>Modes</h2>
+  <div class="card">
+    <div class="kv"><span class="k">fork (default)</span><span class="v">each call runs <code>claude -p</code> — shares your identity/memory, fresh per-call context, cannot disturb your live session. In use now.</span></div>
+    <div class="kv"><span class="k">session</span><span class="v">routes the call through your ONE live warm session (same context, like an MCP). Built, off by default — flip with <code>XEN_GW_MODE=session</code> when you want it.</span></div>
+  </div>
+
+  <footer>
+    XEN Model Gateway · <code>xen-openai-gateway.js</code> on Nitro :8020 · fork mode verified live (returns real completions + usage + cost). Token-gated. Tailscale-reachable; public route pending. Real config only.
+  </footer>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>999 MUSIC-OPS — Suno catalog → curate → release → autopost</title>
+<meta name="description" content="999 MUSIC-OPS — the XLRD999 / X9 music pipeline: store and tag the Suno catalog, curate playlists into projects, finish/splice/master, schedule auto-releases, autopost daily across platforms, and pull traction to people with identical taste.">
+<meta property="og:title" content="999 MUSIC-OPS">
+<meta property="og:description" content="Suno catalog → tag → curate → finish/master → schedule → autopost → traction. The XLRD999 / X9 music pipeline.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0a0708">
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root{
+    --bg:#0a0708; --ink:#f3ece6; --dim:#9a8f86; --faint:#5c534d;
+    --ember:#ff5a1f; --ember2:#ff9a3c; --gold:#d8b46a; --ash:#1a1513; --line:#2a2320;
+    --card:#120d0b; --card2:#15100d; --ok:#7fcf8a; --warn:#ffce6b; --idle:#6f6660;
+    --mono:ui-monospace,Menlo,"SF Mono","Cascadia Code",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden; min-height:100svh;
+  }
+  /* purgatory glow + grain (matches /p6) */
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 70% at 50% -10%, rgba(255,90,31,.16), rgba(255,90,31,0) 55%),
+      radial-gradient(90% 60% at 100% 110%, rgba(216,180,106,.07), rgba(0,0,0,0) 55%);
+    animation:breathe 8s ease-in-out infinite;}
+  body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.045;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+  @keyframes breathe{0%,100%{opacity:.85}50%{opacity:1}}
+  .page{position:relative;z-index:2;max-width:1180px;margin:0 auto;padding:0 22px 80px}
+
+  /* ── header ── */
+  header{padding:54px 0 8px}
+  .mark{font:700 12px/1 var(--mono);letter-spacing:.5em;color:var(--gold);text-indent:.5em}
+  h1{margin:.28em 0 .12em;font-weight:800;letter-spacing:-.02em;line-height:.96;
+    font-size:clamp(34px,7vw,68px);
+    background:linear-gradient(180deg,#fff 0%,#f3ece6 40%,var(--ember2) 96%,var(--ember) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 60px rgba(255,90,31,.18)}
+  .lede{color:var(--dim);max-width:760px;font-size:clamp(14px,2.1vw,17px)}
+  .lede b{color:var(--ink);font-weight:600}
+  .flow{margin:18px 0 4px;font:600 11px/1.7 var(--mono);letter-spacing:.16em;color:var(--faint);
+    display:flex;flex-wrap:wrap;gap:6px 10px}
+  .flow span{color:var(--ember2)}
+  .gate{display:inline-flex;align-items:center;gap:9px;margin-top:18px;padding:9px 15px;
+    border:1px solid var(--line);border-radius:999px;background:rgba(255,206,107,.05);
+    font:600 12px/1 var(--mono);letter-spacing:.08em;color:var(--warn)}
+  .gate .dot{width:8px;height:8px;border-radius:50%;background:var(--warn);
+    box-shadow:0 0 0 0 rgba(255,206,107,.5);animation:beat 2.2s infinite}
+  @keyframes beat{0%{box-shadow:0 0 0 0 rgba(255,206,107,.45)}70%{box-shadow:0 0 0 9px rgba(255,206,107,0)}100%{box-shadow:0 0 0 0 rgba(255,206,107,0)}}
+
+  /* ── section heads ── */
+  .sec{margin-top:52px}
+  .sec-h{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .sec-h h2{margin:0;font-size:clamp(18px,3vw,24px);font-weight:800;letter-spacing:-.01em}
+  .sec-h .n{font:700 12px/1 var(--mono);letter-spacing:.3em;color:var(--gold)}
+  .sec-sub{color:var(--dim);font-size:14px;margin:2px 0 0;max-width:780px}
+
+  /* ── pipeline columns/cards ── */
+  .pipe{display:flex;flex-wrap:wrap;gap:16px;margin-top:22px;justify-content:center}
+  .stage{flex:1 1 248px;max-width:340px;background:linear-gradient(180deg,var(--card2),var(--card));
+    border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;position:relative;overflow:hidden;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+  .stage:hover{transform:translateY(-3px);border-color:rgba(255,90,31,.35);box-shadow:0 14px 40px rgba(0,0,0,.4)}
+  .stage::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;
+    background:linear-gradient(180deg,var(--ember2),var(--ember));opacity:.55}
+  .stage .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .stage .idx{font:700 11px/1 var(--mono);letter-spacing:.22em;color:var(--gold)}
+  .stage h3{margin:0;font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .stage p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.55}
+  .stage ul{margin:10px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+  .stage li{position:relative;padding-left:16px;color:var(--dim);font-size:12.5px}
+  .stage li::before{content:"›";position:absolute;left:0;color:var(--ember2);font-weight:800}
+  .status{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:6px 11px;border-radius:999px;
+    font:600 10.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+  .status .sd{width:7px;height:7px;border-radius:50%}
+  .status.await{background:rgba(255,206,107,.08);color:var(--warn);border:1px solid rgba(255,206,107,.22)}
+  .status.await .sd{background:var(--warn)}
+  .status.ready{background:rgba(127,207,138,.08);color:var(--ok);border:1px solid rgba(127,207,138,.22)}
+  .status.ready .sd{background:var(--ok)}
+  .status.idle{background:rgba(255,255,255,.03);color:var(--idle);border:1px solid var(--line)}
+  .status.idle .sd{background:var(--idle)}
+
+  /* ── catalog table ── */
+  .cat-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 12px}
+  .cat-bar input{flex:1 1 220px;min-width:160px;background:rgba(255,255,255,.04);border:1px solid var(--line);
+    border-radius:10px;padding:11px 14px;color:var(--ink);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+  .cat-bar input:focus{border-color:var(--ember);box-shadow:0 0 0 3px rgba(255,90,31,.16)}
+  .cat-bar input::placeholder{color:var(--faint)}
+  .pill{font:600 11px/1 var(--mono);letter-spacing:.08em;color:var(--dim);
+    border:1px solid var(--line);border-radius:999px;padding:8px 12px;white-space:nowrap}
+  .pill b{color:var(--ink)}
+  .tablewrap{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:rgba(18,13,11,.6)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{text-align:left;padding:13px 16px;font:700 10.5px/1 var(--mono);letter-spacing:.16em;
+    text-transform:uppercase;color:var(--gold);background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:13px 16px;border-bottom:1px solid rgba(42,35,32,.6);color:var(--dim);vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:rgba(255,90,31,.03)}
+  td.title{color:var(--ink);font-weight:600}
+  .tag{display:inline-block;font:600 10.5px/1 var(--mono);letter-spacing:.04em;color:var(--ember2);
+    background:rgba(255,90,31,.08);border:1px solid rgba(255,90,31,.18);border-radius:6px;padding:4px 7px;margin:2px 4px 2px 0}
+  .empty{padding:48px 24px;text-align:center;color:var(--dim)}
+  .empty .big{font:700 14px/1.4 var(--mono);letter-spacing:.1em;color:var(--warn);text-transform:uppercase;margin-bottom:10px}
+  .empty p{max-width:520px;margin:0 auto;font-size:13.5px}
+  .empty code{font-family:var(--mono);color:var(--gold);font-size:12px}
+
+  /* ── X9 spec card ── */
+  .spec{margin-top:22px;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    background:linear-gradient(180deg,var(--card2),var(--card))}
+  .spec .sh{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .spec .sh .badge{font:800 11px/1 var(--mono);letter-spacing:.26em;color:#190a04;
+    background:linear-gradient(180deg,var(--ember2),var(--ember));border-radius:7px;padding:7px 11px}
+  .spec .sh .t{font-weight:800;font-size:16px}
+  .spec .sh .d{color:var(--dim);font-size:12.5px}
+  .spec .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(248px,1fr));gap:1px;background:var(--line)}
+  .spec .cell{background:var(--card);padding:18px 20px}
+  .spec .cell h4{margin:0 0 9px;font:700 10.5px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .spec .cell ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+  .spec .cell li{position:relative;padding-left:15px;color:var(--dim);font-size:13px;line-height:1.5}
+  .spec .cell li::before{content:"•";position:absolute;left:0;color:var(--ember2)}
+  .spec .cell li b{color:var(--ink);font-weight:600}
+  .spec .forbid{background:rgba(255,90,31,.05)}
+  .spec .forbid li::before{content:"✕";color:var(--ember)}
+  .spec .note{padding:14px 22px;border-top:1px solid var(--line);color:var(--faint);font-size:12px;line-height:1.6}
+  .spec .note a{color:var(--gold);text-decoration:none}
+
+  /* ── needs / footer ── */
+  .needs{margin-top:22px;display:flex;flex-wrap:wrap;gap:14px}
+  .need{flex:1 1 300px;background:rgba(255,206,107,.04);border:1px solid rgba(255,206,107,.18);
+    border-radius:14px;padding:16px 18px}
+  .need h4{margin:0 0 6px;font-size:14px;font-weight:800;color:var(--warn)}
+  .need p{margin:0;color:var(--dim);font-size:13px;line-height:1.55}
+  .need code{font-family:var(--mono);color:var(--gold);font-size:12px}
+  .foot{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:var(--faint);
+    font:500 11px/1.7 var(--mono);letter-spacing:.1em;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .foot a{color:var(--gold);text-decoration:none}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto}}
+  @media (max-width:560px){header{padding:36px 0 6px}.sec{margin-top:40px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="mark">XLRD999 · X9</div>
+    <h1>999 MUSIC-OPS</h1>
+    <p class="lede">The pipeline that turns the <b>Suno catalog</b> into released, posted, and discovered work — store and tag every generation, curate playlists into finishable projects, splice / merge / master, schedule auto-releases, autopost daily across platforms, and pull traction to <b>people with identical taste who will pay</b>.</p>
+    <div class="flow">
+      Catalog <span>→</span> Tag/Metadata <span>→</span> Playlists/Projects <span>→</span> Finish/Splice/Master <span>→</span> Schedule <span>→</span> Autopost <span>→</span> Traction
+    </div>
+    <div class="gate"><span class="dot"></span> Pipeline scaffolded · awaiting Suno access to ingest the catalog</div>
+  </header>
+
+  <!-- ─── PIPELINE STAGES ─── -->
+  <section class="sec" id="pipeline">
+    <div class="sec-h"><span class="n">01</span><h2>The pipeline</h2></div>
+    <p class="sec-sub">Seven stages, left to right. Each is a column in the operation — what it does, what it produces, and where it stands today.</p>
+
+    <div class="pipe">
+      <article class="stage">
+        <div class="top"><span class="idx">STAGE 1</span></div>
+        <h3>Catalog</h3>
+        <p>Pull every Suno generation into one durable store — audio + cover + the prompt/lyrics that made it.</p>
+        <ul>
+          <li>Import the full Suno library (songs, stems, variants)</li>
+          <li>Stable IDs, dedupe variants, keep source prompt</li>
+          <li>Archive originals; never destructive</li>
+        </ul>
+        <span class="status await"><span class="sd"></span>Awaiting Suno access</span>
+      </article>
+
+      <article class="stage">
+        <div class="top"><span class="idx">STAGE 2</span></div>
+        <h3>Tag / Metadata</h3>
+        <p>Make the catalog searchable — mood, BPM, key, theme, persona, completeness, and the X9 spec match.</p>
+        <ul>
+          <li>BPM / key / energy / mood + lyrical theme tags</li>
+          <li>Status: idea · raw · needs-finish · master-ready · released</li>
+          <li>Persona / album bucket (XLRD999, Purgatory, etc.)</li>
+        </ul>
+        <span class="status await"><span class="sd"></span>Awaiting catalog</span>
+      </article>
+
+      <article class="stage">
+        <div class="top"><span class="idx">STAGE 3</span></div>
+        <h3>Playlists / Projects</h3>
+        <p>Curate the tagged pieces into project sets to build releases from — an album, an EP, a single, a visualizer batch.</p>
+        <ul>
+          <li>Build playlists by mood / theme / tempo</li>
+          <li>Promote a playlist into a release project</li>
+          <li>Keep a "to finish" shelf of strong fragments</li>
+        </ul>
+        <span class="status await"><span class="sd"></span>Awaiting catalog</span>
+      </article>
+
+      <article class="stage">
+        <div class="top"><span class="idx">STAGE 4</span></div>
+        <h3>Finish / Splice / Master</h3>
+        <p>Take the kept pieces to label quality — finish, splice, merge, master, and repurpose for other formats.</p>
+        <ul>
+          <li>Splice / merge fragments into full tracks</li>
+          <li>Master for streaming loudness + format targets</li>
+          <li>Repurpose stems → shorts / visualizer cuts</li>
+        </ul>
+        <span class="status await"><span class="sd"></span>Awaiting catalog</span>
+      </article>
+
+      <article class="stage">
+        <div class="top"><span class="idx">STAGE 5</span></div>
+        <h3>Schedule</h3>
+        <p>Queue mastered releases on a calendar — drop dates, pre-saves, and the windows each piece autoposts into.</p>
+        <ul>
+          <li>Release calendar with drop dates + pre-save</li>
+          <li>Distribution targets (DSPs, store links)</li>
+          <li>Ties release dates to the autopost queue</li>
+        </ul>
+        <span class="status await"><span class="sd"></span>Awaiting catalog</span>
+      </article>
+
+      <article class="stage">
+        <div class="top"><span class="idx">STAGE 6</span></div>
+        <h3>Autopost</h3>
+        <p>Daily, hands-off posting across platforms — shorts, reels, and visualizers cut from the catalog, on a cadence.</p>
+        <ul>
+          <li>Shorts / Reels / TikTok / visualizers daily</li>
+          <li>Per-platform caption + format templating</li>
+          <li>Draft-first / HOTL until autopost is armed</li>
+        </ul>
+        <span class="status await"><span class="sd"></span>Awaiting catalog + accounts</span>
+      </article>
+
+      <article class="stage">
+        <div class="top"><span class="idx">STAGE 7</span></div>
+        <h3>Traction</h3>
+        <p>Reach humans with identical taste who will pay — hashtags, SEO, and AIEO tuned to the sound, then convert.</p>
+        <ul>
+          <li>Hashtag / SEO / AIEO targeting by sound</li>
+          <li>Track which pieces pull, feed it back to Tag</li>
+          <li>Route fans → P6 / store / pre-save / pay</li>
+        </ul>
+        <span class="status await"><span class="sd"></span>Awaiting first posts</span>
+      </article>
+    </div>
+  </section>
+
+  <!-- ─── CATALOG ─── -->
+  <section class="sec" id="catalog">
+    <div class="sec-h"><span class="n">02</span><h2>Catalog</h2></div>
+    <p class="sec-sub">The live store of Suno generations. Loads from <code style="font-family:var(--mono);color:var(--gold);font-size:12px">/999/music/catalog.json</code> the moment it exists — empty until the catalog is ingested. No fabricated tracks; honest empty state.</p>
+
+    <div class="cat-bar">
+      <input id="q" type="search" placeholder="Search title, tag, mood, status…" aria-label="Search catalog" disabled>
+      <span class="pill">Tracks <b id="count">0</b></span>
+      <span class="pill">Source <b id="src">awaiting Suno</b></span>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Tags</th>
+            <th>BPM</th>
+            <th>Key</th>
+            <th>Status</th>
+            <th>Bucket</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr><td colspan="7">
+            <div class="empty" id="empty">
+              <div class="big">Catalog empty — awaiting Suno access</div>
+              <p>Nothing is shown here on purpose. The table fills automatically from
+              <code>/999/music/catalog.json</code> once the Suno library is exported and ingested.
+              No placeholder or sample tracks are ever listed.</p>
+            </div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── X9 GENERATION SPEC ─── -->
+  <section class="sec" id="x9-spec">
+    <div class="sec-h"><span class="n">03</span><h2>X9 generation spec</h2></div>
+    <p class="sec-sub">The generation rubric every new piece is judged and tagged against — X9 is XLRD999's autonomous AI-music engine that executes the vision. This is the rubric, not a track list.</p>
+
+    <div class="spec">
+      <div class="sh">
+        <span class="badge">X9</span>
+        <span class="t">XLRD999's autonomous generation engine</span>
+        <span class="d">— sonic + lyrical spec, applied at Tag and at Master</span>
+      </div>
+      <div class="grid">
+        <div class="cell">
+          <h4>Sonic</h4>
+          <ul>
+            <li><b>808-driven</b>, distorted dark piano / guitar</li>
+            <li>Wooden-triplet percussion</li>
+            <li>Low vocal volume in the mix</li>
+            <li><b>158–178 BPM</b></li>
+            <li>Male R&amp;B-inspired vocals</li>
+            <li><b>No autotune</b>, no layering — single track</li>
+          </ul>
+        </div>
+        <div class="cell">
+          <h4>Lyrical</h4>
+          <ul>
+            <li>Paradox &amp; irony at the core</li>
+            <li>Spiraling <b>12–16-line</b> rhyme</li>
+            <li>Oronyms / homophones, layered wordplay</li>
+            <li>Mythic symbolism (Prometheus / Osiris / Shiva, gematria)</li>
+            <li>Duality, metaphysics, ego-death / Christ-consciousness</li>
+          </ul>
+        </div>
+        <div class="cell">
+          <h4>Phonetic curse reinterpretation</h4>
+          <ul>
+            <li>Re-spelled, never literal</li>
+            <li><b>"shih"</b> · <b>"fuhk"</b> · <b>"pussee"</b></li>
+            <li>Keeps the delivery, dodges the flag</li>
+          </ul>
+        </div>
+        <div class="cell forbid">
+          <h4>Forbidden — never reference making music</h4>
+          <ul>
+            <li>"rhyme"</li>
+            <li>"tempo"</li>
+            <li>"beat"</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note">Source: persona constellation — X9 (<code style="font-family:var(--mono);color:var(--gold)">x9_</code> / <code style="font-family:var(--mono);color:var(--gold)">#x9</code>), the AI-generated autonomous artist that executes XLRD999's vision. Active release: <a href="/p6/">PURGATORY 6 · P6.5 — 10.13.2026</a>.</div>
+    </div>
+  </section>
+
+  <!-- ─── WHAT THIS NEEDS ─── -->
+  <section class="sec" id="needs">
+    <div class="sec-h"><span class="n">04</span><h2>To go live</h2></div>
+    <p class="sec-sub">The dashboard is scaffolded. It needs the Suno catalog to start flowing. The access path, to confirm:</p>
+    <div class="needs">
+      <div class="need">
+        <h4>Suno access — pick the path</h4>
+        <p>Confirm how the catalog comes in: account <b>login</b> for a scripted export, the manual <b>export</b> / download of the library, or <b>API</b> access if the account tier exposes one. Each leads to the same <code>catalog.json</code>.</p>
+      </div>
+      <div class="need">
+        <h4>Catalog feed</h4>
+        <p>Once access is set, generations land as <code>/999/music/catalog.json</code> with id, title, tags, BPM, key, status, bucket, and source prompt. The table reads it automatically.</p>
+      </div>
+      <div class="need">
+        <h4>Platform accounts</h4>
+        <p>For Autopost + Traction: the posting accounts (Shorts / Reels / TikTok) and the distribution targets (DSPs / store) to wire the schedule into.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>999 MUSIC-OPS · XLRD999 / X9</span>
+    <span><a href="/p6/">PURGATORY 6</a> · <a href="https://hitthe.link">hitthe.link</a></span>
+  </footer>
+
+</div>
+
+<script>
+  // Catalog loader — reads /999/music/catalog.json when it exists.
+  // Honest empty state until then: NO placeholder/sample tracks are ever shown.
+  (function(){
+    var rows = document.getElementById('rows');
+    var empty = document.getElementById('empty');
+    var countEl = document.getElementById('count');
+    var srcEl = document.getElementById('src');
+    var q = document.getElementById('q');
+    var DATA = [];
+
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+    function statusClass(s){
+      s = (s||'').toLowerCase();
+      if (s.indexOf('released')>-1 || s.indexOf('master')>-1) return 'ready';
+      if (s.indexOf('idle')>-1 || s.indexOf('idea')>-1 || s.indexOf('raw')>-1) return 'idle';
+      return 'await';
+    }
+
+    function render(list){
+      if (!list.length){
+        rows.innerHTML = '';
+        rows.appendChild(emptyRow());
+        return;
+      }
+      var html = '';
+      for (var i=0;i<list.length;i++){
+        var t = list[i];
+        var tags = (t.tags||[]).map(function(x){ return '<span class="tag">'+esc(x)+'</span>'; }).join('');
+        html += '<tr>'+
+          '<td class="title">'+esc(t.title||'Untitled')+'</td>'+
+          '<td>'+(tags||'<span style="color:var(--faint)">—</span>')+'</td>'+
+          '<td>'+esc(t.bpm||'—')+'</td>'+
+          '<td>'+esc(t.key||'—')+'</td>'+
+          '<td><span class="status '+statusClass(t.status)+'"><span class="sd"></span>'+esc(t.status||'—')+'</span></td>'+
+          '<td>'+esc(t.bucket||'—')+'</td>'+
+          '<td>'+esc(t.updated||'—')+'</td>'+
+        '</tr>';
+      }
+      rows.innerHTML = html;
+    }
+
+    function emptyRow(){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="7"><div class="empty">'+
+        '<div class="big">Catalog empty — awaiting Suno access</div>'+
+        '<p>The table fills automatically from <code>/999/music/catalog.json</code> once the Suno library is exported and ingested. No placeholder or sample tracks are ever listed.</p>'+
+        '</div></td>';
+      return tr;
+    }
+
+    function filter(){
+      var term = (q.value||'').toLowerCase().trim();
+      if (!term){ render(DATA); return; }
+      render(DATA.filter(function(t){
+        return JSON.stringify(t).toLowerCase().indexOf(term) > -1;
+      }));
+    }
+
+    fetch('catalog.json', {cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){
+        DATA = Array.isArray(j) ? j : (j.tracks || j.catalog || []);
+        if (!DATA.length) return; // keep honest empty state
+        countEl.textContent = DATA.length;
+        srcEl.textContent = 'catalog.json';
+        q.disabled = false;
+        q.addEventListener('input', filter);
+        render(DATA);
+      })
+      .catch(function(){ /* no catalog yet — empty state stays, count 0, search disabled */ });
+  })();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

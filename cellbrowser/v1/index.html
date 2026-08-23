@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>CellBrowser · v1 · Grounding Trio</title>
+<meta name="description" content="CellBrowser · live web surfaces in a grid · Perplexity + Grok + Gemini parallel grounding · canon-6 paid-as-bridge.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --ink:#050d1f;
+  --deep:#081628;
+  --card:rgba(13,20,36,.85);
+  --line:rgba(255,255,255,.08);
+  --off:#f0f5fa;
+  --bone:#dde6f0;
+  --mute:#5a6878;
+  --buff:#b8c8d8;
+  --cyan:#5ab8e8;
+  --cyan-soft:#a8d8ff;
+  --gold:#c9962b;
+  --gold-pale:#e8c97a;
+  --gold-bright:#f4dc8a;
+}
+html,body{background:var(--ink);color:var(--off);font-family:"Inter",sans-serif;height:100vh;overflow:hidden}
+body{background:radial-gradient(ellipse at top,#0a1a3a 0%,#050d1f 60%,#020610 100%) fixed;display:flex;flex-direction:column}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none}
+::selection{background:rgba(90,184,232,.25);color:var(--cyan-soft)}
+
+/* Header bar with query input */
+.hdr{position:sticky;top:0;z-index:50;backdrop-filter:blur(20px);background:rgba(5,13,31,.8);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.hdr .logo{font-size:14px;font-weight:700;letter-spacing:.04em;color:var(--gold-pale);flex:none}
+.hdr .query{flex:1;min-width:280px;display:flex;gap:8px;align-items:center}
+.hdr input{flex:1;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--off);font-size:14px;font-family:inherit;outline:none;transition:border-color .3s,background .3s}
+.hdr input:focus{border-color:var(--gold-pale);background:rgba(255,255,255,.08)}
+.hdr input::placeholder{color:var(--mute)}
+.hdr button.fire{background:var(--gold);color:var(--ink);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;letter-spacing:.04em;transition:background .3s,transform .2s}
+.hdr button.fire:hover{background:var(--gold-bright);transform:translateY(-1px)}
+.hdr .meta{font-size:11px;color:var(--mute);letter-spacing:.04em}
+
+/* Grid of cells */
+.grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px;overflow:hidden}
+@media (max-width:900px){.grid{grid-template-columns:1fr;grid-auto-rows:33vh}}
+
+.cell{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column;transition:border-color .3s}
+.cell:hover{border-color:rgba(201,150,43,.3)}
+
+.cell-hdr{padding:10px 14px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;flex:none}
+.cell-name{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--gold-pale)}
+.cell-state{font-size:10px;color:var(--mute);display:inline-flex;align-items:center;gap:4px}
+.cell-state .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+.cell-state.loading .dot{background:var(--gold-bright);animation:pulse 1.2s ease-in-out infinite}
+.cell-state.error .dot{background:#ff6b6b}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+.cell-frame{flex:1;position:relative;background:#000}
+.cell-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:none;background:#fff}
+
+.cell-fallback{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:linear-gradient(135deg,#0a1a3a,#050d1f)}
+.cell-fallback.show{display:flex}
+.cell-fallback h3{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-bottom:10px;color:var(--off)}
+.cell-fallback p{font-size:13px;color:var(--buff);line-height:1.5;margin-bottom:18px;max-width:280px}
+.cell-fallback .open-tab{background:var(--gold);color:var(--ink);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px;transition:background .3s}
+.cell-fallback .open-tab:hover{background:var(--gold-bright)}
+.cell-fallback .open-tab::after{content:"↗";font-size:14px}
+
+/* Cell footer with action buttons */
+.cell-foot{padding:8px 14px;background:rgba(255,255,255,.02);border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;flex:none}
+.cell-foot .url{font-size:10px;color:var(--mute);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.cell-foot button{background:rgba(90,184,232,.15);color:var(--cyan-soft);border:1px solid rgba(90,184,232,.25);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;letter-spacing:.04em;transition:background .3s}
+.cell-foot button:hover{background:rgba(90,184,232,.25)}
+
+/* Footer info bar */
+.foot{padding:8px 24px;background:rgba(5,13,31,.6);border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mute);letter-spacing:.04em;flex-wrap:wrap;gap:8px}
+.foot a{color:var(--gold-pale)}
+.foot a:hover{color:var(--gold-bright)}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="logo">CELLBROWSER · v1</div>
+  <form class="query" onsubmit="fireGrounding(event)">
+    <input type="text" id="q" placeholder="Enter claim to ground-truth via Perplexity + Grok + Gemini in parallel..." autofocus>
+    <button class="fire" type="submit">GROUND ALL THREE</button>
+  </form>
+  <div class="meta">canon-6 · paid-as-bridge</div>
+</header>
+
+<div class="grid">
+
+  <article class="cell" data-engine="perplexity">
+    <header class="cell-hdr">
+      <div class="cell-name">PERPLEXITY PRO</div>
+      <div class="cell-state loading"><span class="dot"></span><span class="lbl">awaiting query</span></div>
+    </header>
+    <div class="cell-frame">
+      <iframe id="iframe-perplexity" src="about:blank" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+      <div class="cell-fallback" id="fallback-perplexity">
+        <h3>iframe blocked by X-Frame-Options</h3>
+        <p>Perplexity blocks iframe embedding. Native XenBrowser app surface required for full canonical live-session render. Win-side fallback: open in new tab.</p>
+        <a class="open-tab" id="open-perplexity" href="https://www.perplexity.ai/" target="_blank">Open Perplexity</a>
+      </div>
+    </div>
+    <footer class="cell-foot">
+      <div class="url" id="url-perplexity">https://www.perplexity.ai/</div>
+      <button onclick="openCell('perplexity')">Open Tab</button>
+    </footer>
+  </article>
+
+  <article class="cell" data-engine="grok">
+    <header class="cell-hdr">
+      <div class="cell-name">GROK · xAI</div>
+      <div class="cell-state loading"><span class="dot"></span><span class="lbl">awaiting query</span></div>
+    </header>
+    <div class="cell-frame">
+      <iframe id="iframe-grok" src="about:blank" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+      <div class="cell-fallback" id="fallback-grok">
+        <h3>iframe blocked by X-Frame-Options</h3>
+        <p>x.com / grok.com block iframe embedding. Native XenBrowser app surface required for full canonical live-session render. Win-side fallback: open in new tab.</p>
+        <a class="open-tab" id="open-grok" href="https://grok.com/" target="_blank">Open Grok</a>
+      </div>
+    </div>
+    <footer class="cell-foot">
+      <div class="url" id="url-grok">https://grok.com/</div>
+      <button onclick="openCell('grok')">Open Tab</button>
+    </footer>
+  </article>
+
+  <article class="cell" data-engine="gemini">
+    <header class="cell-hdr">
+      <div class="cell-name">GEMINI PRO</div>
+      <div class="cell-state loading"><span class="dot"></span><span class="lbl">awaiting query</span></div>
+    </header>
+    <div class="cell-frame">
+      <iframe id="iframe-gemini" src="about:blank" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+      <div class="cell-fallback" id="fallback-gemini">
+        <h3>iframe blocked by X-Frame-Options</h3>
+        <p>Gemini blocks iframe embedding. Native XenBrowser app surface required for full canonical live-session render. Win-side fallback: open in new tab.</p>
+        <a class="open-tab" id="open-gemini" href="https://gemini.google.com/" target="_blank">Open Gemini</a>
+      </div>
+    </div>
+    <footer class="cell-foot">
+      <div class="url" id="url-gemini">https://gemini.google.com/</div>
+      <button onclick="openCell('gemini')">Open Tab</button>
+    </footer>
+  </article>
+
+</div>
+
+<footer class="foot">
+  <div>CellBrowser v1 · grounding-trio scaffold · canon-6 paid-as-bridge · WebKit/Firefox/Comet only per no-chromium canon</div>
+  <div>Open in <a href="https://hitthe.link/spog/v1/">SPOG</a> · Versioned at /cellbrowser/v1/</div>
+</footer>
+
+<script>
+// URL pattern templates · query-injection points per engine
+const URLS={
+  perplexity:q=>q?`https://www.perplexity.ai/?q=${encodeURIComponent(q)}`:'https://www.perplexity.ai/',
+  grok:q=>q?`https://grok.com/?q=${encodeURIComponent(q)}`:'https://grok.com/',
+  gemini:q=>q?`https://gemini.google.com/app?q=${encodeURIComponent(q)}`:'https://gemini.google.com/'
+};
+
+function fireGrounding(e){
+  e.preventDefault();
+  const q=document.getElementById('q').value.trim();
+  if(!q)return;
+  ['perplexity','grok','gemini'].forEach(engine=>{
+    const url=URLS[engine](q);
+    const iframe=document.getElementById(`iframe-${engine}`);
+    const urlBox=document.getElementById(`url-${engine}`);
+    const openLink=document.getElementById(`open-${engine}`);
+    const fallback=document.getElementById(`fallback-${engine}`);
+    const state=document.querySelector(`.cell[data-engine="${engine}"] .cell-state`);
+    urlBox.textContent=url;
+    openLink.href=url;
+    state.classList.remove('error');
+    state.classList.add('loading');
+    state.querySelector('.lbl').textContent='loading...';
+    iframe.src=url;
+    // Watch for load failure (X-Frame-Options will trigger error or silent block)
+    let loaded=false;
+    iframe.onload=()=>{
+      loaded=true;
+      // Cross-origin iframes can't be inspected · assume load OK if onload fires
+      try{
+        if(iframe.contentDocument===null){
+          // Cross-origin · we can't verify · trust the load
+          state.classList.remove('loading');
+          state.querySelector('.lbl').textContent='live session';
+        }
+      }catch(err){
+        // Likely cross-origin · live
+        state.classList.remove('loading');
+        state.querySelector('.lbl').textContent='live session';
+      }
+    };
+    iframe.onerror=()=>{
+      state.classList.remove('loading');
+      state.classList.add('error');
+      state.querySelector('.lbl').textContent='blocked';
+      fallback.classList.add('show');
+    };
+    // X-Frame-Options blocks load silently · timeout fallback
+    setTimeout(()=>{
+      if(!loaded){
+        state.classList.remove('loading');
+        state.classList.add('error');
+        state.querySelector('.lbl').textContent='blocked · open tab';
+        fallback.classList.add('show');
+      }
+    },5000);
+  });
+}
+
+function openCell(engine){
+  const q=document.getElementById('q').value.trim();
+  const url=URLS[engine](q);
+  window.open(url,'_blank','noopener,noreferrer');
+}
+
+// Auto-load defaults on page open
+window.addEventListener('load',()=>{
+  ['perplexity','grok','gemini'].forEach(engine=>{
+    const iframe=document.getElementById(`iframe-${engine}`);
+    const fallback=document.getElementById(`fallback-${engine}`);
+    const state=document.querySelector(`.cell[data-engine="${engine}"] .cell-state`);
+    iframe.src=URLS[engine]('');
+    setTimeout(()=>{
+      // Iframe blocked detection · X-Frame-Options is silent
+      // We assume blocked on first load for known-blocked domains
+      if(['perplexity','grok','gemini'].includes(engine)){
+        // All three likely block · show fallback after timeout if no load fired
+        let loaded=false;
+        iframe.onload=()=>{loaded=true;state.classList.remove('loading');state.querySelector('.lbl').textContent='live (auth?)';};
+        setTimeout(()=>{
+          if(!loaded){
+            fallback.classList.add('show');
+            state.classList.remove('loading');
+            state.classList.add('error');
+            state.querySelector('.lbl').textContent='X-Frame blocked';
+          }
+        },3000);
+      }
+    },100);
+  });
+});
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

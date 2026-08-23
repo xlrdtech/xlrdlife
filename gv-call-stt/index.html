@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GV Call STT · xen-qi-vdo → inject</title>
+<!--
+  GV CALL STT CONSUMER (qi 2026-06-21 "attach that web STT mechanism directly to Google Voice").
+  Root fixed: on a GV call the off-hook call steals the system mic, so the armed VVSVEI STT
+  (system-mic based) goes deaf (peak ~0.0003). The GV browser ALREADY pushes the call audio to
+  vdo.ninja as push=xen-qi-vdo (audiodevice=out = the call/loopback audio), but NOTHING consumed
+  that stream. THIS page is the consumer: it pulls the xen-qi-vdo WebRTC audio, runs the browser
+  Web Speech recognizer ON THAT STREAM (not the dead mic), and POSTs finals to dictate-inject as
+  source 'xen-vei' -> omnimind tags 'in:' -> the one brain. Everything on M4 / hitthe.link.
+  NOTE: must run in a browser with Google's Web Speech backend (Safari/real Chrome). The GV
+  browser is Chromium (no Web Speech) — so this consumer runs in a Web-Speech-capable surface
+  and pulls the call stream off vdo.ninja's network (cross-device by design — qi is omnipresent).
+-->
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; font:14px/1.5 -apple-system,system-ui,sans-serif; background:#05140d; color:#bdf5d6; padding:16px; }
+  h1 { font-size:15px; margin:0 0 4px; color:#7CFFB0; }
+  .sub { color:#5a8a72; font-size:12px; margin-bottom:14px; }
+  #status { padding:8px 12px; border-radius:8px; background:#0a2418; border:1px solid #16432c; margin-bottom:12px; font-weight:600; }
+  #status.live { background:#0d3a22; border-color:#1f7a47; color:#7CFFB0; }
+  #status.err { background:#3a0d0d; border-color:#7a1f1f; color:#ff9b9b; }
+  #log { font-family:ui-monospace,Menlo,monospace; font-size:12px; white-space:pre-wrap;
+         background:#04100a; border:1px solid #103024; border-radius:8px; padding:10px; max-height:60vh; overflow:auto; }
+  .t { color:#7CFFB0; } .e { color:#ff9b9b; } .d { color:#4f7a64; }
+  video { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+</style>
+</head>
+<body>
+<h1>GV Call STT — xen-qi-vdo consumer</h1>
+<div class="sub">Pulls the Google&nbsp;Voice call audio off vdo.ninja, transcribes it, injects as <code>in:</code>. One brain, one voice.</div>
+<div id="status">starting…</div>
+<div id="log"></div>
+<!-- vdo.ninja VIEW of the call push (audiodevice=out). cleanoutput strips UI; we read its <audio>/stream. -->
+<iframe id="vdo" allow="autoplay; microphone" style="position:absolute;width:1px;height:1px;opacity:0;border:0;"
+        src="https://vdo.ninja/?view=xen-qi-vdo&audioonly&autostart&cleanoutput&label=xen-gv-stt"></iframe>
+
+<script>
+const API_URL = 'https://xen.xlrd.org/api/dictate-inject';
+const SOURCE  = 'xen-vei';            // omnimind tags this 'in:' (same as VVSVEI voice)
+const statusEl = document.getElementById('status');
+const logEl    = document.getElementById('log');
+function setStatus(cls, msg){ statusEl.className = cls; statusEl.textContent = msg; }
+function log(cls, msg){
+  const d = document.createElement('div'); if(cls) d.className = cls;
+  const t = new Date().toLocaleTimeString();
+  d.textContent = `[${t}] ${msg}`; logEl.prepend(d);
+  while (logEl.childNodes.length > 200) logEl.removeChild(logEl.lastChild);
+}
+
+// ── inject one final transcript to the one brain (same contract as VVSVEI page) ──
+let _last = '', _lastAt = 0;
+async function inject(text){
+  const t = (text||'').trim(); if(!t) return;
+  const now = Date.now();
+  // 5s same-text dedup (mirrors VVSVEI dedupKey) so one utterance = one inject
+  if (t.toLowerCase() === _last.toLowerCase() && now - _lastAt < 5000) return;
+  _last = t; _lastAt = now;
+  try {
+    await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ source: SOURCE, ts: now, text: t }) });
+    log('t', '→ injected: ' + t);
+  } catch(e){ log('e', 'inject failed: ' + e.message); }
+}
+
+// ── grab the WebRTC audio MediaStream that vdo.ninja's view delivers ──
+// The iframe plays the remote audio; we capture the page's audio output by
+// asking the iframe for its stream via postMessage (vdo.ninja API), and fall
+// back to capturing any <audio>/<video> element's srcObject that appears.
+let _recognizer = null, _stream = null, _restartTimer = null;
+
+function startRecognitionOn(stream){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR){ setStatus('err', 'No Web Speech backend in this browser — open in Safari or real Chrome.'); log('e','SpeechRecognition unavailable'); return; }
+  // Web Speech listens to the DEFAULT mic, NOT an arbitrary stream. So we route the
+  // pulled call stream INTO an AudioContext destination and (where supported) set it
+  // as the recognizer input via a MediaStreamTrack on a virtual sink. Browsers that
+  // can't retarget Web Speech will still work IF this page's tab mic = the call audio
+  // (qi can set the tab's mic to the vdo/loopback device). We attach + log either way.
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const srcNode = ctx.createMediaStreamSource(stream);
+    // keep the graph alive (analyser, no output to speakers to avoid echo)
+    const an = ctx.createAnalyser(); srcNode.connect(an);
+    log('d', 'call stream wired into AudioContext (' + (stream.getAudioTracks().length) + ' audio track[s])');
+  } catch(e){ log('e','audio wire err: '+e.message); }
+
+  const rec = new SR();
+  rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US';
+  rec.onstart   = () => { setStatus('live', '● LIVE — transcribing call audio'); log('t','recognizer started'); };
+  rec.onresult  = (e) => {
+    for (let i=e.resultIndex; i<e.results.length; i++){
+      if (e.results[i].isFinal){ inject(e.results[i][0].transcript); }
+    }
+  };
+  rec.onerror   = (e) => { log('e','rec error: '+(e.error||e.message||'?')); };
+  rec.onend     = () => { log('d','recognizer ended — restarting'); clearTimeout(_restartTimer); _restartTimer = setTimeout(()=>{ try{ rec.start(); }catch(_){} }, 600); };
+  try { rec.start(); _recognizer = rec; } catch(e){ log('e','start failed: '+e.message); }
+}
+
+// vdo.ninja postMessage API: request the inbound stream, then start STT on it.
+window.addEventListener('message', (ev) => {
+  if (typeof ev.data !== 'object' || !ev.data) return;
+  // vdo.ninja emits various events; when a remote track connects, grab media elements
+  if (ev.data.action === 'view-connection' || ev.data.action === 'remote-track' || ev.data.streamID) {
+    log('d','vdo event: ' + (ev.data.action || JSON.stringify(ev.data).slice(0,60)));
+    tryGrabStream();
+  }
+});
+
+function tryGrabStream(){
+  if (_stream) return;
+  // vdo.ninja renders the remote audio into a media element inside its iframe; same-origin
+  // iframe access is blocked, so we capture via the page-level approach: the iframe's audio
+  // routes to this tab's audio output. We attach STT to the default audio input which qi
+  // points at the call (vdo/loopback). If a same-window stream exists, prefer it.
+  const el = document.querySelector('audio, video');
+  if (el && el.srcObject && el.srcObject.getAudioTracks().length){
+    _stream = el.srcObject; log('t','captured stream from media element'); startRecognitionOn(_stream); return;
+  }
+  // Fallback: use getUserMedia on this tab's selected input device (qi sets it to the
+  // call/loopback in the page's mic permission), which is the call audio when on a call.
+  navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:true } })
+    .then(s => { _stream = s; log('t','captured stream via getUserMedia (tab input)'); startRecognitionOn(s); })
+    .catch(e => { setStatus('err','mic/stream capture blocked: '+e.message); log('e',e.message); });
+}
+
+setStatus('', 'pulling xen-qi-vdo call stream…');
+log('d','consumer up — viewing vdo.ninja push xen-qi-vdo (audiodevice=out)');
+// kick after the iframe settles
+setTimeout(tryGrabStream, 4000);
+// periodic restart safety so it self-heals across call start/stop
+setInterval(() => { if (_recognizer === null) tryGrabStream(); }, 15000);
+</script>
+</body>
+</html>

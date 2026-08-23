@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06070A">
+<meta name="description" content="TUI agents stress-bench leaderboard — finds the OSS equivalent of Claude Opus 4.7. Self Exec · Universal Mesh.">
+<title>AGENTS · stress-bench · hitthe.link</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg-deep:#06070A;
+  --bg-iridescent-1:#0A0612;
+  --bg-iridescent-2:#1A0F2E;
+  --accent-blood:#A8121C;
+  --accent-blood-dim:#5C0A10;
+  --accent-chrome:#C9CED4;
+  --accent-glow:#3DD6FF;
+  --accent-amber:#FF8A1F;
+  --text-primary:#F4F1EA;
+  --text-muted:#7A7E86;
+  --rule:rgba(244,241,234,0.08);
+  --card-bg:rgba(255,255,255,0.025);
+  --card-inset:rgba(255,255,255,0.06);
+  --focus:#3DD6FF;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-deep);color:var(--text-primary);font-family:'Fraunces',Georgia,serif;font-feature-settings:"ss01","ss02";-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{background:radial-gradient(ellipse at 20% 0%,var(--bg-iridescent-2) 0%,var(--bg-iridescent-1) 35%,var(--bg-deep) 75%);min-height:100vh;line-height:1.5}
+.skip{position:absolute;left:-9999px;top:8px;background:var(--accent-blood);color:var(--text-primary);padding:8px 14px;text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:13px;border-radius:0}
+.skip:focus{left:8px;z-index:1000}
+:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+header{padding:32px 20px 24px;border-bottom:1px solid var(--rule);position:relative;overflow:hidden}
+header::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 90% 10%,rgba(168,18,28,0.18),transparent 50%);pointer-events:none}
+.brand{display:flex;flex-direction:column;gap:6px;max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.brand .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.22em;color:var(--accent-blood);text-transform:uppercase}
+.brand h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(38px,9vw,84px);line-height:0.95;letter-spacing:-0.035em;margin:4px 0 0;font-variation-settings:"opsz" 144;color:var(--text-primary)}
+.brand h1 .relic{display:inline-block;color:var(--accent-blood);font-style:italic;text-shadow:0 0 24px rgba(168,18,28,0.45)}
+.brand .sub{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);margin-top:14px;letter-spacing:0.04em}
+.brand .sub strong{color:var(--accent-chrome);font-weight:600}
+.relic-bar{margin-top:18px;display:inline-flex;align-items:center;gap:10px;padding:8px 14px;background:#0F0608;border:1px solid var(--accent-blood-dim);border-radius:2px;box-shadow:inset 0 1px 0 var(--card-inset),0 0 32px rgba(168,18,28,0.12)}
+.relic-bar::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent-blood);box-shadow:0 0 12px var(--accent-blood)}
+.relic-bar span{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.18em;color:var(--text-primary);text-transform:uppercase}
+main{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
+.bench-meta{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-bottom:24px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted)}
+.bench-meta .live{display:inline-flex;align-items:center;gap:8px;color:var(--accent-glow)}
+.bench-meta .live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent-glow);box-shadow:0 0 10px var(--accent-glow);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@media (prefers-reduced-motion:reduce){.bench-meta .live::before{animation:none}}
+.sort-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.sort-bar button{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;background:transparent;color:var(--text-muted);border:1px solid var(--rule);padding:8px 12px;border-radius:0;cursor:pointer;transition:color 120ms,border-color 120ms}
+.sort-bar button:hover{color:var(--text-primary);border-color:var(--accent-chrome)}
+.sort-bar button[aria-pressed="true"]{color:var(--accent-blood);border-color:var(--accent-blood)}
+.board{display:grid;grid-template-columns:1fr;gap:14px}
+@media (min-width:700px){.board{grid-template-columns:1fr 1fr}}
+@media (min-width:1000px){.board{grid-template-columns:1fr 1fr 1fr}}
+.card{position:relative;background:var(--card-bg);border-radius:14px;padding:22px 20px 18px;box-shadow:inset 0 1px 0 var(--card-inset),0 0 0 1px rgba(255,255,255,0.02);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);overflow:hidden;transition:transform 200ms ease}
+@media (prefers-reduced-motion:reduce){.card{transition:none}}
+.card:hover{transform:translateY(-2px)}
+.card .rank{position:absolute;top:14px;right:18px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--text-muted);text-transform:uppercase}
+.card.rank-1::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,rgba(168,18,28,0.22),transparent 55%);pointer-events:none}
+.card.rank-1 .rank{color:var(--accent-blood)}
+.card .name{font-family:'Fraunces',serif;font-weight:900;font-size:28px;line-height:1;letter-spacing:-0.025em;margin:0 0 6px;color:var(--text-primary);font-variation-settings:"opsz" 96}
+.card .model{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-chrome);letter-spacing:0.04em;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.card .model .wrapper{color:var(--accent-glow)}
+.card .model .ver{color:var(--text-muted)}
+.card .total{display:flex;align-items:baseline;gap:8px;margin:8px 0 14px;font-family:'Fraunces',serif}
+.card .total .num{font-size:46px;font-weight:900;line-height:1;letter-spacing:-0.04em;font-variation-settings:"opsz" 144;color:var(--text-primary)}
+.card .total .of{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:0.1em}
+.card .total .delta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-amber);margin-left:auto}
+.card .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;padding:4px 8px;border-radius:2px;background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--rule);text-transform:uppercase}
+.pill.high{background:rgba(168,18,28,0.18);color:var(--text-primary);border-color:var(--accent-blood-dim)}
+.pill.mid{background:rgba(61,214,255,0.08);color:var(--accent-glow);border-color:rgba(61,214,255,0.18)}
+.pill.low{color:var(--text-muted);opacity:0.5}
+.card .ts{margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase}
+.empty{padding:60px 20px;text-align:center;font-family:'Fraunces',serif;font-style:italic;color:var(--text-muted);font-size:18px}
+.empty::before{content:"·";display:block;font-size:48px;color:var(--accent-blood);margin-bottom:8px;line-height:0.5}
+footer{max-width:1100px;margin:60px auto 0;padding:24px 20px 36px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase}
+footer a{color:var(--accent-chrome);text-decoration:none;border-bottom:1px solid var(--rule);padding-bottom:1px}
+footer a:hover{color:var(--accent-blood);border-color:var(--accent-blood)}
+footer .qi{color:var(--accent-blood)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+</style>
+</head>
+<body>
+<a class="skip" href="#board">Skip to leaderboard</a>
+
+<header role="banner">
+  <div class="brand">
+    <div class="eyebrow">stress-bench · self exec</div>
+    <h1>AGENTS<br><span class="relic">automate or die</span></h1>
+    <div class="sub">finding the OSS equivalent of <strong>claude-opus-4-7-1m</strong> · 6 tasks · 60 pts · live</div>
+    <div class="relic-bar" role="status" aria-label="bench status"><span id="status">queue open · BPGS firing</span></div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="bench-meta" aria-label="bench metadata">
+    <span class="live" aria-live="polite" id="liveTag">live · refresh 15s</span>
+    <span>updated <time id="updated" datetime="">—</time></span>
+    <span id="agentCount">0 agents</span>
+  </div>
+
+  <nav class="sort-bar" aria-label="sort leaderboard">
+    <button data-sort="total" aria-pressed="true">total</button>
+    <button data-sort="t1" aria-pressed="false">T1 reasoning</button>
+    <button data-sort="t2" aria-pressed="false">T2 code</button>
+    <button data-sort="t3" aria-pressed="false">T3 plan</button>
+    <button data-sort="t4" aria-pressed="false">T4 refactor</button>
+    <button data-sort="t5" aria-pressed="false">T5 aesthetic</button>
+    <button data-sort="t6" aria-pressed="false">T6 latency</button>
+    <button data-sort="recent" aria-pressed="false">most recent</button>
+  </nav>
+
+  <section id="board" class="board" aria-live="polite" aria-busy="false" aria-label="agent leaderboard">
+    <div class="empty" role="status">bench queued · first results land soon</div>
+  </section>
+</main>
+
+<footer role="contentinfo">
+  <span>Universal Mesh · Self Exec · standing on <span class="qi">qi</span></span>
+  <span><a href="/mesh/">/mesh/</a> · <a href="/agents/bench-leaderboard.json">raw json</a></span>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  const BOARD_URL = '/agents/bench-leaderboard.json';
+  const REFRESH_MS = 15000;
+  const TASKS = ['t1','t2','t3','t4','t5','t6'];
+  const TASK_LABELS = {t1:'T1',t2:'T2',t3:'T3',t4:'T4',t5:'T5',t6:'T6'};
+  let state = { leaderboard: [], updated: null, sortKey: 'total', opusTotal: null };
+
+  function pillClass(score){
+    if(score == null) return 'low';
+    if(score >= 8) return 'high';
+    if(score >= 5) return 'mid';
+    return 'low';
+  }
+
+  function fmtTime(iso){
+    if(!iso) return '—';
+    try {
+      const d = new Date(iso);
+      const now = new Date();
+      const diff = (now - d) / 1000;
+      if(diff < 60) return Math.floor(diff) + 's ago';
+      if(diff < 3600) return Math.floor(diff/60) + 'm ago';
+      if(diff < 86400) return Math.floor(diff/3600) + 'h ago';
+      return d.toISOString().slice(0,10);
+    } catch(e){ return iso; }
+  }
+
+  function render(){
+    const board = document.getElementById('board');
+    const updated = document.getElementById('updated');
+    const count = document.getElementById('agentCount');
+    const status = document.getElementById('status');
+
+    if(!state.leaderboard || !state.leaderboard.length){
+      board.innerHTML = '<div class="empty" role="status">bench queued · first results land soon</div>';
+      count.textContent = '0 agents';
+      status.textContent = 'queue open · BPGS firing';
+      return;
+    }
+
+    // Find opus baseline
+    const opus = state.leaderboard.find(a => /opus.?4.?7/i.test(a.agent || '') || /opus.?4.?7/i.test(a.model || ''));
+    state.opusTotal = opus ? opus.total : null;
+
+    const rows = [...state.leaderboard];
+    const key = state.sortKey;
+    rows.sort((a,b) => {
+      if(key === 'total') return (b.total||0) - (a.total||0);
+      if(key === 'recent') return (b.last_run||'').localeCompare(a.last_run||'');
+      if(TASKS.includes(key)){
+        const av = (a.tasks && a.tasks[key] && a.tasks[key].total) || 0;
+        const bv = (b.tasks && b.tasks[key] && b.tasks[key].total) || 0;
+        return bv - av;
+      }
+      return 0;
+    });
+
+    board.innerHTML = rows.map((a, idx) => {
+      const rank = idx + 1;
+      const rankClass = rank === 1 ? 'rank-1' : '';
+      const delta = (state.opusTotal != null && a.total != null) ? (a.total - state.opusTotal) : null;
+      const deltaStr = delta == null ? '' : (delta === 0 ? '· opus' : (delta > 0 ? '+' + delta.toFixed(1) : delta.toFixed(1)));
+      const pills = TASKS.map(t => {
+        const s = a.tasks && a.tasks[t] ? a.tasks[t].total : null;
+        const cls = pillClass(s);
+        const label = s == null ? '—' : s.toFixed(1);
+        return '<span class="pill ' + cls + '" title="' + TASK_LABELS[t] + ': ' + label + '/10">' + TASK_LABELS[t] + ' ' + label + '</span>';
+      }).join('');
+      const wrapper = a.wrapper ? '<span class="wrapper">' + escapeHtml(a.wrapper) + '</span>' : '';
+      const ver = a.version ? '<span class="ver">v' + escapeHtml(a.version) + '</span>' : '';
+      const model = a.model ? escapeHtml(a.model) : 'unknown';
+      return [
+        '<article class="card ' + rankClass + '" aria-label="' + escapeHtml(a.agent) + ' ranked ' + rank + '">',
+          '<div class="rank">#' + String(rank).padStart(2,'0') + '</div>',
+          '<h2 class="name">' + escapeHtml(a.agent || 'unknown') + '</h2>',
+          '<div class="model">' + wrapper + '<span>' + model + '</span>' + ver + '</div>',
+          '<div class="total">',
+            '<span class="num">' + (a.total != null ? a.total.toFixed(1) : '—') + '</span>',
+            '<span class="of">/ 60</span>',
+            deltaStr ? '<span class="delta" aria-label="delta from opus">' + deltaStr + '</span>' : '',
+          '</div>',
+          '<div class="pills" aria-label="task scores">' + pills + '</div>',
+          '<div class="ts">last run · ' + fmtTime(a.last_run) + '</div>',
+        '</article>'
+      ].join('');
+    }).join('');
+
+    count.textContent = rows.length + ' agent' + (rows.length === 1 ? '' : 's');
+    updated.textContent = fmtTime(state.updated);
+    updated.setAttribute('datetime', state.updated || '');
+    status.textContent = 'leaderboard live · ' + rows.length + ' scored';
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  async function fetchBoard(){
+    try {
+      const res = await fetch(BOARD_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      state.leaderboard = data.leaderboard || [];
+      state.updated = data.updated || new Date().toISOString();
+      render();
+    } catch(e){
+      const status = document.getElementById('status');
+      if(status) status.textContent = 'queue open · waiting for first scores';
+    }
+  }
+
+  document.querySelectorAll('.sort-bar button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sort-bar button').forEach(b => b.setAttribute('aria-pressed','false'));
+      btn.setAttribute('aria-pressed','true');
+      state.sortKey = btn.dataset.sort;
+      render();
+    });
+  });
+
+  fetchBoard();
+  setInterval(fetchBoard, REFRESH_MS);
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

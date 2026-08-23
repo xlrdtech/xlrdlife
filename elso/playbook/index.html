@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>ELSO Playbook · SMS + Call Flow</title>
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="../assets/el-emblem.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#070503;--panel:rgba(20,17,11,.62);--panel2:rgba(30,25,15,.78);
+    --line:rgba(255,238,196,.13);--line-gold:rgba(220,182,77,.42);
+    --ink:#fdfbf3;--dim:#bcb39c;--faint:#8a8068;
+    --gold:#ecc862;--gold-pale:#fbeec2;--gold-deep:#a8842f;
+    --chrome:linear-gradient(135deg,#fff8da,#f2d586 24%,#cda23a 48%,#fff3c6 62%,#b08c33 84%,#8a6a26);
+  }
+  body{background:radial-gradient(120% 80% at 50% -10%,#1a140a,#0c0805 38%,#070503 100%) fixed;color:var(--dim);font-family:Manrope,system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:780px;margin:0 auto;padding:clamp(1.5rem,4vw,3rem) clamp(.9rem,3vw,1.6rem) 5rem}
+  header{text-align:center;margin-bottom:2rem}
+  .emblem{width:74px;height:auto;margin:0 auto .8rem;display:block;filter:drop-shadow(0 6px 22px rgba(212,175,55,.35))}
+  .kick{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.3em;text-transform:uppercase;color:var(--faint);margin-bottom:.6rem}
+  h1{font-size:clamp(1.7rem,5vw,2.4rem);font-weight:800;letter-spacing:-.03em;background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--dim);font-size:.95rem;margin-top:.5rem}
+  .back{display:inline-block;margin-top:.9rem;font-family:"JetBrains Mono",monospace;font-size:.74rem;color:var(--gold);text-decoration:none;border:1px solid var(--line-gold);border-radius:8px;padding:.45rem .8rem}
+  h2{font-family:"JetBrains Mono",monospace;font-size:.74rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin:2.4rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--line-gold)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:1.1rem 1.2rem;margin-bottom:1rem;backdrop-filter:blur(20px)}
+  .tmpl-h{display:flex;align-items:center;gap:.5rem;font-weight:700;color:var(--ink);font-size:.95rem;margin-bottom:.5rem}
+  .badge{font-family:"JetBrains Mono",monospace;font-size:.58rem;font-weight:700;letter-spacing:.06em;padding:.12rem .4rem;border-radius:5px}
+  .b-none{background:rgba(120,200,140,.16);color:#9fe0b4;border:1px solid rgba(120,200,140,.3)}
+  .b-weak{background:rgba(247,232,176,.14);color:var(--gold-pale);border:1px solid var(--line-gold)}
+  .b-real{background:rgba(168,132,47,.2);color:#e8c45a;border:1px solid var(--line-gold)}
+  .b-fu{background:rgba(255,255,255,.08);color:var(--dim);border:1px solid var(--line)}
+  .msg{font-size:.9rem;color:var(--ink);line-height:1.5;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;padding:.8rem .9rem}
+  .msg b{color:var(--gold-pale)}
+  .copy{margin-top:.6rem;font:inherit;font-family:"JetBrains Mono",monospace;font-size:.72rem;font-weight:600;color:#1a1304;background:linear-gradient(135deg,#f4e3a1,#d4af37 55%,#9a7b2e);border:0;border-radius:8px;padding:.5rem .9rem;cursor:pointer}
+  .copy.done{background:rgba(120,200,140,.3);color:#9fe0b4}
+  .note{font-size:.84rem;color:var(--dim);margin-top:.5rem}
+  ol.flow{list-style:none;counter-reset:f;display:flex;flex-direction:column;gap:.7rem}
+  ol.flow li{counter-increment:f;display:flex;gap:.8rem;align-items:flex-start;font-size:.9rem;color:var(--dim)}
+  ol.flow li::before{content:counter(f);flex:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--line-gold);color:var(--gold);font-family:"JetBrains Mono",monospace;font-size:.74rem;display:flex;align-items:center;justify-content:center}
+  ol.flow li b{color:var(--ink)}
+  .mode{background:var(--panel2);border:1px solid var(--line-gold);border-radius:12px;padding:.9rem 1rem;margin-bottom:.8rem}
+  .mode .t{font-weight:800;color:var(--gold-pale);font-size:.9rem;margin-bottom:.3rem}
+  .kv{font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--gold);background:rgba(212,175,55,.08);border:1px dashed var(--line-gold);border-radius:8px;padding:.6rem .8rem;margin:.6rem 0}
+  .sched{display:grid;gap:.5rem}
+  .sched .s{display:flex;gap:.6rem;font-size:.86rem}
+  .sched .s b{color:var(--gold-pale);font-family:"JetBrains Mono",monospace;font-size:.74rem;white-space:nowrap;min-width:92px}
+  footer{margin-top:2.5rem;padding-top:1.2rem;border-top:1px solid var(--line);color:var(--faint);font-size:.74rem;font-family:"JetBrains Mono",monospace;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img class="emblem" src="../assets/el-emblem.png" alt="Executive Leverage">
+    <div class="kick">Executive Leverage · ELSO</div>
+    <h1>Campaign Playbook</h1>
+    <p class="sub">SMS templates + the live call flow. Send from <b>9983</b> → callbacks forward to <b>9934</b>.</p>
+    <a class="back" href="/elso/">← Back to the board</a>
+  </header>
+
+  <h2>① SMS Campaign · templates</h2>
+  <p class="note" style="margin:0 0 1rem">Pick the opener that matches the lead's site badge on the board. Replace <b>{Biz}</b> + <b>{url}</b>. Sender ID + STOP keep deliverability up.</p>
+
+  <div class="panel">
+    <div class="tmpl-h"><span class="badge b-none">🟢 SITELESS</span> first-site pitch</div>
+    <div class="msg" id="m1">Hi, this is East with XLRD Tech. I noticed {Biz} comes up on Google but has no website — so I already built you one: {url}. Take a 30-sec look. If you like it, it's yours. — Reply STOP to opt out.</div>
+    <button class="copy" data-t="m1">Copy</button>
+  </div>
+
+  <div class="panel">
+    <div class="tmpl-h"><span class="badge b-weak">🟡 BUILDER PAGE</span> upgrade pitch</div>
+    <div class="msg" id="m2">Hi, East with XLRD Tech. {Biz} is running on a free builder page right now — I built you a real branded site instead: {url}. Quick look? Happy to make it yours. — Reply STOP to opt out.</div>
+    <button class="copy" data-t="m2">Copy</button>
+  </div>
+
+  <div class="panel">
+    <div class="tmpl-h"><span class="badge b-real">🟤 HAS SITE</span> redesign pitch</div>
+    <div class="msg" id="m3">Hi, East with XLRD Tech. {Biz}'s site is solid but a little dated — I put together a modern redesign concept: {url}. Worth 30 sec to compare? — Reply STOP to opt out.</div>
+    <button class="copy" data-t="m3">Copy</button>
+  </div>
+
+  <div class="panel">
+    <div class="tmpl-h"><span class="badge b-fu">↻ FOLLOW-UP</span> 24–48h, no reply</div>
+    <div class="msg" id="m4">Following up — did the {Biz} site at {url} come through? No pressure, just want to make sure you saw it. — East, XLRD Tech. STOP to opt out.</div>
+    <button class="copy" data-t="m4">Copy</button>
+  </div>
+
+  <h2>② Send schedule · you close at night</h2>
+  <div class="panel">
+    <div class="sched">
+      <div class="s"><b>5–7pm</b><span><b style="color:var(--gold-pale)">Wave 1 — pay-today / after-hours</b> (towing, plumbing, restaurant, salon, barber, event, realty) so callbacks land in your strong window.</span></div>
+      <div class="s"><b>9–11am</b><span>Wave 2 — daytime trades (auto, lawn, electric, pressure-wash, paint, fence).</span></div>
+      <div class="s"><b>Late AM</b><span>Wave 3 — gatekept (dental, healthcare, tax, education), Tue–Thu, expect front-desk relay.</span></div>
+    </div>
+    <div class="note">Cap ~20–30 sends/hr from one number to avoid spam-flagging. Space follow-ups 24–48h.</div>
+  </div>
+
+  <h2>③ Call flow · ELSO Mode</h2>
+  <div class="kv">Arm: call East AI → say <b>"ELSO &lt;lead&gt;"</b> (e.g. "ELSO Cranford"). Owner-only phrase — never spoken to the lead.</div>
+  <div class="panel">
+    <ol class="flow">
+      <li><b>Instant pickup</b> — dial the East-AI line from its own number; it answers with no ring.</li>
+      <li><b>Inject "ELSO &lt;lead&gt;"</b> — loads that lead's card (business, city, site-status → opener, preview URL).</li>
+      <li><b>Dash</b> — East AI stays silent until the bridged lead speaks, then opens as East with the status-matched line.</li>
+      <li><b>Gauge in &lt;5 min</b> — fast hot/cold read. Hard 10-min cap.</li>
+      <li><b>Close or flag</b> — book via cal.com/ctoeast, or mark hot/cold. Recap to you.</li>
+    </ol>
+  </div>
+  <div class="mode">
+    <div class="t">Mode A — Owner-bridged triage (now)</div>
+    <div class="note" style="margin:0">You arm it with "ELSO &lt;lead&gt;", bridge the lead, listen in. East gives the hot/cold read. <b style="color:var(--gold-pale)">Hot → you call back to close. Cold → next lead.</b> No extra infra.</div>
+  </div>
+  <div class="mode">
+    <div class="t">Mode B — Full auto-bridge (AOD target)</div>
+    <div class="note" style="margin:0">Automation dials + bridges + injects the phrase; East books and only escalates hot. Gated on the Beside conference layer.</div>
+  </div>
+
+  <h2>④ Callback routing</h2>
+  <div class="kv">Outbound SMS from <b>9983</b> · all inbound calls/texts to <b>9983 → forward to 9934</b> (live intake line). 9983 is a Beside companion line — set the forward in the Beside app, not a carrier code.</div>
+
+  <footer>ELSO Playbook · noindex · internal · XLRD Tech / Executive Leverage</footer>
+</div>
+<script>
+  document.querySelectorAll('.copy').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const t=document.getElementById(b.dataset.t).textContent;
+      const done=()=>{b.classList.add('done');const o=b.textContent;b.textContent='✓ Copied';setTimeout(()=>{b.classList.remove('done');b.textContent=o;},1100);};
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(()=>{});}
+      else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(_){}document.body.removeChild(ta);}
+    });
+  });
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

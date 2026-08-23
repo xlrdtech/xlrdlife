@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DTI Calculator · L7S Credit Hero</title>
+<meta name="description" content="Debt-to-Income calculator by L7 Solutions. Know exactly where you stand with conforming and qualified-mortgage lenders — instant front-end and back-end DTI with live qualification readout.">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sheen{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+:root{
+  /* Gold system — verbatim L7S tokens */
+  --gold-primary:#D2AC47;
+  --gold-secondary:#f7e08a;
+  --gold-dark:#b9932d;
+  --gold:var(--gold-primary);
+  --gold-gradient:linear-gradient(135deg,#D2AC47 10%,#f7e08a 50%,#b9932d 90%);
+  --button-gradient:linear-gradient(315deg,#D2AC47 5%,#f7e08a 45%,#D2AC47 84%);
+  /* Dark-luxe base */
+  --bg:#0a0a0f;
+  --panel:#13131a;
+  --panel-2:#1b1b24;
+  --bg-input:#1c1c25;
+  --hairline:rgba(210,172,71,.18);
+  --border:#26262f;
+  --text:#f4f1e8;
+  --text-dim:#a8a29a;
+  --green:#3ddc84;
+  --yellow:#f5c518;
+  --red:#ff5b5b;
+  --radius:16px;
+  --glow:0 0 40px 6px rgba(210,172,71,.18);
+  --font-fig:'IBM Plex Mono',ui-monospace,'Roboto Mono',monospace;
+}
+html{scroll-behavior:smooth}
+html,body{
+  background:var(--bg);color:var(--text);
+  font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;min-height:100vh;line-height:1.6;
+  overflow-wrap:break-word;word-break:normal;hyphens:none;
+}
+/* ambient backdrop */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-2;
+  background:
+    radial-gradient(900px 520px at 78% -8%,rgba(210,172,71,.16),transparent 60%),
+    radial-gradient(720px 480px at 8% 12%,rgba(210,172,71,.07),transparent 55%),
+    var(--bg);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-1;opacity:.05;pointer-events:none;
+  background-image:url("../assets/hero-bg.png");
+  background-size:cover;background-position:center;
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 60%);
+  mask-image:linear-gradient(180deg,#000 0%,transparent 60%);
+}
+.wrap{max-width:980px;margin:0 auto;padding:0 18px 72px}
+
+/* ---------- HEADER ---------- */
+.site-head{
+  position:sticky;top:0;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:14px 18px;margin:0 -18px 30px;
+  background:rgba(10,10,15,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--hairline);
+}
+.site-head .lockup{display:flex;align-items:center;gap:12px;min-width:0}
+.site-head img.logo{height:44px;width:auto;display:block;filter:drop-shadow(0 2px 10px rgba(0,0,0,.5))}
+.site-head .names{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.site-head .n1{font-weight:700;font-size:14px;letter-spacing:.02em}
+.site-head .n2{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-dim)}
+.site-head .tag{
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;
+  color:var(--gold);border:1px solid var(--hairline);border-radius:999px;
+  padding:7px 13px;white-space:nowrap;background:rgba(210,172,71,.05)
+}
+@media(max-width:520px){.site-head .tag{display:none}}
+
+/* ---------- HERO ---------- */
+.hero{padding:6px 0 8px;animation:fadeUp .6s ease both}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;
+  color:var(--gold);margin-bottom:14px
+}
+.eyebrow::before{content:"";width:26px;height:1px;background:var(--gold);display:inline-block;opacity:.7}
+h1{font-size:clamp(30px,5.4vw,52px);font-weight:700;letter-spacing:-.025em;line-height:1.05;margin-bottom:14px}
+h1 .accent{
+  background:var(--gold-gradient);background-size:200% auto;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:sheen 6s linear infinite alternate
+}
+.subtitle{color:var(--text-dim);font-size:clamp(14px,1.6vw,16.5px);max-width:62ch;margin-bottom:8px}
+.trust-row{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:18px;font-size:12px;color:var(--text-dim)}
+.trust-row span{display:inline-flex;align-items:center;gap:7px}
+.trust-row span::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(210,172,71,.8)}
+
+/* ---------- LAYOUT ---------- */
+.layout{display:grid;grid-template-columns:1fr;gap:18px;margin-top:30px}
+@media(min-width:880px){.layout{grid-template-columns:1.05fr .95fr;align-items:start}}
+.col-readout[data-anim]{animation:fadeUp .6s ease both;animation-delay:.18s}
+
+/* ---------- CARDS ---------- */
+.card{
+  background:linear-gradient(180deg,rgba(255,255,255,.015),transparent),var(--panel);
+  border:1px solid var(--border);border-radius:var(--radius);padding:24px;
+}
+.card + .card{margin-top:18px}
+[data-anim]{animation:fadeUp .6s ease both}
+.hero[data-anim]{animation-delay:.02s}
+.card.in1[data-anim]{animation-delay:.1s}
+.card.in2[data-anim]{animation-delay:.16s}
+.section-h{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.section-h .dot{width:7px;height:7px;border-radius:50%;background:var(--gold-gradient);box-shadow:0 0 10px rgba(210,172,71,.7);flex:none}
+.section-h h2{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:var(--gold);font-weight:600}
+.section-h .hint{margin-left:auto;font-size:11px;color:var(--text-dim);letter-spacing:.02em}
+
+.grid{display:grid;grid-template-columns:1fr;gap:14px;justify-items:stretch}
+@media(min-width:560px){.grid{grid-template-columns:1fr 1fr}}
+@media(min-width:560px){
+  .grid > .field:last-child:nth-child(odd){grid-column:1 / -1;max-width:calc(50% - 7px);justify-self:center}
+}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;color:var(--text-dim);letter-spacing:.02em;font-weight:500}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-wrap .pre{position:absolute;left:14px;color:var(--gold-dark);font-size:15px;pointer-events:none;font-weight:600}
+.field input[type=number]{
+  width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:12px;
+  padding:13px 14px 13px 28px;color:var(--text);font-size:16px;
+  font-family:var(--font-fig);font-weight:500;letter-spacing:.01em;
+  transition:border-color .18s,box-shadow .18s,background .18s;outline:none;-moz-appearance:textfield
+}
+.field input[type=number]::-webkit-outer-spin-button,
+.field input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.field input[type=number]::placeholder{color:#4a4a55;font-weight:500}
+.field input[type=number]:hover{border-color:#3a3a47}
+.field input[type=number]:focus{border-color:var(--gold);background:#1f1f2a;box-shadow:0 0 0 3px rgba(210,172,71,.16)}
+
+.toggle-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.toggle{
+  background:transparent;border:1px solid var(--border);color:var(--text-dim);
+  padding:8px 14px;border-radius:999px;font-size:12px;cursor:pointer;font-family:inherit;
+  letter-spacing:.03em;font-weight:500;transition:all .18s
+}
+.toggle:hover{color:var(--text);border-color:var(--gold-dark);background:rgba(210,172,71,.05)}
+.toggle.on{background:var(--button-gradient);color:#1a1505;border-color:var(--gold);font-weight:600}
+.toggle:focus-visible,.field input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.optional{display:none}
+.optional.show{display:flex}
+
+.totals{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 16px;margin-top:18px;border-radius:12px;
+  background:var(--panel-2);border:1px solid var(--hairline);
+  font-size:13px;color:var(--text-dim);letter-spacing:.02em
+}
+.totals strong{color:var(--text);font-weight:600;font-family:var(--font-fig);font-size:17px}
+
+/* ---------- GAUGE READOUT ---------- */
+.readout-card{
+  background:linear-gradient(180deg,rgba(210,172,71,.05),transparent 40%),var(--panel);
+  border:1px solid var(--hairline);border-radius:var(--radius);padding:24px 24px 22px;
+  box-shadow:var(--glow);position:relative;overflow:hidden
+}
+.readout-card::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold-gradient);opacity:.85
+}
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+@media(max-width:400px){.gauges{grid-template-columns:1fr}}
+.gauge{display:flex;flex-direction:column;align-items:center;text-align:center}
+.gauge .glabel{font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--text-dim);margin-bottom:6px;font-weight:500}
+.gauge svg{width:100%;max-width:178px;height:auto;display:block}
+.gauge .arc-track{fill:none;stroke:var(--panel-2);stroke-width:13;stroke-linecap:round}
+.gauge .arc-val{fill:none;stroke-width:13;stroke-linecap:round;
+  transition:stroke-dashoffset .7s cubic-bezier(.22,.61,.36,1),stroke .35s ease}
+.gauge .needle{transform-origin:100px 100px;transition:transform .7s cubic-bezier(.34,1.4,.5,1)}
+.gauge .gval{font-family:var(--font-fig);font-weight:600;font-size:28px;letter-spacing:-.01em;line-height:1;
+  transition:color .35s ease;margin-top:-30px}
+.gauge .gsub{font-size:10.5px;color:var(--text-dim);margin-top:8px;letter-spacing:.02em}
+.gauge .gsub b{color:var(--text-dim);font-weight:600}
+
+.tier-green{color:var(--green)}
+.tier-yellow{color:var(--yellow)}
+.tier-red{color:var(--red)}
+.stroke-green{stroke:var(--green)}
+.stroke-yellow{stroke:var(--yellow)}
+.stroke-red{stroke:var(--red)}
+
+/* legend / zones */
+.zones{display:flex;gap:6px;margin-top:18px}
+.zones .z{flex:1;text-align:center;border-radius:8px;padding:8px 4px;font-size:10px;letter-spacing:.04em;border:1px solid transparent}
+.zones .z .zh{font-weight:600;font-size:11px;display:block}
+.zones .z .zr{color:var(--text-dim);font-size:9.5px;margin-top:2px;display:block;font-family:var(--font-fig)}
+.zones .z.zg{background:rgba(61,220,132,.07);border-color:rgba(61,220,132,.25)}
+.zones .z.zg .zh{color:var(--green)}
+.zones .z.zy{background:rgba(245,197,24,.07);border-color:rgba(245,197,24,.25)}
+.zones .z.zy .zh{color:var(--yellow)}
+.zones .z.zr{background:rgba(255,91,91,.07);border-color:rgba(255,91,91,.25)}
+.zones .z.zr .zh{color:var(--red)}
+
+/* qualification badge */
+.qual{margin-top:20px}
+.badge{
+  display:inline-flex;align-items:center;gap:9px;padding:11px 18px;border-radius:999px;
+  font-size:13.5px;font-weight:600;letter-spacing:.01em;line-height:1.2
+}
+.badge::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor;flex:none}
+.badge-green{background:rgba(61,220,132,.1);color:var(--green);border:1px solid rgba(61,220,132,.35)}
+.badge-yellow{background:rgba(245,197,24,.1);color:var(--yellow);border:1px solid rgba(245,197,24,.35)}
+.badge-red{background:rgba(255,91,91,.1);color:var(--red);border:1px solid rgba(255,91,91,.35)}
+
+.action{
+  background:linear-gradient(135deg,rgba(210,172,71,.1),rgba(210,172,71,.02));
+  border:1px solid var(--hairline);border-radius:14px;padding:18px 20px;margin-top:16px
+}
+.action .head{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--gold);margin-bottom:8px;font-weight:600;display:flex;align-items:center;gap:8px}
+.action .head svg{width:14px;height:14px;flex:none}
+.action .body{font-size:15px;line-height:1.55;color:var(--text)}
+.action .delta{font-weight:700;color:var(--gold);font-family:var(--font-fig)}
+
+/* ---------- METHODOLOGY ---------- */
+details.method{
+  margin-top:18px;border:1px solid var(--border);border-radius:14px;background:var(--panel);overflow:hidden
+}
+details.method > summary{
+  list-style:none;cursor:pointer;padding:16px 20px;
+  font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:600;
+  display:flex;align-items:center;justify-content:space-between
+}
+details.method > summary::-webkit-details-marker{display:none}
+details.method > summary .chev{transition:transform .25s ease;color:var(--text-dim)}
+details.method[open] > summary .chev{transform:rotate(180deg)}
+details.method .mbody{padding:0 20px 20px;font-size:13.5px;color:var(--text-dim);line-height:1.7}
+details.method .mbody b{color:var(--text);font-weight:600}
+details.method .mbody code{font-family:var(--font-fig);color:var(--gold-secondary);background:var(--panel-2);padding:2px 6px;border-radius:5px;font-size:12.5px}
+.disclaimer{margin-top:14px;font-size:11.5px;color:#73737e;line-height:1.6;display:flex;gap:8px;align-items:flex-start}
+.disclaimer svg{width:14px;height:14px;flex:none;margin-top:2px;color:var(--gold-dark)}
+
+/* ---------- FOOTER ---------- */
+footer{
+  margin-top:48px;padding-top:26px;border-top:1px solid var(--hairline);text-align:center
+}
+footer .crest{height:46px;width:auto;opacity:.92;margin-bottom:14px;filter:drop-shadow(0 3px 12px rgba(0,0,0,.5))}
+footer .ent{font-size:12.5px;letter-spacing:.06em;color:var(--text);font-weight:500}
+footer .ent .sep{color:var(--gold-dark);margin:0 6px}
+footer .ent a{color:var(--gold);text-decoration:none}
+footer .ent a:hover{text-decoration:underline}
+footer .meta{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);margin-top:10px}
+footer .meta .gold{color:var(--gold)}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <div class="lockup">
+    <img class="logo" src="../assets/logo.png" alt="L7S Inc logo">
+    <div class="names">
+      <span class="n1">L7 Solutions</span>
+      <span class="n2">League of 7 Superheroes</span>
+    </div>
+  </div>
+  <div class="tag">Credit Hero · Calc 03</div>
+</header>
+
+<div class="wrap">
+
+<section class="hero" data-anim>
+  <span class="eyebrow">H.O.T.&#8311; Track · Debt-to-Income</span>
+  <h1>Debt-to-Income <span class="accent">Calculator</span></h1>
+  <p class="subtitle">Know exactly where you stand with conforming and qualified-mortgage lenders. Real numbers, real thresholds, real next move — the Credit Hero readout that lenders run before they say yes.</p>
+  <div class="trust-row">
+    <span>Conforming 28 / 36 rule</span>
+    <span>QM cap 43%</span>
+    <span>Instant — no signup</span>
+  </div>
+</section>
+
+<div class="layout">
+
+  <!-- INPUT COLUMN -->
+  <div class="col-inputs">
+    <main>
+    <section class="card in1" data-anim>
+      <div class="section-h">
+        <span class="dot"></span>
+        <h2>Monthly Gross Income</h2>
+        <span class="hint">before tax</span>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label for="inc-primary">Primary income (gross)</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="inc-primary" type="number" min="0" step="50" placeholder="0" inputmode="decimal"></div>
+        </div>
+        <div class="field optional" id="wrap-inc-secondary">
+          <label for="inc-secondary">Secondary income</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="inc-secondary" type="number" min="0" step="50" placeholder="0" inputmode="decimal"></div>
+        </div>
+        <div class="field optional" id="wrap-inc-side">
+          <label for="inc-side">Side hustle</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="inc-side" type="number" min="0" step="50" placeholder="0" inputmode="decimal"></div>
+        </div>
+        <div class="field optional" id="wrap-inc-rental">
+          <label for="inc-rental">Rental income</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="inc-rental" type="number" min="0" step="50" placeholder="0" inputmode="decimal"></div>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <button type="button" class="toggle" data-target="wrap-inc-secondary" aria-pressed="false" aria-label="Add secondary income field">+ Secondary</button>
+        <button type="button" class="toggle" data-target="wrap-inc-side" aria-pressed="false" aria-label="Add side hustle income field">+ Side hustle</button>
+        <button type="button" class="toggle" data-target="wrap-inc-rental" aria-pressed="false" aria-label="Add rental income field">+ Rental</button>
+      </div>
+      <div class="totals"><span>Total monthly gross</span><strong id="total-income">$0</strong></div>
+    </section>
+
+    <section class="card in2" data-anim>
+      <div class="section-h">
+        <span class="dot"></span>
+        <h2>Monthly Debt Obligations</h2>
+        <span class="hint">minimum payments</span>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label for="debt-housing">Housing (rent or PITI)</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="debt-housing" type="number" min="0" step="25" placeholder="0" inputmode="decimal"></div>
+        </div>
+        <div class="field">
+          <label for="debt-auto">Auto loans</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="debt-auto" type="number" min="0" step="25" placeholder="0" inputmode="decimal"></div>
+        </div>
+        <div class="field">
+          <label for="debt-cc">Credit card minimums</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="debt-cc" type="number" min="0" step="10" placeholder="0" inputmode="decimal"></div>
+        </div>
+        <div class="field">
+          <label for="debt-student">Student loans</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="debt-student" type="number" min="0" step="25" placeholder="0" inputmode="decimal"></div>
+        </div>
+        <div class="field">
+          <label for="debt-personal">Personal loans</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="debt-personal" type="number" min="0" step="25" placeholder="0" inputmode="decimal"></div>
+        </div>
+        <div class="field">
+          <label for="debt-other">Other monthly debt</label>
+          <div class="input-wrap"><span class="pre">$</span><input id="debt-other" type="number" min="0" step="25" placeholder="0" inputmode="decimal"></div>
+        </div>
+      </div>
+      <div class="totals"><span>Total monthly debt</span><strong id="total-debt">$0</strong></div>
+    </section>
+    </main>
+  </div>
+
+  <!-- READOUT COLUMN -->
+  <aside class="col-readout" data-anim>
+    <section class="readout-card" aria-live="polite">
+      <div class="section-h">
+        <span class="dot"></span>
+        <h2>Mission Readout</h2>
+        <span class="hint">live</span>
+      </div>
+
+      <div class="gauges">
+        <!-- FRONT-END GAUGE -->
+        <div class="gauge">
+          <div class="glabel">Front-end DTI</div>
+          <svg viewBox="0 0 200 130" role="img" aria-label="Front-end DTI gauge">
+            <path class="arc-track" d="M 20 100 A 80 80 0 0 1 180 100"></path>
+            <path class="arc-val" id="arc-front" d="M 20 100 A 80 80 0 0 1 180 100"></path>
+            <g class="needle" id="needle-front">
+              <line x1="100" y1="100" x2="100" y2="34" stroke="var(--text)" stroke-width="2.5" stroke-linecap="round"></line>
+              <circle cx="100" cy="100" r="5.5" fill="var(--gold)"></circle>
+            </g>
+          </svg>
+          <div class="gval" id="dti-front">0.0%</div>
+          <div class="gsub">Housing ratio · target <b>&le; 28%</b></div>
+        </div>
+        <!-- BACK-END GAUGE -->
+        <div class="gauge">
+          <div class="glabel">Back-end DTI</div>
+          <svg viewBox="0 0 200 130" role="img" aria-label="Back-end DTI gauge">
+            <path class="arc-track" d="M 20 100 A 80 80 0 0 1 180 100"></path>
+            <path class="arc-val" id="arc-back" d="M 20 100 A 80 80 0 0 1 180 100"></path>
+            <g class="needle" id="needle-back">
+              <line x1="100" y1="100" x2="100" y2="34" stroke="var(--text)" stroke-width="2.5" stroke-linecap="round"></line>
+              <circle cx="100" cy="100" r="5.5" fill="var(--gold)"></circle>
+            </g>
+          </svg>
+          <div class="gval" id="dti-back">0.0%</div>
+          <div class="gsub">Total debt · conforming <b>&le; 36%</b> · QM <b>43%</b></div>
+        </div>
+      </div>
+
+      <div class="zones" aria-hidden="true">
+        <div class="z zg"><span class="zh">Comfortable</span><span class="zr">&le; 36%</span></div>
+        <div class="z zy"><span class="zh">Stretch</span><span class="zr">37–43%</span></div>
+        <div class="z zr"><span class="zh">Aggressive</span><span class="zr">&gt; 43%</span></div>
+      </div>
+
+      <div class="qual">
+        <div id="badge-wrap" aria-live="polite"><span class="badge badge-yellow" id="badge">Enter income and debts to evaluate</span></div>
+        <div class="action" id="action" aria-live="polite">
+          <div class="head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+            Next move
+          </div>
+          <div class="body" id="action-body">Add your monthly gross income to begin.</div>
+        </div>
+      </div>
+    </section>
+
+    <details class="method">
+      <summary>How we got this answer <span class="chev">&#9662;</span></summary>
+      <div class="mbody">
+        <p><b>Front-end DTI</b> = housing payment &divide; gross monthly income. Lenders want this <code>&le; 28%</code>.</p>
+        <p style="margin-top:8px"><b>Back-end DTI</b> = all monthly debt (housing + auto + cards + student + personal + other) &divide; gross monthly income. Conforming loans target <code>&le; 36%</code>; the Qualified Mortgage (QM) rule caps most loans at <code>43%</code>.</p>
+        <p style="margin-top:8px">We apply the recognized <b>28 / 36 rule</b> and the federal QM threshold to flag your bucket and the exact paydown needed to move up.</p>
+        <div class="disclaimer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Estimates for planning only — not a credit decision. Running this does not affect your credit score. Lender overlays, compensating factors, and loan program vary; confirm with your loan officer.</span>
+        </div>
+      </div>
+    </details>
+  </aside>
+
+</div>
+
+<footer data-anim>
+  <img class="crest" src="../assets/crest.png" alt="L7S crest" loading="lazy">
+  <div class="ent">L7S Inc <span class="sep">·</span> d/b/a L7 SOLUTIONS <span class="sep">·</span> <a href="mailto:Hero@L7SINC.COM">Hero@L7SINC.COM</a> <span class="sep">·</span> <a href="tel:+14047770610">404-777-0610</a></div>
+  <div class="meta">&copy; 2026 L7S, Inc. · <span class="gold">H.O.T.&#8311;</span> Credit Hero</div>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const incFields = ['inc-primary','inc-secondary','inc-side','inc-rental'];
+  const debtFields = ['debt-housing','debt-auto','debt-cc','debt-student','debt-personal','debt-other'];
+
+  function num(id){ const v = parseFloat($(id).value); return isFinite(v) && v > 0 ? v : 0; }
+  function fmt(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function pct(n){ return (n*100).toFixed(1) + '%'; }
+
+  function tierFront(r){ if(r<=0.28) return 'green'; if(r<=0.36) return 'yellow'; return 'red'; }
+  function tierBack(r){  if(r<=0.36) return 'green'; if(r<=0.43) return 'yellow'; return 'red'; }
+
+  // ---- Gauge geometry (semicircle, radius 80, center 100,100) ----
+  // Arc path length for a 180° sweep of r=80 is π*r ≈ 251.33
+  const ARC_LEN = Math.PI * 80;
+  // Gauge scale: 0% at left (180°), maxes out at 60% DTI at right (0°) for readable resolution
+  const GAUGE_MAX = 0.60;
+
+  function setupArc(el){
+    el.style.strokeDasharray = ARC_LEN;
+    el.style.strokeDashoffset = ARC_LEN; // start empty
+  }
+  setupArc($('arc-front'));
+  setupArc($('arc-back'));
+
+  function updateGauge(arcEl, needleEl, valEl, tier, ratio){
+    const frac = Math.max(0, Math.min(1, ratio / GAUGE_MAX));
+    // arc fill
+    arcEl.style.strokeDashoffset = ARC_LEN * (1 - frac);
+    arcEl.classList.remove('stroke-green','stroke-yellow','stroke-red');
+    arcEl.classList.add('stroke-' + tier);
+    // needle: -90deg points left (0%), +90deg points right (max)
+    const deg = -90 + frac * 180;
+    needleEl.style.transform = 'rotate(' + deg + 'deg)';
+    // value color
+    valEl.classList.remove('tier-green','tier-yellow','tier-red');
+    valEl.classList.add('tier-' + tier);
+  }
+
+  function resetGauge(arcEl, needleEl, valEl){
+    arcEl.style.strokeDashoffset = ARC_LEN;
+    arcEl.classList.remove('stroke-green','stroke-yellow','stroke-red');
+    needleEl.style.transform = 'rotate(-90deg)';
+    valEl.classList.remove('tier-green','tier-yellow','tier-red');
+  }
+
+  function setBadge(text, tier){
+    const b = $('badge');
+    b.className = 'badge badge-' + tier;
+    b.textContent = text;
+  }
+
+  function recalc(){
+    const income = incFields.reduce((a,id)=>a+num(id),0);
+    const housing = num('debt-housing');
+    const debtOther = ['debt-auto','debt-cc','debt-student','debt-personal','debt-other'].reduce((a,id)=>a+num(id),0);
+    const totalDebt = housing + debtOther;
+
+    $('total-income').textContent = fmt(income);
+    $('total-debt').textContent = fmt(totalDebt);
+
+    if(income <= 0){
+      $('dti-front').textContent = '0.0%';
+      $('dti-back').textContent = '0.0%';
+      resetGauge($('arc-front'), $('needle-front'), $('dti-front'));
+      resetGauge($('arc-back'),  $('needle-back'),  $('dti-back'));
+      setBadge('Enter income to evaluate', 'yellow');
+      $('action-body').textContent = 'Add your monthly gross income to begin.';
+      return;
+    }
+
+    const front = housing / income;
+    const back = totalDebt / income;
+
+    $('dti-front').textContent = pct(front);
+    $('dti-back').textContent = pct(back);
+
+    const tF = tierFront(front);
+    const tB = tierBack(back);
+    updateGauge($('arc-front'), $('needle-front'), $('dti-front'), tF, front);
+    updateGauge($('arc-back'),  $('needle-back'),  $('dti-back'),  tB, back);
+
+    // Qualification logic uses back-end primarily; front-end gates conforming
+    let badgeTxt, badgeTier, actionTxt;
+    if(back <= 0.36 && front <= 0.28){
+      badgeTxt = 'Qualifies — Conforming';
+      badgeTier = 'green';
+      actionTxt = 'You’re inside conforming thresholds. Lock the rate, keep utilization under 30%, and don’t open new tradelines pre-close.';
+    } else if(back <= 0.43){
+      badgeTxt = 'Qualifies — QM only';
+      badgeTier = 'yellow';
+      const targetDebt = 0.36 * income;
+      const delta = Math.max(0, totalDebt - targetDebt);
+      actionTxt = delta > 0
+        ? 'Pay down <span class="delta">' + fmt(delta) + '/mo</span> in obligations to drop into the conforming bucket and unlock better rates.'
+        : 'Tighten your housing ratio under 28% to reach full conforming status.';
+    } else {
+      badgeTxt = 'Above QM cap — needs non-QM lender or paydown';
+      badgeTier = 'red';
+      const targetQM = 0.43 * income;
+      const targetConf = 0.36 * income;
+      const deltaQM = Math.max(0, totalDebt - targetQM);
+      const deltaConf = Math.max(0, totalDebt - targetConf);
+      actionTxt = 'Pay down <span class="delta">' + fmt(deltaQM) + '/mo</span> to clear the QM cap, or <span class="delta">' + fmt(deltaConf) + '/mo</span> to reach conforming. Otherwise route to a non-QM lender.';
+    }
+    setBadge(badgeTxt, badgeTier);
+    $('action-body').innerHTML = actionTxt;
+  }
+
+  // Wire inputs
+  [...incFields, ...debtFields].forEach(id => {
+    $(id).addEventListener('input', recalc);
+  });
+
+  // Optional income toggles
+  document.querySelectorAll('.toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = $(btn.dataset.target);
+      if(!target){ return; }
+      const on = target.classList.toggle('show');
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if(!on){
+        const inp = target.querySelector('input');
+        if(inp){ inp.value = ''; }
+      }
+      recalc();
+    });
+  });
+
+  recalc();
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

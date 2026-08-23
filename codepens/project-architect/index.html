@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arch/Sequoia Project Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- GSAP and ScrollTrigger CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <!-- Chosen Palette: Warm Stone -->
+    <!-- Application Structure Plan: The application transforms the linear study guide into a thematic, single-page dashboard. A sticky navigation bar ("Home", "Key Concepts", "Architectures", "AI Performance", "Process & Risk", "Quiz Me", "Deep Dives") allows users to freely explore logical topics. This structure is chosen for usability, breaking down dense information into interactive, digestible sections (e.g., clickable concept cards, comparative charts, a step-by-step quiz) rather than a simple Q&A list. The user flow is non-linear, encouraging exploration based on interest (e.g., comparing architectures visually, then drilling into a specific concept, then testing knowledge). -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Q10 (AI Performance Boost) -> Goal: Compare -> Viz: Bar Chart (Chart.js) -> Interaction: Hover Tooltip -> Justification: Clearly visualizes the 30-50% performance uplift.
+        - Report Info: Essay Q1 (Architectures) -> Goal: Compare -> Viz: 3 Radar Charts (Chart.js) -> Interaction: Hover Tooltip -> Justification: Allows multi-dimensional comparison (Stability, Performance, etc.) side-by-side.
+        - Report Info: Essay Q4 (Bootstrap Process) -> Goal: Organize (Process) -> Viz: HTML/Tailwind Flowchart -> Interaction: None (Static Viz) -> Justification: Simplifies the complex text into an easy-to-follow visual flow.
+        - Report Info: Essay Q2 (Risk) -> Goal: Inform -> Viz: HTML Card Layout -> Interaction: None (Static Viz) -> Justification: Highlights the core risk and its multi-layer mitigation clearly.
+        - Report Info: Quiz Questions -> Goal: Engage/Test -> Viz: Interactive Quiz Module (HTML/JS) -> Interaction: Click (Next/Prev, Reveal Answer) -> Justification: Transforms passive reading into an an active learning experience.
+        - Report Info: Essay Q3 & Q5 (Deep Dives) -> Goal: Inform (Detailed) -> Viz: HTML Accordion (<details>/<summary>) -> Interaction: Click (Expand/Collapse) -> Justification: Hides dense text to keep the UI clean, allowing user-initiated drill-down.
+        - Library/Method: All visualizations use Chart.js (Canvas) or pure HTML/Tailwind, adhering to constraints.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        /* Global Reset and Initial State for Carousel */
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling until GSAP initializes */
+        }
+        main {
+            /* This is the dashboard content, pulled up behind the carousel */
+            margin-top: -100vh;
+        }
+
+        /* Carousel Specific Styles */
+        #intro-carousel-trigger {
+            width: 100%;
+            height: 700vh; /* Creates the large scroll space for the animation */
+        }
+        .carousel {
+            width: 100vw;
+            height: 100vh;
+            perspective: 300px;
+            overflow: hidden;
+            opacity: 0;
+            position: relative;
+            z-index: 20;
+        }
+        .card {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 60%;
+            height: 80%;
+            max-width: 400px;
+            max-height: 600px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            text-align: center;
+            padding: 2rem;
+            line-height: 1.4;
+        }
+        .arrow {
+            position: fixed;
+            bottom: 5vh;
+            left: 50%;
+            height: 8vh;
+            transform: translateX(-50%);
+            z-index: 30;
+        }
+
+        /* Dashboard Specific Styles (Enhancements) */
+        .card-panel {
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .dark .card-panel {
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+        }
+        .card-panel:hover {
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1), 0 8px 12px -4px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 300px;
+                max-height: 350px;
+            }
+        }
+        details > summary {
+            cursor: pointer;
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] > summary .arrow {
+            transform: rotate(90deg);
+        }
+        /* Custom TTS indicator animation */
+        @keyframes pulse-tts {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .speaking {
+            animation: pulse-tts 1s infinite;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        stone: tailwind.colors.stone,
+                        amber: tailwind.colors.amber,
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-stone-50 text-stone-800 dark:bg-stone-900 dark:text-stone-100 font-sans antialiased">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white/95 backdrop-blur-sm shadow-lg sticky top-0 z-50 dark:bg-stone-900/95 dark:shadow-xl dark:shadow-stone-900/50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-extrabold text-stone-900 tracking-wider dark:text-stone-50">PROJECT <span class="text-amber-600 dark:text-amber-400">ARCHITECT</span></h1>
+                    </div>
+                    <!-- DARK MODE TOGGLE -->
+                    <button id="theme-toggle" class="p-2 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-amber-400 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors" title="Toggle Dark Mode">
+                        <svg id="sun-icon" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg id="moon-icon" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                </div>
+                
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#home" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</a>
+                        <a href="#concepts" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Key Concepts</a>
+                        <a href="#architectures" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Architectures</a>
+                        <a href="#performance" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">AI Performance</a>
+                        <a href="#process" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Process & Risk</a>
+                        <a href="#quiz" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Quiz Me</a>
+                        <a href="#deepdives" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Deep Dives</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button type="button" id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-stone-500 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 hover:bg-stone-100 dark:hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-amber-500">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg class="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Mobile Menu -->
+            <div class="md:hidden hidden" id="mobile-menu">
+                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                    <a href="#home" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 block px-3 py-2 rounded-md text-base font-medium">Home</a>
+                    <a href="#concepts" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 block px-3 py-2 rounded-md text-base font-medium">Key Concepts</a>
+                    <a href="#architectures" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 block px-3 py-2 rounded-md text-base font-medium">Architectures</a>
+                    <a href="#performance" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 block px-3 py-2 rounded-md text-base font-medium">AI Performance</a>
+                    <a href="#process" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 block px-3 py-2 rounded-md text-base font-medium">Process & Risk</a>
+                    <a href="#quiz" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 block px-3 py-2 rounded-md text-base font-medium">Quiz Me</a>
+                    <a href="#deepdives" class="text-stone-600 hover:text-amber-600 dark:text-stone-300 dark:hover:text-amber-400 block px-3 py-2 rounded-md text-base font-medium">Deep Dives</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- INTRO CAROUSEL - SCROLL TRIGGER -->
+    <div id="intro-carousel-trigger">
+        <div class="carousel">
+            <div class="card">Arch Host Stability</div>
+            <div class="card">QEMU/KVM Virtualization</div>
+            <div class="card">GPU Passthrough (VFIO)</div>
+            <div class="card">20-50% AI Performance Uplift</div>
+            <div class="card">Autonomous OS Bootstrap</div>
+            <div class="card">Tailscale Funnel Access</div>
+            <div class="card">Scroll to Begin Exploration</div>
+        </div>
+        <svg class="arrow" viewBox="0 0 2 10">
+            <path stroke="#333" d="M0,0 0,0" />
+        </svg>
+    </div>
+
+    <!-- Main Content (Dashboard Sections) -->
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- The negative margin is now in the CSS style block above for 'main' -->
+
+        <!-- Home Section -->
+        <section id="home" class="py-12">
+            <div class="text-center">
+                <h2 class="text-4xl font-extrabold text-stone-900 sm:text-5xl dark:text-stone-100">The Mac Pro 5,1 Virtualization Project</h2>
+                <p class="mt-4 text-xl text-stone-600 dark:text-stone-400 max-w-3xl mx-auto">An interactive synthesis of the architecture, performance gains, and autonomous deployment strategy for the robust Arch Linux host and macOS Sequoia VM.</p>
+            </div>
+            <div class="mt-10 bg-white card-panel rounded-xl overflow-hidden max-w-5xl mx-auto border border-stone-100 dark:bg-stone-800 dark:border-stone-700">
+                <div class="p-8 sm:p-12 grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                    <div class="md:col-span-2">
+                        <h3 class="text-2xl font-bold text-amber-700 border-b pb-2 border-amber-200 dark:text-amber-400 dark:border-amber-700">The Core Problem & Solution</h3>
+                        <p class="mt-4 text-stone-700 dark:text-stone-300">The primary issue was the **unreliable booting of macOS Sequoia** caused by the unstable **OpenCore Legacy Patcher (OCLP)**, leading to frequent downtime. The solution completely isolates macOS in a virtual machine (VM). The core value proposition is **Stability + Performance**.</p>
+                        <p class="mt-4 text-stone-700 bg-stone-50 p-3 rounded-lg border-l-4 border-amber-400 dark:bg-stone-700 dark:text-stone-200 dark:border-amber-600">The new architecture utilizes **Arch Linux** as the stable, native host, managing the hardware and hosting the Sequoia VM via **QEMU/KVM**. This eliminates OCLP and delivers a reliable, high-performance workstation suitable for continuous client work.</p>
+                    </div>
+                    <div class="md:col-span-1 bg-stone-100 p-6 rounded-lg dark:bg-stone-700">
+                        <h4 class="font-bold text-stone-800 text-lg dark:text-stone-100">Key Metrics</h4>
+                        <ul class="mt-3 space-y-2 text-sm">
+                            <li class="dark:text-stone-300">Stability: <span class="text-green-600 font-semibold">9/10 (VM)</span> vs 2/10 (Native)</li>
+                            <li class="dark:text-stone-300">AI Uplift (ROCm): <span class="text-amber-600 font-semibold">+30-50%</span></li>
+                            <li class="dark:text-stone-300">GPU Access: <span class="text-blue-600 font-semibold">98-99% Native (VFIO)</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key Concepts Section -->
+        <section id="concepts" class="py-12 bg-stone-100 rounded-xl dark:bg-stone-800">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-stone-900 dark:text-stone-100">Key Concepts & Technologies</h2>
+                <p class="mt-4 text-lg text-stone-600 dark:text-stone-400 max-w-3xl mx-auto">Click any concept card below to learn its definition and leverage Gemini for a **Practical Deep Dive Scenario**, connecting the technology to real-world IT infrastructure.</p>
+            </div>
+            <div id="concepts-grid" class="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Concepts will be injected here by JS -->
+            </div>
+            <!-- Modal for concept definition -->
+            <div id="concept-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div id="concept-modal-content" class="bg-white card-panel rounded-xl shadow-2xl max-w-2xl w-full p-8 relative dark:bg-stone-900 dark:text-stone-100 dark:border dark:border-stone-700">
+                    <button id="close-modal-button" class="absolute top-4 right-4 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-800 transition-colors dark:bg-stone-700 dark:hover:bg-stone-600 dark:text-stone-200">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <h3 id="modal-title" class="text-3xl font-bold text-amber-700 border-b pb-3 border-stone-200 dark:text-amber-400 dark:border-stone-700"></h3>
+                    <p id="modal-definition" class="mt-4 text-stone-700 text-lg dark:text-stone-300"></p>
+                    
+                    <!-- Gemini Deep Dive Feature -->
+                    <div class="mt-8 pt-4 border-t border-stone-200 dark:border-stone-700">
+                        <h4 class="text-xl font-bold text-stone-900 dark:text-stone-100">✨ Practical Deep Dive (Gemini Assisted)</h4>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mb-3">Generate a real-world scenario or technical analogy for deep understanding.</p>
+                        <button id="deep-dive-button" class="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-4 focus:ring-amber-300 transition-shadow" data-term="">
+                            Generate Practical Scenario
+                        </button>
+                        <div id="deep-dive-results" class="mt-4 p-4 bg-stone-100 rounded-lg hidden min-h-[50px] border border-stone-200 dark:bg-stone-700 dark:border-stone-600">
+                            <p id="deep-dive-text" class="text-stone-700 italic text-sm leading-relaxed dark:text-stone-300"></p>
+                            <div id="deep-dive-loading" class="text-center hidden py-4">
+                                <span class="text-sm text-amber-600 speaking">Generating scenario... please wait.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Architectures Section -->
+        <section id="architectures" class="py-12">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-stone-900 dark:text-stone-100">Architecture Comparison</h2>
+                <p class="mt-4 text-lg text-stone-600 dark:text-stone-400 max-w-3xl mx-auto">Compare the trade-offs of the three discussed approaches across four critical vectors: **Stability, Native Performance, AI Performance, and Simplicity.**</p>
+            </div>
+            <div class="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Arch 1: Native Dual-Boot -->
+                <div class="bg-white card-panel rounded-xl p-6 flex flex-col border border-stone-200 dark:bg-stone-800 dark:border-stone-700">
+                    <h3 class="text-2xl font-bold text-stone-900 text-center dark:text-stone-100">Native Dual-Boot</h3>
+                    <div class="chart-container h-80 sm:h-96">
+                        <canvas id="arch-chart-1"></canvas>
+                    </div>
+                    <div class="mt-4 flex-grow text-sm">
+                        <p class="text-stone-700 dark:text-stone-300"><strong class="text-amber-600 dark:text-amber-400">Pros:</strong> Theoretical raw performance maximum.</p>
+                        <p class="mt-2 text-stone-700 dark:text-stone-300"><strong class="text-red-600">Cons:</strong> **Unacceptable instability** (low stability score) due to OCLP dependency, causing high downtime.</p>
+                    </div>
+                </div>
+                <!-- Arch 2: Arch Host + Sequoia VM (Recommended) -->
+                <div class="bg-white card-panel rounded-xl p-6 flex flex-col border-4 border-amber-500 shadow-xl relative dark:bg-stone-800 dark:border-amber-400">
+                    <div class="text-center absolute top-[-1.5rem] left-1/2 transform -translate-x-1/2">
+                        <span class="inline-flex items-center rounded-full bg-amber-600 px-4 py-1 text-sm font-medium text-white shadow-lg shadow-amber-300/50 dark:bg-amber-400 dark:text-stone-900 dark:shadow-amber-700/50">PRIMARY SOLUTION</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-stone-900 text-center mt-4 dark:text-stone-100">Arch Host + Sequoia VM</h3>
+                    <div class="chart-container h-80 sm:h-96">
+                        <canvas id="arch-chart-2"></canvas>
+                    </div>
+                    <div class="mt-4 flex-grow text-sm">
+                        <p class="text-stone-700 dark:text-stone-300"><strong class="text-amber-600 dark:text-amber-400">Pros:</strong> High **Stability** (near 9/10) and peak **AI Performance** via ROCm. Best overall utility.</p>
+                        <p class="mt-2 text-stone-700 dark:text-stone-300"><strong class="text-red-600">Cons:</strong> Higher initial complexity (VFIO setup) and lower Simplicity score.</p>
+                    </div>
+                </div>
+                <!-- Arch 3: Nitro 5 Hosted VM -->
+                <div class="bg-white card-panel rounded-xl p-6 flex flex-col border border-stone-200 dark:bg-stone-800 dark:border-stone-700">
+                    <h3 class="text-2xl font-bold text-stone-900 text-center dark:text-stone-100">Nitro 5 Hosted VM</h3>
+                    <div class="chart-container h-80 sm:h-96">
+                        <canvas id="arch-chart-3"></canvas>
+                    </div>
+                    <div class="mt-4 flex-grow text-sm">
+                        <p class="text-stone-700 dark:text-stone-300"><strong class="text-amber-600 dark:text-amber-400">Pros:</strong> Good for disaster recovery; separates load.</p>
+                        <p class="mt-2 text-stone-700 dark:text-stone-300"><strong class="text-red-600">Cons:</strong> Requires second machine; network latency issues make it poor for primary workstation use.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Performance Section -->
+        <section id="performance" class="py-12 bg-stone-100 rounded-xl dark:bg-stone-800">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center max-w-5xl mx-auto">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-stone-900 border-b pb-2 border-amber-200 dark:text-stone-100 dark:border-amber-700">Local AI Performance Upgrade</h2>
+                    <p class="mt-4 text-lg text-stone-700 dark:text-stone-300">The Arch Linux host is deployed specifically to maximize performance for GPU-heavy tasks like running Large Language Models (LLMs) via **Ollama**. On the Mac Pro's AMD RX 580 GPU, Linux offers a major advantage.</p>
+                    <p class="mt-4 text-stone-700 bg-white p-4 rounded-lg shadow-inner border-l-4 border-amber-500 dark:bg-stone-700 dark:text-stone-200 dark:border-amber-600">The use of the native **ROCm** stack on Arch Linux allows for direct, efficient GPU acceleration. This bypasses macOS's **Metal** framework for this specific hardware, resulting in a **30-50% faster** AI inference speed and a significant uplift in token generation speed.</p>
+                </div>
+                <div class="bg-white card-panel rounded-xl p-6 dark:bg-stone-900 dark:border dark:border-stone-700">
+                    <h3 class="text-xl font-bold text-stone-900 text-center mb-4 dark:text-stone-100">AI Inference Speed Comparison (Relative)</h3>
+                    <div class="chart-container h-80 sm:h-96 max-w-2xl">
+                        <canvas id="performance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Process & Risk Section -->
+        <section id="process" class="py-12">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-stone-900 dark:text-stone-100">Process & Risk Management</h2>
+                <p class="mt-4 text-lg text-stone-600 dark:text-stone-400 max-w-3xl mx-auto">Review the project's multi-layered risk mitigation strategy and the advanced zero-touch automation process.</p>
+            </div>
+            <div class="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Risk Analysis -->
+                <div class="bg-white card-panel rounded-xl p-6 border border-stone-200 dark:bg-stone-800 dark:border-stone-700">
+                    <h3 class="text-2xl font-bold text-stone-900 text-center mb-4 dark:text-stone-100">Risk Analysis & Mitigation</h3>
+                    <p class="text-stone-700 text-center mb-4 dark:text-stone-300">The final risk rating is **MINIMAL** due to layers of protective strategies.</p>
+                    <div class="mt-6">
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg dark:bg-red-900/30 dark:border-red-600">
+                            <h4 class="text-lg font-bold text-red-800 dark:text-red-400">Catastrophic Risk: Data Loss</h4>
+                            <p class="text-red-700 text-sm dark:text-red-300">Total loss or corruption of client data on the existing macOS Sequoia SSD.</p>
+                        </div>
+                        <div class="text-4xl text-center text-stone-400 my-4 font-extrabold dark:text-stone-600">↓</div>
+                        <div class="space-y-3">
+                            <div class="bg-green-100 p-4 rounded-lg shadow-inner border-l-4 border-green-500 dark:bg-green-900/30 dark:border-green-600">
+                                <h4 class="font-bold text-green-800 dark:text-green-400">Mitigation 1: Pre-Project Disk Clone</h4>
+                            </div>
+                            <div class="bg-green-100 p-4 rounded-lg shadow-inner border-l-4 border-green-500 dark:bg-green-900/30 dark:border-green-600">
+                                <h4 class="font-bold text-green-800 dark:text-green-400">Mitigation 2: Raw Disk Passthrough</h4>
+                            </div>
+                            <div class="bg-green-100 p-4 rounded-lg shadow-inner border-l-4 border-green-500 dark:bg-green-900/30 dark:border-green-600">
+                                <h4 class="font-bold text-green-800 dark:text-green-400">Mitigation 3: OCLP Elimination (Instability Source Removed)</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Autonomous Bootstrap -->
+                <div class="bg-white card-panel rounded-xl p-6 border border-stone-200 dark:bg-stone-800 dark:border-stone-700">
+                    <h3 class="text-2xl font-bold text-stone-900 text-center mb-4 dark:text-stone-100">Autonomous OS Bootstrap Flow</h3>
+                    <p class="text-stone-700 text-center mb-4 dark:text-stone-300">Orchestrated by the "Autonomous Agent Empire" framework for zero-touch deployment.</p>
+                    <div class="mt-6 space-y-4">
+                        <div class="bg-amber-50 p-4 rounded-lg shadow-sm text-center border border-amber-200 hover:shadow-md transition-shadow dark:bg-amber-900/20 dark:border-amber-700">
+                            <h4 class="font-bold text-amber-800 dark:text-amber-400">1. Kasm + Tailscale Funnel</h4>
+                            <p class="text-sm text-stone-600 dark:text-stone-400">Secure remote GUI access over public internet.</p>
+                        </div>
+                        <div class="text-2xl text-center text-stone-400 font-extrabold dark:text-stone-600">↓</div>
+                        <div class="bg-amber-50 p-4 rounded-lg shadow-sm text-center border border-amber-200 hover:shadow-md transition-shadow dark:bg-amber-900/20 dark:border-amber-700">
+                            <h4 class="font-bold text-amber-800 dark:text-amber-400">2. Autonomous Agent Access</h4>
+                            <p class="text-sm text-stone-600 dark:text-stone-400">Agent connects to the streamed desktop.</p>
+                        </div>
+                        <div class="text-2xl text-center text-stone-400 font-extrabold dark:text-stone-600">↓</div>
+                        <div class="bg-amber-50 p-4 rounded-lg shadow-sm text-center border border-amber-200 hover:shadow-md transition-shadow dark:bg-amber-900/20 dark:border-amber-700">
+                            <h4 class="font-bold text-amber-800 dark:text-amber-400">3. Vision-Based Automation</h4>
+                            <p class="text-sm text-stone-600 dark:text-stone-400">Agent "sees" (OCR/OpenCV) and interacts with the GUI.</p>
+                        </div>
+                        <div class="text-2xl text-center text-stone-400 font-extrabold dark:text-stone-600">↓</div>
+                        <div class="bg-amber-50 p-4 rounded-lg shadow-sm text-center border border-amber-200 hover:shadow-md transition-shadow dark:bg-amber-900/20 dark:border-amber-700">
+                            <h4 class="font-bold text-amber-800 dark:text-amber-400">4. Docker MCP Gateway Execution</h4>
+                            <p class="text-sm text-stone-600 dark:text-stone-400">Coordinates native AI tools (e.g., Playwright) on the high-performance Arch host.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Quiz Me Section -->
+        <section id="quiz" class="py-12 bg-amber-50 rounded-xl border border-amber-200 dark:bg-stone-800 dark:border-stone-700">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-stone-900 dark:text-stone-100">Test Your Knowledge</h2>
+                <p class="mt-4 text-lg text-stone-600 dark:text-stone-400 max-w-3xl mx-auto">Use the quiz below to check your understanding. Leverage the **TTS feature** for hands-free study, and click "Reveal Answer" when you're ready.</p>
+            </div>
+            <div class="mt-10 max-w-3xl mx-auto bg-white card-panel rounded-xl p-8 sm:p-10 border border-stone-200 dark:bg-stone-900 dark:border-stone-700">
+                <div class="min-h-[200px]">
+                    <p class="text-sm font-bold text-amber-600 dark:text-amber-400" id="question-number"></p>
+                    <h3 class="mt-2 text-2xl font-extrabold text-stone-900 leading-tight dark:text-stone-100" id="question-text"></h3>
+                    
+                    <!-- TTS Feature -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 mb-4">
+                        <button id="read-aloud-button" class="inline-flex items-center text-sm font-semibold text-stone-600 hover:text-amber-700 transition-colors disabled:opacity-50 dark:text-stone-300 dark:hover:text-amber-400" disabled>
+                            <span id="tts-icon" class="flex items-center mr-2">🔊 Read Aloud ✨</span>
+                        </button>
+                        <div class="flex items-center space-x-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                            <audio id="tts-audio" class="hidden w-full sm:w-auto dark:bg-stone-600 rounded-full" controls></audio>
+                            <span id="tts-status" class="text-xs text-amber-600 dark:text-amber-400 flex-shrink-0"></span>
+                        </div>
+                    </div>
+
+                    <div id="answer-container" class="hidden mt-4 bg-stone-50 p-4 rounded-lg border-l-4 border-green-500 dark:bg-stone-700 dark:border-green-600">
+                        <p class="text-stone-700 dark:text-stone-200" id="answer-text"></p>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-stone-100 dark:border-stone-700 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <button id="reveal-answer-button" class="w-full sm:w-auto inline-flex justify-center items-center px-8 py-3 border border-transparent text-base font-bold rounded-lg shadow-lg text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-4 focus:ring-amber-300 transition-shadow">
+                        Reveal Answer
+                    </button>
+                    <div class="mt-4 sm:mt-0 flex justify-between sm:justify-end sm:space-x-4">
+                        <button id="prev-question-button" class="inline-flex items-center px-5 py-2 border border-stone-300 text-sm font-medium rounded-lg text-stone-700 bg-white hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 transition-colors dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600 dark:hover:bg-stone-700">
+                            Previous
+                        </button>
+                        <button id="next-question-button" class="inline-flex items-center px-5 py-2 border border-stone-300 text-sm font-medium rounded-lg text-stone-700 bg-white hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 transition-colors dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600 dark:hover:bg-stone-700">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deep Dives Section -->
+        <section id="deepdives" class="py-12">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-stone-900 dark:text-stone-100">Deep Dives & Technical Narratives</h2>
+                <p class="mt-4 text-lg text-stone-600 dark:text-stone-400 max-w-3xl mx-auto">Explore detailed narratives on complex project elements, like troubleshooting failures and comparing network deployment models.</p>
+            </div>
+            <div class="mt-10 max-w-3xl mx-auto space-y-4">
+                <!-- Deep Dive 1: Troubleshooting -->
+                <details class="bg-white card-panel rounded-xl overflow-hidden border border-stone-200 dark:bg-stone-800 dark:border-stone-700">
+                    <summary class="p-6 flex justify-between items-center bg-stone-50 hover:bg-stone-100 transition-colors dark:bg-stone-700 dark:hover:bg-stone-600">
+                        <h3 class="text-xl font-bold text-stone-900 dark:text-stone-100">The VM Boot Troubleshooting Process</h3>
+                        <span class="arrow text-amber-600 transition-transform duration-200 ease-in-out">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </span>
+                    </summary>
+                    <div class="p-6 pt-0 border-t border-stone-200 dark:border-stone-600">
+                        <p class="text-stone-700 dark:text-stone-300">The troubleshooting session to boot the existing Sequoia installation as a VM was long and complex. The logical progression was as follows:</p>
+                        <ul class="mt-4 list-decimal list-inside space-y-2 text-stone-700 dark:text-stone-300">
+                            <li>It began by attempting to boot the SSD using **raw QEMU commands**. This failed, consistently dropping the VM into the **OVMF UEFI shell** because it couldn't find a bootable image.</li>
+                            <li>The configuration was then migrated to **libvirt XML** to provide a stable, managed environment, but the core boot failure persisted.</li>
+                            <li>The final diagnosis was that the native macOS installation relied on Apple’s proprietary **APFS boot system**. Its EFI partition was critically **missing the standard `BOOTX64.EFI`** file that generic UEFI firmware (like QEMU's OVMF) expects to find.</li>
+                            <li>The resolution was to introduce a working **OpenCore** bootloader (from the OSX-KVM project) into the VM's configuration. OpenCore's critical role was to act as an intermediary, translating the standard UEFI environment into the necessary context to recognize the APFS filesystem and successfully initiate the macOS boot process.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <!-- Deep Dive 2: Hybrid Deployment -->
+                <details class="bg-white card-panel rounded-xl overflow-hidden border border-stone-200 dark:bg-stone-800 dark:border-stone-700">
+                    <summary class="p-6 flex justify-between items-center bg-stone-50 hover:bg-stone-100 transition-colors dark:bg-stone-700 dark:hover:bg-stone-600">
+                        <h3 class="text-xl font-bold text-stone-900 dark:text-stone-100">Hybrid Deployment vs. Tailscale Funnel</h3>
+                        <span class="arrow text-amber-600 transition-transform duration-200 ease-in-out">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </span>
+                    </summary>
+                    <div class="p-6 pt-0 border-t border-stone-200 dark:border-stone-600">
+                        <p class="text-stone-700 dark:text-stone-300">The initial **hybrid deployment model** involved running services like Kasm locally on the Arch host, but utilizing a **remote Spaceship.com proxy** (or similar VPS) to create the public-facing HTTPS endpoint. This required establishing and maintaining an **SSH tunnel** to securely forward the local Kasm traffic from the Mac Pro to the remote proxy. This model was complex, requiring management of an external server, proxy configuration, and persistent tunnel maintenance, while also introducing extra network latency.</p>
+                        <p class="mt-4 text-stone-700 dark:text-stone-300">**Tailscale Funnel** is presented as a vastly superior alternative because it drastically simplifies the architecture. It **eliminates the need for the external proxy and SSH tunnel entirely**. It leverages the secure, zero-config Tailscale VPN network to expose the local Kasm service directly to the public internet through a secure, automatically provisioned **HTTPS endpoint**, providing robust public access with reduced latency and no dependency on complex external infrastructure.</p>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-800 text-stone-300 py-8 mt-16 dark:bg-stone-950 dark:text-stone-500">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm">An interactive dashboard generated based on the Arch Linux & Sequoia VM Project Study Guide.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Global declarations for charts and theme persistence functions
+        let charts = {}; 
+        const htmlElement = document.documentElement;
+
+        function getDefaultChartOptions(isDark) {
+            const axisColor = isDark ? '#78716c' : '#44403c'; // stone-700 / stone-800
+            const gridColor = isDark ? '#44403c' : '#e7e5e4'; // stone-800 / stone-200
+            const tickBackColor = isDark ? '#292524' : '#f5f5f4'; // stone-900 / stone-50
+            const pointColor = isDark ? '#fef3c7' : '#fcd34d'; // amber-100 / amber-300
+
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: axisColor
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: { color: gridColor },
+                        grid: { color: gridColor },
+                        pointLabels: {
+                            color: axisColor,
+                            font: {
+                                size: 13,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            color: axisColor,
+                            backdropColor: tickBackColor,
+                            z: 1 // Ensure ticks are above the grid lines
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: axisColor, font: { weight: 'bold' } }
+                    },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: { color: axisColor }
+                    }
+                }
+            };
+        }
+
+        function updateChartColors() {
+            const isDark = htmlElement.classList.contains('dark');
+            const options = getDefaultChartOptions(isDark);
+            
+            // Update all charts
+            for (const key in charts) {
+                if (charts[key]) {
+                    // Directly update options
+                    charts[key].options = {
+                        ...options,
+                        plugins: charts[key].options.plugins // Preserve specific plugin settings
+                    };
+                    
+                    // Special handling for performance chart Y axis
+                    if (key === 'performance-chart') {
+                        charts[key].options.scales.y.grid.color = options.scales.y.grid.color;
+                        charts[key].options.scales.y.ticks.color = options.scales.y.ticks.color;
+                    }
+
+                    charts[key].update();
+                }
+            }
+        }
+        
+        // APPLY THEME FUNCTION MOVED TO GLOBAL SCOPE FOR RELIABILITY
+        function applyTheme(theme) {
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+            
+            if (theme === 'dark') {
+                htmlElement.classList.add('dark');
+                if (sunIcon && moonIcon) {
+                    sunIcon.classList.remove('hidden');
+                    moonIcon.classList.add('hidden');
+                }
+            } else {
+                htmlElement.classList.remove('dark');
+                if (sunIcon && moonIcon) {
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                }
+            }
+            updateChartColors();
+        }
+        // END OF GLOBAL THEME FUNCTION
+
+        function initializeCharts() {
+            const isDark = htmlElement.classList.contains('dark');
+            
+            // Architecture Radar Charts
+            const archLabels = ['Stability', 'Native Perf.', 'AI Perf.', 'Simplicity'];
+            charts['arch-chart-1'] = new Chart(document.getElementById('arch-chart-1'), {
+                type: 'radar',
+                data: {
+                    labels: archLabels,
+                    datasets: [{
+                        label: 'Native Dual-Boot',
+                        data: [2, 10, 7, 6],
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(239, 68, 68, 1)'
+                    }]
+                },
+                options: { ...getDefaultChartOptions(isDark), plugins: { legend: { display: false } } }
+            });
+
+            charts['arch-chart-2'] = new Chart(document.getElementById('arch-chart-2'), {
+                type: 'radar',
+                data: {
+                    labels: archLabels,
+                    datasets: [{
+                        label: 'Arch Host + VM',
+                        data: [9, 9, 10, 4],
+                        backgroundColor: 'rgba(217, 119, 6, 0.2)',
+                        borderColor: 'rgba(217, 119, 6, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(217, 119, 6, 1)'
+                    }]
+                },
+                options: { ...getDefaultChartOptions(isDark), plugins: { legend: { display: false } } }
+            });
+
+            charts['arch-chart-3'] = new Chart(document.getElementById('arch-chart-3'), {
+                type: 'radar',
+                data: {
+                    labels: archLabels,
+                    datasets: [{
+                        label: 'Nitro 5 Hosted VM',
+                        data: [8, 7, 7, 7],
+                        backgroundColor: 'rgba(107, 114, 128, 0.2)',
+                        borderColor: 'rgba(107, 114, 128, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(107, 114, 128, 1)'
+                    }]
+                },
+                options: { ...getDefaultChartOptions(isDark), plugins: { legend: { display: false } } }
+            });
+
+            // AI Performance Bar Chart
+            charts['performance-chart'] = new Chart(document.getElementById('performance-chart'), {
+                type: 'bar',
+                data: {
+                    labels: ['macOS (Metal)', 'Arch Host (ROCm)'],
+                    datasets: [{
+                        label: 'Relative Inference Speed',
+                        data: [100, 140],
+                        backgroundColor: [
+                            'rgba(107, 114, 128, 0.6)',
+                            'rgba(217, 119, 6, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(107, 114, 128, 1)',
+                            'rgba(217, 119, 6, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    ...getDefaultChartOptions(isDark),
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: getDefaultChartOptions(isDark).scales.y.grid.color }, ticks: { color: getDefaultChartOptions(isDark).scales.y.ticks.color } }, 
+                        x: { grid: { display: false }, ticks: { color: getDefaultChartOptions(isDark).scales.x.ticks.color, font: { size: 14, weight: 'bold' } } 
+                    } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        // Function to initialize GSAP to be called inside DOMContentLoaded
+        function initializeGSAPCarousel() {
+            gsap.registerPlugin(ScrollTrigger);
+            
+            var colors = ['255,90,80','125,250,225','225,150,225'];
+            var tl = gsap.timeline({defaults:{duration:2}})
+            .set('.card', {
+              backgroundColor:(i)=>'rgba('+colors[gsap.utils.wrap(0, colors.length, i)]+',0.7)',
+              backgroundImage:(i,t,a)=>(i==a.length-1)?'radial-gradient(ellipse at 330px 120px, rgba(0,0,0,0) 30%, #000 150%)':'radial-gradient(ellipse at 2500px -400px, rgba(0,0,0,0) 0%, #000 60%)',
+              transformOrigin:'50% 999px -100px',
+              backdropFilter: 'blur(20px)',
+              x:'-50%',
+              y:'-45%',
+              z:-500,
+              rotateX:2
+            })
+            .to('.card', {
+              z:10,
+              rotateX:-3,
+              stagger:-1
+            }, 0)
+            .to('.card', {
+              yPercent:100,
+              stagger:-1,
+              ease:'back.in(2)'
+            }, 0)
+            .to('.card', {
+              duration:1,
+              backdropFilter: 'blur(8px)',
+              backgroundImage: 'radial-gradient(ellipse at 150px 250px, rgba(0,0,0,0) 80%, #000 300%)',
+              stagger:-1,
+              ease:'power3.in'
+            }, 0)
+            .to('.card', {
+              duration:1,
+              backdropFilter: 'blur(1px)',
+              backgroundImage: 'radial-gradient(ellipse at -1000px 500px, rgba(0,0,0,0) 0%, #000 50%)',
+              stagger:-1,
+              ease:'sine.in'
+            }, 1)
+            .to('.card', {
+              duration:0.1,
+              autoAlpha:0,
+              stagger:-1,
+            }, 1.9)
+            .pause(1)
+
+            gsap.timeline()
+            .to('.carousel', {duration:0.8, opacity:1, ease:'power2.inOut'})
+            .fromTo(tl, {
+              progress:1
+            },{
+              duration:1.5,
+              progress:0.07,
+              ease:'expo',
+              onComplete:initST
+            }, 0)
+
+            function initST(){
+              gsap.set('body', {overflow:'auto'})
+
+              gsap.to(tl, {
+                progress:1,
+                scrollTrigger:{
+                  trigger:'#intro-carousel-trigger',
+                  start:'0 0',
+                  end:'100% 100%',
+                  scrub:true,
+                  pin:'.carousel'
+                }
+              })
+
+              gsap.timeline({repeat:-1, repeatDelay:0.5})
+              .to('.arrow path', { attr:{d:'M0,0 0,10'}, ease:'power3.inOut' })
+              .to('.arrow path', { attr:{d:'M0,10 0,10'}, ease:'power3.inOut' })
+
+              gsap.to('.arrow', {
+                opacity:0,
+                scrollTrigger:{
+                  trigger:'#intro-carousel-trigger',
+                  start:'0 0',
+                  end:'9px 0',
+                  scrub:1,
+                }
+              })
+            }
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const apiKey = "";
+            const LLM_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const TTS_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+            // --- Dark Mode Initialization ---
+            const themeToggle = document.getElementById('theme-toggle');
+            
+            // 1. Apply persisted theme on load (Call to applyTheme is now safe)
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                applyTheme('dark');
+            } else {
+                applyTheme('light');
+            }
+
+            // 2. Add event listener for toggle
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const currentTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    
+                    localStorage.setItem('theme', newTheme);
+                    applyTheme(newTheme);
+                });
+            }
+
+
+            // --- LLM/API Utility Functions ---
+
+            async function makeGeminiCall(apiUrl, payload, retries = 3) {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.status === 429 && i < retries - 1) {
+                            const delay = Math.pow(2, i) * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+
+                        if (!response.ok) {
+                            const errorBody = await response.text();
+                            throw new Error(`API call failed with status ${response.status}: ${errorBody}`);
+                        }
+
+                        return await response.json();
+                    } catch (error) {
+                        if (i === retries - 1) throw error;
+                    }
+                }
+            }
+
+            // --- TTS Utility Functions (PCM to WAV) ---
+            function base64ToArrayBuffer(base64) {
+                const binaryString = atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                    }
+                return bytes.buffer;
+            }
+
+            function pcmToWav(pcmData, sampleRate) {
+                const numChannels = 1;
+                const bytesPerSample = 2; // 16-bit PCM
+                const byteRate = sampleRate * numChannels * bytesPerSample;
+                const blockAlign = numChannels * bytesPerSample;
+                const buffer = new ArrayBuffer(44 + pcmData.byteLength);
+                const view = new DataView(buffer);
+                let offset = 0;
+
+                // Write string to array buffer
+                function writeString(s) {
+                    for (let i = 0; i < s.length; i++) {
+                        view.setUint8(offset + i, s.charCodeAt(i));
+                    }
+                    offset += s.length;
+                }
+
+                // RIFF chunk
+                writeString('RIFF');
+                view.setUint32(offset, 36 + pcmData.byteLength, true); offset += 4;
+                writeString('WAVE');
+
+                // FMT chunk
+                writeString('fmt ');
+                view.setUint32(offset, 16, true); offset += 4;      // Chunk size (16 for PCM)
+                view.setUint16(offset, 1, true); offset += 2;      // Audio format (1 for PCM)
+                view.setUint16(offset, numChannels, true); offset += 2;
+                view.setUint32(offset, sampleRate, true); offset += 4;
+                view.setUint32(offset, byteRate, true); offset += 4;
+                view.setUint16(offset, blockAlign, true); offset += 2;
+                view.setUint16(offset, bytesPerSample * 8, true); offset += 2; // Bits per sample
+
+                // DATA chunk
+                writeString('data');
+                view.setUint32(offset, pcmData.byteLength, true); offset += 4;
+
+                // Write the PCM data (Int16Array)
+                const pcm16 = new Int16Array(pcmData);
+                for (let i = 0; i < pcm16.length; i++) {
+                    view.setInt16(offset, pcm16[i], true);
+                    offset += 2;
+                }
+
+                return new Blob([view], { type: 'audio/wav' });
+            }
+
+            // --- Gemini Feature 1: Technical Deep Dive ---
+            const deepDiveButton = document.getElementById('deep-dive-button');
+            const deepDiveResultsEl = document.getElementById('deep-dive-results');
+            const deepDiveTextEl = document.getElementById('deep-dive-text');
+            const deepDiveLoadingEl = document.getElementById('deep-dive-loading');
+
+            async function getTechnicalDeepDive(term) {
+                deepDiveResultsEl.classList.remove('hidden');
+                deepDiveTextEl.textContent = '';
+                deepDiveLoadingEl.classList.remove('hidden');
+                deepDiveButton.disabled = true;
+
+                const systemPrompt = "You are a friendly, expert DevOps engineer and technical explainer. Given a technical term, provide a concise, single-paragraph explanation that uses a modern, real-world scenario or analogy to make the concept clear and relatable to someone learning complex IT infrastructure.";
+                const userQuery = `Explain the concept of '${term}' using a practical scenario related to modern web services or a simple, helpful analogy.`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                try {
+                    const result = await makeGeminiCall(LLM_URL, payload);
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Failed to generate deep dive content.";
+                    deepDiveTextEl.textContent = text;
+                } catch (error) {
+                    console.error("Gemini Deep Dive Error:", error);
+                    deepDiveTextEl.textContent = `Error generating deep dive: ${error.message}.`;
+                } finally {
+                    deepDiveLoadingEl.classList.add('hidden');
+                    deepDiveButton.disabled = false;
+                }
+            }
+            
+            deepDiveButton.addEventListener('click', () => {
+                const term = deepDiveButton.getAttribute('data-term');
+                if (term) {
+                    getTechnicalDeepDive(term);
+                }
+            });
+
+            // --- Gemini Feature 2: Quiz TTS ---
+            const readAloudButton = document.getElementById('read-aloud-button');
+            const ttsAudioEl = document.getElementById('tts-audio');
+            const ttsStatusEl = document.getElementById('tts-status');
+            const ttsIconEl = document.getElementById('tts-icon');
+
+            async function readQuizQuestion(text) {
+                if (!text) return;
+                
+                ttsAudioEl.pause();
+                ttsAudioEl.removeAttribute('src');
+
+                readAloudButton.disabled = true;
+                ttsStatusEl.textContent = "Generating...";
+                ttsIconEl.classList.add('speaking');
+
+                const payload = {
+                    contents: [{
+                        parts: [{ text: `Say in a clear, measured voice: ${text}` }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: "Kore" }
+                            }
+                        }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                try {
+                    const result = await makeGeminiCall(TTS_URL, payload);
+                    const part = result?.candidates?.[0]?.content?.parts?.[0];
+                    const audioData = part?.inlineData?.data;
+                    const mimeType = part?.inlineData?.mimeType;
+
+                    if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                        const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                        const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 16000;
+                        const pcmData = base64ToArrayBuffer(audioData);
+                        
+                        const wavBlob = pcmToWav(pcmData, sampleRate);
+                        const audioUrl = URL.createObjectURL(wavBlob);
+                        
+                        ttsAudioEl.src = audioUrl;
+                        ttsAudioEl.classList.remove('hidden');
+                        ttsStatusEl.textContent = "Audio Ready. Press play on the bar.";
+                    } else {
+                        throw new Error("Invalid TTS response structure.");
+                    }
+                } catch (error) {
+                    console.error("Gemini TTS Error:", error);
+                    ttsStatusEl.textContent = "Error: TTS Failed.";
+                } finally {
+                    readAloudButton.disabled = false;
+                    ttsIconEl.classList.remove('speaking');
+                }
+            }
+            
+            readAloudButton.addEventListener('click', () => {
+                const currentQuestionText = questionTextEl.textContent;
+                readQuizQuestion(currentQuestionText);
+            });
+
+            ttsAudioEl.addEventListener('play', () => {
+                ttsStatusEl.textContent = "Speaking...";
+                ttsIconEl.classList.add('speaking');
+            });
+            ttsAudioEl.addEventListener('ended', () => {
+                ttsStatusEl.textContent = "Finished.";
+                ttsIconEl.classList.remove('speaking');
+            });
+            ttsAudioEl.addEventListener('pause', () => {
+                if (ttsStatusEl.textContent.includes('Speaking')) {
+                    ttsStatusEl.textContent = "Paused.";
+                }
+                ttsIconEl.classList.remove('speaking');
+            });
+
+
+            // --- Existing Functionality ---
+
+            // Mobile Menu Toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+
+            const svgIcons = mobileMenuButton ? mobileMenuButton.querySelectorAll('svg') : [];
+            const hamburgerIcon = svgIcons[0];
+            const closeIcon = svgIcons[1];
+
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', () => {
+                    const isHidden = mobileMenu.classList.contains('hidden');
+                    mobileMenu.classList.toggle('hidden');
+                    
+                    if (hamburgerIcon && closeIcon) {
+                        hamburgerIcon.classList.toggle('hidden', !isHidden);
+                        closeIcon.classList.toggle('hidden', isHidden);
+                    }
+                });
+            }
+
+            const closeMobileMenu = () => {
+                mobileMenu.classList.add('hidden');
+                if (hamburgerIcon && closeIcon) {
+                    hamburgerIcon.classList.remove('hidden');
+                    closeIcon.classList.add('hidden');
+                }
+            };
+
+            mobileMenuLinks.forEach(link => {
+                link.addEventListener('click', closeMobileMenu);
+            });
+
+            // Smooth Scroll for Nav Links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+
+
+            // Key Concepts Data
+            const concepts = [
+                {
+                    term: "QEMU/KVM",
+                    definition: "macOS Sequoia runs as a virtual machine (VM) inside the Arch Linux host. This is enabled by QEMU, a machine emulator, which is hardware-accelerated by KVM (Kernel-based Virtual Machine) to achieve near-native performance."
+                },
+                {
+                    term: "OpenCore Legacy Patcher (OCLP)",
+                    definition: "OCLP is a complex bootloader that injects patches to allow modern macOS versions to run on officially unsupported hardware. It was the source of the original system's boot instability."
+                },
+                {
+                    term: "GPU Passthrough (VFIO)",
+                    definition: "A virtualization method that gives a VM exclusive, direct control over a physical PCI device (the RX 580 graphics card). This is critical for achieving 98-99% of native graphics performance for video editing and AI."
+                },
+                {
+                    term: "Kasm Workspaces",
+                    definition: "A containerized application streaming platform that provides secure, remote access to the macOS Sequoia desktop from any device with a modern web browser."
+                },
+                {
+                    term: "Tailscale Funnel",
+                    definition: "A service that securely exposes local network services (like Kasm) to the public internet over a secure HTTPS connection, eliminating the need for complex firewall configurations or a static IP."
+                },
+                {
+                    term: "Autonomous Agent Empire",
+                    definition: "An open-source framework for developing self-replicating agents that automate complex workflows (like OS installs) using vision-based techniques (OCR, OpenCV) and voice control, bypassing the need for APIs."
+                },
+                {
+                    term: "ROCm",
+                    definition: "An open-source software stack from AMD for GPU computing. It is used on the Arch host to enable GPU acceleration for the Radeon RX 580, significantly speeding up AI workloads in tools like Ollama."
+                },
+                {
+                    term: "libvirt",
+                    definition: "A toolkit to manage platform virtualization. It provides a stable management layer for KVM/QEMU and was used during troubleshooting to define and control the VM with an XML configuration file."
+                }
+            ];
+
+            // Populate Key Concepts
+            const conceptsGrid = document.getElementById('concepts-grid');
+            const modal = document.getElementById('concept-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDefinition = document.getElementById('modal-definition');
+            const closeModalButton = document.getElementById('close-modal-button');
+
+            concepts.forEach(concept => {
+                const card = document.createElement('button');
+                card.className = 'bg-white card-panel rounded-xl p-6 text-left border border-stone-200 hover:shadow-2xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 focus:ring-amber-300 dark:bg-stone-800 dark:border-stone-700 dark:hover:shadow-amber-900/50';
+                card.innerHTML = `<h3 class="text-xl font-bold text-stone-900 dark:text-stone-100">${concept.term}</h3><p class="mt-2 text-sm text-stone-600 truncate dark:text-stone-400">${concept.definition}</p><span class="mt-4 inline-block text-sm font-medium text-amber-600 dark:text-amber-400">Learn More &rarr;</span>`;
+                
+                card.addEventListener('click', () => {
+                    modalTitle.textContent = concept.term;
+                    modalDefinition.textContent = concept.definition;
+                    deepDiveButton.setAttribute('data-term', concept.term);
+                    deepDiveTextEl.textContent = 'Click to generate a practical deep dive.';
+                    deepDiveResultsEl.classList.remove('hidden');
+                    deepDiveLoadingEl.classList.add('hidden');
+                    modal.classList.remove('hidden');
+                });
+                conceptsGrid.appendChild(card);
+            });
+
+            const closeModal = () => {
+                modal.classList.add('hidden');
+            };
+
+            closeModalButton.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+
+            // Quiz Data
+            const quizData = [
+                {
+                    q: "What was the primary problem with the original Mac Pro 5,1 setup that prompted the migration project?",
+                    a: "The main issue was the unreliable and time-consuming booting of macOS Sequoia due to the necessary use of OpenCore Legacy Patcher (OCLP), which frequently failed to boot and caused unacceptable downtime."
+                },
+                {
+                    q: "What is the main role of Arch Linux in the proposed final architecture?",
+                    a: "Arch Linux serves as the stable, native host operating system on the bare metal. It manages the hardware, runs containerized services, and hosts the macOS Sequoia virtual machine, eliminating boot reliability issues."
+                },
+                {
+                    q: "What is the function of Kasm Workspaces within this technical stack?",
+                    a: "Kasm Workspaces is a containerized application streaming platform used to provide secure, web-based remote access to the macOS Sequoia desktop from any device with a browser."
+                },
+                {
+                    q: "Describe GPU Passthrough (VFIO). Why is it a recommended component for the macOS Sequoia virtual machine?",
+                    a: "GPU Passthrough (VFIO) is a virtualization technique that allows a VM to have exclusive, direct control over a physical graphics card. It is recommended because it provides the Sequoia VM with 98-99% of native graphics performance."
+                },
+                {
+                    q: "During the extensive troubleshooting session, what was the key issue that prevented the existing Sequoia SSD from booting as a QEMU virtual machine?",
+                    a: "The key issue was that the existing installation's EFI partition was missing the standard BOOTX64.EFI file that QEMU/OVMF (a standard UEFI environment) looks for. The native installation relied on Apple's proprietary APFS boot system."
+                },
+                {
+                    q: "Why is the Arch host with a Sequoia VM considered a significant performance upgrade for local AI development?",
+                    a: "The Arch host is a lightweight environment that allows for direct GPU acceleration with ROCm on the AMD RX 580, which is 30-50% faster for AI inference than using Metal on macOS, resulting in significantly higher token generation speed."
+                }
+            ];
+
+            // Quiz Logic
+            let currentQuestionIndex = 0;
+            const questionNumberEl = document.getElementById('question-number');
+            const questionTextEl = document.getElementById('question-text');
+            const answerContainerEl = document.getElementById('answer-container');
+            const answerTextEl = document.getElementById('answer-text');
+            const revealButton = document.getElementById('reveal-answer-button');
+            const prevButton = document.getElementById('prev-question-button');
+            const nextButton = document.getElementById('next-question-button');
+
+            function showQuestion() {
+                const currentQuestion = quizData[currentQuestionIndex];
+                questionNumberEl.textContent = `Question ${currentQuestionIndex + 1} of ${quizData.length}`;
+                questionTextEl.textContent = currentQuestion.q;
+                answerTextEl.textContent = currentQuestion.a;
+                answerContainerEl.classList.add('hidden');
+                revealButton.textContent = 'Reveal Answer';
+                
+                ttsAudioEl.pause();
+                ttsAudioEl.classList.add('hidden');
+                ttsStatusEl.textContent = '';
+                readAloudButton.disabled = false;
+
+
+                prevButton.disabled = currentQuestionIndex === 0;
+                nextButton.disabled = currentQuestionIndex === quizData.length - 1;
+                prevButton.classList.toggle('opacity-50', prevButton.disabled);
+                nextButton.classList.toggle('opacity-50', nextButton.disabled);
+            }
+
+            revealButton.addEventListener('click', () => {
+                const isHidden = answerContainerEl.classList.contains('hidden');
+                answerContainerEl.classList.toggle('hidden');
+                revealButton.textContent = isHidden ? 'Hide Answer' : 'Reveal Answer';
+            });
+
+            prevButton.addEventListener('click', () => {
+                if (currentQuestionIndex > 0) {
+                    currentQuestionIndex--;
+                    showQuestion();
+                }
+            });
+
+            nextButton.addEventListener('click', () => {
+                if (currentQuestionIndex < quizData.length - 1) {
+                    currentQuestionIndex++;
+                    showQuestion();
+                }
+            });
+
+            showQuestion();
+
+            
+            // --- GSAP/Carousel Initialization ---
+            initializeGSAPCarousel();
+            
+            // Initialization of charts must happen after DOMContentLoaded
+            initializeCharts(); 
+
+        });
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

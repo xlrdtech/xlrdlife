@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The 11 Calculators — Design + Functionality Audit</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0B0B0C;--ink2:#16151b;--grad:linear-gradient(100deg,#8A6A2F,#C9A24B 40%,#F4E4A6 50%,#C9A24B 60%,#8A6A2F);--gold:#C9A24B;--gold-hi:#F4E4A6;--text:#ECE7DC;--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.42);--hair:rgba(201,162,75,.2);--go:#3FCB85;--am:#ffb300;--rd:#FF6B5A;--fs:"Fraunces",serif;--fb:"Inter",system-ui,sans-serif;--fm:"JetBrains Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:var(--fb);line-height:1.6;-webkit-font-smoothing:antialiased;text-align:center;background-image:radial-gradient(130% 90% at 50% -10%,#1a1814,#0b0b0c 55%)}
+.wrap{max-width:1000px;margin:0 auto;padding:54px 22px 90px}
+.gold{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.eye{font-family:var(--fm);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+h1{font-family:var(--fs);font-weight:600;font-size:clamp(32px,5.4vw,54px);line-height:1.05;letter-spacing:-.02em}
+.sub{color:var(--t2);max-width:680px;margin:14px auto 0}
+.avg{display:flex;justify-content:center;gap:40px;margin:34px 0 6px;flex-wrap:wrap}
+.avg .a{font-family:var(--fs);font-weight:600;font-size:46px;line-height:1}
+.avg .a .l{display:block;font-family:var(--fm);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-top:8px;font-weight:400}
+h2{font-family:var(--fs);font-weight:600;font-size:clamp(22px,3.4vw,32px);margin:54px 0 8px}
+.s2{color:var(--t2);max-width:620px;margin:0 auto 30px}
+.rows{display:flex;flex-direction:column;gap:10px;text-align:left}
+.row{display:grid;grid-template-columns:1fr 72px 72px auto;gap:14px;align-items:center;background:var(--ink2);border:1px solid var(--hair);border-radius:12px;padding:14px 18px}
+.row.bad{border-color:rgba(255,107,90,.4)}
+.row .nm{font-family:var(--fm);font-size:12px}.row .nm b{font-family:var(--fb);font-weight:600;font-size:14px;display:block;color:var(--text)}
+.row .nm span{color:var(--t3)}
+.sc{font-family:var(--fs);font-weight:600;font-size:20px;text-align:center}
+.sc .k{display:block;font-family:var(--fm);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);font-weight:400}
+.m{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:5px 10px;white-space:nowrap}
+.m.correct{color:var(--go);border:1px solid rgba(63,203,133,.4)}
+.m.suspect{color:var(--am);border:1px solid rgba(255,179,0,.4)}
+.m.broken{color:var(--rd);border:1px solid rgba(255,107,90,.5);background:rgba(255,107,90,.08)}
+.note{grid-column:1/-1;font-size:12.5px;color:var(--t2);border-top:1px solid rgba(201,162,75,.1);padding-top:10px;margin-top:2px}
+.fixes{margin-top:54px;text-align:left;max-width:760px;margin-left:auto;margin-right:auto}
+.fix{background:var(--ink2);border:1px solid var(--hair);border-radius:12px;padding:18px 20px;margin-bottom:12px;position:relative}
+.fix .rk{position:absolute;top:14px;right:18px;font-family:var(--fs);font-weight:600;font-size:26px;color:rgba(201,162,75,.22)}
+.fix .ft{font-family:var(--fb);font-weight:600;font-size:15px;margin-bottom:6px;padding-right:36px}
+.fix .fw{font-size:13px;color:var(--t2)}
+.fix .sp{display:inline-block;margin-top:8px;font-family:var(--fm);font-size:10px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--hair);border-radius:999px;padding:3px 9px;color:var(--t3)}
+.fix .sp.all{color:var(--gold)}
+footer{margin-top:44px;font-family:var(--fm);font-size:11px;color:var(--t3)}footer a{color:var(--gold);text-decoration:none}
+@media(max-width:640px){.row{grid-template-columns:1fr 56px 56px;gap:10px}.row .m{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eye">Design + Functionality Audit · 12 agents</div>
+  <h1>The 11 Calculators, <span class="gold">scrutinized.</span></h1>
+  <p class="sub">Same bar as the L7S site — every calculator graded on design, function, and whether the <b style="color:var(--text)">math is actually correct</b>. The shell is premium across the board; the numbers are not.</p>
+  <div class="avg">
+    <div class="a gold">88<span class="l">avg design</span></div>
+    <div class="a gold">81<span class="l">avg function</span></div>
+    <div class="a" style="color:var(--go)">6<span class="l">ship-ready</span></div>
+    <div class="a" style="color:var(--rd)">5<span class="l">math flagged</span></div>
+  </div>
+  <p class="sub" style="margin-top:18px"><b style="color:var(--text)">Verdict:</b> visually excellent and consistently on-brand — but trust is bimodal. 6 are math-solid; 5 carry degenerate or fabricated math that undercuts a financial brand's "numbers don't lie" promise.</p>
+
+  <h2>Worst-first</h2>
+  <div class="s2">Sorted by the problems. Green = ship-ready.</div>
+  <div class="rows" id="rows"></div>
+
+  <h2>The fixes — <span class="gold">ranked</span></h2>
+  <div class="s2">Highest-leverage first. The top two are NEVER-GUESS compliance risks; already firing as a fix workflow.</div>
+  <div class="fixes" id="fixes"></div>
+
+  <footer>Audited under NEVER GUESS · math verified live · fix workflow in flight · <a href="https://hitthe.link/calculators/" target="_blank" rel="noopener">the calculators →</a></footer>
+</div>
+<script>
+var R=[
+ {s:'calc-08 · PIES',p:'Cashflow allocation scorer',d:78,f:42,m:'broken',n:'Score collapses to 60−0.6×Expense — Profit/Savings split has ZERO effect, and the gauge maxes at 60 on a 0–100 dial. Premium shell over a dead formula.'},
+ {s:'calc-05 · Comparable',p:'Peer-cohort FICO percentile',d:86,f:62,m:'suspect',n:'"Top Decile" is really ~76th percentile (0.55 fudge factor); percentile and top-decile bar openly contradict; FICO/VantageScore baselines blended on one dial.'},
+ {s:'calc-06 · FINE MENTAL',p:'Net-worth + trajectory',d:88,f:68,m:'suspect',n:'Core net-worth math is exact, but the bolted-on +10/35/70% "trajectory" is decorative (no income input) and grows a NEGATIVE net worth upward.'},
+ {s:'calc-04 · CUBE',p:'Utilization + FICO estimate',d:90,f:74,m:'correct',n:'Util math correct — but the hero promises a fabricated "+193 pts" linear FICO gain (NEVER-GUESS risk); 3-bucket schedule disconnected from per-card paydown.'},
+ {s:'calc-09 · EFA/FNA',p:'Expense-health scorer',d:90,f:84,m:'correct',n:'Scoring verified across 6 scenarios; but income=0 still shows absurd badges ("Housing 100000% OVER") and red bars while the headline reads "—".'},
+ {s:'calc-11 · Curtis Second',p:'$1M compound planner',d:90,f:88,m:'correct',n:'Compounding verified exact; mixed contribution frequencies spread ~6% optimistic (disclosed); the 5%/day default reads as a get-rich headline before any caveat.'},
+ {s:'calc-01 · AAoA',p:'Average age of accounts',d:88,f:90,m:'correct',n:'Correct & well-guarded (no divide-by-zero, future dates filtered). Nits: headline rounding crosses a year before the tier; gauge ticks misaligned from color bands.'},
+ {s:'calc-07 · GRIP',p:'Phantom-equity profit share',d:90,f:93,m:'correct',n:'Net profit, tier share, multiplier all exact and clamped. Ship-ready. Nits: unexplained multiplier basis; slider caps below the field.'},
+ {s:'calc-02 · CUI',p:'Aggregate utilization index',d:90,f:96,m:'correct',n:'Exact per-card & aggregate util plus precise paydown algebra. Ship-ready. Only the gauge pegs everything above 50% to one needle.'},
+ {s:'calc-03 · DTI',p:'Debt-to-income mortgage',d:90,f:96,m:'correct',n:'Front/back DTI and 28/36/43 tiers correct, verified live. Ship-ready. Minor magic-number gauge; stale debt total when income cleared.'},
+ {s:'calc-10 · Forex FPA',p:'Breakout position-sizing',d:93,f:95,m:'correct',n:'Best of the set — lot sizing, R:R, breakeven% all verified correct with proper per-pair pip sizes. Only static (non-live) pip values for crosses.'}
+];
+var F=[
+ {t:'Kill fabricated / fake-precision numbers',w:'Remove calc-04\'s "+193 pts" FICO claim and calc-06\'s +10/35/70% net-worth trajectory; replace with honest illustrative framing surfaced next to the claim. Direct NEVER-GUESS / results-vary risk on a financial brand.',sp:'specific'},
+ {t:'Rebuild calc-08 PIES scoring',w:'Make Profit and Savings allocations actually move the headline, and rescale the gauge so the score uses the range the needle travels. The only fully broken math in the set.',sp:'specific'},
+ {t:'Align every non-linear gauge',w:'Tick labels and color-band seams must sit at true mapped positions, not evenly-spaced flex. calc-01/04/08 point the needle at a color/label that contradicts the tier text.',sp:'all calcs'},
+ {t:'Uniform income=0 / zero-denominator guard',w:'Neutralize per-item badges, bar fills, and dollar recs — not just the headline. calc-09 "100000% OVER", calc-03/06 stale totals read as bugs.',sp:'all calcs'},
+ {t:'Non-destructive sliders',w:'Dragging must never snap a larger typed value down. calc-06/07/11 silently overwrite valid numbers — data-loss on tools whose field is the source of truth.',sp:'all calcs'},
+ {t:'Contrast bump on micro-labels',w:'calc-01/03/08 carry ~3:1 small text on near-black; one lightness token clears WCAG AA across the family.',sp:'all calcs'}
+];
+var rs=document.getElementById('rows');
+R.forEach(function(x){rs.innerHTML+='<div class="row'+(x.m==='broken'?' bad':'')+'"><div class="nm"><b>'+x.s+'</b><span>'+x.p+'</span></div><div class="sc">'+x.d+'<span class="k">design</span></div><div class="sc">'+x.f+'<span class="k">function</span></div><div class="m '+x.m+'">'+x.m+'</div><div class="note">'+x.n+'</div></div>';});
+var fx=document.getElementById('fixes');
+F.forEach(function(x,i){fx.innerHTML+='<div class="fix"><div class="rk">'+(i+1)+'</div><div class="ft">'+x.t+'</div><div class="fw">'+x.w+'</div><span class="sp '+(x.sp==='all calcs'?'all':'')+'">'+x.sp+'</span></div>';});
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

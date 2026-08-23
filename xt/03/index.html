@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>XLRD — Executive Leverage Research Development</title>
+<meta name="description" content="Open-source automation architecture for mission-driven organizations. Transparent code, no black boxes. A 501(c)(3) nonprofit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ══ direction 03 · OPERATOR CONSOLE ══════════════════════════════════
+   The product is autonomous systems, so the page IS one.
+   Every number on screen is REAL and measured live from this page —
+   its own boot timings, viewport, connection, frame budget. Nothing is
+   invented, because inventing telemetry on a page about honest
+   telemetry would be the joke writing itself.
+   Scanlines, rails and cursor are all CSS/canvas. No images.          */
+:root{
+  --ink:#000; --pane:#070907; --grn:#00ff44; --grn-d:#00ff4418;
+  --amb:#ffb300; --w:#e8ffe f; --w:#e9f5ec;
+  --w60:rgba(233,245,236,.60); --w35:rgba(233,245,236,.35);
+  --line:rgba(0,255,68,.18); --line2:rgba(255,255,255,.08);
+  --exp:cubic-bezier(.19,1,.22,1);
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --gut:clamp(12px,3vw,28px);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ink);color:var(--w);overflow-x:hidden;
+  font:400 15px/1.5 Figtree,-apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+/* scanline + vignette overlay, pure CSS */
+body::after{content:"";position:fixed;inset:0;z-index:99;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(0,255,68,.028) 0 1px,transparent 1px 3px);
+  mix-blend-mode:screen}
+body::before{content:"";position:fixed;inset:0;z-index:98;pointer-events:none;
+  background:radial-gradient(130% 90% at 50% 45%,transparent 40%,rgba(0,0,0,.75) 100%)}
+
+.m{font-family:var(--mono);font-size:clamp(10px,2.1vw,12px);letter-spacing:.02em}
+.dim{color:var(--w35)}
+.g{color:var(--grn)}
+.a{color:var(--amb)}
+
+/* ── chrome bar ── */
+.bar{position:sticky;top:0;z-index:50;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  padding:8px var(--gut);border-bottom:1px solid var(--line);background:rgba(0,0,0,.9);
+  backdrop-filter:blur(8px);font-family:var(--mono);font-size:clamp(9px,2vw,11px)}
+.led{width:6px;height:6px;border-radius:50%;background:var(--grn);
+  box-shadow:0 0 8px var(--grn);animation:fl 1.9s steps(1) infinite}
+@keyframes fl{0%,72%{opacity:1}73%,100%{opacity:.25}}
+.bar .sp{margin-left:auto}
+
+/* ── the console grid ── */
+.shell{display:grid;gap:0;border-bottom:1px solid var(--line)}
+@media(min-width:1000px){.shell{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}}
+.pane{padding:clamp(18px,3.4vw,40px) var(--gut);min-width:0}
+.pane + .pane{border-top:1px solid var(--line)}
+@media(min-width:1000px){.pane + .pane{border-top:0;border-left:1px solid var(--line)}}
+
+h1.big{font-weight:800;letter-spacing:-.05em;line-height:.88;margin:.5rem 0 0;
+  font-size:clamp(2.5rem,9vw,5.4rem)}
+h1.big .c{display:inline-block;width:.5em;height:.86em;background:var(--grn);
+  vertical-align:-.08em;margin-left:.1em;animation:cur 1.05s steps(1) infinite}
+@keyframes cur{0%,50%{opacity:1}51%,100%{opacity:0}}
+.sub{color:var(--w60);margin:1rem 0 0;max-width:46ch;font-size:clamp(.94rem,.9rem + .3vw,1.08rem)}
+
+/* live log */
+.log{font-family:var(--mono);font-size:clamp(9.5px,2vw,11.5px);line-height:1.75;
+  height:clamp(230px,42vh,360px);overflow:hidden;position:relative}
+.log::after{content:"";position:absolute;inset:auto 0 0 0;height:70px;
+  background:linear-gradient(to bottom,transparent,var(--ink))}
+.log div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  animation:tin .5s var(--exp) both}
+@keyframes tin{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+
+/* readout rails */
+.rail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);
+  border-block:1px solid var(--line)}
+@media(min-width:720px){.rail{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.cell{background:var(--ink);padding:clamp(12px,2.4vw,20px) var(--gut)}
+.cell .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--w35)}
+.cell .v{font-family:var(--mono);font-weight:700;font-size:clamp(1.1rem,4vw,1.7rem);color:var(--grn);
+  margin-top:.35rem;letter-spacing:-.02em}
+
+/* record rows */
+section{padding:clamp(34px,6vw,80px) var(--gut);border-bottom:1px solid var(--line2)}
+.hd{font-family:var(--mono);font-size:clamp(9.5px,2vw,11px);letter-spacing:.24em;
+  text-transform:uppercase;color:var(--w35);margin:0 0 clamp(16px,3vw,30px)}
+.hd b{color:var(--grn)}
+.rec{display:grid;gap:.3rem;padding-block:clamp(12px,2.2vw,20px);border-top:1px dashed var(--line);
+  transition:background .4s var(--exp),padding-left .4s var(--exp)}
+.rec:last-child{border-bottom:1px dashed var(--line)}
+.rec:hover{background:var(--grn-d);padding-left:12px}
+.rec .id{font-family:var(--mono);font-size:10px;color:var(--grn);letter-spacing:.16em}
+.rec .t{font-weight:700;letter-spacing:-.03em;font-size:clamp(1.15rem,3.6vw,1.75rem)}
+.rec .d{color:var(--w60);font-size:.93rem;max-width:58ch}
+.rec .st{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--amb)}
+@media(min-width:900px){
+  .rec{grid-template-columns:74px minmax(0,1fr) minmax(0,1.15fr) 90px;gap:22px;align-items:baseline}
+}
+.kv{font-family:var(--mono);font-size:.86rem;color:var(--w60);display:grid;gap:.35rem;margin:.7rem 0 0;padding:0;list-style:none}
+.kv li::before{content:"› ";color:var(--grn)}
+
+.tr{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding-block:clamp(12px,2.2vw,18px);border-top:1px dashed var(--line);
+  font-family:var(--mono);transition:padding-left .4s var(--exp),background .4s var(--exp)}
+.tr:last-child{border-bottom:1px dashed var(--line)}
+.tr:hover{background:var(--grn-d);padding-left:12px}
+.tr .v{font-weight:700;font-size:clamp(1.2rem,4.4vw,1.9rem);color:var(--grn)}
+
+.mail{font-family:var(--mono);font-weight:700;letter-spacing:-.03em;display:inline-block;
+  font-size:clamp(1.3rem,6vw,3.2rem);color:var(--grn);word-break:break-all}
+footer{padding:26px var(--gut);font-family:var(--mono);font-size:10px;color:var(--w35);
+  display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
+
+.up{opacity:0;transform:translateY(16px);transition:opacity .8s var(--exp),transform .9s var(--exp)}
+.up.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  .up{opacity:1;transform:none;transition:none}
+  .led,h1.big .c{animation:none}.log div{animation:none}
+  body::after{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="led"></span><span class="g">XLRD</span>
+  <span class="dim">/</span><span class="dim">executive leverage research development</span>
+  <span class="sp dim" id="clk">--:--:--</span>
+  <span class="dim">·</span><span class="a" id="upt">0.0s</span>
+</div>
+
+<!-- ══ CONSOLE ══ -->
+<div class="shell">
+  <div class="pane">
+    <p class="m dim">$ xlrd --status</p>
+    <h1 class="big">Executive<br>Leverage<span class="c"></span></h1>
+    <p class="sub">Open-source automation architecture for mission-driven organizations.
+      Transparent code, no black boxes — you own everything we build.</p>
+    <p class="m dim" style="margin-top:1.4rem">501(c)(3) nonprofit · <span class="g">info@xlrd.org</span></p>
+  </div>
+  <div class="pane">
+    <p class="m dim" style="margin:0 0 .6rem">// live · this page, reporting on itself</p>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<!-- ══ REAL READOUTS ══ -->
+<div class="rail" id="rail">
+  <div class="cell"><div class="k">Viewport</div><div class="v" id="r-vp">—</div></div>
+  <div class="cell"><div class="k">Frame budget</div><div class="v" id="r-fps">—</div></div>
+  <div class="cell"><div class="k">DOM ready</div><div class="v" id="r-dom">—</div></div>
+  <div class="cell"><div class="k">Transfer</div><div class="v" id="r-net">—</div></div>
+</div>
+
+<!-- ══ WORK ══ -->
+<section>
+  <p class="hd up"><b>01</b> / registry · shipped</p>
+  <div class="up">
+    <div class="rec"><span class="id">SVC-001</span><span class="t">hitthe.link</span>
+      <span class="d">Public delivery surface. Static, versioned, no auth wall — client one-pagers and product overviews ship here.</span>
+      <span class="st">live</span></div>
+    <div class="rec"><span class="id">SVC-002</span><span class="t">LifeNote</span>
+      <span class="d">Product overview built from the source specification and published to the open web.</span>
+      <span class="st">live</span></div>
+    <div class="rec"><span class="id">SVC-003</span><span class="t">Agent fleet</span>
+      <span class="d">Always-on background workers under process supervision — file intake, alerting, device control, scheduled tasks.</span>
+      <span class="st">running</span></div>
+    <div class="rec"><span class="id">SVC-004</span><span class="t">Voice relay</span>
+      <span class="d">One canonical output path fanning a single message to speech, SMS and on-screen display in parallel.</span>
+      <span class="st">running</span></div>
+  </div>
+</section>
+
+<!-- ══ CAPABILITIES ══ -->
+<section>
+  <p class="hd up"><b>02</b> / capabilities</p>
+  <div class="up">
+    <div class="rec"><span class="id">CAP-A</span><span class="t">Workflow automation</span>
+      <div class="d">Orchestration architecture that replaces repetitive human process end to end.
+        <ul class="kv"><li>Event-driven pipelines</li><li>Scheduled and supervised jobs</li>
+        <li>Data intake and transform</li><li>Failure alerting that proves delivery</li></ul></div>
+      <span class="st">offered</span></div>
+    <div class="rec"><span class="id">CAP-B</span><span class="t">Cognitive AI</span>
+      <div class="d">Language-model agents grounded in your own organizational knowledge, not a generic index.
+        <ul class="kv"><li>Retrieval over your corpus</li><li>Tool-using agents</li>
+        <li>Durable memory</li><li>Human-readable audit trail</li></ul></div>
+      <span class="st">offered</span></div>
+    <div class="rec"><span class="id">CAP-C</span><span class="t">Strategic technology</span>
+      <div class="d">Architecture-level guidance tying technical decisions to mission outcomes.
+        <ul class="kv"><li>Systems architecture</li><li>Build-versus-buy analysis</li>
+        <li>Migration planning</li><li>Handover and documentation</li></ul></div>
+      <span class="st">offered</span></div>
+  </div>
+</section>
+
+<!-- ══ STANDARD ══ -->
+<section>
+  <p class="hd up"><b>03</b> / the ophanim standard</p>
+  <div class="up" style="display:grid;gap:clamp(16px,3vw,28px);max-width:70ch">
+    <p class="m" style="font-size:clamp(.98rem,.9rem + .55vw,1.35rem);line-height:1.4;margin:0;font-family:Figtree,sans-serif">
+      <span class="g">ASSERT</span> all-seeing automation — systems that monitor, execute and report
+      with no human in the loop, and that surface their own failures instead of reporting success by default.</p>
+    <p class="m" style="font-size:clamp(.98rem,.9rem + .55vw,1.35rem);line-height:1.4;margin:0;font-family:Figtree,sans-serif">
+      <span class="g">ASSERT</span> open-source DNA — transparent code, no black boxes. The architecture
+      is yours: you keep it, run it, and change it without asking anyone's permission.</p>
+  </div>
+</section>
+
+<!-- ══ CONTRIBUTE ══ -->
+<section>
+  <p class="hd up"><b>04</b> / contribute</p>
+  <p class="m dim up" style="margin:0 0 1rem;font-family:Figtree,sans-serif;font-size:.98rem;max-width:56ch">
+    A 501(c)(3) nonprofit. Contributions fund open-source development that stays free to use.</p>
+  <div class="up">
+    <a class="tr" href="https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&amp;no_recurring=0&amp;currency_code=USD&amp;amount=111" target="_blank" rel="noopener">
+      <span>quick_consult</span><span class="v">$111</span></a>
+    <a class="tr" href="https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&amp;no_recurring=0&amp;currency_code=USD&amp;amount=222" target="_blank" rel="noopener">
+      <span>starter_build</span><span class="v">$222</span></a>
+    <a class="tr" href="https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&amp;no_recurring=0&amp;currency_code=USD&amp;amount=555" target="_blank" rel="noopener">
+      <span>full_architecture</span><span class="v">$555</span></a>
+  </div>
+</section>
+
+<!-- ══ CONTACT ══ -->
+<section style="border-bottom:0">
+  <p class="hd up"><b>05</b> / contact</p>
+  <a class="mail up" href="mailto:info@xlrd.org">info@xlrd.org</a>
+</section>
+
+<footer>
+  <span>© <span id="yr">2026</span> xlrd.org · 501(c)(3)</span>
+  <a href="#" class="g">^ top</a>
+</footer>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+var t0 = performance.now();
+
+/* ── clock + uptime ── */
+setInterval(function(){
+  document.getElementById('clk').textContent = new Date().toTimeString().slice(0,8);
+  document.getElementById('upt').textContent = ((performance.now()-t0)/1000).toFixed(1)+'s';
+}, 100);
+
+/* ── REAL readouts. Every value here is measured, none invented. ── */
+function readouts(){
+  document.getElementById('r-vp').textContent = innerWidth+'×'+innerHeight;
+  var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+  if (nav) {
+    document.getElementById('r-dom').textContent = Math.round(nav.domContentLoadedEventEnd)+'ms';
+    var kb = performance.getEntriesByType('resource').reduce(function(a,r){ return a+(r.transferSize||0); }, nav.transferSize||0);
+    document.getElementById('r-net').textContent = kb ? (kb/1024).toFixed(0)+'kb' : 'n/a';
+  } else {
+    document.getElementById('r-dom').textContent = 'n/a';
+    document.getElementById('r-net').textContent = 'n/a';
+  }
+}
+addEventListener('load', readouts);
+addEventListener('resize', function(){ document.getElementById('r-vp').textContent = innerWidth+'×'+innerHeight; });
+
+/* measured frame budget, sampled over 1s windows */
+var frames = 0, last = performance.now();
+(function tick(){
+  frames++;
+  var now = performance.now();
+  if (now - last >= 1000){
+    document.getElementById('r-fps').textContent = frames + 'fps';
+    frames = 0; last = now;
+  }
+  requestAnimationFrame(tick);
+})();
+
+/* ── the log. Real events from this page's own lifecycle. ── */
+var logEl = document.getElementById('log'), lines = [];
+function stamp(){ return new Date().toTimeString().slice(0,8); }
+function push(txt, cls){
+  lines.push('<div><span class="dim">'+stamp()+'</span> <span class="'+(cls||'')+'">'+txt+'</span></div>');
+  if (lines.length > 26) lines.shift();
+  logEl.innerHTML = lines.join('');
+}
+push('boot · document parsed', 'g');
+push('fonts · Figtree + JetBrains Mono requested');
+addEventListener('load', function(){
+  push('load · complete in '+Math.round(performance.now()-t0)+'ms', 'g');
+  push('viewport · '+innerWidth+'×'+innerHeight+' @'+ (devicePixelRatio||1) +'x');
+  if (navigator.connection && navigator.connection.effectiveType)
+    push('net · '+navigator.connection.effectiveType);
+  push('sections · '+document.querySelectorAll('section').length+' mounted');
+  push('records · '+document.querySelectorAll('.rec').length+' in registry');
+  push('watch · intersection observer armed', 'g');
+});
+addEventListener('resize', function(){ push('viewport · resized to '+innerWidth+'×'+innerHeight, 'a'); });
+document.addEventListener('visibilitychange', function(){
+  push('doc · '+(document.hidden ? 'hidden — loop throttled' : 'visible — loop resumed'), 'a');
+});
+document.querySelectorAll('.rec,.tr').forEach(function(el){
+  el.addEventListener('mouseenter', function(){
+    var id = el.querySelector('.id'), n = id ? id.textContent : (el.textContent||'').trim().split(/\s+/)[0];
+    push('focus · '+n);
+  });
+});
+
+/* reveal */
+if ('IntersectionObserver' in window){
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (e.isIntersecting){
+        e.target.classList.add('in'); io.unobserve(e.target);
+        var h = e.target.previousElementSibling;
+        if (e.target.classList.contains('up') && h && h.classList.contains('hd'))
+          push('render · '+h.textContent.trim().toLowerCase());
+      }
+    });
+  },{rootMargin:'0px 0px -8% 0px',threshold:.05});
+  document.querySelectorAll('.up').forEach(function(el){ io.observe(el); });
+} else {
+  document.querySelectorAll('.up').forEach(function(el){ el.classList.add('in'); });
+}
+</script>
+</body>
+</html>

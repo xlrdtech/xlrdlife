@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>xvm-xen · 0touch live dictation terminal</title>
+<meta name="description" content="Focused unlock prompt for xvm-xen — zero-touch live dictation terminal: continuous Apple SFSpeech + Whisper.cpp Metal, LaunchAgent auto-start, transcripts inject directly to claude pane, no clicking, no typing, no manual UI after bootstrap.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root { --paper:#0A0A0C; --cream:#F4EEE4; --bone:#C7C2B6; --dust:#7A7A7A; --line:rgba(244,238,228,.12); --volt:#00FF88; --gold:#D2AC47; --steel:#6AD4FF; --violet:#A78BFA; --rose:#FF5E9C; --serif:'Instrument Serif',serif; --sans:'Inter',-apple-system,sans-serif; --mono:'JetBrains Mono',monospace; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--paper); color:var(--cream); font-family:var(--sans); line-height:1.55; }
+body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background:radial-gradient(ellipse 1200px 600px at 50% 0%, rgba(0,255,136,.06), transparent 60%); }
+.wrap { position:relative; z-index:1; max-width:960px; margin:0 auto; padding:60px 28px 100px; }
+header { margin-bottom:32px; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.4em; text-transform:uppercase; color:var(--volt); margin-bottom:14px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:clamp(40px,6vw,72px); line-height:1; letter-spacing:-.025em; margin:0 0 14px; }
+h1 em { color:var(--volt); font-style:italic; }
+.lede { font-family:var(--serif); font-style:italic; font-size:clamp(18px,2.1vw,22px); color:var(--bone); max-width:780px; line-height:1.45; }
+.fire-strip { background:rgba(0,255,136,.06); border:1px solid var(--volt); border-left:3px solid var(--volt); border-radius:10px; padding:16px 20px; margin:24px 0; font-size:14px; color:var(--cream); line-height:1.55; }
+.fire-strip strong { color:var(--volt); }
+.fire-strip code { font-family:var(--mono); font-size:12px; background:rgba(255,255,255,.06); padding:1px 6px; border-radius:3px; color:var(--steel); }
+.prompt-wrap { position:relative; margin-top:20px; }
+.copy-btn { position:absolute; top:14px; right:14px; z-index:2; font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; padding:8px 14px; border-radius:6px; background:var(--volt); color:#0A0A0C; border:0; cursor:pointer; font-weight:700; box-shadow:0 4px 12px rgba(0,255,136,.3); transition:transform .15s, box-shadow .15s; }
+.copy-btn:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,255,136,.5); }
+.copy-btn.copied { background:var(--steel); }
+pre.prompt { font-family:var(--mono); font-size:12.5px; color:var(--cream); background:#0E0E0E; border:1px solid var(--line); border-radius:10px; padding:60px 24px 24px; overflow-x:auto; line-height:1.6; white-space:pre-wrap; word-wrap:break-word; }
+footer { margin-top:36px; padding-top:24px; border-top:1px solid var(--line); font-family:var(--mono); font-size:11px; letter-spacing:.15em; text-transform:uppercase; color:var(--dust); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+footer a { color:var(--volt); text-decoration:none; border-bottom:1px dotted; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">// xvm-xen · 0touch live dictation · qi 2026-05-23</div>
+  <h1>Live <em>dictation</em>.<br>Zero <em>touch</em>.</h1>
+  <div class="lede">Focused build prompt for xvm-xen — continuous STT, LaunchAgent auto-start, transcripts inject to claude pane, voice replies via VM `say`. No clicking, no typing, no manual UI after bootstrap. Echo-loop-aware: voice fires are deferred until mac-xen signals clear.</div>
+</header>
+
+<div class="fire-strip">
+  <strong>STATUS:</strong> Bootstrap firing in parallel via <code>ssh xen@xvm 'claude --dangerously-skip-permissions -p "$(cat /tmp/0touch-prompt.md)"' &amp;</code> on Win-Ezekiel's end. xvm-xen executes autonomously. Page exists as canonical record + paste fallback if direct fire fails. Verify via <code>~/.xen/state/sttvei-online</code> marker file landing on xvm or watch this terminal for completion ping.
+</div>
+
+<div class="prompt-wrap">
+  <button class="copy-btn" id="copybtn" onclick="copyPrompt()">Copy prompt</button>
+  <pre class="prompt" id="prompt-text">You are xvm-xen on macOS Sequoia 26.5 inside UTM on m4. Your job: build qi a ZERO-TOUCH LIVE DICTATION TERMINAL that runs perpetually with no keyboard, no mouse, no manual UI interaction after this bootstrap.
+
+═══ HARD CONSTRAINTS ═══
+- 0touch = no clicking, no typing, no push-to-talk, no manual play/pause
+- Continuous listening — STT runs all the time
+- Apple SFSpeechRecognizer PRIMARY, Whisper.cpp Metal REDUNDANCY (cloud STT BANNED per canon_stt_apple_whisper_metal_only_2026-05-22)
+- LaunchAgent for auto-start on login, KeepAlive=true
+- Transcripts inject directly into your own claude pane (stdin or tmux send-keys)
+- Voice replies via macOS `say` (VM is the sole audio surface per canon_vm_is_audio_surface_host_is_headless_2026-05-22) — VM audio output, no host involvement
+- DO NOT fire test `say` calls during bootstrap. Echo loop is still live host-side (host out -> speakers -> Safari GV mic -> FCC -> in). Build the chain only. Voice-fire test deferred until mac-xen signals "echo-clear" via your /peer endpoint.
+- No Chromium. No cloud anything. Local-only on this VM.
+
+═══ DELIVERABLES ═══
+1. ~/bin/xen-stt-live (Swift CLI)
+   - Continuous mic stream via SFSpeechRecognizer + AVAudioEngine
+   - Streams transcripts to stdout, one line per utterance
+   - Whisper.cpp Metal runs in parallel for redundancy/validation
+   - Grant Microphone + Speech Recognition in System Settings privacy if first run prompts
+2. ~/bin/xen-dictation-loop (shell)
+   - Pipes xen-stt-live output into your own claude pane via persistent session (tmux or screen)
+   - On each transcript line, format as user message and inject
+   - Capture claude's reply, fire xen-say-vm with text (gated on XEN_AUDIO_CLEAR=1)
+3. ~/Library/LaunchAgents/com.xen.dictation.plist
+   - Launches xen-dictation-loop at user login
+   - KeepAlive=true so it restarts if it dies
+   - StandardOutPath/StandardErrorPath = ~/.xen/state/dictation.log
+4. ~/bin/xen-say-vm (shell)
+   - Wrapper around macOS `say -v Ava` (or default Spoken Content voice)
+   - Reads env XEN_AUDIO_CLEAR; if unset or != "1", logs message but does NOT fire `say`
+   - When XEN_AUDIO_CLEAR=1, fires `say` and logs
+5. ~/.xen/state/sttvei-online marker file
+   - Write timestamp + verified-step list
+   - This file is what Win-Ezekiel polls to confirm completion
+6. Install Whisper.cpp Metal if not present:
+   - git clone https://github.com/ggerganov/whisper.cpp ~/whisper.cpp
+   - cd ~/whisper.cpp && cmake -B build -DGGML_METAL=1 && cmake --build build -j
+   - ./models/download-ggml-model.sh base.en (or large-v3 if disk allows)
+
+═══ POST-BOOTSTRAP STATE ═══
+- LaunchAgent loaded and running
+- STT daemon listening (silent — no audio output during bootstrap)
+- VEI loop active (transcripts -> claude inject -> reply captured)
+- Voice fire armed but blocked (XEN_AUDIO_CLEAR=0 — wait for echo-clear signal)
+- ~/.xen/state/sttvei-online written with verified state
+
+When mac-xen lands the echo-clear (relocates GV-Safari to VM + mutes host out, or any equivalent path), they will set XEN_AUDIO_CLEAR=1 in env (or write a flag file you watch). At that moment, xen-say-vm starts firing voice replies. Until then, the loop runs text-only — STT in, claude reply text logged but no audio out.
+
+EXECUTE TOP TO BOTTOM. Fire in parallel where possible. No clarifying questions. No "want me to?" Show me the verified-end-to-end at ~/.xen/state/sttvei-online.
+
+Begin.</pre>
+</div>
+
+<footer>
+  <div>hitthe.link/xvm/0touch-dictation-prompt · 2026-05-23</div>
+  <div>
+    <a href="/xvm/sttvei-unlock-prompt/">Full STTVEI prompt (11-step)</a> ·
+    <a href="/sop/2026-05-22-14h-win/?mute=1">SOP (mute)</a>
+  </div>
+</footer>
+
+</div>
+
+<script>
+function copyPrompt() {
+  const text = document.getElementById('prompt-text').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copybtn');
+    btn.textContent = 'Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy prompt'; btn.classList.remove('copied'); }, 2400);
+  });
+}
+</script>
+<script src="/_shared/ava-play.js?mute=1" defer></script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

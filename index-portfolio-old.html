@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth antialiased dark" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#050505">
+    <title>hitthe.link — Portfolio Navigator</title>
+    <meta name="description" content="The full portfolio of work by East Allen — L7S, SEL, XLRD, and the experiments in between. One pane, every project.">
+    <meta name="robots" content="index,follow">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="hitthe.link — Portfolio Navigator">
+    <meta property="og:description" content="Every project in one pane. L7S, SEL, XLRD, and experiments.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Manrope', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            navy: '#0F172A',
+                            slate: '#1E293B',
+                            accent: 'var(--theme-color)',
+                            gold: 'var(--theme-color)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --theme-color: #D4AF37;
+            --glass-blur: 30px;
+        }
+        :root[data-theme="dark"] {
+            --color-bg: #000000;
+            --text-header: #FFFFFF;
+            --text-body: #A1A1AA;
+            --glass-bg: rgba(10, 10, 10, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-highlight: rgba(255, 255, 255, 0.2);
+            --glass-shadow: rgba(0, 0, 0, 1);
+            --filter-bg: rgba(255, 255, 255, 0.03);
+            --filter-bg-focus: rgba(255, 255, 255, 0.06);
+            --filter-border: rgba(255, 255, 255, 0.1);
+            --placeholder: rgba(255,255,255,0.35);
+            --catbtn-bg: rgba(255,255,255,0.02);
+            --catbtn-border: rgba(255,255,255,0.1);
+            --catbtn-hover-border: rgba(255,255,255,0.25);
+            --orb-opacity: 0.2;
+            --orb2-bg: #1E293B;
+        }
+        :root[data-theme="light"] {
+            --color-bg: #F5F5F4;
+            --text-header: #0A0A0A;
+            --text-body: #3F3F46;
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(0, 0, 0, 0.12);
+            --glass-highlight: rgba(255, 255, 255, 0.6);
+            --glass-shadow: rgba(0, 0, 0, 0.12);
+            --filter-bg: rgba(0, 0, 0, 0.03);
+            --filter-bg-focus: rgba(0, 0, 0, 0.05);
+            --filter-border: rgba(0, 0, 0, 0.12);
+            --placeholder: rgba(0,0,0,0.4);
+            --catbtn-bg: rgba(0,0,0,0.02);
+            --catbtn-border: rgba(0,0,0,0.1);
+            --catbtn-hover-border: rgba(0,0,0,0.25);
+            --orb-opacity: 0.35;
+            --orb2-bg: #CBD5E1;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: var(--color-bg);
+            color: var(--text-body);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(150px);
+            opacity: var(--orb-opacity);
+            z-index: -1;
+            pointer-events: none;
+            background: var(--theme-color);
+            animation: float 25s infinite alternate ease-in-out;
+            mix-blend-mode: screen;
+            will-change: transform;
+        }
+        .orb-1 { width: 70vw; height: 70vw; top: -25%; left: -20%; }
+        .orb-2 { width: 60vw; height: 60vw; bottom: -15%; right: -15%; animation-delay: -7s; background: var(--orb2-bg); }
+        .orb-3 { width: 40vw; height: 40vw; top: 40%; left: 50%; animation-delay: -14s; opacity: calc(var(--orb-opacity) * 0.6); }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            100% { transform: translate(8%, 8%) scale(1.1) rotate(5deg); }
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            box-shadow:
+                0 4px 24px -1px var(--glass-shadow),
+                inset 0 1px 0 0 var(--glass-highlight),
+                inset 1px 0 0 0 rgba(255, 255, 255, 0.03),
+                inset -1px 0 0 0 rgba(255, 255, 255, 0.03);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+        .glass-panel:hover {
+            transform: translateY(-3px);
+            box-shadow:
+                0 24px 60px -8px var(--glass-shadow),
+                inset 0 1px 0 0 var(--glass-highlight);
+            border-color: color-mix(in srgb, var(--theme-color) 45%, transparent);
+        }
+        .no-hover-effect:hover { transform: none; border-color: var(--glass-border); }
+
+        .btn-brand {
+            background: var(--theme-color);
+            color: #0F172A;
+            font-weight: 800;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-color) 30%, transparent);
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-brand:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px color-mix(in srgb, var(--theme-color) 50%, transparent);
+            filter: brightness(1.15);
+        }
+
+        .btn-ghost {
+            border: 1px solid var(--glass-border);
+            color: var(--text-header);
+            font-weight: 600;
+            background: rgba(255,255,255,0.02);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-ghost:hover {
+            border-color: var(--theme-color);
+            color: var(--theme-color);
+            transform: translateY(-2px);
+            background: color-mix(in srgb, var(--theme-color) 6%, transparent);
+        }
+
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        .gold-text {
+            background: linear-gradient(135deg, var(--theme-color) 0%, #FFFFFF 50%, var(--theme-color) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        .chip {
+            display: inline-flex; align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border: 1px solid color-mix(in srgb, var(--theme-color) 30%, transparent);
+            color: var(--theme-color);
+            background: color-mix(in srgb, var(--theme-color) 8%, transparent);
+        }
+
+        .card-arrow {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            color: var(--theme-color);
+        }
+        .glass-panel:hover .card-arrow { transform: translate(4px, -4px); }
+
+        .filter-input {
+            background: var(--filter-bg);
+            border: 1px solid var(--filter-border);
+            color: var(--text-header);
+            transition: all 0.3s ease;
+        }
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--theme-color);
+            background: var(--filter-bg-focus);
+            box-shadow: 0 0 24px color-mix(in srgb, var(--theme-color) 20%, transparent);
+        }
+        .filter-input::placeholder { color: var(--placeholder); }
+
+        .cat-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: var(--text-body);
+            border: 1px solid var(--catbtn-border);
+            background: var(--catbtn-bg);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .cat-btn:hover { color: var(--text-header); border-color: var(--catbtn-hover-border); }
+        .cat-btn.active {
+            background: var(--theme-color);
+            color: #0F172A;
+            border-color: var(--theme-color);
+            box-shadow: 0 4px 16px color-mix(in srgb, var(--theme-color) 30%, transparent);
+        }
+
+        /* Light-mode overrides for hard-coded Tailwind text classes */
+        :root[data-theme="light"] .text-white,
+        :root[data-theme="light"] h1.text-white,
+        :root[data-theme="light"] h3.text-white { color: var(--text-header) !important; }
+        :root[data-theme="light"] .text-zinc-300,
+        :root[data-theme="light"] .text-zinc-400 { color: var(--text-body) !important; }
+        :root[data-theme="light"] .text-zinc-500,
+        :root[data-theme="light"] .text-zinc-600 { color: #71717A !important; }
+        :root[data-theme="light"] .border-white\/5,
+        :root[data-theme="light"] .border-white\/10 { border-color: var(--glass-border) !important; }
+        :root[data-theme="light"] .bg-white\/5 { background-color: rgba(0,0,0,0.04) !important; }
+        :root[data-theme="light"] .gold-text {
+            background: linear-gradient(135deg, var(--theme-color) 0%, #1f2937 50%, var(--theme-color) 100%);
+            -webkit-background-clip: text; background-clip: text;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--theme-color); border-radius: 10px; opacity: 0.5; }
+    </style>
+</head>
+<body class="antialiased selection:bg-brand-gold/30">
+
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <header class="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-4">
+        <div class="max-w-7xl mx-auto glass-panel no-hover-effect rounded-full px-5 py-3 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-brand-gold shadow-[0_0_12px_var(--theme-color)]"></span>
+                <span class="text-white font-extrabold tracking-tight text-sm sm:text-base">hitthe<span class="text-brand-gold">.</span>link</span>
+            </a>
+            <nav class="hidden md:flex items-center gap-6 text-sm">
+                <a href="#portfolio" class="text-zinc-300 hover:text-brand-gold transition-colors">Portfolio</a>
+                <a href="/execpage/" class="text-zinc-300 hover:text-brand-gold transition-colors">ExecPage</a>
+                <a href="/xlrd-org/" class="text-zinc-300 hover:text-brand-gold transition-colors">xlrd.org</a>
+            </nav>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleMode()" title="Toggle light/dark mode" aria-label="Toggle light/dark mode"
+                    class="p-2 rounded-full border border-white/10 bg-white/5 text-zinc-300 hover:text-brand-gold hover:border-brand-gold transition-colors">
+                    <svg id="mode-icon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- moon by default; replaced with sun in light mode -->
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <button onclick="randomizeTheme()" title="Randomize theme color" aria-label="Randomize theme color"
+                    class="p-2 rounded-full border border-white/10 bg-white/5 text-zinc-300 hover:text-brand-gold hover:border-brand-gold transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="3"/>
+                        <circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/>
+                        <circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/>
+                        <circle cx="12" cy="12" r="1.1" fill="currentColor"/>
+                        <circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/>
+                        <circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/>
+                    </svg>
+                </button>
+                <a href="#portfolio" class="btn-brand text-xs sm:text-sm rounded-full px-4 py-2">Browse</a>
+            </div>
+        </div>
+    </header>
+
+    <script>
+        function hslToHex(h, s, l) {
+            l /= 100;
+            const a = s * Math.min(l, 1 - l) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+        window.randomizeTheme = function() {
+            const hue = Math.floor(Math.random() * 360);
+            document.documentElement.style.setProperty('--theme-color', hslToHex(hue, 100, 50));
+        };
+
+        // Light/dark mode (independent of randomizer)
+        (function bootMode(){
+            const saved = (localStorage.getItem('theme') === 'light') ? 'light' : 'dark';
+            document.documentElement.dataset.theme = saved;
+            document.documentElement.classList.toggle('dark', saved === 'dark');
+        })();
+        function setModeIcon(mode){
+            const el = document.getElementById('mode-icon');
+            if (!el) return;
+            if (mode === 'light') {
+                // sun icon
+                el.innerHTML = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
+            } else {
+                el.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+            }
+        }
+        window.toggleMode = function(){
+            const next = (document.documentElement.dataset.theme === 'dark') ? 'light' : 'dark';
+            document.documentElement.dataset.theme = next;
+            document.documentElement.classList.toggle('dark', next === 'dark');
+            localStorage.setItem('theme', next);
+            setModeIcon(next);
+        };
+        setModeIcon(document.documentElement.dataset.theme);
+    </script>
+
+    <main class="pt-32">
+        <section class="relative max-w-5xl mx-auto px-6 pt-12 pb-20 text-center">
+            <div class="reveal inline-flex items-center gap-2 chip mb-6">
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse"></span>
+                Portfolio Navigator
+            </div>
+            <h1 class="reveal text-4xl sm:text-6xl md:text-7xl font-black text-white leading-[1.05] tracking-tight mb-6">
+                Every project,<br><span class="gold-text">one pane.</span>
+            </h1>
+            <div class="reveal flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="#portfolio" class="btn-brand rounded-full px-8 py-4">Browse Projects</a>
+                <a href="/execpage/" class="btn-ghost rounded-full px-8 py-4">See ExecPage</a>
+            </div>
+        </section>
+
+        <section id="portfolio" class="relative max-w-7xl mx-auto px-6 pb-32">
+            <div class="reveal glass-panel no-hover-effect rounded-3xl p-5 sm:p-6 mb-10">
+                <div class="flex flex-col gap-4">
+                    <div class="relative">
+                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                        <input id="search" type="text" placeholder="Search projects, brands, ideas…" class="filter-input w-full rounded-2xl pl-12 pr-4 py-4 text-base">
+                    </div>
+                    <div id="categories" class="flex flex-wrap gap-2"></div>
+                </div>
+                <div id="result-count" class="mt-4 text-xs uppercase tracking-[0.2em] text-zinc-500"></div>
+            </div>
+
+            <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+            <div id="empty" class="hidden text-center py-20 text-zinc-500"><p class="text-lg">No projects match that search.</p></div>
+        </section>
+    </main>
+
+    <footer class="border-t border-white/5 py-10 px-6 relative">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+            <div class="flex items-center gap-2.5">
+                <span class="w-2 h-2 rounded-full bg-brand-gold"></span>
+                <span>© 2026 East Allen / hitthe.link. All rights reserved.</span>
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="/execpage/" class="hover:text-brand-gold transition-colors">ExecPage</a>
+                <a href="/xlrd-org/" class="hover:text-brand-gold transition-colors">xlrd.org</a>
+                <a href="/l7shero/" class="hover:text-brand-gold transition-colors">L7S Hero</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    const PROJECTS = [
+        { slug: '12step', title: 'C.A.R.E. Sales Assessment', desc: '12-Step call form for sales discovery and qualification.', cat: 'SEL' },
+        { slug: '222church', title: '222 Church', desc: 'A presence-based worship center rooted in Acts 2:42 and 2 Timothy 2:2.', cat: 'Faith' },
+        { slug: '26thTemple', title: '26th Temple', desc: 'Non-profit compliance & education.', cat: 'Faith' },
+        { slug: '8922', title: 'Numerology Dynamics', desc: 'The 9-22-8 paradigm explored.', cat: 'Experiments' },
+        { slug: 'abos', title: 'Automated Business Operation System', desc: 'Freedom calculator for the automated operator.', cat: 'SEL' },
+        { slug: 'agnostic', title: 'Agnostic', desc: 'Unbranded utility surface.', cat: 'Sites' },
+        { slug: 'allendale', title: 'Allendale Equine Services', desc: 'Premium horse boarding, riding lessons, and equine experiences in Palmetto, GA.', cat: 'Sites' },
+        { slug: 'autophone', title: 'AutoPhone', desc: 'Making your business phone work for you.', cat: 'SEL' },
+        { slug: 'barnlights', title: 'Barn Lights Payment Dashboard', desc: 'Payment dashboard for Barn Lights.', cat: 'Sites' },
+        { slug: 'buzycred', title: 'BuzyCred', desc: 'Build business credit & get financing.', cat: 'Sites' },
+        { slug: 'check-hero', title: 'L7CheckMark: HERO', desc: 'L7S checkmark verification surface.', cat: 'L7S' },
+        { slug: 'codepens', title: 'CodePens', desc: 'Sandbox of UI experiments and component sketches.', cat: 'Experiments' },
+        { slug: 'container', title: 'Container Hub v5.4', desc: 'Direct dial build — telephony container.', cat: 'SEL' },
+        { slug: 'costs', title: 'Cost Breakdown Dashboard', desc: 'Visualize project and operational cost structure.', cat: 'Tools' },
+        { slug: 'custom-er', title: 'Custom ER', desc: 'Emergency software response.', cat: 'SEL' },
+        { slug: 'dcl-demo', title: 'Terance × Designer Collab', desc: 'Designer collaboration demo.', cat: 'Experiments' },
+        { slug: 'dirtyhawks', title: 'Dirty Hawks Shooting Club', desc: 'The shooting department site.', cat: 'Sites' },
+        { slug: 'east-allen-growth-interface', title: "East Allen's Growth Interface", desc: 'Personal growth & operations dashboard.', cat: 'SEL' },
+        { slug: 'execpage', title: 'ExecPage', desc: 'Executive web presence in 7 days. $333 total. Book a $33 consultation.', cat: 'SEL' },
+        { slug: 'flcheats', title: 'FL Studio Ultimate Cheatsheet', desc: 'A power-user reference for FL Studio.', cat: 'Tools' },
+        { slug: 'ggv', title: 'Google Grok Voice UI', desc: 'Inline voice UI experiment.', cat: 'Experiments' },
+        { slug: 'god-sop-dashboard', title: 'G.O.D. SOP Dashboard', desc: 'Generate / Operate / Distribute SOP control plane.', cat: 'SOP' },
+        { slug: 'godsop', title: 'GodSOP', desc: 'G.O.D. SOP Dashboard, alt entry.', cat: 'SOP' },
+        { slug: 'gov', title: 'GGV', desc: 'Voice UI variant.', cat: 'Experiments' },
+        { slug: 'growth', title: "East Allen's Growth Interface", desc: 'Growth interface — alt route.', cat: 'SEL' },
+        { slug: 'l7s', title: 'L7S', desc: 'L7S brand hub.', cat: 'L7S' },
+        { slug: 'l7shero', title: 'L7S Hero', desc: 'Strategic business consulting, education, and matchmaking for entrepreneurs.', cat: 'L7S' },
+        { slug: 'nblmaudit', title: 'Notebook Archivist', desc: 'NotebookLM audit & archive surface.', cat: 'Tools' },
+        { slug: 'online-viewer-net', title: 'Online Viewer Net', desc: 'Multi-source online viewer.', cat: 'Tools' },
+        { slug: 'pbld', title: 'PBLD', desc: 'PBLD project surface.', cat: 'Experiments' },
+        { slug: 'pin-feed', title: 'Pinterest Feed', desc: 'Infinite topic swipe — Pinterest-style discovery.', cat: 'Experiments' },
+        { slug: 'psnl', title: 'PSNL', desc: 'Personal microsite.', cat: 'Sites' },
+        { slug: 'rays-home', title: "Ray's House of Fun", desc: 'Coding, gaming, languages, and curiosities. Curated learning trails by Ray de la Paz.', cat: 'Ray' },
+        { slug: 'sao', title: 'Semi-Auto Ops Command Deck V8.3', desc: 'Operations command surface.', cat: 'SEL' },
+        { slug: 'sao2', title: 'Semi-Auto Ops Command Deck', desc: 'Operations command surface, v2.', cat: 'SEL' },
+        { slug: 'selfexec', title: 'Self Exec', desc: 'Automation consulting & ROI systems.', cat: 'SEL' },
+        { slug: 'signing', title: 'Digital Forms Portal', desc: 'Signing & forms surface.', cat: 'Tools' },
+        { slug: 'slid', title: 'Video Gallery', desc: 'Slid video gallery.', cat: 'Tools' },
+        { slug: 'suno', title: 'Suno', desc: 'Suno-related surface.', cat: 'Experiments' },
+        { slug: 'template-io-mission-control', title: 'Template.io Mission Control', desc: 'Template.io control plane.', cat: 'Tools' },
+        { slug: 'uwi', title: 'Omni-Stack Command Center', desc: 'Unified command center across the stack.', cat: 'SEL' },
+        { slug: 'vectorgen', title: 'Pro Client-Side SVG Converter', desc: 'In-browser raster-to-SVG conversion.', cat: 'Tools' },
+        { slug: 'VVS', title: 'Variation Vault', desc: 'East Allen Studios — variation library.', cat: 'Experiments' },
+        { slug: 'wes', title: 'Wesley Allen Job Tracker', desc: 'Job search tracking dashboard.', cat: 'Tools' },
+        { slug: 'wip', title: 'Selfown OS — Alpha', desc: 'Work-in-progress operating shell.', cat: 'Experiments' },
+        { slug: 'xen', title: 'XEN', desc: "Tag it. It's there.", cat: 'XLRD' },
+        { slug: 'xlrd-org', title: 'xlrd.org', desc: 'Executive Leverage Research Development — open-source automation, AI, and digital systems.', cat: 'XLRD' }
+    ];
+
+    const CATEGORY_ORDER = ['All', 'SEL', 'L7S', 'XLRD', 'Ray', 'SOP', 'Sites', 'Faith', 'Tools', 'Experiments'];
+
+    const grid = document.getElementById('grid');
+    const search = document.getElementById('search');
+    const cats = document.getElementById('categories');
+    const empty = document.getElementById('empty');
+    const count = document.getElementById('result-count');
+
+    let activeCat = 'All';
+    let activeSearch = '';
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    CATEGORY_ORDER.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'cat-btn' + (c === 'All' ? ' active' : '');
+        btn.textContent = c;
+        btn.dataset.cat = c;
+        btn.addEventListener('click', () => {
+            activeCat = c;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === c));
+            render();
+        });
+        cats.appendChild(btn);
+    });
+
+    function buildCard(p) {
+        const a = document.createElement('a');
+        a.href = '/' + p.slug + '/';
+        a.className = 'glass-panel rounded-3xl p-6 flex flex-col gap-4 group';
+
+        const top = document.createElement('div');
+        top.className = 'flex items-start justify-between gap-3';
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = p.cat;
+        top.appendChild(chip);
+
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('class', 'card-arrow w-5 h-5 flex-shrink-0');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('stroke', 'currentColor');
+        const path = document.createElementNS(SVG_NS, 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'M7 17L17 7M17 7H8M17 7V16');
+        svg.appendChild(path);
+        top.appendChild(svg);
+
+        const body = document.createElement('div');
+        const h3 = document.createElement('h3');
+        h3.className = 'text-white text-xl font-bold tracking-tight mb-2 group-hover:text-brand-gold transition-colors';
+        h3.textContent = p.title;
+        const desc = document.createElement('p');
+        desc.className = 'text-zinc-400 text-sm leading-relaxed';
+        desc.textContent = p.desc;
+        body.appendChild(h3);
+        body.appendChild(desc);
+
+        const slug = document.createElement('div');
+        slug.className = 'mt-auto pt-2 text-xs text-zinc-600 font-mono tracking-tight';
+        slug.textContent = '/' + p.slug + '/';
+
+        a.appendChild(top);
+        a.appendChild(body);
+        a.appendChild(slug);
+        return a;
+    }
+
+    function render() {
+        const q = activeSearch.trim().toLowerCase();
+        const filtered = PROJECTS.filter(p => {
+            const catMatch = activeCat === 'All' || p.cat === activeCat;
+            if (!catMatch) return false;
+            if (!q) return true;
+            return p.title.toLowerCase().includes(q)
+                || p.slug.toLowerCase().includes(q)
+                || p.desc.toLowerCase().includes(q)
+                || p.cat.toLowerCase().includes(q);
+        });
+        grid.replaceChildren(...filtered.map(buildCard));
+        empty.classList.toggle('hidden', filtered.length > 0);
+        count.textContent = filtered.length + ' of ' + PROJECTS.length + ' projects';
+    }
+
+    search.addEventListener('input', e => { activeSearch = e.target.value; render(); });
+    render();
+
+    const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('active'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+    </script>
+
+<!-- AUTO:PROJECTS:START -->
+    <section class="auto-projects" aria-label="All projects (auto-detected)">
+      <h2 class="auto-projects-heading">All Projects · 95 subpages</h2>
+      <div class="auto-projects-grid">
+      <a href="/12step/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">C.A.R.E. Sales Assessment ‚Äî 12-Step Call Form</h3>
+        </div>
+        
+        <span class="card-slug">/12step/</span>
+      </a>
+      <a href="/222church/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">222 Church | Presence-Based Worship Center</h3>
+        </div>
+        <p class="card-desc">A Presence-Based Worship Center and Sending Church. Rooted in Acts 2:42 and 2 Timothy 2:2.</p>
+        <span class="card-slug">/222church/</span>
+      </a>
+      <a href="/26thTemple/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">26th Temple | Non-Profit Compliance &amp; Education</h3>
+        </div>
+        
+        <span class="card-slug">/26thTemple/</span>
+      </a>
+      <a href="/8922/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Numerology Dynamics | 9-22-8 Paradigm</h3>
+        </div>
+        
+        <span class="card-slug">/8922/</span>
+      </a>
+      <a href="/abos/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Automated Business Operation System | Freedom Calculator</h3>
+        </div>
+        
+        <span class="card-slug">/abos/</span>
+      </a>
+      <a href="/agents/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">AGENTS · stress-bench · hitthe.link</h3>
+        </div>
+        <p class="card-desc">TUI agents stress-bench leaderboard — finds the OSS equivalent of Claude Opus 4.7. Self Exec · Universal Mesh.</p>
+        <span class="card-slug">/agents/</span>
+      </a>
+      <a href="/allendale/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Allendale Equine Services | Horse Boarding &amp; Riding in Palmetto, GA</h3>
+        </div>
+        <p class="card-desc">Premium horse boarding and riding lessons in Palmetto, GA. Reconnect with nature through our intimate equine services.</p>
+        <span class="card-slug">/allendale/</span>
+      </a>
+      <a href="/asana/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Asana Progress — hitthe.link</h3>
+        </div>
+        <p class="card-desc">Live Asana task + project progress for L7S, SEL, XLRD work. Inline-HTML single-file dashboard, polled live.</p>
+        <span class="card-slug">/asana/</span>
+      </a>
+      <a href="/aua/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">AUA — Agentic URL Manifesto</h3>
+        </div>
+        
+        <span class="card-slug">/aua/</span>
+      </a>
+      <a href="/audit/" class="project-card group">
+        <div class="card-head">
+          <img src="/audit/icon.svg" alt="" class="card-icon" loading="lazy">
+          <h3 class="card-title">Xen Audit Pack — qi</h3>
+        </div>
+        <p class="card-desc">Identity. Commandments. VoiceOS spine. Infrastructure. Comms routing. Daemon status. The full audit, in one pack.</p>
+        <span class="card-slug">/audit/</span>
+      </a>
+      <a href="/autophone/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Making Your Business Phone Work for You</h3>
+        </div>
+        
+        <span class="card-slug">/autophone/</span>
+      </a>
+      <a href="/avatar/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Ophanim: Gemini Uplink</h3>
+        </div>
+        
+        <span class="card-slug">/avatar/</span>
+      </a>
+      <a href="/barnlights/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Barn Lights Payment Dashboard</h3>
+        </div>
+        
+        <span class="card-slug">/barnlights/</span>
+      </a>
+      <a href="/beside-proxy/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Beside AI · the only path to Twilio</h3>
+        </div>
+        <p class="card-desc">Beside AI proxy is the only allowed access to Twilio API while Twilio sits on the D.I.E. list. AI-layer interception, cost containment, qi sovereignty.</p>
+        <span class="card-slug">/beside-proxy/</span>
+      </a>
+      <a href="/buzycred/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">BuzyCred: Build Business Credit &amp; Get Financing</h3>
+        </div>
+        
+        <span class="card-slug">/buzycred/</span>
+      </a>
+      <a href="/calculators/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">L7S · Hero Calculators</h3>
+        </div>
+        
+        <span class="card-slug">/calculators/</span>
+      </a>
+      <a href="/check-hero/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">L7CheckMark: HERO</h3>
+        </div>
+        
+        <span class="card-slug">/check-hero/</span>
+      </a>
+      <a href="/claudeos/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">ClaudeOS — Live Swarm</h3>
+        </div>
+        <p class="card-desc">Live visibility into every goal swarm. Who</p>
+        <span class="card-slug">/claudeos/</span>
+      </a>
+      <a href="/commandments/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Xen Commandments v50 — One Canon, No Fallbacks</h3>
+        </div>
+        
+        <span class="card-slug">/commandments/</span>
+      </a>
+      <a href="/container/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Container Hub v5.4 | Direct Dial Build</h3>
+        </div>
+        
+        <span class="card-slug">/container/</span>
+      </a>
+      <a href="/context/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">PGS Context Tracker · never forget · 2026-05-23</h3>
+        </div>
+        <p class="card-desc">Comprehensive context tracker per canon_pgs_comprehensive_context_tracking_2026-05-23 — threads · devices · users · profiles · personas · brands · projects · platforms · apps · builds · deploys · open threads. Never miss anything.</p>
+        <span class="card-slug">/context/</span>
+      </a>
+      <a href="/cookbook/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">XLRD TUI / AUA Inject Cookbook</h3>
+        </div>
+        
+        <span class="card-slug">/cookbook/</span>
+      </a>
+      <a href="/costs/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Cost Breakdown Dashboard</h3>
+        </div>
+        
+        <span class="card-slug">/costs/</span>
+      </a>
+      <a href="/custom-er/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Custom ER | Emergency Software Response</h3>
+        </div>
+        
+        <span class="card-slug">/custom-er/</span>
+      </a>
+      <a href="/dcl-demo/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Terance x Designer Collaboration</h3>
+        </div>
+        
+        <span class="card-slug">/dcl-demo/</span>
+      </a>
+      <a href="/diamond-cut/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Diamond Cut Studios · Stal&#39;lyon</h3>
+        </div>
+        <p class="card-desc">Diamond Cut Studios — recording, production, and AI-powered studio operations. Powered by Self Exec.</p>
+        <span class="card-slug">/diamond-cut/</span>
+      </a>
+      <a href="/dictate/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Ruach · רוּחַ · live voice → pane</h3>
+        </div>
+        <p class="card-desc">Ruach (Hebrew רוּחַ — spirit/breath/wind). 0touch live dictation via Web Speech API. Browser-native, on-device STT. POSTs transcripts to omnimind /api/dictate-inject. Mac · iPhone · iPad · any browser.</p>
+        <span class="card-slug">/dictate/</span>
+      </a>
+      <a href="/die-list/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">The D.I.E. List · Exedus Xen canon</h3>
+        </div>
+        <p class="card-desc">Deprecated · Inactive · Eliminated tools. What</p>
+        <span class="card-slug">/die-list/</span>
+      </a>
+      <a href="/dirtyhawks/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Dirty Hawks Shooting Club | Shooting Dept.</h3>
+        </div>
+        
+        <span class="card-slug">/dirtyhawks/</span>
+      </a>
+      <a href="/docs/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Docs · hitthe.link</h3>
+        </div>
+        <p class="card-desc">All markdown docs across hitthe.link, rendered as sites.</p>
+        <span class="card-slug">/docs/</span>
+      </a>
+      <a href="/e/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Electric EATS</h3>
+        </div>
+        
+        <span class="card-slug">/e/</span>
+      </a>
+      <a href="/east-allen-growth-interface/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">East Allen&#39;s Growth Interface</h3>
+        </div>
+        
+        <span class="card-slug">/east-allen-growth-interface/</span>
+      </a>
+      <a href="/eats/" class="project-card group">
+        <div class="card-head">
+          <img src="/eats/icon.svg" alt="" class="card-icon" loading="lazy">
+          <h3 class="card-title">Electric EATS — Decode every food decision</h3>
+        </div>
+        <p class="card-desc">Scan a label, decode in seconds, swap for cleaner alternatives, source local stores. Built for patients with chronic illness.</p>
+        <span class="card-slug">/eats/</span>
+      </a>
+      <a href="/endpoints/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Catalog — Xen AUA Endpoints</h3>
+        </div>
+        
+        <span class="card-slug">/endpoints/</span>
+      </a>
+      <a href="/execpage/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Exec Page | Executive Web Presence in 7 Days</h3>
+        </div>
+        <p class="card-desc">Professional executive web presence. 7-day turnaround. $333 total.</p>
+        <span class="card-slug">/execpage/</span>
+      </a>
+      <a href="/firehose/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Xen Firehose · live event stream</h3>
+        </div>
+        <p class="card-desc">Live SSE viewer for the Xen firehose at xen.xlrd.org/events — beeper, mail, notifications streaming in real-time, brand-aligned dark console.</p>
+        <span class="card-slug">/firehose/</span>
+      </a>
+      <a href="/flcheats/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">FL Studio Ultimate Cheatsheet</h3>
+        </div>
+        
+        <span class="card-slug">/flcheats/</span>
+      </a>
+      <a href="/ggv/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Google Grok Voice UI - Inline</h3>
+        </div>
+        
+        <span class="card-slug">/ggv/</span>
+      </a>
+      <a href="/god-sop-dashboard/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">G.O.D. SOP Dashboard | East Allen</h3>
+        </div>
+        
+        <span class="card-slug">/god-sop-dashboard/</span>
+      </a>
+      <a href="/godmode/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Godmode Siri — Xen</h3>
+        </div>
+        
+        <span class="card-slug">/godmode/</span>
+      </a>
+      <a href="/godsop/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">G.O.D. SOP Dashboard | East Allen</h3>
+        </div>
+        
+        <span class="card-slug">/godsop/</span>
+      </a>
+      <a href="/gov/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">GGV</h3>
+        </div>
+        
+        <span class="card-slug">/gov/</span>
+      </a>
+      <a href="/grok/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Grok Projects • hitthe.link</h3>
+        </div>
+        
+        <span class="card-slug">/grok/</span>
+      </a>
+      <a href="/grokveinom/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">GrokVeinom — Redirecting...</h3>
+        </div>
+        
+        <span class="card-slug">/grokveinom/</span>
+      </a>
+      <a href="/growth/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">East Allen&#39;s Growth Interface</h3>
+        </div>
+        
+        <span class="card-slug">/growth/</span>
+      </a>
+      <a href="/ifttt/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">IFTTT Ops Overhaul — Padre · Beside · PayPal · Square · Drive · Calendar</h3>
+        </div>
+        <p class="card-desc">IFTTT applet overhaul for Xen / Padre / Self Exec ops · Beside SMS triggers · PayPal + Square payment automations · Drive uploads → Shang Tsung absorb · daily Padre dialer queue · calendar reminders.</p>
+        <span class="card-slug">/ifttt/</span>
+      </a>
+      <a href="/ios-shortcut-deploy/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">iOS Shortcut deploy · 5 qi-only blocker commands</h3>
+        </div>
+        <p class="card-desc">Copy-paste recipe for the 5 qi-only blockers gating the Siri/Watch/NFC/Focus tool-router shortcut: wrangler login + CF service token + secret put + ingress route + iOS plist install.</p>
+        <span class="card-slug">/ios-shortcut-deploy/</span>
+      </a>
+      <a href="/itinerary/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Itinerary · pre-sunrise punch list + full 36-section scope · 2026-05-23</h3>
+        </div>
+        <p class="card-desc">Extracted action items from nblmthread.txt — 36 sections, status-tagged (DONE/IN-PROGRESS/PENDING/BANNED). Pre-sunrise punch list + Critical pre-sunrise + Architecture P0 + No-Auth + PWA + Vision/Voice + Knowledge/Docs + Future vision.</p>
+        <span class="card-slug">/itinerary/</span>
+      </a>
+      <a href="/l7s-hero/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">L7S Hero | Seven Superpowers</h3>
+        </div>
+        <p class="card-desc">Seven specialist forces in your corner. Built for FOODIES.</p>
+        <span class="card-slug">/l7s-hero/</span>
+      </a>
+      <a href="/l7s-pulse/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">L7S Hero Pulse — One-Pager for FOODIES</h3>
+        </div>
+        
+        <span class="card-slug">/l7s-pulse/</span>
+      </a>
+      <a href="/l7shero/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">L7S Hero - Strategic Business Solutions</h3>
+        </div>
+        <p class="card-desc">Official L7S Hero portal. Strategic business consulting, education, and professional matchmaking for entrepreneurs and executives seeking operational excellence.</p>
+        <span class="card-slug">/l7shero/</span>
+      </a>
+      <a href="/lab/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">The Lab — Xen Build Telemetry</h3>
+        </div>
+        
+        <span class="card-slug">/lab/</span>
+      </a>
+      <a href="/luckie/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Luckie &quot;Links&quot; Goggins · L7S INC · Operator Hub</h3>
+        </div>
+        <p class="card-desc">Luckie Links Goggins — Founder/CEO L7S, INC. Systems Superhero. ABC</p>
+        <span class="card-slug">/luckie/</span>
+      </a>
+      <a href="/mb/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">M_B · Southern Soul Artist · Douglasville, GA</h3>
+        </div>
+        <p class="card-desc">M_B — Southern Soul Artist based out of Douglasville, GA. Mane Family Mafia.</p>
+        <span class="card-slug">/mb/</span>
+      </a>
+      <a href="/mbv2/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">M_B · Urban King of Southern Soul</h3>
+        </div>
+        <p class="card-desc">Independent artist · Douglasville GA · R&amp;B · hip-hop · southern soul · Now booking.</p>
+        <span class="card-slug">/mbv2/</span>
+      </a>
+      <a href="/mbv3/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">M_B® — Studio</h3>
+        </div>
+        <p class="card-desc">Music, performance, and booking. By M_B®.</p>
+        <span class="card-slug">/mbv3/</span>
+      </a>
+      <a href="/mbv4/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">M_B® STUDIO</h3>
+        </div>
+        <p class="card-desc">M_B® STUDIO — Trail anthems, R&amp;B heart, soul texture, bounce pulse, live fire.</p>
+        <span class="card-slug">/mbv4/</span>
+      </a>
+      <a href="/menu/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Self Exec · $111 Menu · One Unit At A Time</h3>
+        </div>
+        <p class="card-desc">Self Exec — every unit, $111 each. AI receptionist, speed-build sites, automation, branding, music ops, voice agents. One unit at a time.</p>
+        <span class="card-slug">/menu/</span>
+      </a>
+      <a href="/mesh/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Universal Mesh — Self Exec</h3>
+        </div>
+        <p class="card-desc">Live status of the Self Exec universal mesh — vessels, surfaces, client landings, and VEI loops. Automate or die.</p>
+        <span class="card-slug">/mesh/</span>
+      </a>
+      <a href="/nblm/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">NBLM Thread — Full-Scope Build Doc · 2026-05-17/18</h3>
+        </div>
+        
+        <span class="card-slug">/nblm/</span>
+      </a>
+      <a href="/nblmaudit/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Notebook Archivist</h3>
+        </div>
+        
+        <span class="card-slug">/nblmaudit/</span>
+      </a>
+      <a href="/offers/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">L7S Offer Ladder | Low → Mid → High</h3>
+        </div>
+        <p class="card-desc">L7S offer ladder — pay for attention, earn membership, close enterprise.</p>
+        <span class="card-slug">/offers/</span>
+      </a>
+      <a href="/padre/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Padre Sales Ops · Local Business Sites Playbook</h3>
+        </div>
+        <p class="card-desc">Local business website generation workflow · lead sourcing · site gen · Padre closing · pricing · orchestrator · distilled prompts from the meeting.</p>
+        <span class="card-slug">/padre/</span>
+      </a>
+      <a href="/pgs/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Shang Tsung PGS · soul-steal the source</h3>
+        </div>
+        <p class="card-desc">Shang Tsung PGS absorbs the source code of any site or app and hosts it live for repurposing. Powered by monolith. Lives in the MK Swarms sibling lane.</p>
+        <span class="card-slug">/pgs/</span>
+      </a>
+      <a href="/pin-feed/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Pinterest Feed · Infinite Topic Swipe</h3>
+        </div>
+        
+        <span class="card-slug">/pin-feed/</span>
+      </a>
+      <a href="/PriceHero/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">PriceHero · L7S Hero deliverables pricing calculator</h3>
+        </div>
+        <p class="card-desc">Interactive pricing calculator for L7S Hero deliverables. Angel-number tier ladder. Add deliverables, see live total.</p>
+        <span class="card-slug">/PriceHero/</span>
+      </a>
+      <a href="/rays/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Ray&#39;s Courses — Learning Hub</h3>
+        </div>
+        
+        <span class="card-slug">/rays/</span>
+      </a>
+      <a href="/rays-home/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Ray&#39;s House of Fun</h3>
+        </div>
+        <p class="card-desc">Ray</p>
+        <span class="card-slug">/rays-home/</span>
+      </a>
+      <a href="/sao/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">SEMI-AUTO OPS // COMMAND DECK V8.3</h3>
+        </div>
+        
+        <span class="card-slug">/sao/</span>
+      </a>
+      <a href="/sao2/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">SEMI-AUTO OPS // COMMAND DECK</h3>
+        </div>
+        
+        <span class="card-slug">/sao2/</span>
+      </a>
+      <a href="/sel/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Self Exec | Enterprise Automation &amp;amp; Intelligent Systems</h3>
+        </div>
+        <p class="card-desc">Enterprise automation and intelligent systems driving efficiency and revenue for forward-thinking businesses.</p>
+        <span class="card-slug">/sel/</span>
+      </a>
+      <a href="/selfexec/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Self Exec | Automation Consulting &amp;amp; ROI Systems</h3>
+        </div>
+        
+        <span class="card-slug">/selfexec/</span>
+      </a>
+      <a href="/selfown/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">SelfOwn_ · the GHL / LeadConnector killer</h3>
+        </div>
+        <p class="card-desc">SelfOwn_ is the for-profit XOS — built on the canonical Xenphone OS surface, designed to replace GoHighLevel / LeadConnector with sovereignty, no vendor lock, angel-number pricing.</p>
+        <span class="card-slug">/selfown/</span>
+      </a>
+      <a href="/shang/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Shang Tsung PGS · Absorbed Sources</h3>
+        </div>
+        <p class="card-desc">Soul-stealer of source code. Sites absorbed and hosted live for qi repurposing.</p>
+        <span class="card-slug">/shang/</span>
+      </a>
+      <a href="/signing/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Digital Forms Portal</h3>
+        </div>
+        
+        <span class="card-slug">/signing/</span>
+      </a>
+      <a href="/slid/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Video Gallery</h3>
+        </div>
+        
+        <span class="card-slug">/slid/</span>
+      </a>
+      <a href="/spine/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">The Business Spine — entities · payments · roadmaps</h3>
+        </div>
+        <p class="card-desc">Self Exec · Executive Leverage (R&amp;D) · Slurtech · L7S · Padre · the business spine · entity map · PayPal + Square payment lane · 3 visual roadmaps (ops · sales · fulfillment).</p>
+        <span class="card-slug">/spine/</span>
+      </a>
+      <a href="/stal-lyon/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">{{STAGE_NAME}} · {{GENRE_TAGLINE}}</h3>
+        </div>
+        <p class="card-desc">{{FULL_NAME}} — independent artist, {{LOCATION}}. R&amp;B · hip-hop · southern soul. Now booking.</p>
+        <span class="card-slug">/stal-lyon/</span>
+      </a>
+      <a href="/stal-lyon-populate/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Stal&#39;lyon · populate the 9 tokens · half-completion gate</h3>
+        </div>
+        <p class="card-desc">Token-fill form for Stal</p>
+        <span class="card-slug">/stal-lyon-populate/</span>
+      </a>
+      <a href="/status/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Status — Xen Live</h3>
+        </div>
+        
+        <span class="card-slug">/status/</span>
+      </a>
+      <a href="/stt/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">STT · VEI · Xen Voice Ingress</h3>
+        </div>
+        
+        <span class="card-slug">/stt/</span>
+      </a>
+      <a href="/studio/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Studio — Xen harness</h3>
+        </div>
+        
+        <span class="card-slug">/studio/</span>
+      </a>
+      <a href="/template-io-mission-control/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Template.io | Mission Control</h3>
+        </div>
+        
+        <span class="card-slug">/template-io-mission-control/</span>
+      </a>
+      <a href="/trackingtogether/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">TrackingTogether · automation agency</h3>
+        </div>
+        <p class="card-desc">TrackingTogether — automation agency, single-pane-of-glass scope. Eli operates against owned + client projects. 50/50 split at venture-revenue layer.</p>
+        <span class="card-slug">/trackingtogether/</span>
+      </a>
+      <a href="/uwi/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Omni-Stack Command Center</h3>
+        </div>
+        
+        <span class="card-slug">/uwi/</span>
+      </a>
+      <a href="/vectorgen/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Pro Client-Side SVG Converter</h3>
+        </div>
+        
+        <span class="card-slug">/vectorgen/</span>
+      </a>
+      <a href="/vei/" class="project-card group">
+        <div class="card-head">
+          <img src="/vei/icon.svg" alt="" class="card-icon" loading="lazy">
+          <h3 class="card-title">VEI · רוּחַ · voice echo input</h3>
+        </div>
+        <p class="card-desc">VEI (Voice Echo Input). Ruach-class STT, glass-over-video shell, omnimind dictate-inject pipeline. Public, no-auth, multi-device simultaneous.</p>
+        <span class="card-slug">/vei/</span>
+      </a>
+      <a href="/veinom/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">VEINOM · RUACH</h3>
+        </div>
+        
+        <span class="card-slug">/veinom/</span>
+      </a>
+      <a href="/VVS/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Variation Vault | East Allen Studios</h3>
+        </div>
+        
+        <span class="card-slug">/VVS/</span>
+      </a>
+      <a href="/wes/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Wesley Allen - Job Search Tracker</h3>
+        </div>
+        
+        <span class="card-slug">/wes/</span>
+      </a>
+      <a href="/wip/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">Selfown OS - Alpha</h3>
+        </div>
+        
+        <span class="card-slug">/wip/</span>
+      </a>
+      <a href="/xen/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">XEN — Tag It. It&#39;s There.</h3>
+        </div>
+        
+        <span class="card-slug">/xen/</span>
+      </a>
+      <a href="/xlrd-org/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">xlrd.org | Executive Leverage Research Development</h3>
+        </div>
+        <p class="card-desc">Open-source automation, AI, and digital systems designed to empower organizations. Transparent, accessible, and mission-driven.</p>
+        <span class="card-slug">/xlrd-org/</span>
+      </a>
+      <a href="/xlrd-tech/" class="project-card group">
+        <div class="card-head">
+          <div class="card-icon-placeholder"></div>
+          <h3 class="card-title">XLRD TECH — College of Letterman Wizardry</h3>
+        </div>
+        <p class="card-desc">XLRD TECH — College of Letterman Wizardry. Est. MMXXVI. House of Self Exec. Automate or die.</p>
+        <span class="card-slug">/xlrd-tech/</span>
+      </a>
+      <a href="/xos/" class="project-card group">
+        <div class="card-head">
+          <img src="/xos/icon.svg" alt="" class="card-icon" loading="lazy">
+          <h3 class="card-title">Xenphone OS — iOS 27 · dark</h3>
+        </div>
+        
+        <span class="card-slug">/xos/</span>
+      </a>
+      </div>
+      <p class="auto-projects-meta">Generated by <code>build-index.js</code> at 2026-05-29T00:14:00.343Z — every subdir with an <code>index.html</code> appears here automatically.</p>
+    </section>
+    <style>
+      .auto-projects { padding: 48px 24px; max-width: 1280px; margin: 0 auto; }
+      .auto-projects-heading { font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin: 0 0 24px; }
+      .auto-projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+      .project-card { display: block; padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; text-decoration: none; color: inherit; transition: all 0.18s ease; }
+      .project-card:hover { background: rgba(255,255,255,0.06); border-color: var(--theme-color, #D4AF37); transform: translateY(-2px); }
+      .card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+      .card-icon, .card-icon-placeholder { width: 28px; height: 28px; border-radius: 6px; object-fit: contain; flex-shrink: 0; }
+      .card-icon-placeholder { background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(31,95,63,0.2)); }
+      .card-title { font-size: 14px; font-weight: 600; margin: 0; color: #fff; }
+      .card-desc { font-size: 12px; color: rgba(255,255,255,0.65); margin: 0 0 8px; line-height: 1.4; max-height: 3.6em; overflow: hidden; }
+      .card-slug { font-family: ui-monospace, 'SF Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.4); }
+      .auto-projects-meta { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 24px; font-family: ui-monospace, 'SF Mono', monospace; }
+    </style>
+<!-- AUTO:PROJECTS:END -->
+</body>
+</html>

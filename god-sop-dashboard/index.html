@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G.O.D. SOP Dashboard | East Allen</title>
+    
+    <!-- Tailwind CSS (Reliable CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM (Stable Cloudflare CDN) -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (For JSX compilation) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            750: '#2d3748',
+                            850: '#1a202c',
+                            950: '#020617',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-900 text-slate-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- SELF-CONTAINED ICONS (No external dependency needed) ---
+        const Database = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>;
+        const Layers = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>;
+        const Cpu = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>;
+        const Search = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
+        const Zap = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+        const LayoutDashboard = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>;
+        const CreditCard = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>;
+        const Filter = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>;
+        const Globe = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>;
+        const Archive = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>;
+        const ArrowRight = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>;
+        const CheckCircle2 = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>;
+        const XCircle = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>;
+        const TrendingDown = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>;
+        const FileSpreadsheet = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>;
+        const Edit2 = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>;
+        const Trash2 = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>;
+        const Plus = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+        const Save = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
+
+        // --- INITIAL DATA: Commercial Stack ---
+        const initialCommercialStack = [
+          // GENERATE
+          { id: 1, name: 'Sintra.ai', layer: 'Generate', cost: 97.00, desc: 'AI overlay for CRM & marketing automation', type: 'SaaS' },
+          { id: 2, name: 'Trae.ai', layer: 'Generate', cost: 20.00, desc: 'Advanced AI reasoning & coding assistant', type: 'SaaS' },
+          { id: 3, name: 'Me.bot', layer: 'Generate', cost: 20.00, desc: 'Personalized AI extension of the mind', type: 'SaaS' },
+          { id: 5, name: 'CapCut', layer: 'Generate', cost: 9.99, desc: 'Pro video editing for short/long form', type: 'SaaS' },
+          { id: 7, name: 'Google AI Pro', layer: 'Generate', cost: 20.00, desc: 'Gemini integrated into Workspace', type: 'SaaS' },
+          { id: 8, name: 'html.onlineviewer.net', layer: 'Generate', cost: 0.00, desc: 'Code demonstration & sandboxing', type: 'Free Tool' },
+          { id: 30, name: 'Photoroom', layer: 'Generate', cost: 10.00, desc: 'AI photo editing & background removal', type: 'SaaS' },
+          { id: 31, name: 'Grok', layer: 'Generate', cost: 0.00, desc: 'Real-time AI search & generation', type: 'Free Tool' },
+          { id: 32, name: 'Sora', layer: 'Generate', cost: 0.00, desc: 'Cinematic AI video generation', type: 'Free Tool' },
+
+          // OPERATE
+          { id: 6, name: 'Perplexity Pro', layer: 'Operate', cost: 20.00, desc: 'AI search with real-time web access', type: 'SaaS' }, 
+          { id: 10, name: 'QuickBooks', layer: 'Operate', cost: 35.00, desc: 'Financial management & accounting', type: 'SaaS' },
+          { id: 34, name: 'Comet Browser', layer: 'Operate', cost: 0.00, desc: 'AI-first web browser', type: 'Free Tool' },
+          { id: 40, name: 'Wispr Flow', layer: 'Operate', cost: 0.00, desc: 'AI voice dictation & workflow', type: 'Free Tool' },
+          { id: 13, name: 'Asana', layer: 'Operate', cost: 0.00, desc: 'Project management & work tracker', type: 'Free Tier' },
+          { id: 38, name: 'Lark', layer: 'Operate', cost: 0.00, desc: 'All-in-one collaboration suite', type: 'Free Tier' },
+          { id: 15, name: 'Slack', layer: 'Operate', cost: 0.00, desc: 'Internal team communication hub', type: 'Free Tier' },
+          { id: 17, name: 'Docker', layer: 'Operate', cost: 0.00, desc: 'Containerization platform', type: 'Free Tier' },
+          { id: 18, name: 'Cal/Calendly', layer: 'Operate', cost: 0.00, desc: 'Client scheduling & billing', type: 'Free Tier' },
+
+          // DISTRIBUTE
+          { id: 35, name: 'HubSpot', layer: 'Distribute', cost: 0.00, desc: 'CRM, Marketing, Sales, and Service', type: 'Free Tier' }, 
+          { id: 33, name: 'Wave Apps', layer: 'Distribute', cost: 0.00, desc: 'Free invoicing & accounting software', type: 'Free Tool' }, 
+          { id: 20, name: 'Skool', layer: 'Distribute', cost: 9.00, desc: 'Community building & courses', type: 'SaaS' },
+          { id: 36, name: 'Beside AI', layer: 'Distribute', cost: 29.00, desc: 'AI Phone Agents & Receptionists', type: 'SaaS' }, 
+          { id: 41, name: 'Spaceship.com', layer: 'Distribute', cost: 1.67, desc: 'Domain registration & hosting ($20/yr)', type: 'SaaS' },
+          { id: 22, name: 'DocuSign', layer: 'Distribute', cost: 15.00, desc: 'Secure digital signatures', type: 'SaaS' },
+          { id: 24, name: 'n8n', layer: 'Distribute', cost: 0.00, desc: 'Self-hosted workflow automation', type: 'Open Source' },
+          { id: 39, name: 'Zapier', layer: 'Distribute', cost: 0.00, desc: 'Workflow automation (credits caution!)', type: 'Free Tier' },
+          { id: 37, name: 'GitHub Pages', layer: 'Distribute', cost: 0.00, desc: 'Static site hosting', type: 'Free Tool' },
+        ];
+
+        // --- INITIAL DATA: Pinokio Stack ---
+        const initialPinokioStack = [
+          // 1-1-1 Ultra Minimal
+          { id: 101, name: 'Fish Speech', layer: 'Generate', tier: 'Ultra-Minimal (1-1-1)', desc: 'Voice cloning & TTS', replace: 'ElevenLabs', cost: 0 },
+          { id: 102, name: 'Open WebUI', layer: 'Operate', tier: 'Ultra-Minimal (1-1-1)', desc: 'Local LLM Management', replace: 'ChatGPT Plus', cost: 0 },
+          { id: 103, name: 'Lobe Chat', layer: 'Distribute', tier: 'Ultra-Minimal (1-1-1)', desc: 'Client-facing AI UI', replace: 'Custom Chatbots', cost: 0 },
+          // 3-3-3 Essential
+          { id: 104, name: 'ComfyUI', layer: 'Generate', tier: 'Essential (3-3-3)', desc: 'Advanced Image/Video Gen', replace: 'Midjourney/Runway', cost: 0 },
+          { id: 105, name: 'DiffRhythm', layer: 'Generate', tier: 'Essential (3-3-3)', desc: 'Rhythm-based Audio Gen', replace: 'Suno', cost: 0 },
+          { id: 106, name: 'browser-use', layer: 'Operate', tier: 'Essential (3-3-3)', desc: 'Automated Browser Tasks', replace: 'Bardeen', cost: 0 },
+          { id: 107, name: 'MagicQuill', layer: 'Operate', tier: 'Essential (3-3-3)', desc: 'Interactive Image Editing', replace: 'Photoshop AI', cost: 0 },
+          { id: 108, name: 'StyleTTS2 Studio', layer: 'Distribute', tier: 'Essential (3-3-3)', desc: 'High-fidelity TTS', replace: 'Murf.ai', cost: 0 },
+          { id: 109, name: 'RMBG-2', layer: 'Distribute', tier: 'Essential (3-3-3)', desc: 'Background Removal', replace: 'Photoroom', cost: 0 },
+          // 9-9-9 Professional
+          { id: 110, name: 'FaceFusion', layer: 'Generate', tier: 'Professional (9-9-9)', desc: 'Face Swapping/Manipulation', replace: 'Reface', cost: 0 },
+          { id: 111, name: 'CogStudio', layer: 'Generate', tier: 'Professional (9-9-9)', desc: 'Visual Content Suite', replace: 'Canva AI', cost: 0 },
+          { id: 112, name: 'ditto', layer: 'Operate', tier: 'Professional (9-9-9)', desc: 'Clipboard/Data Manager', replace: 'Raycast', cost: 0 },
+          { id: 113, name: 'Florence2', layer: 'Operate', tier: 'Professional (9-9-9)', desc: 'Vision-Language Processing', replace: 'GPT-4 Vision', cost: 0 },
+          { id: 114, name: 'PhotoMaker2', layer: 'Distribute', tier: 'Professional (9-9-9)', desc: 'Consistent Character Photos', replace: 'Headshot Pro', cost: 0 },
+          { id: 115, name: 'Applio', layer: 'Distribute', tier: 'Professional (9-9-9)', desc: 'Audio App Deployment', replace: 'Vapi', cost: 0 },
+        ];
+
+        const testedToolsRaw = [
+          "21st.dev", "500Apps", "8x8 Video Meetings", "Abacus.AI", "AgentOps", "AI Image Generator for Chat™", "AI21", "Airbnb", "Airmail iOS", "Akiflow", "Amazon Alexa", "App Academy Open", "Appilix", "Asana", "Atlassian", "Attrove", "Authenticator App",
+          "Back Market", "Backtrack", "BandLab", "Bardeen Login", "Bee", "Beside - AI Phone Assistant", "Bitdefender Login", "Blackbox", "BlueBubbles", "Box", "Box for Google Workspace",
+          "Cal.com", "Calendars", "Calendly", "Canary Mail", "Canva", "CapCut", "CapCut-Web", "character.ai", "chat.deepseek.com", "ChatGPT", "Claude", "ClearVPN", "Clipboard History Pro", "cloudHQ", "CloudMounter", "CodeDesign.app", "CodePen", "Comet", "Complily", "Composio", "Craft Docs",
+          "DeepbrainAI", "Deepgram Console", "Den", "Descript", "dev.to", "Do Browser", "Docker", "Documents by Readdle", "Dreamina",
+          "eBay", "ElevenLabs", "EmailJS", "Envato", "Eventbrite", "Exa Websets",
+          "Famous.ai", "Fantastical", "FastBots.ai", "FeloAI", "Figma", "FileBrowserGO", "Fiverr", "Flexibits", "Flibbo", "flowith", "Framer", "FreeConferenceCall",
+          "Galaxy AI", "Gemini Code Assist", "Genspark", "GitHub", "GoodRx", "Google AI Studio", "Google Antigravity", "Google AppSheet",
+          "HeyGen", "HighLevel", "Hints", "HyNote", "Hyper3D",
+          "Ideabrowser", "IFTTT", "IGFollowExport", "Image Line Software", "imgix", "Imgur", "Internet Archive", "invideo AI",
+          "Jitsi Meet", "Jitsu", "Jump Desktop", "Kilo Code", "Kimi", "Kits AI",
+          "LG ThinQ", "Lindy", "Linear", "LinkedIn", "LobeChat Cloud", "Logitech", "Loom", "Lunary",
+          "macOS", "MagicSlides App", "Make", "Manus", "Manychat", "Martin", "MasterClass", "Medium", "meeting.ai", "Meshy", "Micro Center", "Microsoft apps", "Mixed In Key", "Mobbin", "Monica", "MoonX", "Motion", "Moto Account", "Mozilla accounts", "mysms",
+          "Netlify", "Nextdoor", "Notion", "NVIDIA", "Opal", "OpenRouter", "OtterAI",
+          "PackPack", "PayPal", "Perplexity AI", "Photoroom", "Pinterest", "Pipedream", "Plaud", "Plex", "Power Thesaurus", "Product Hunt",
+          "Quo", "Railway", "Raindrop.io", "Raycast", "Ready to Send", "Reddit", "RemotePC", "RenderForest", "Replit", "Rev", "Revolut", "RoutineHub", "RSS.app",
+          "Same", "Scribd Inc.", "Second Me", "Setapp", "Sim", "Sintra", "Skyvern", "Slack", "SmartLife", "SmartThings", "SoundCloud", "Spark", "Spellar AI", "Spike iGPT", "Spline", "Spotify", "StackCommerce", "Strava", "Stripe", "Suno", "supadev-app", "Synthesia",
+          "T-Mobile US", "Tabber", "Tailscale", "TaskLabs", "TaxGPT", "TeamViewer", "Termius", "test", "TextApp", "TextBee", "TextFree", "Textmagic", "TextNow App", "textPlus", "Thinkific", "TikTok", "Todoist", "Trae",
+          "uncharted-mvp-auth", "Unhook", "Vapi", "Vercel", "Vercept", "VibeCode", "VoiceDub",
+          "wan.video", "Waves Audio", "WAVS", "Waze", "WhatsApp Messenger", "Wispr Flow", "X", "xAI", "XVibe AI", "you.com", "Zapier", "Zoom"
+        ];
+
+        const totalTestedCount = 238;
+
+        // --- COMPONENTS ---
+
+        const StatCard = ({ title, value, sub, icon: Icon, color }) => (
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 flex items-start space-x-4 hover:bg-slate-750 transition-all duration-300 shadow-lg group">
+                <div className={`p-3 rounded-lg bg-opacity-20 ${color.replace('text-', 'bg-')}`}>
+                    <Icon className={`w-6 h-6 ${color}`} />
+                </div>
+                <div>
+                    <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">{title}</p>
+                    <h3 className="text-3xl font-bold text-white mt-1 group-hover:scale-105 transition-transform origin-left">{value}</h3>
+                    <p className="text-slate-500 text-xs mt-1">{sub}</p>
+                </div>
+            </div>
+        );
+
+        const ToolCard = ({ tool, isPinokio, compact = false, isEditMode, onUpdate, onDelete }) => {
+            let layerColor = "border-slate-600";
+            let badgeColor = "bg-slate-700 text-slate-300";
+            let shadowColor = "hover:shadow-slate-500/10";
+            
+            if (tool.layer === 'Generate') { 
+                layerColor = "border-fuchsia-500/50 hover:border-fuchsia-500"; 
+                badgeColor = "bg-fuchsia-900/40 text-fuchsia-300 border border-fuchsia-500/20";
+                shadowColor = "hover:shadow-fuchsia-500/20";
+            }
+            if (tool.layer === 'Operate') { 
+                layerColor = "border-cyan-500/50 hover:border-cyan-500"; 
+                badgeColor = "bg-cyan-900/40 text-cyan-300 border border-cyan-500/20";
+                shadowColor = "hover:shadow-cyan-500/20";
+            }
+            if (tool.layer === 'Distribute') { 
+                layerColor = "border-amber-500/50 hover:border-amber-500"; 
+                badgeColor = "bg-amber-900/40 text-amber-300 border border-amber-500/20";
+                shadowColor = "hover:shadow-amber-500/20";
+            }
+
+            // Safe formatting helper
+            const formatCost = (cost) => {
+                const val = parseFloat(cost) || 0;
+                return val.toFixed(2);
+            };
+
+            if (isEditMode) {
+                return (
+                    <div className={`bg-slate-800 border-l-4 ${layerColor} rounded-r-lg p-4 shadow-lg relative group transition-all duration-300`}>
+                        <div className="flex justify-between items-start mb-2 gap-2">
+                             <input 
+                                type="text" 
+                                value={tool.name} 
+                                onChange={(e) => onUpdate(tool.id, 'name', e.target.value)}
+                                className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm font-bold text-white w-full focus:ring-2 focus:ring-indigo-500 outline-none"
+                                placeholder="Tool Name"
+                             />
+                             <button onClick={() => onDelete(tool.id)} className="text-red-400 hover:text-red-300 bg-slate-900 p-1 rounded hover:bg-slate-700"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                             <select 
+                                value={tool.layer} 
+                                onChange={(e) => onUpdate(tool.id, 'layer', e.target.value)}
+                                className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300 outline-none"
+                             >
+                                <option>Generate</option>
+                                <option>Operate</option>
+                                <option>Distribute</option>
+                             </select>
+                             <div className="flex items-center">
+                                <span className="text-slate-500 mr-1 text-xs">$</span>
+                                <input 
+                                    type="number" 
+                                    value={tool.cost} 
+                                    onChange={(e) => onUpdate(tool.id, 'cost', e.target.value)}
+                                    className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white w-full outline-none"
+                                    placeholder="0.00"
+                                />
+                             </div>
+                        </div>
+                        <textarea 
+                             value={tool.desc} 
+                             onChange={(e) => onUpdate(tool.id, 'desc', e.target.value)}
+                             className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-400 w-full mb-2 outline-none h-16"
+                             placeholder="Description"
+                        />
+                        {isPinokio && (
+                            <input 
+                                type="text" 
+                                value={tool.replace} 
+                                onChange={(e) => onUpdate(tool.id, 'replace', e.target.value)}
+                                className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-rose-400 w-full outline-none"
+                                placeholder="Replaces..."
+                            />
+                        )}
+                    </div>
+                );
+            }
+
+            if (compact) {
+                const costVal = parseFloat(tool.cost) || 0;
+                return (
+                    <div className={`bg-slate-850 border-l-2 ${layerColor} rounded p-3 mb-2 shadow-md hover:translate-x-1 transition-all group relative overflow-hidden`}>
+                         <div className="flex justify-between items-center">
+                             <h4 className="font-bold text-sm text-slate-200">{tool.name}</h4>
+                             <span className={`text-[10px] font-mono ${costVal === 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                {costVal === 0 ? 'FREE' : `$${formatCost(tool.cost)}`}
+                             </span>
+                         </div>
+                         <p className="text-[10px] text-slate-500 truncate mt-1 group-hover:text-slate-300 transition-colors">{tool.desc}</p>
+                    </div>
+                );
+            }
+
+            const costVal = parseFloat(tool.cost) || 0;
+            return (
+            <div className={`bg-slate-800 border-l-4 ${layerColor} rounded-r-lg p-5 shadow-lg relative group overflow-hidden transition-all duration-300 hover:translate-x-1 ${shadowColor} hover:shadow-xl`}>
+                <div className="flex justify-between items-start mb-2">
+                <h4 className="text-lg font-bold text-white">{tool.name}</h4>
+                <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${badgeColor}`}>
+                    {tool.layer}
+                </span>
+                </div>
+                <p className="text-slate-400 text-sm mb-4 min-h-[40px]">{tool.desc}</p>
+                
+                <div className="flex justify-between items-end border-t border-slate-700 pt-3 mt-auto">
+                {isPinokio ? (
+                    <div>
+                    <p className="text-xs text-slate-500">Replaces</p>
+                    <p className="text-sm font-medium text-rose-400">{tool.replace}</p>
+                    </div>
+                ) : (
+                    <div>
+                        <p className="text-xs text-slate-500">Type</p>
+                        <p className="text-sm text-slate-300">{tool.type}</p>
+                    </div>
+                )}
+                
+                <div className="text-right">
+                    <p className="text-xs text-slate-500">Cost</p>
+                    <p className={`text-lg font-bold ${isPinokio ? 'text-emerald-400' : 'text-white'}`}>
+                    {isPinokio ? '$0' : costVal > 0 ? `$${formatCost(tool.cost)}` : 'Free'}
+                    </p>
+                </div>
+                </div>
+                
+                {/* Hover Effect Glitch */}
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-5 transition-opacity pointer-events-none"></div>
+            </div>
+            );
+        };
+
+        const LayerFilter = ({ filterLayer, setFilterLayer }) => (
+            <div className="flex space-x-2 mb-6 overflow-x-auto pb-2">
+            {['All', 'Generate', 'Operate', 'Distribute'].map((l) => (
+                <button
+                key={l}
+                onClick={() => setFilterLayer(l)}
+                className={`px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+                    filterLayer === l 
+                    ? 'bg-slate-100 text-slate-900' 
+                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                }`}
+                >
+                {l}
+                </button>
+            ))}
+            </div>
+        );
+
+        // --- MAIN APP ---
+
+        function GodSopDashboard() {
+            const [activeTab, setActiveTab] = useState('infographic');
+            const [filterLayer, setFilterLayer] = useState('All');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [isEditMode, setIsEditMode] = useState(false);
+
+            // Data State
+            const [commercialTools, setCommercialTools] = useState(initialCommercialStack);
+            const [pinokioTools, setPinokioTools] = useState(initialPinokioStack);
+
+            // Auto-Calculation
+            const monthlyCostCommercial = useMemo(() => {
+                return commercialTools.reduce((acc, tool) => acc + (parseFloat(tool.cost) || 0), 0).toFixed(2);
+            }, [commercialTools]);
+
+            // Handlers
+            const updateCommercialTool = (id, field, value) => {
+                setCommercialTools(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+            };
+            const updatePinokioTool = (id, field, value) => {
+                setPinokioTools(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+            };
+
+            const deleteCommercialTool = (id) => {
+                if (confirm('Delete this tool?')) setCommercialTools(prev => prev.filter(t => t.id !== id));
+            };
+            const deletePinokioTool = (id) => {
+                if (confirm('Delete this tool?')) setPinokioTools(prev => prev.filter(t => t.id !== id));
+            };
+
+            const addCommercialTool = () => {
+                const newId = Math.max(...commercialTools.map(t => t.id), 0) + 1;
+                setCommercialTools([...commercialTools, { id: newId, name: 'New Tool', layer: 'Generate', cost: 0, desc: 'Description here', type: 'SaaS' }]);
+            };
+             const addPinokioTool = () => {
+                const newId = Math.max(...pinokioTools.map(t => t.id), 0) + 1;
+                setPinokioTools([...pinokioTools, { id: newId, name: 'New Local Tool', layer: 'Generate', cost: 0, desc: 'Description here', replace: 'Replacements', tier: 'Professional (9-9-9)' }]);
+            };
+
+
+            // Sub-views defined inside to access state easily
+            const OverviewView = () => (
+                <div className="space-y-8 animate-fade-in">
+                    {/* Hero Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <StatCard title="Total Tools Tested" value={totalTestedCount} sub="Research Phase" icon={Search} color="text-indigo-400" />
+                        <StatCard title="Commercial Stack" value={commercialTools.length} sub="The Winners" icon={Zap} color="text-emerald-400" />
+                        <StatCard title="Monthly Cost (SaaS)" value={`$${monthlyCostCommercial}`} sub="Enterprise Grade" icon={CreditCard} color="text-rose-400" />
+                        <StatCard title="Pinokio Cost" value="$0.00" sub="Self-Hosted ROI" icon={Cpu} color="text-cyan-400" />
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* The Funnel */}
+                        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 lg:col-span-1">
+                            <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                                <Filter className="w-5 h-5 mr-2 text-indigo-400" />
+                                Selection Funnel
+                            </h3>
+                            <div className="space-y-2">
+                                <div className="relative h-16 w-full bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden group cursor-pointer" onClick={() => setActiveTab('archive')}>
+                                    <div className="absolute inset-0 bg-indigo-900/50 w-full group-hover:bg-indigo-900/70 transition-colors"></div>
+                                    <span className="relative z-10 font-bold text-indigo-200">238 Tested Apps</span>
+                                    <div className="absolute bottom-0 left-0 h-1 bg-indigo-500 w-full"></div>
+                                </div>
+                                <div className="flex justify-center"><ArrowRight className="text-slate-500 rotate-90" /></div>
+                                <div className="relative h-16 w-3/4 mx-auto bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => setActiveTab('commercial')}>
+                                    <div className="absolute inset-0 bg-emerald-900/50 w-full hover:bg-emerald-900/70 transition-colors"></div>
+                                    <span className="relative z-10 font-bold text-emerald-200">{commercialTools.length} Winners</span>
+                                    <div className="absolute bottom-0 left-0 h-1 bg-emerald-500 w-full"></div>
+                                </div>
+                                <div className="flex justify-center"><ArrowRight className="text-slate-500 rotate-90" /></div>
+                                <div className="relative h-16 w-1/2 mx-auto bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => setActiveTab('pinokio')}>
+                                    <div className="absolute inset-0 bg-cyan-900/50 w-full hover:bg-cyan-900/70 transition-colors"></div>
+                                    <span className="relative z-10 font-bold text-cyan-200">Pinokio ($0)</span>
+                                    <div className="absolute bottom-0 left-0 h-1 bg-cyan-500 w-full"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Cost Analysis Chart */}
+                        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 lg:col-span-2">
+                            <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                                <TrendingDown className="w-5 h-5 mr-2 text-rose-400" />
+                                Cost Analysis (Monthly)
+                            </h3>
+                            <div className="space-y-6">
+                                <div>
+                                    <div className="flex justify-between text-sm mb-2 text-slate-300">
+                                        <span>Commercial SaaS Stack</span>
+                                        <span className="font-bold text-rose-400">${monthlyCostCommercial}/mo</span>
+                                    </div>
+                                    <div className="h-4 bg-slate-700 rounded-full overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-rose-500 to-orange-500 w-full animate-pulse-slow"></div>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-2">Includes {commercialTools[0]?.name}, {commercialTools[commercialTools.length-1]?.name}, etc.</p>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between text-sm mb-2 text-slate-300">
+                                        <span>Pinokio Self-Hosted</span>
+                                        <span className="font-bold text-emerald-400">$0.00/mo</span>
+                                    </div>
+                                    <div className="h-4 bg-slate-700 rounded-full overflow-hidden flex items-center">
+                                        <div className="h-full bg-emerald-500 w-[1px]"></div>
+                                        <span className="text-[10px] ml-2 text-emerald-500 font-mono">100% SAVINGS</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-2">Replaces subscriptions with local compute.</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                                <h4 className="text-sm font-bold text-white mb-2">The G.O.D. Strategy</h4>
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div className="p-2 rounded bg-fuchsia-900/20 text-fuchsia-300 border border-fuchsia-900/50">
+                                        <span className="block text-xs uppercase opacity-70">Generate</span>
+                                        <span className="font-bold">Content</span>
+                                    </div>
+                                    <div className="p-2 rounded bg-cyan-900/20 text-cyan-300 border border-cyan-900/50">
+                                        <span className="block text-xs uppercase opacity-70">Operate</span>
+                                        <span className="font-bold">Systems</span>
+                                    </div>
+                                    <div className="p-2 rounded bg-amber-900/20 text-amber-300 border border-amber-900/50">
+                                        <span className="block text-xs uppercase opacity-70">Distribute</span>
+                                        <span className="font-bold">Sales</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // NEW: 9-9-9 Infographic View
+            const InfographicView = () => {
+                const generateTools = commercialTools.filter(t => t.layer === 'Generate');
+                const operateTools = commercialTools.filter(t => t.layer === 'Operate');
+                const distributeTools = commercialTools.filter(t => t.layer === 'Distribute');
+
+                return (
+                    <div className="animate-fade-in pb-10">
+                        <div className="text-center mb-10">
+                            <h2 className="text-4xl font-extrabold text-white tracking-tight mb-2">The {generateTools.length}-{operateTools.length}-{distributeTools.length} Framework</h2>
+                            <p className="text-slate-400 text-lg">{commercialTools.length} Tools. ${monthlyCostCommercial}/mo. Complete Startup ROI Protection.</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                            {/* GENERATE COLUMN */}
+                            <div className="bg-slate-800/50 border border-fuchsia-900/30 rounded-xl overflow-hidden shadow-2xl shadow-fuchsia-900/10">
+                                <div className="bg-fuchsia-900/30 p-4 border-b border-fuchsia-500/20 flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <div className="p-2 bg-fuchsia-500/20 rounded-lg mr-3"><Zap className="w-5 h-5 text-fuchsia-300" /></div>
+                                        <h3 className="text-xl font-bold text-fuchsia-100">GENERATE</h3>
+                                    </div>
+                                    <span className="text-xs bg-fuchsia-950 text-fuchsia-300 px-2 py-1 rounded">{generateTools.length} Tools</span>
+                                </div>
+                                <div className="p-4 bg-gradient-to-b from-slate-900 to-slate-800 h-full">
+                                    {generateTools.map((tool, i) => (
+                                        <ToolCard key={i} tool={tool} compact={true} />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* OPERATE COLUMN */}
+                            <div className="bg-slate-800/50 border border-cyan-900/30 rounded-xl overflow-hidden shadow-2xl shadow-cyan-900/10">
+                                <div className="bg-cyan-900/30 p-4 border-b border-cyan-500/20 flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <div className="p-2 bg-cyan-500/20 rounded-lg mr-3"><Cpu className="w-5 h-5 text-cyan-300" /></div>
+                                        <h3 className="text-xl font-bold text-cyan-100">OPERATE</h3>
+                                    </div>
+                                    <span className="text-xs bg-cyan-950 text-cyan-300 px-2 py-1 rounded">{operateTools.length} Tools</span>
+                                </div>
+                                <div className="p-4 bg-gradient-to-b from-slate-900 to-slate-800 h-full">
+                                    {operateTools.map((tool, i) => (
+                                        <ToolCard key={i} tool={tool} compact={true} />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* DISTRIBUTE COLUMN */}
+                            <div className="bg-slate-800/50 border border-amber-900/30 rounded-xl overflow-hidden shadow-2xl shadow-amber-900/10">
+                                <div className="bg-amber-900/30 p-4 border-b border-amber-500/20 flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <div className="p-2 bg-amber-500/20 rounded-lg mr-3"><Globe className="w-5 h-5 text-amber-300" /></div>
+                                        <h3 className="text-xl font-bold text-amber-100">DISTRIBUTE</h3>
+                                    </div>
+                                    <span className="text-xs bg-amber-950 text-amber-300 px-2 py-1 rounded">{distributeTools.length} Tools</span>
+                                </div>
+                                <div className="p-4 bg-gradient-to-b from-slate-900 to-slate-800 h-full">
+                                    {distributeTools.map((tool, i) => (
+                                        <ToolCard key={i} tool={tool} compact={true} />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                         <div className="mt-8 text-center text-xs text-slate-500">
+                             *Pricing dynamically calculated based on current configuration.
+                        </div>
+                    </div>
+                );
+            };
+
+            const CommercialView = () => {
+                const filtered = commercialTools.filter(t => filterLayer === 'All' || t.layer === filterLayer);
+                
+                return (
+                <div className="animate-slide-up">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white mb-4 md:mb-0">The {commercialTools.length} "Winners" (Detail View)</h2>
+                    <LayerFilter filterLayer={filterLayer} setFilterLayer={setFilterLayer} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filtered.map((tool) => (
+                        <ToolCard 
+                            key={tool.id} 
+                            tool={tool} 
+                            isPinokio={false} 
+                            isEditMode={isEditMode}
+                            onUpdate={updateCommercialTool}
+                            onDelete={deleteCommercialTool}
+                        />
+                    ))}
+                    </div>
+                    {isEditMode && (
+                        <button onClick={addCommercialTool} className="mt-6 w-full py-3 border-2 border-dashed border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-slate-500 hover:bg-slate-800 transition-all flex items-center justify-center font-bold">
+                            <Plus className="w-5 h-5 mr-2" /> Add Tool to Commercial Stack
+                        </button>
+                    )}
+                </div>
+                );
+            };
+
+            const PinokioView = () => {
+                const filtered = pinokioTools.filter(t => filterLayer === 'All' || t.layer === filterLayer);
+                
+                return (
+                <div className="animate-slide-up">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white mb-4 md:mb-0">Pinokio Self-Hosted</h2>
+                    <LayerFilter filterLayer={filterLayer} setFilterLayer={setFilterLayer} />
+                    </div>
+                    
+                    {/* Tiers Explanation */}
+                    <div className="grid grid-cols-3 gap-2 mb-8 text-center text-xs md:text-sm">
+                    <div className="bg-slate-800 p-2 rounded border border-slate-700">
+                        <span className="block font-bold text-white">1-1-1</span>
+                        <span className="text-slate-400">Ultra-Minimal</span>
+                    </div>
+                    <div className="bg-slate-800 p-2 rounded border border-slate-700">
+                        <span className="block font-bold text-white">3-3-3</span>
+                        <span className="text-slate-400">Essential</span>
+                    </div>
+                    <div className="bg-slate-800 p-2 rounded border border-slate-700">
+                        <span className="block font-bold text-white">9-9-9</span>
+                        <span className="text-slate-400">Professional</span>
+                    </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filtered.map((tool) => (
+                        <ToolCard 
+                            key={tool.id} 
+                            tool={tool} 
+                            isPinokio={true} 
+                            isEditMode={isEditMode}
+                            onUpdate={updatePinokioTool}
+                            onDelete={deletePinokioTool}
+                        />
+                    ))}
+                    </div>
+
+                    {isEditMode && (
+                        <button onClick={addPinokioTool} className="mt-6 w-full py-3 border-2 border-dashed border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-slate-500 hover:bg-slate-800 transition-all flex items-center justify-center font-bold">
+                            <Plus className="w-5 h-5 mr-2" /> Add Tool to Pinokio Stack
+                        </button>
+                    )}
+
+                    <div className="mt-8 p-4 bg-cyan-900/20 border border-cyan-500/30 rounded-lg text-cyan-200 text-center text-sm">
+                    Analogy: This stack is a "Mechanic's Garage". You pay $0 because you build the high-performance machines yourself using free, industrial-grade parts.
+                    </div>
+                </div>
+                );
+            };
+
+            const ArchiveView = () => {
+                const filtered = testedToolsRaw.filter(t => t.toLowerCase().includes(searchTerm.toLowerCase()));
+
+                return (
+                <div className="animate-slide-up h-full flex flex-col">
+                    <div className="mb-6 relative">
+                    <Search className="absolute left-3 top-3 text-slate-500 w-5 h-5" />
+                    <input 
+                        type="text" 
+                        placeholder="Search the 238 tested apps (e.g., 'Zoom', 'Zapier')"
+                        className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto bg-slate-800/50 rounded-lg border border-slate-700 p-4 max-h-[60vh]">
+                    {filtered.length === 0 ? (
+                        <div className="text-center text-slate-500 mt-10">No tools found matching "{searchTerm}"</div>
+                    ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {filtered.map((tool, i) => {
+                            const isWinner = commercialTools.find(c => c.name.includes(tool)) || pinokioTools.find(p => p.name.includes(tool));
+                            return (
+                            <div key={i} className={`p-2 rounded text-sm flex items-center space-x-2 ${isWinner ? 'bg-emerald-900/30 text-emerald-300 border border-emerald-500/30' : 'bg-slate-700/50 text-slate-400'}`}>
+                                {isWinner ? <CheckCircle2 className="w-3 h-3 flex-shrink-0" /> : <XCircle className="w-3 h-3 flex-shrink-0 opacity-50" />}
+                                <span className="truncate" title={tool}>{tool}</span>
+                            </div>
+                            );
+                        })}
+                        </div>
+                    )}
+                    </div>
+                    <div className="mt-4 text-xs text-slate-500 text-center">
+                    Showing {filtered.length} of {testedToolsRaw.length} tools tested during R&D.
+                    </div>
+                </div>
+                );
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-900 text-slate-200 font-sans selection:bg-indigo-500 selection:text-white pb-20">
+                    <nav className="border-b border-slate-700 bg-slate-950/50 backdrop-blur-md sticky top-0 z-50">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex items-center justify-between h-16">
+                                <div className="flex items-center">
+                                    <Database className="h-8 w-8 text-indigo-500" />
+                                    <div className="ml-3">
+                                        <h1 className="text-xl font-bold text-white tracking-tight">G.O.D. SOP <span className="text-indigo-500">DASHBOARD</span></h1>
+                                        <p className="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Generate • Operate • Distribute</p>
+                                    </div>
+                                </div>
+                                <div className="hidden md:flex items-center space-x-4">
+                                     <div className="flex items-baseline space-x-2">
+                                        {[
+                                            { id: 'overview', label: 'Overview', Icon: LayoutDashboard },
+                                            { id: 'infographic', label: 'Infographic', Icon: FileSpreadsheet },
+                                            { id: 'commercial', label: 'Commercial', Icon: Globe },
+                                            { id: 'pinokio', label: 'Pinokio', Icon: Cpu },
+                                            { id: 'archive', label: 'Archive', Icon: Archive },
+                                        ].map((item) => (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => setActiveTab(item.id)}
+                                                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                                                    activeTab === item.id
+                                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                                                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                                                }`}
+                                            >
+                                                <item.Icon className="w-4 h-4 mr-2" />
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="w-px h-6 bg-slate-700 mx-2"></div>
+                                    <button 
+                                        onClick={() => setIsEditMode(!isEditMode)}
+                                        className={`p-2 rounded-full transition-all ${isEditMode ? 'bg-amber-500 text-white animate-pulse' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                                        title={isEditMode ? "Save / Exit Edit Mode" : "Edit Tools"}
+                                    >
+                                        {isEditMode ? <Save className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <div className="md:hidden flex justify-around bg-slate-800 border-t border-slate-700 fixed bottom-0 w-full z-50 p-2 overflow-x-auto">
+                        {[
+                            { id: 'overview', Icon: LayoutDashboard },
+                            { id: 'infographic', Icon: FileSpreadsheet },
+                            { id: 'commercial', Icon: Globe },
+                            { id: 'pinokio', Icon: Cpu },
+                            { id: 'archive', Icon: Archive },
+                        ].map((item) => (
+                            <button
+                                key={item.id}
+                                onClick={() => setActiveTab(item.id)}
+                                className={`p-3 rounded-full flex-shrink-0 ${activeTab === item.id ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}
+                            >
+                                <item.Icon className="w-6 h-6" />
+                            </button>
+                        ))}
+                         <button 
+                            onClick={() => setIsEditMode(!isEditMode)}
+                            className={`p-3 rounded-full flex-shrink-0 ${isEditMode ? 'bg-amber-500 text-white' : 'bg-slate-700 text-slate-400'}`}
+                        >
+                            {isEditMode ? <Save className="w-6 h-6" /> : <Edit2 className="w-6 h-6" />}
+                        </button>
+                    </div>
+
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {activeTab === 'overview' && <OverviewView />}
+                        {activeTab === 'infographic' && <InfographicView />}
+                        {activeTab === 'commercial' && <CommercialView />}
+                        {activeTab === 'pinokio' && <PinokioView />}
+                        {activeTab === 'archive' && <ArchiveView />}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<GodSopDashboard />);
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

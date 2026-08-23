@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Self Exec · Automation &amp; AI Consulting</title>
+<meta name="description" content="Self Exec delivers industry-disrupting automation, AI, and consulting. Zero overhead, measurable impact, complete time freedom.">
+<meta name="theme-color" content="#04070a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2304070a'/%3E%3Cpath d='M18 5 L9 18h6l-3 9 12-14h-7z' fill='%2338e8d0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  /* ── TOKEN LAYER · a new site is a token swap ─────────────────────── */
+  :root{
+    --bg:#04070a;
+    --panel:rgba(12,20,26,.62);
+    --panel2:rgba(16,28,34,.74);
+    --line:rgba(255,255,255,.10);
+    --line-key:rgba(56,232,208,.30);
+    --ink:#f2fbfa;
+    --dim:#9fb3b6;
+    --faint:#6b8085;
+    --key:#38e8d0;
+    --key-pale:#b9fff2;
+    --key-deep:#12776a;
+    --violet:#8b7bff;
+    --chrome:linear-gradient(135deg,#d8fff7,#38e8d0 38%,#8b7bff 74%,#12776a);
+    --blur:26px;
+    --rad:16px;
+    --wrap:960px;
+  }
+
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--dim);
+    font-family:Inter,system-ui,-apple-system,sans-serif;
+    line-height:1.55;-webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  /* ── ATMOSPHERE ───────────────────────────────────────────────────── */
+  .glow{position:fixed;border-radius:50%;filter:blur(150px);opacity:.16;z-index:0;pointer-events:none;mix-blend-mode:screen}
+  .g1{top:-24%;left:-18%;width:72vw;height:72vw;background:var(--key)}
+  .g2{bottom:-16%;right:-16%;width:62vw;height:62vw;background:var(--violet)}
+  .grid-bg{
+    position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.30;
+    background-image:linear-gradient(rgba(56,232,208,.06) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(56,232,208,.06) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(circle at 50% 8%,#000,transparent 72%);
+    mask-image:radial-gradient(circle at 50% 8%,#000,transparent 72%);
+  }
+
+  /* ── LAYOUT · one section flow, centered ──────────────────────────── */
+  .wrap{
+    position:relative;z-index:1;max-width:var(--wrap);margin:0 auto;
+    padding:clamp(2rem,6vw,4.5rem) clamp(.95rem,3.5vw,2rem) 4rem;
+    text-align:center;
+  }
+  .block{margin:clamp(2.6rem,7vw,4.5rem) 0 0}
+  .eyebrow{
+    font-family:Archivo,system-ui,sans-serif;font-size:.68rem;font-weight:700;
+    letter-spacing:.30em;text-transform:uppercase;color:var(--faint);margin-bottom:.85rem;
+  }
+  .rule{width:52px;height:2px;margin:0 auto 1.4rem;border-radius:2px;background:var(--chrome);opacity:.85}
+
+  /* ── TYPE ─────────────────────────────────────────────────────────── */
+  h1{
+    font-family:Archivo,system-ui,sans-serif;font-weight:900;
+    font-size:clamp(2rem,6.2vw,3.35rem);line-height:1.03;letter-spacing:-.035em;
+    background:var(--chrome);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  h2{
+    font-family:Archivo,system-ui,sans-serif;font-weight:800;
+    font-size:clamp(1.35rem,3.6vw,2rem);line-height:1.12;letter-spacing:-.025em;color:var(--ink);
+  }
+  h3{font-family:Archivo,system-ui,sans-serif;font-weight:700;font-size:1.02rem;letter-spacing:-.01em;color:var(--ink)}
+  .lede{
+    max-width:44rem;margin:1.05rem auto 0;color:var(--dim);
+    font-size:clamp(.96rem,1.9vw,1.08rem);
+  }
+  .note{max-width:42rem;margin:1rem auto 0;color:var(--faint);font-size:.86rem}
+
+  /* ── HEADER ───────────────────────────────────────────────────────── */
+  .mark{
+    display:inline-flex;align-items:center;gap:.55rem;margin-bottom:1.1rem;
+    padding:.42rem .95rem;border:1px solid var(--line-key);border-radius:999px;
+    background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+  }
+  .mark svg{display:block}
+  .mark span{
+    font-family:Archivo,system-ui,sans-serif;font-weight:800;font-size:.82rem;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--key-pale);
+  }
+
+  /* ── CTA ──────────────────────────────────────────────────────────── */
+  .cta-row{display:flex;flex-wrap:wrap;gap:.7rem;justify-content:center;margin-top:1.6rem}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+    font-family:Archivo,system-ui,sans-serif;font-weight:800;font-size:.93rem;
+    text-decoration:none;padding:.85rem 1.5rem;border-radius:11px;
+    border:1px solid var(--line);transition:transform .14s ease,box-shadow .14s ease,background .14s ease;
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn-key{
+    background:linear-gradient(135deg,#b9fff2,#38e8d0 55%,#12776a);color:#03231f;
+    border-color:transparent;box-shadow:0 6px 24px rgba(56,232,208,.28);
+  }
+  .btn-ghost{background:transparent;color:var(--key-pale);border-color:var(--line-key)}
+  .btn-ghost:hover{background:rgba(56,232,208,.09);border-color:var(--key)}
+
+  /* ── STAT BAR ─────────────────────────────────────────────────────── */
+  .bar{display:flex;flex-wrap:wrap;gap:.55rem;justify-content:center;margin-top:1.7rem}
+  .stat{
+    font-family:Archivo,system-ui,sans-serif;font-size:.73rem;font-weight:600;letter-spacing:.03em;
+    color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:.42rem .9rem;
+    background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  }
+  .stat b{color:var(--key)}
+
+  /* ── OFFER TILES ──────────────────────────────────────────────────── */
+  .tiles{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:.9rem;margin-top:1.7rem;justify-content:center;text-align:left;
+  }
+  .tile{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);
+    padding:1.25rem 1.25rem 1.35rem;position:relative;
+    backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+    display:flex;flex-direction:column;gap:.55rem;
+    transition:border-color .16s ease,transform .16s ease;
+  }
+  .tile:hover{border-color:var(--line-key);transform:translateY(-2px)}
+  .tile.lead-tile{
+    background:var(--panel2);border-color:var(--line-key);
+    box-shadow:0 0 0 1px rgba(56,232,208,.14),0 12px 38px rgba(0,0,0,.55);
+  }
+  .ttag{
+    font-family:Archivo,system-ui,sans-serif;font-size:.6rem;font-weight:700;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--key-deep);
+  }
+  .tile.lead-tile .ttag{color:var(--key)}
+  .price{
+    font-family:Archivo,system-ui,sans-serif;font-weight:900;font-size:1.85rem;line-height:1.08;
+    background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .tdesc{font-size:.87rem;color:var(--dim);line-height:1.5}
+  .tmeta{
+    margin-top:auto;padding-top:.7rem;border-top:1px solid var(--line);
+    font-family:Archivo,system-ui,sans-serif;font-size:.72rem;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+  }
+  .tmeta b{color:var(--key-pale);font-weight:700}
+
+  /* ── VALUE TILES ──────────────────────────────────────────────────── */
+  .vals{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:.85rem;margin-top:1.6rem;justify-content:center;text-align:left;
+  }
+  .val{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:1.1rem 1.15rem;transition:border-color .16s ease;
+  }
+  .val:hover{border-color:var(--line-key)}
+  .val h3{margin-bottom:.4rem}
+  .val p{font-size:.85rem;color:var(--dim)}
+  .vnum{
+    font-family:Archivo,system-ui,sans-serif;font-size:.66rem;font-weight:700;
+    letter-spacing:.2em;color:var(--key-deep);display:block;margin-bottom:.5rem;
+  }
+
+  /* ── FOUNDER PANEL ────────────────────────────────────────────────── */
+  .founder{
+    background:var(--panel2);border:1px solid var(--line-key);border-radius:18px;
+    padding:clamp(1.3rem,4vw,2rem);margin-top:1.6rem;
+    backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+    box-shadow:0 12px 44px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .founder .who{
+    font-family:Archivo,system-ui,sans-serif;font-weight:900;font-size:1.5rem;letter-spacing:-.02em;
+    background:var(--chrome);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .founder .role{
+    font-family:Archivo,system-ui,sans-serif;font-size:.7rem;font-weight:700;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin-top:.35rem;
+  }
+  .founder p{max-width:40rem;margin:.9rem auto 0;font-size:.92rem}
+
+  /* ── FAQ ──────────────────────────────────────────────────────────── */
+  .faq{margin-top:1.5rem;text-align:left}
+  .qa{
+    background:var(--panel);border:1px solid var(--line);border-radius:13px;
+    padding:1.05rem 1.15rem;margin-bottom:.65rem;
+  }
+  .qa h3{margin-bottom:.35rem}
+  .qa p{font-size:.87rem;color:var(--dim)}
+
+  /* ── CONTACT ──────────────────────────────────────────────────────── */
+  .contact{
+    background:var(--panel2);border:1px solid var(--line-key);border-radius:18px;
+    padding:clamp(1.4rem,4vw,2.2rem);margin-top:1.6rem;
+    backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+  }
+  .mailto{
+    display:inline-block;margin-top:1.1rem;font-family:Archivo,system-ui,sans-serif;
+    font-weight:800;font-size:clamp(.95rem,3vw,1.25rem);letter-spacing:-.01em;
+    color:var(--key-pale);text-decoration:none;
+    border-bottom:2px solid var(--line-key);padding-bottom:.2rem;
+    transition:color .15s ease,border-color .15s ease;
+    word-break:break-word;
+  }
+  .mailto:hover{color:var(--key);border-color:var(--key)}
+  .terms{
+    display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-top:1.4rem;
+  }
+  .term{
+    font-family:Archivo,system-ui,sans-serif;font-size:.7rem;font-weight:600;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--faint);
+    border:1px solid var(--line);border-radius:8px;padding:.4rem .75rem;
+  }
+
+  /* ── FOOTER ───────────────────────────────────────────────────────── */
+  footer{
+    margin-top:clamp(2.5rem,7vw,4rem);padding-top:1.4rem;border-top:1px solid var(--line);
+    color:var(--faint);font-size:.78rem;
+  }
+  footer .fmark{
+    font-family:Archivo,system-ui,sans-serif;font-weight:800;font-size:.8rem;
+    letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-bottom:.5rem;
+  }
+  footer .geo{margin-top:.4rem;letter-spacing:.06em}
+
+  /* ── G.O.D. STACK LAYERS ──────────────────────────────────────────── */
+  .layers{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:.8rem;margin-top:1.6rem;justify-content:center;
+  }
+  .layer{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:1.15rem 1rem 1.25rem;
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    transition:border-color .16s ease,transform .16s ease;
+  }
+  .layer:hover{border-color:var(--line-key);transform:translateY(-2px)}
+  .lglyph{
+    font-family:Archivo,system-ui,sans-serif;font-weight:900;font-size:2.5rem;line-height:1;
+    background:var(--chrome);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;display:block;margin-bottom:.45rem;
+  }
+  .lname{
+    font-family:Archivo,system-ui,sans-serif;font-weight:700;font-size:.94rem;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+  }
+  .lidx{
+    display:block;margin-top:.5rem;font-family:Archivo,system-ui,sans-serif;
+    font-size:.66rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);
+  }
+  .props{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-top:1.1rem}
+  .prop{
+    font-family:Archivo,system-ui,sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--key-pale);
+    border:1px solid var(--line-key);border-radius:999px;padding:.42rem .85rem;
+    background:rgba(56,232,208,.06);
+  }
+
+  /* ── FOCUS / SELECTION ────────────────────────────────────────────── */
+  a:focus-visible{outline:2px solid var(--key);outline-offset:3px;border-radius:6px}
+  ::selection{background:rgba(56,232,208,.28);color:var(--ink)}
+  section[id]{scroll-margin-top:1.5rem}
+
+  /* ── REVEAL ───────────────────────────────────────────────────────── */
+  .rv{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease}
+  .rv.in{opacity:1;transform:none}
+
+  /* ── 3 MEDIA QUERIES ──────────────────────────────────────────────── */
+  @media(max-width:860px){
+    .tiles,.vals{grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+    .grid-bg{background-size:48px 48px}
+  }
+  @media(max-width:560px){
+    .tiles,.vals{grid-template-columns:1fr}
+    .btn{width:100%}
+    .price{font-size:1.6rem}
+    .founder .who{font-size:1.25rem}
+  }
+  @media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .rv{opacity:1;transform:none;transition:none}
+    .btn:hover,.tile:hover{transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div><div class="grid-bg"></div>
+
+<div class="wrap">
+
+  <!-- ══ HERO ══════════════════════════════════════════════════════ -->
+  <header>
+    <div class="mark">
+      <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden="true"><path d="M18 4 L8 19h6.4L12 28l12-15h-7.2z" fill="#38e8d0"/></svg>
+      <span>Self Exec</span>
+    </div>
+    <h1>Unlock Automation &amp; Compounding Results</h1>
+    <p class="lede">Self Exec delivers industry-disrupting automation, AI, and consulting. Save time, eliminate manual work, and compound your business results—zero overhead, measurable impact, and complete time freedom.</p>
+    <div class="cta-row">
+      <a class="btn btn-key" href="#contact">Request a custom proposal</a>
+      <a class="btn btn-ghost" href="#offers">See the offers</a>
+    </div>
+    <div class="bar">
+      <span class="stat"><b>50%</b> deposit to start</span>
+      <span class="stat">Single-page site live in <b>under 7 hours</b></span>
+      <span class="stat">Full stack typically <b>2–4 weeks</b></span>
+      <span class="stat"><b>Zero</b> human in the loop</span>
+    </div>
+  </header>
+
+  <!-- ══ POSITIONING ═══════════════════════════════════════════════ -->
+  <section class="block rv">
+    <div class="eyebrow">Automation &amp; AI Consulting, Zero Overhead</div>
+    <div class="rule"></div>
+    <h2>Get paid to save time</h2>
+    <p class="lede">Our mission is to get you paid to save time—every solution is engineered for measurable outcomes.</p>
+    <p class="lede">From full-stack automation to SOP simplification, we design, deploy, and optimize systems that eliminate manual work and maximize your margins. Every project is priced using angel numbers, with transparent milestones and instant payout options.</p>
+  </section>
+
+  <!-- ══ OFFERS ════════════════════════════════════════════════════ -->
+  <section class="block rv" id="offers">
+    <div class="eyebrow">The Offers</div>
+    <div class="rule"></div>
+    <h2>Engineered for Results</h2>
+    <p class="note">Every offer is built for maximum efficiency and outcome, so you see tangible improvements fast. All pricing uses angel numbers and is structured for transparency and results.</p>
+
+    <div class="tiles">
+
+      <article class="tile lead-tile">
+        <div class="ttag">Flagship</div>
+        <h3>Single-Page Site System</h3>
+        <div class="price">$5,555.55</div>
+        <p class="tdesc">$5,555.55 all-in, $2,777.78 deposit, max $20 overhead. Design, deploy, and launch in under 7 hours—guaranteed quality and transparent process.</p>
+        <div class="tmeta">Deposit <b>$2,777.78</b> · Overhead cap <b>$20</b></div>
+      </article>
+
+      <article class="tile">
+        <div class="ttag">Deployment</div>
+        <h3>G.O.D. SOP Stack Deployment</h3>
+        <p class="tdesc">Implement the 27-tool, three-layer stack to automate Generate, Operate, and Distribute workflows. Docker-first, self-hosted, and vendor lock-in resistant.</p>
+        <div class="tmeta">27 tools · <b>3 layers</b> · typically 2–4 weeks</div>
+      </article>
+
+      <article class="tile">
+        <div class="ttag">Qualification</div>
+        <h3>Elite Client Filter &amp; Qualification</h3>
+        <p class="tdesc">Strict qualification ensures only high-value, decision-ready clients. No budget objections, no payment plans, 50% deposit required.</p>
+        <div class="tmeta">Deposit <b>50%</b> · No payment plans</div>
+      </article>
+
+      <article class="tile">
+        <div class="ttag">Stated in the FAQ</div>
+        <h3>Minimum engagement</h3>
+        <div class="price">$2,222.22</div>
+        <p class="tdesc">$2,222.22 minimum. All projects require a 50% deposit, clear scope, and high-value potential. No payment plans.</p>
+        <div class="tmeta">Not a named package · a floor</div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ══ G.O.D. STACK ══════════════════════════════════════════════ -->
+  <section class="block rv">
+    <div class="eyebrow">The 27-tool, three-layer stack</div>
+    <div class="rule"></div>
+    <h2>Generate. Operate. Distribute.</h2>
+    <p class="note">Implement the 27-tool, three-layer stack to automate Generate, Operate, and Distribute workflows.</p>
+
+    <div class="layers">
+      <div class="layer">
+        <span class="lglyph">G</span>
+        <div class="lname">Generate</div>
+        <span class="lidx">Layer 1 of 3</span>
+      </div>
+      <div class="layer">
+        <span class="lglyph">O</span>
+        <div class="lname">Operate</div>
+        <span class="lidx">Layer 2 of 3</span>
+      </div>
+      <div class="layer">
+        <span class="lglyph">D</span>
+        <div class="lname">Distribute</div>
+        <span class="lidx">Layer 3 of 3</span>
+      </div>
+    </div>
+
+    <div class="props">
+      <span class="prop">Docker-first</span>
+      <span class="prop">Self-hosted</span>
+      <span class="prop">Vendor lock-in resistant</span>
+    </div>
+  </section>
+
+  <!-- ══ WHY ═══════════════════════════════════════════════════════ -->
+  <section class="block rv">
+    <div class="eyebrow">Why Choose Self Exec?</div>
+    <div class="rule"></div>
+    <h2>Measurable results, compounding advantage</h2>
+    <p class="note">We deliver measurable results—instant payout, total automation, and solutions that free your time and compound your advantage.</p>
+
+    <div class="vals">
+      <div class="val">
+        <span class="vnum">01</span>
+        <h3>Engineered for Results</h3>
+        <p>Every offer is built for maximum efficiency and outcome, so you see tangible improvements fast.</p>
+      </div>
+      <div class="val">
+        <span class="vnum">02</span>
+        <h3>Zero Manual Work</h3>
+        <p>All solutions are designed for zero-human-in-the-loop. Set it, forget it, and scale.</p>
+      </div>
+      <div class="val">
+        <span class="vnum">03</span>
+        <h3>Instant Payout &amp; Zero Overhead</h3>
+        <p>Get paid instantly, with transparent pricing and no hidden fees. Our model ensures high profit margins.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FOUNDER ═══════════════════════════════════════════════════ -->
+  <section class="block rv">
+    <div class="eyebrow">Built by Industry Disruptors</div>
+    <div class="rule"></div>
+    <div class="founder">
+      <div class="who">East Allen</div>
+      <div class="role">Automation Architect · Creative Technologist · CTO of L7S HERO</div>
+      <p>Self Exec is led by East Allen—automation architect, creative technologist, and CTO of L7S HERO. With 20+ years of experience, we fuse discipline, creativity, and automation to build legacy systems and permanent industry impact.</p>
+    </div>
+  </section>
+
+  <!-- ══ FAQ ═══════════════════════════════════════════════════════ -->
+  <section class="block rv">
+    <div class="eyebrow">FAQ</div>
+    <div class="rule"></div>
+    <h2>Straight answers</h2>
+
+    <div class="faq">
+      <div class="qa">
+        <h3>How fast do you deploy?</h3>
+        <p>Single-page sites deploy in under 7 hours after deposit. Full-stack automation varies—typically 2–4 weeks for full G.O.D. SOP Stack.</p>
+      </div>
+      <div class="qa">
+        <h3>How do you measure results?</h3>
+        <p>All solutions are engineered for clear, trackable improvements. We optimize and support every project to maximize value.</p>
+      </div>
+      <div class="qa">
+        <h3>Do you work with any client?</h3>
+        <p>No. We only accept projects with decision-ready leaders, clear scopes, and high-value potential. Instant disqualification for budget objections.</p>
+      </div>
+      <div class="qa">
+        <h3>What are the terms?</h3>
+        <p>$2,222.22 minimum. All projects require a 50% deposit, clear scope, and high-value potential. No payment plans. All pricing uses angel numbers and is structured for transparency and results.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CONTACT ═══════════════════════════════════════════════════ -->
+  <section class="block rv" id="contact">
+    <div class="eyebrow">Start the engagement</div>
+    <div class="rule"></div>
+    <div class="contact">
+      <h2>Ready to automate, scale, and disrupt your industry?</h2>
+      <p class="lede">Book a call or email for a custom proposal. All engagements require a 50% deposit and guarantee measurable value.</p>
+      <a class="mailto" href="mailto:admin@selfexec.com?subject=Custom%20proposal%20request">admin@selfexec.com</a>
+      <div class="terms">
+        <span class="term">50% deposit</span>
+        <span class="term">Clear scope required</span>
+        <span class="term">$2,222.22 minimum</span>
+        <span class="term">No payment plans</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="fmark">Self Exec</div>
+    <div>2026 Self Exec. All right reserved.</div>
+    <div class="geo">Remote Operations | Serving Clients Worldwide</div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var els = document.querySelectorAll('.rv');
+  if(!('IntersectionObserver' in window)){
+    for(var i=0;i<els.length;i++) els[i].classList.add('in');
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  },{rootMargin:'0px 0px -8% 0px',threshold:.08});
+  els.forEach(function(el){ io.observe(el); });
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

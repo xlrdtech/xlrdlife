@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en" data-theme="light"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XLRD TECH — Invoice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700&family=Spline+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* brand constants (from hitthe.link/life) */
+    --ng:#0f9d2e; --ng-dark:#39FF14; --amber:#ffc24a; --ox:#c25b4a;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --body:'Spline Sans',system-ui,sans-serif;
+    --disp:'Fraunces',Georgia,serif;
+  }
+  /* LIGHT (default) */
+  :root[data-theme="light"]{
+    --page:#f4f3ee; --sheet:#ffffff; --ink:#141414; --muted:#6b6a63; --faint:#c9c7bf;
+    --line:rgba(15,157,46,.20); --accent:#0f9d2e; --accent-soft:rgba(15,157,46,.08);
+    --glow:transparent; --headbg:#ffffff; --headink:#141414;
+    --depbg:linear-gradient(165deg,rgba(15,157,46,.06),rgba(255,255,255,.4));
+    --shadow:0 20px 60px -24px rgba(30,40,20,.22),0 2px 8px rgba(0,0,0,.05);
+  }
+  /* DARK (toggle) */
+  :root[data-theme="dark"]{
+    --page:#050507; --sheet:linear-gradient(165deg,#0b0c0e,#070909); --ink:#f0ede6; --muted:#7a7870; --faint:#3e3c37;
+    --line:rgba(57,255,20,.18); --accent:#39FF14; --accent-soft:rgba(57,255,20,.10);
+    --glow:rgba(57,255,20,.35); --headbg:transparent; --headink:#f0ede6;
+    --depbg:linear-gradient(165deg,rgba(57,255,20,.06),rgba(8,9,10,.4));
+    --shadow:0 0 0 1px rgba(57,255,20,.06),0 30px 80px -30px rgba(0,0,0,.9),0 0 60px -20px rgba(57,255,20,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:var(--body);color:var(--ink);background:var(--page);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    padding:26px 18px 60px;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;
+  }
+  :root[data-theme="dark"] body{
+    background:
+      radial-gradient(900px 500px at 50% -6%, rgba(57,255,20,.12), transparent 60%),
+      linear-gradient(180deg,#050507,#070909);
+    background-color:#050507;
+  }
+  .toggle{
+    align-self:flex-end;max-width:640px;width:100%;display:flex;justify-content:flex-end;margin-bottom:12px;
+  }
+  .toggle button{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+    color:var(--accent);background:var(--accent-soft);border:1px solid var(--line);border-radius:999px;padding:8px 14px;
+    transition:all .2s;
+  }
+  .toggle button:active{transform:scale(.97)}
+  .sheet{
+    width:100%;max-width:640px;background:var(--sheet);
+    border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);
+  }
+  .top{ padding:30px 34px 24px; border-bottom:1px solid var(--line); position:relative; background:var(--headbg); }
+  :root[data-theme="dark"] .top::after{content:"";position:absolute;inset:0;background:radial-gradient(500px 160px at 85% -20%, rgba(57,255,20,.12), transparent 65%);pointer-events:none}
+  .brand{font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:-.01em;color:var(--headink);position:relative}
+  .brand .mark{color:var(--accent)}
+  :root[data-theme="dark"] .brand .mark{text-shadow:0 0 18px var(--glow)}
+  .sub{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:8px;position:relative}
+  .inv-meta{display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;position:relative;flex-wrap:wrap;gap:10px}
+  .inv-meta .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .inv-meta .val{font-family:var(--disp);font-weight:600;font-size:17px;color:var(--ink);margin-top:3px}
+  .inv-meta .val.acc{color:var(--accent)}
+  .body{padding:26px 34px 6px}
+  .row-head{display:grid;grid-template-columns:1fr auto;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .line{display:grid;grid-template-columns:1fr auto;gap:12px;padding:18px 0;border-bottom:1px solid var(--accent-soft)}
+  .line .desc{font-family:var(--disp);font-weight:600;font-size:17px;color:var(--ink)}
+  .line .note{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.55;max-width:46ch}
+  .line .amt{font-family:var(--mono);font-weight:600;font-size:16px;color:var(--accent);white-space:nowrap}
+  .totals{padding:22px 34px 6px}
+  .tline{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;color:var(--muted)}
+  .tline .n{font-family:var(--mono);color:var(--ink)}
+  .tline.total{border-top:1px solid var(--line);margin-top:10px;padding-top:16px;
+    font-family:var(--disp);font-weight:700;font-size:22px;color:var(--ink);align-items:baseline}
+  .tline.total .n{font-family:var(--mono);color:var(--accent);font-size:22px}
+  :root[data-theme="dark"] .tline.total .n{text-shadow:0 0 16px var(--glow)}
+  .deposit{ margin:20px 34px 4px;padding:18px 20px;border-radius:14px;background:var(--depbg);border:1px solid var(--line); }
+  .deposit .h{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+  .deposit .t{font-size:14px;color:var(--ink);line-height:1.65}
+  .deposit b{color:var(--accent);font-family:var(--mono)}
+  .foot{padding:22px 34px 30px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px solid var(--accent-soft)}
+  .foot .who{font-family:var(--disp);font-weight:600;font-size:15px;color:var(--ink)}
+  .foot .contact{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:3px}
+  .badge{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    color:var(--accent);background:var(--accent-soft);border:1px solid var(--line);border-radius:999px;padding:5px 12px;margin-top:8px}
+  .scope{ margin:20px 34px 0;padding:18px 20px;border-radius:14px;background:var(--accent-soft);border:1px solid var(--line); }
+  .scope .h{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+  .scope ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+  .scope li{font-size:13.5px;color:var(--ink);line-height:1.55;padding-left:16px;position:relative}
+  .scope li::before{content:"";position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+  .scope b{color:var(--accent)}
+  @media (max-width:480px){.scope{margin-left:22px;margin-right:22px}}
+  @media (max-width:480px){.body,.totals,.foot{padding-left:22px;padding-right:22px}.deposit{margin-left:22px;margin-right:22px}.top{padding:26px 22px 22px}}
+</style></head><body>
+  <div class="toggle"><button id="tgl" onclick="tog()">◐ Dark mode</button></div>
+  <div class="sheet">
+    <div class="top">
+      <div class="brand">XLRD <span class="mark">TECH</span></div>
+      <div class="sub">AI Systems · Web · Automation</div>
+      <div class="inv-meta">
+        <div><div class="lbl">Invoice</div><div class="val">Books → PowerPoints</div></div>
+        <div style="text-align:right"><div class="lbl">Rate</div><div class="val acc">Non-Profit</div></div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row-head"><span>Item</span><span>Amount</span></div>
+      <div class="line">
+        <div><div class="desc">NotebookLM Knowledge Base</div>
+          <div class="note">All 5 books ingested into one custom-prompted knowledge base — the engine that produces every deliverable.</div></div>
+        <div class="amt">$111</div>
+      </div>
+      <div class="line">
+        <div><div class="desc">20 Branded PowerPoints</div>
+          <div class="note">Visual decks generated from the books, styled to your brand. Deep visual detail across all 20.</div></div>
+        <div class="amt">$222</div>
+      </div>
+    </div>
+    <div class="totals">
+      <div class="tline"><span>Subtotal</span><span class="n">$333</span></div>
+      <div class="tline"><span>Non-profit rate applied</span><span class="n">included</span></div>
+      <div class="tline total"><span>Total Due</span><span class="n">$333</span></div>
+    </div>
+    <div class="scope">
+      <div class="h">What's included</div>
+      <ul>
+        <li>The 20 finished PowerPoints, delivered to you, styled to your brand.</li>
+        <li>A NotebookLM knowledge base built from all 5 of your books — I keep it as your engine, so any future decks, videos, reports, or variations get generated fast off the same source whenever you need them.</li>
+      </ul>
+      <div class="h" style="margin-top:14px">Optional add-on</div>
+      <ul>
+        <li>Want your <b>own hands-on access</b> to the AI system to self-generate PowerPoints anytime? That's a separate setup — just say the word and I'll price it out.</li>
+      </ul>
+    </div>
+
+    <div class="deposit">
+      <div class="h">To begin</div>
+      <div class="t">Half down — <b>$167</b> — locks your spot and starts the build. Remaining <b>$166</b> due on delivery. Send the deposit and the 5 books and work begins.</div>
+    </div>
+    <div class="foot">
+      <div>
+        <div class="who">East Allen · XLRD TECH</div>
+        <div class="contact">east@xlrd.org</div>
+        <span class="badge">$111 / UNIT · TIME IS THE VARIABLE</span>
+      </div>
+    </div>
+  </div>
+<script>
+  function tog(){
+    var r=document.documentElement, b=document.getElementById('tgl');
+    var d=r.getAttribute('data-theme')==='dark';
+    r.setAttribute('data-theme', d?'light':'dark');
+    b.textContent = d ? '◐ Dark mode' : '◑ Light mode';
+  }
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body></html>

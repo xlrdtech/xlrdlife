@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ray's Courses — Learning Hub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;overflow-wrap:break-word;word-break:normal;hyphens:none}
+body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;background:#0d0f14;color:#e8eef6;line-height:1.5}
+header{padding:48px 24px 24px;text-align:center;background:linear-gradient(180deg,#141821 0%,#0d0f14 100%)}
+header h1{font-size:clamp(28px,5vw,46px);font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,#7dd3fc,#a78bfa,#f0abfc);-webkit-background-clip:text;background-clip:text;color:transparent}
+header p{color:#8b96a8;margin-top:8px;font-size:14px}
+#count{color:#5b6478;font-size:13px;margin-top:4px}
+.search{max-width:680px;margin:24px auto 0;padding:0 16px}
+.search input{width:100%;padding:14px 20px;font-size:16px;background:#1a1f2a;border:1px solid #2a3142;border-radius:12px;color:#e8eef6;outline:none;transition:border .15s}
+.search input:focus{border-color:#7dd3fc}
+.tutor{max-width:680px;margin:12px auto 0;padding:0 16px;display:flex;gap:8px}
+.tutor input{flex:1;padding:14px 20px;font-size:16px;background:#1a1f2a;border:1px solid #2a3142;border-radius:12px;color:#e8eef6;outline:none;transition:border .15s}
+.tutor input:focus{border-color:#a78bfa}
+.tutor button{padding:14px 22px;font-size:15px;font-weight:600;background:linear-gradient(135deg,#7dd3fc,#a78bfa);border:none;border-radius:12px;color:#0d0f14;cursor:pointer;white-space:nowrap}
+.tutor button:hover{filter:brightness(1.1)}
+.tutor button:disabled{opacity:.5;cursor:not-allowed}
+#tutorAnswer{max-width:680px;margin:16px auto 0;padding:0 16px;color:#cdd6e3;font-size:15px;line-height:1.6;min-height:0}
+#tutorAnswer .panel{background:#141821;border:1px solid #1f2530;border-left:3px solid #a78bfa;border-radius:10px;padding:16px 18px}
+#tutorAnswer a{color:#7dd3fc;text-decoration:underline}
+main{max-width:1200px;margin:0 auto;padding:24px 16px 80px}
+.cat{margin-top:40px}
+.cat-head{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:#7dd3fc;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #1f2530;display:flex;justify-content:space-between;align-items:baseline}
+.cat-head .n{color:#5b6478;font-weight:400;letter-spacing:normal}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.card{display:block;padding:16px 18px;background:#141821;border:1px solid #1f2530;border-radius:10px;text-decoration:none;color:#e8eef6;transition:all .15s;font-size:15px;font-weight:500}
+.card:hover{background:#1a1f2a;border-color:#7dd3fc;transform:translateY(-2px)}
+.card .url{display:block;color:#5b6478;font-size:11px;font-weight:400;margin-top:4px;font-family:ui-monospace,monospace}
+footer{text-align:center;color:#5b6478;font-size:12px;padding:32px 16px;border-top:1px solid #1f2530;margin-top:40px}
+footer a{color:#7dd3fc}
+</style>
+</head>
+<body>
+<header>
+<h1>Ray's Courses</h1>
+<p>Self-paced tutorials across programming, art, tabletop RPGs, languages, and more.</p>
+<p id="count"></p>
+<div class="search"><input id="q" type="search" placeholder="Search courses..." autocomplete="off" autofocus></div>
+<div class="tutor"><input id="tq" type="text" placeholder="Ask Ray's AI tutor: what should I learn first?"><button id="tgo">Ask</button></div>
+<div id="tutorAnswer"></div>
+</header>
+<main id="main"></main>
+<footer>Built with care · <a href="https://hitthe.link/rays/">hitthe.link/rays</a></footer>
+<script>
+const COURSES=[
+{c:"Programming & Web",t:"AI Tutorial Series",u:"https://rays-ai-info.netlify.app/"},
+{c:"Programming & Web",t:"C++ Programming",u:"https://rays-cpp-course.netlify.app/"},
+{c:"Programming & Web",t:"Docker Mastery",u:"https://rays-docker.netlify.app/"},
+{c:"Programming & Web",t:"Front-End JavaScript",u:"https://rays-htmljs.netlify.app/"},
+{c:"Programming & Web",t:"Full-Stack Development",u:"https://rays-fullstack.netlify.app/"},
+{c:"Programming & Web",t:"Python / JS / C# Intro",u:"https://rays-programming.netlify.app/"},
+{c:"Programming & Web",t:"Git & GitHub Mastery",u:"https://rays-git-info.netlify.app/"},
+{c:"Programming & Web",t:"HTML & CSS",u:"https://rays-htmlcss.netlify.app/"},
+{c:"Programming & Web",t:"JavaScript React Fullstack",u:"https://rays-js-course.netlify.app/"},
+{c:"Programming & Web",t:"Linux for Beginners",u:"https://rays-linux.netlify.app/"},
+{c:"Programming & Web",t:"MySQL Foundations",u:"https://rays-mysql.netlify.app/"},
+{c:"Programming & Web",t:"PHP Foundations",u:"https://rays-php.netlify.app/"},
+{c:"Programming & Web",t:"PHP & WordPress",u:"https://rays-php-wordpress.netlify.app/"},
+{c:"Programming & Web",t:"Python Full Stack Web Dev",u:"https://rays-python-course.netlify.app/"},
+{c:"Programming & Web",t:"Python Game Dev (Pygame)",u:"https://rays-python-gamedev.netlify.app/"},
+{c:"Programming & Web",t:"Python Introduction",u:"https://rays-python-intro.netlify.app/"},
+{c:"Programming & Web",t:"Python Intermediate",u:"https://rays-python-intermediate.netlify.app/"},
+{c:"Programming & Web",t:"React Native & Expo",u:"https://rays-reactnative.netlify.app/"},
+{c:"Programming & Web",t:"React TypeScript",u:"https://rays-typescript.netlify.app/"},
+{c:"Programming & Web",t:"React WordPress",u:"https://rays-react-wordpress.netlify.app/"},
+{c:"Programming & Web",t:"Software Design & Development",u:"https://rays-sdd-info.netlify.app/"},
+{c:"Programming & Web",t:"SQL for Beginners",u:"https://rays-sql.netlify.app/"},
+{c:"Programming & Web",t:"WordPress",u:"https://rays-wordpress.netlify.app/"},
+{c:"Digital Art & 3D",t:"Software-Independent Digital Painting",u:"https://rays-digitalarts.netlify.app/"},
+{c:"Digital Art & 3D",t:"Intermediate Digital Artistry",u:"https://rays-digitalarts-int.netlify.app/"},
+{c:"Digital Art & 3D",t:"Advanced Digital Artistry",u:"https://rays-digitalarts-adv.netlify.app/"},
+{c:"Digital Art & 3D",t:"GIMP for Beginners",u:"https://rays-gimp-course.netlify.app/"},
+{c:"Digital Art & 3D",t:"Paintstorm Studio Intro",u:"https://rays-paintstorm-intro.netlify.app/"},
+{c:"Digital Art & 3D",t:"Paintstorm Studio Intermediate",u:"https://rays-paintstorm-int.netlify.app/"},
+{c:"Digital Art & 3D",t:"Paintstorm Studio Advanced",u:"https://rays-paintstorm-adv.netlify.app/"},
+{c:"Digital Art & 3D",t:"Blender Mastery",u:"https://rays-blender.netlify.app/"},
+{c:"Digital Art & 3D",t:"Unreal Engine",u:"https://rays-unreal.netlify.app/"},
+{c:"Tabletop RPGs",t:"Call of Cthulhu",u:"https://rays-call-of-chtulhu.netlify.app/"},
+{c:"Tabletop RPGs",t:"Champions",u:"https://rays-champions.netlify.app/"},
+{c:"Tabletop RPGs",t:"Cyberpunk Red",u:"https://rays-cyberpunk.netlify.app/"},
+{c:"Tabletop RPGs",t:"Cypher System",u:"https://rays-cypher-rpg.netlify.app/"},
+{c:"Tabletop RPGs",t:"Daggerheart",u:"https://rays-daggerheart.netlify.app/"},
+{c:"Tabletop RPGs",t:"Deadlands",u:"https://rays-deadlands.netlify.app/"},
+{c:"Tabletop RPGs",t:"Dungeons & Dragons 5e",u:"https://rays-dnd.netlify.app/"},
+{c:"Tabletop RPGs",t:"Doctor Who 2nd Edition",u:"https://rays-drwho.netlify.app/"},
+{c:"Tabletop RPGs",t:"Fate",u:"https://rays-fate-rpg.netlify.app/"},
+{c:"Tabletop RPGs",t:"Firefly",u:"https://rays-firefly.netlify.app/"},
+{c:"Tabletop RPGs",t:"Foundry VTT",u:"https://rays-foundry-vtt.netlify.app/"},
+{c:"Tabletop RPGs",t:"GURPS",u:"https://rays-gurps.netlify.app/"},
+{c:"Tabletop RPGs",t:"Index Card RPG",u:"https://rays-icrpg.netlify.app/"},
+{c:"Tabletop RPGs",t:"Masks",u:"https://ray-masks-rpg.netlify.app/"},
+{c:"Tabletop RPGs",t:"Numenera Learning Hub",u:"https://rays-numenera.netlify.app/"},
+{c:"Tabletop RPGs",t:"Pathfinder 2",u:"https://rays-pf2.netlify.app/"},
+{c:"Tabletop RPGs",t:"Rifts",u:"https://rays-rifts.netlify.app/"},
+{c:"Tabletop RPGs",t:"Root",u:"https://rays-root-rpg.netlify.app/"},
+{c:"Tabletop RPGs",t:"Savage Worlds",u:"https://rays-savage-worlds.netlify.app/"},
+{c:"Tabletop RPGs",t:"Shadowrun",u:"https://rays-shadowrun.netlify.app/"},
+{c:"Tabletop RPGs",t:"Solo RPG",u:"https://rays-solorpg.netlify.app/"},
+{c:"Tabletop RPGs",t:"Starfinder",u:"https://rays-starfinder.netlify.app/"},
+{c:"Tabletop RPGs",t:"Star Wars",u:"https://rays-starwars.netlify.app/"},
+{c:"Tabletop RPGs",t:"Vampire: The Masquerade",u:"https://rays-vampire.netlify.app/"},
+{c:"Tabletop RPGs",t:"Warhammer Fantasy",u:"https://rays-wfrpg.netlify.app/"},
+{c:"Tabletop RPGs",t:"Warhammer 40k: Wrath & Glory",u:"https://rays-wh40krpg.netlify.app/"},
+{c:"Tabletop RPGs",t:"Witcher",u:"https://rays-witcher.netlify.app/"},
+{c:"Board & Strategy Games",t:"Heroquest",u:"https://rays-heroquest.netlify.app/"},
+{c:"Board & Strategy Games",t:"HeroScape",u:"https://rays-heroscape.netlify.app/"},
+{c:"Board & Strategy Games",t:"World War Z: Aftermath",u:"https://rays-wwz.netlify.app/"},
+{c:"Languages",t:"English as a Second Language",u:"https://rays-esl.netlify.app/"},
+{c:"Languages",t:"French",u:"https://rays-french.netlify.app/"},
+{c:"Languages",t:"Japanese",u:"https://rays-japanese-course.netlify.app/"},
+{c:"Languages",t:"Spanish",u:"https://rays-spanish.netlify.app/"},
+{c:"Languages",t:"Tagalog",u:"https://rays-tagalog.netlify.app/"},
+{c:"Languages",t:"Kapampangan",u:"https://rays-kapampangan.netlify.app/"},
+{c:"Languages",t:"Korean",u:"https://rays-korean.netlify.app/"},
+{c:"Languages",t:"Latin",u:"https://rays-latin.netlify.app/"},
+{c:"Languages",t:"Mandarin Chinese",u:"https://rays-mandarin.netlify.app/"},
+{c:"Languages",t:"Russian",u:"https://rays-russian.netlify.app/"},
+{c:"Puzzles",t:"Rubik's Cube",u:"https://ray-rubiks.netlify.app/"},
+{c:"Puzzles",t:"Sudoku Fun",u:"https://rays-sudoku.netlify.app/"},
+{c:"Finance",t:"Investing & Stock Options",u:"https://rays-stocks.netlify.app/"}
+];
+const CATS=["Programming & Web","Digital Art & 3D","Tabletop RPGs","Board & Strategy Games","Languages","Puzzles","Finance"];
+const main=document.getElementById("main");
+const count=document.getElementById("count");
+const q=document.getElementById("q");
+function el(tag,attrs,text){
+  const n=document.createElement(tag);
+  if(attrs)for(const k in attrs)n.setAttribute(k,attrs[k]);
+  if(text!=null)n.textContent=text;
+  return n;
+}
+function render(filter){
+  while(main.firstChild)main.removeChild(main.firstChild);
+  const f=(filter||"").trim().toLowerCase();
+  let shown=0;
+  for(const cat of CATS){
+    const items=COURSES.filter(c=>c.c===cat && (!f || c.t.toLowerCase().indexOf(f)>=0 || c.c.toLowerCase().indexOf(f)>=0));
+    if(!items.length)continue;
+    const sec=el("section",{class:"cat"});
+    const head=el("div",{class:"cat-head"});
+    head.appendChild(el("span",null,cat));
+    head.appendChild(el("span",{class:"n"},"("+items.length+")"));
+    sec.appendChild(head);
+    const grid=el("div",{class:"grid"});
+    for(const it of items){
+      const a=el("a",{class:"card",href:it.u,target:"_blank",rel:"noopener"},it.t);
+      a.appendChild(el("span",{class:"url"},it.u.replace(/^https?:\/\//,"").replace(/\/$/,"")));
+      grid.appendChild(a);
+      shown++;
+    }
+    sec.appendChild(grid);
+    main.appendChild(sec);
+  }
+  count.textContent=f?(shown+" of "+COURSES.length+" courses"):(COURSES.length+" courses");
+}
+q.placeholder="Search "+COURSES.length+" courses...";
+q.addEventListener("input",function(e){render(e.target.value);});
+render("");
+
+const TUTOR_URL="https://xen.xlrd.org/api/tutor";
+const tq=document.getElementById("tq");
+const tgo=document.getElementById("tgo");
+const tans=document.getElementById("tutorAnswer");
+function pushText(parent,s){
+  const parts=s.split("\n");
+  for(let i=0;i<parts.length;i++){
+    if(parts[i])parent.appendChild(document.createTextNode(parts[i]));
+    if(i<parts.length-1)parent.appendChild(document.createElement("br"));
+  }
+}
+function renderAnswer(md){
+  while(tans.firstChild)tans.removeChild(tans.firstChild);
+  const panel=document.createElement("div");
+  panel.className="panel";
+  const text=md||"";
+  const linkRe=/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+  const matches=Array.from(text.matchAll(linkRe));
+  let last=0;
+  for(const m of matches){
+    if(m.index>last)pushText(panel,text.slice(last,m.index));
+    const a=document.createElement("a");
+    a.href=m[2];
+    a.target="_blank";
+    a.rel="noopener";
+    a.textContent=m[1];
+    panel.appendChild(a);
+    last=m.index+m[0].length;
+  }
+  if(last<text.length)pushText(panel,text.slice(last));
+  tans.appendChild(panel);
+}
+async function ask(){
+  const text=(tq.value||"").trim();
+  if(!text)return;
+  tgo.disabled=true;
+  while(tans.firstChild)tans.removeChild(tans.firstChild);
+  const loading=document.createElement("div");
+  loading.className="panel";
+  loading.textContent="Thinking...";
+  tans.appendChild(loading);
+  try{
+    const r=await fetch(TUTOR_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({q:text})});
+    const j=await r.json();
+    renderAnswer(j.answer||j.error||"tutor offline");
+  }catch(err){
+    renderAnswer("Tutor unreachable. Try the course search above.");
+  }
+  tgo.disabled=false;
+}
+tgo.addEventListener("click",ask);
+tq.addEventListener("keydown",function(e){if(e.key==="Enter")ask();});
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

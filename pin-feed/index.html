@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pinterest Feed · Infinite Topic Swipe</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#000;color:#e8e8ee;font:14px/1.5 -apple-system,system-ui,sans-serif;overflow:hidden}
+  .stage{position:fixed;inset:0;background:#000}
+  .slide{position:absolute;inset:0;opacity:0;transition:opacity .6s ease}
+  .slide.active{opacity:1}
+  .slide img{width:100%;height:100%;object-fit:cover;object-position:center}
+  .topbar{position:fixed;top:0;left:0;right:0;padding:16px 24px;background:linear-gradient(to bottom,rgba(0,0,0,.65),transparent);z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .topbar h1{font-size:14px;font-weight:600;letter-spacing:.04em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .controls{display:flex;gap:8px;align-items:center}
+  .btn{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+  .btn:hover{background:rgba(255,255,255,.12)}
+  .btn.on{background:#5b9cf6;border-color:#5b9cf6}
+  input.tin{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;width:170px}
+  .nav{position:fixed;top:50%;transform:translateY(-50%);width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;z-index:10;transition:background .2s}
+  .nav:hover{background:rgba(0,0,0,.78)}
+  .nav.prev{left:24px}
+  .nav.next{right:24px}
+  .hud{position:fixed;left:0;right:0;bottom:120px;padding:0 24px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;z-index:5}
+  .hud .title{font-size:18px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,.8)}
+  .hud .sub{color:#cfd0db;font-size:12px;margin-top:2px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+  .hud .count{font-variant-numeric:tabular-nums;color:#cfd0db;font-size:13px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+  .thumbs{position:fixed;left:0;right:0;bottom:0;display:flex;gap:6px;padding:14px 16px;background:linear-gradient(to top,rgba(0,0,0,.85),rgba(0,0,0,.4) 60%,transparent);overflow-x:auto;z-index:4;scrollbar-width:thin}
+  .thumbs::-webkit-scrollbar{height:4px}
+  .thumbs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:2px}
+  .thumb{flex:0 0 110px;height:64px;border-radius:6px;overflow:hidden;cursor:pointer;opacity:.45;transition:opacity .25s,outline-offset .25s;outline:2px solid transparent}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .thumb:hover{opacity:.85}
+  .thumb.active{opacity:1;outline:2px solid #5b9cf6}
+  @media (max-width:600px){.nav{width:48px;height:48px;font-size:22px}.thumb{flex:0 0 80px;height:48px}.hud{bottom:100px}input.tin{width:120px}}
+</style></head><body>
+
+<div class="topbar">
+  <h1 id="topicLabel">Pinterest Feed · loading…</h1>
+  <div class="controls">
+    <input id="topicIn" class="tin" placeholder="set topic…">
+    <button class="btn" id="topicGo">Go</button>
+    <button class="btn" id="skipBtn">⏭ Skip</button>
+    <button class="btn" id="autoBtn">▶ Auto</button>
+    <button class="btn" id="fsBtn">⤢ Full</button>
+  </div>
+</div>
+
+<div class="stage" id="stage"></div>
+<div class="nav prev" id="prev">‹</div>
+<div class="nav next" id="next">›</div>
+
+<div class="hud">
+  <div>
+    <div class="title" id="hudTitle">Infinite Topic Swipe</div>
+    <div class="sub" id="hudSub">Swipe ← → · Space next · A autoplay · F fullscreen</div>
+  </div>
+  <div class="count" id="count">0 / 0</div>
+</div>
+
+<div class="thumbs" id="thumbs"></div>
+
+<script>
+const stage=document.getElementById('stage');
+const thumbs=document.getElementById('thumbs');
+const count=document.getElementById('count');
+let idx=0,autoTimer=null,autoOn=false;
+const known=new Set();
+function addImage(src){
+  if(known.has(src))return;
+  known.add(src);
+  const isFirst=known.size===1;
+  const s=document.createElement('div');s.className='slide'+(isFirst?' active':'');
+  const im=document.createElement('img');im.src=src;im.loading=isFirst?'eager':'lazy';
+  s.appendChild(im);stage.appendChild(s);
+  const t=document.createElement('div');t.className='thumb'+(isFirst?' active':'');
+  const ti=document.createElement('img');ti.src=src;ti.loading='lazy';
+  t.appendChild(ti);
+  const myIdx=known.size-1;
+  t.onclick=()=>go(myIdx);
+  thumbs.appendChild(t);
+  count.textContent=`${idx+1} / ${known.size}`;
+}
+async function loadManifest(){
+  try{
+    const r=await fetch('manifest.json?t='+Date.now());
+    if(!r.ok)return;
+    const m=await r.json();
+    let added=0;
+    (m.images||[]).forEach(src=>{ if(!known.has(src)){ addImage(src); added++; } });
+    if(m.topic){
+      document.getElementById('topicLabel').textContent='Topic · '+m.topic+(m.topics_total?` (${(m.topic_idx%m.topics_total)+1}/${m.topics_total})`:'');
+      document.getElementById('hudTitle').textContent=m.topic;
+    }
+  }catch(e){console.warn('manifest fetch failed',e);}
+}
+loadManifest();
+setInterval(loadManifest,5000);
+
+function go(n){
+  const total=known.size;
+  if(!total)return;
+  idx=(n+total)%total;
+  document.querySelectorAll('.slide').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  document.querySelectorAll('.thumb').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  count.textContent=`${idx+1} / ${total}`;
+  const a=document.querySelectorAll('.thumb')[idx];
+  if(a)a.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+}
+document.getElementById('prev').onclick=()=>go(idx-1);
+document.getElementById('next').onclick=()=>go(idx+1);
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.key==='ArrowLeft')go(idx-1);
+  else if(e.key==='ArrowRight'||e.key===' ')go(idx+1);
+  else if(e.key==='f'||e.key==='F')toggleFs();
+  else if(e.key==='a'||e.key==='A')toggleAuto();
+  else if(e.key==='n'||e.key==='N')document.getElementById('skipBtn').click();
+});
+function toggleAuto(){
+  autoOn=!autoOn;
+  const b=document.getElementById('autoBtn');
+  b.classList.toggle('on',autoOn);
+  b.textContent=autoOn?'⏸ Auto':'▶ Auto';
+  if(autoOn)autoTimer=setInterval(()=>go(idx+1),3500);
+  else clearInterval(autoTimer);
+}
+document.getElementById('autoBtn').onclick=toggleAuto;
+function toggleFs(){
+  if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+}
+document.getElementById('fsBtn').onclick=toggleFs;
+document.getElementById('topicGo').onclick=async()=>{
+  const t=document.getElementById('topicIn').value.trim();
+  if(!t)return;
+  await fetch('/topic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:t})});
+  document.getElementById('topicIn').value='';
+  loadManifest();
+};
+document.getElementById('topicIn').addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('topicGo').click(); });
+document.getElementById('skipBtn').onclick=async()=>{ await fetch('/next',{method:'POST'}); loadManifest(); };
+
+let tx=0;
+stage.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+stage.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50)go(dx>0?idx-1:idx+1);
+});
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body></html>

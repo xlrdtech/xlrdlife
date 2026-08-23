@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comms Health — what works, what is lying</title>
+<meta name="description" content="Audit of every communication path: which rails actually work, which report success while doing nothing, and who cannot be reached.">
+<style>
+:root{
+  --bg:#f7f7f5;
+  --surface:#ffffff;
+  --surface-2:#f2f2ef;
+  --ink:#16181d;
+  --ink-2:#4a4f58;
+  --ink-3:#767c86;
+  --line:#dcdcd6;
+  --line-strong:#c3c3bb;
+  --red:#9d1c1c;
+  --red-bg:#fbeeee;
+  --amber:#8a5a08;
+  --amber-bg:#fdf4e5;
+  --green:#1f6135;
+  --green-bg:#eef5ef;
+  --blue:#1d4a75;
+  --blue-bg:#eef2f7;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#131417; --surface:#1a1c20; --surface-2:#212429;
+    --ink:#eceded; --ink-2:#b3b7bd; --ink-3:#868c94;
+    --line:#2e3238; --line-strong:#41464e;
+    --red:#f08a8a; --red-bg:#2a1a1a;
+    --amber:#e0b062; --amber-bg:#2a2318;
+    --green:#7fc79a; --green-bg:#17241c;
+    --blue:#8ab6e0; --blue-bg:#17222e;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-size:16px; line-height:1.55;
+  overflow-x:hidden;
+}
+.wrap{max-width:920px; margin:0 auto; padding:28px 18px 80px}
+
+/* ---------- header ---------- */
+header{margin-bottom:28px}
+.kicker{
+  font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 10px
+}
+h1{
+  font-size:clamp(28px,7vw,42px); line-height:1.1; letter-spacing:-.02em;
+  margin:0 0 12px; font-weight:680;
+}
+.standfirst{font-size:clamp(16px,3.6vw,18px); color:var(--ink-2); margin:0 0 18px; max-width:62ch}
+.stamp{
+  font-family:var(--mono); font-size:12px; color:var(--ink-3);
+  border:1px solid var(--line); border-radius:8px;
+  padding:8px 11px; display:inline-block; background:var(--surface);
+}
+
+/* ---------- scorecard ---------- */
+.score{
+  display:grid; gap:10px; margin:22px 0 34px;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+}
+.tile{
+  border:1px solid var(--line); border-radius:10px;
+  background:var(--surface); padding:14px 14px 12px;
+}
+.tile .n{font-size:30px; font-weight:680; line-height:1.05; letter-spacing:-.02em}
+.tile .l{font-size:12.5px; color:var(--ink-2); margin-top:5px; line-height:1.35}
+.tile.bad .n{color:var(--red)}
+.tile.warn .n{color:var(--amber)}
+.tile.ok .n{color:var(--green)}
+
+/* ---------- sections ---------- */
+section{margin:0 0 40px}
+.sec-head{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:10px;
+  border-bottom:1px solid var(--line-strong); padding-bottom:9px; margin-bottom:18px;
+}
+h2{font-size:clamp(19px,4.4vw,23px); margin:0; letter-spacing:-.01em; font-weight:660}
+.sec-count{font-family:var(--mono); font-size:12px; color:var(--ink-3)}
+.sec-note{font-size:14.5px; color:var(--ink-2); margin:-6px 0 18px; max-width:64ch}
+
+/* ---------- finding cards ---------- */
+.card{
+  border:1px solid var(--line); border-radius:10px;
+  background:var(--surface); padding:16px; margin-bottom:12px;
+}
+.card.sev-critical{border-color:var(--line-strong)}
+.card-top{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:9px}
+.card h3{
+  font-size:17px; margin:0; font-weight:640; letter-spacing:-.01em;
+  flex:1 1 260px; min-width:0;
+}
+.card p{margin:0 0 10px; font-size:15px; color:var(--ink-2)}
+.card p:last-child{margin-bottom:0}
+.card strong{color:var(--ink); font-weight:620}
+
+/* ---------- chips ---------- */
+.chip{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+  padding:3px 7px; border-radius:5px; border:1px solid var(--line-strong);
+  white-space:nowrap; color:var(--ink-2); background:var(--surface-2);
+}
+.chip.v{color:var(--green); background:var(--green-bg); border-color:var(--green)}
+.chip.u{color:var(--amber); background:var(--amber-bg); border-color:var(--amber)}
+.chip.crit{color:var(--red); background:var(--red-bg); border-color:var(--red)}
+.chip.mine{color:var(--blue); background:var(--blue-bg); border-color:var(--blue)}
+.chip.qi{color:var(--amber); background:var(--amber-bg); border-color:var(--amber)}
+
+/* ---------- cost + fix rows ---------- */
+.row{
+  display:grid; grid-template-columns:88px 1fr; gap:10px;
+  padding:9px 0; border-top:1px solid var(--line);
+  font-size:14.5px;
+}
+.row .k{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--ink-3); padding-top:3px;
+}
+.row .val{color:var(--ink-2); min-width:0}
+.row .val.cost{color:var(--ink)}
+@media (max-width:460px){
+  .row{grid-template-columns:1fr; gap:3px}
+  .row .k{padding-top:0}
+}
+code{
+  font-family:var(--mono); font-size:.87em;
+  background:var(--surface-2); border:1px solid var(--line);
+  border-radius:4px; padding:1px 5px;
+  word-break:break-word; overflow-wrap:anywhere;
+}
+.card .val code{font-size:.85em}
+
+/* ---------- tables ---------- */
+.tbl-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:14px}
+th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+th{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:500; background:var(--surface-2);
+  border-bottom:1px solid var(--line-strong); white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:none}
+td.rail{font-weight:600; color:var(--ink); white-space:nowrap}
+td.mono{font-family:var(--mono); font-size:12.5px; color:var(--ink-2); white-space:nowrap}
+.dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; vertical-align:1px}
+.dot.g{background:var(--green)}
+.dot.a{background:var(--amber)}
+.dot.r{background:var(--red)}
+
+/* ---------- callout ---------- */
+.callout{
+  border:1px solid var(--line-strong); border-radius:10px;
+  background:var(--surface-2); padding:16px; margin:0 0 12px;
+}
+.callout h3{font-size:16px; margin:0 0 8px; font-weight:640}
+.callout p{margin:0 0 9px; font-size:14.5px; color:var(--ink-2)}
+.callout p:last-child{margin-bottom:0}
+.callout ul{margin:0; padding-left:20px; font-size:14.5px; color:var(--ink-2)}
+.callout li{margin-bottom:6px}
+.callout li:last-child{margin-bottom:0}
+
+footer{
+  margin-top:48px; padding-top:18px; border-top:1px solid var(--line);
+  font-size:13px; color:var(--ink-3);
+}
+footer p{margin:0 0 7px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">Comms Redundancy Audit</p>
+  <h1>What works, and what is lying to you</h1>
+  <p class="standfirst">
+    Every rail qi talks on is alive. The failures are not in the rails — they are in the layer
+    that reports on them. Twelve systems currently return success while doing nothing, and two
+    people cannot be reached at all.
+  </p>
+  <div class="stamp">Probed August 1, 2026 at 9:08 PM EDT &nbsp;·&nbsp; 2026-08-02T01:08:40Z</div>
+</header>
+
+<div class="score">
+  <div class="tile bad">
+    <div class="n">2</div>
+    <div class="l">People with no working path. Both are hard walls, not config gaps.</div>
+  </div>
+  <div class="tile bad">
+    <div class="n">12</div>
+    <div class="l">Systems that report success or health while doing nothing.</div>
+  </div>
+  <div class="tile ok">
+    <div class="n">10</div>
+    <div class="l">Message rails confirmed alive by reading real traffic, not a status field.</div>
+  </div>
+  <div class="tile warn">
+    <div class="n">0</div>
+    <div class="l">Messages sent during this audit. Send capability is inferred, never exercised.</div>
+  </div>
+</div>
+
+<!-- ============ SECTION 1: UNREACHABLE PEOPLE ============ -->
+<section>
+  <div class="sec-head">
+    <h2>Nobody can reach these two</h2>
+    <span class="sec-count">2 people · both VERIFIED</span>
+  </div>
+  <p class="sec-note">
+    Not "misconfigured." Probed to the bottom and found nothing there at all.
+  </p>
+
+  <div class="card sev-critical">
+    <div class="card-top">
+      <h3>Dad — no iMessage path exists</h3>
+      <span class="chip crit">Unreachable</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      iMessage was supposed to route through BlueBubbles. It does not, because BlueBubbles is not
+      running and never has been on this machine. Tested three ways: <code>pgrep -i bluebubbles</code>
+      returns nothing, ports 1234 and 1235 refuse the connection, and there are
+      <strong>zero references to "bluebubbles" anywhere in the xen tree</strong>. A title search for
+      "Dad" returns no chats. There is no half-built path to finish — there is nothing.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      qi has no way to text his father. Not delayed, not unreliable — absent. Anything sent toward
+      that thread goes nowhere and reports nothing.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val">
+      <span class="chip qi">qi's hands, then mine</span> &nbsp;Installing the BlueBubbles server and
+      signing it into iMessage needs a human at a Mac with the Apple ID. Wiring it to Beeper afterward is mine.
+    </div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Install the BlueBubbles server app on a Mac signed into qi's iMessage and start it on port 1234.
+      Everything downstream follows from that one action.
+    </div></div>
+  </div>
+
+  <div class="card sev-critical">
+    <div class="card-top">
+      <h3>ELISID Holdings — Beetexting is not a network Beeper knows</h3>
+      <span class="chip crit">Unreachable</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      Beetexting is absent from the bridge registry entirely. All four plausible bridge IDs
+      (<code>beetexting</code>, <code>local-beetexting</code>, <code>beetexting-local</code>,
+      <code>bee-texting</code>) return <code>400 Invalid bridgeID</code>. It is not among the 25
+      bridges Beeper carries. A search for "ELISID" returns no chats, and the xen tree contains no
+      reference to Beetexting. This is an unsupported network, not a missing setting.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      The ELISID Holdings business line is invisible to every automated path. Nothing reads it,
+      nothing can answer it, and nothing will ever raise an alarm about it.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val">
+      <span class="chip qi">qi's hands</span> &nbsp;No amount of code makes Beeper speak a protocol
+      it does not implement.
+    </div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Decide the substitute rail — move ELISID correspondence to a number that lands on Google Voice
+      or Google Messages, both of which are healthy today. Until then, treat Beetexting as manual-only
+      and check it by hand.
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ SECTION 2: LIES ============ -->
+<section>
+  <div class="sec-head">
+    <h2>Reports success. Does nothing.</h2>
+    <span class="sec-count">7 findings · all VERIFIED</span>
+  </div>
+  <p class="sec-note">
+    These are the dangerous ones. A rail that dies loudly gets fixed. These return exit 0, HTTP 200,
+    or a clean log line while the message never lands.
+  </p>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>SMS dedup returns "delivered" for messages it suppressed — and can mute one forever</h3>
+      <span class="chip crit">Silent</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      In <code>beside-send.sh</code>, a dedup hit refreshes the timestamp at line 75 and then
+      <code>exit 0</code> at line 76. The caller reads exit 0 and records a successful send. Worse:
+      because the ten-minute window <strong>slides forward on every hit</strong>, any repeating
+      identical message re-attempted inside that window is suppressed indefinitely. A recurring alert
+      fires exactly once and is silently muted from then on.
+    </p>
+    <div class="row"><div class="k">Scale</div><div class="val">
+      Current log window: <strong>2,496 dedup skips against 12,692 sends</strong>, with 3,478 live
+      keys in <code>/tmp/xen-beside-dedup</code> that are never pruned.
+    </div></div>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      Roughly one in six "sent" SMS never reached qi's phone, and every one of them was logged as a success.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Stop refreshing the timestamp on a dedup hit — delete the touch at
+      <code>beside-send.sh:75</code> so the window expires on schedule instead of sliding forever.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>A substring match silently kills SMS, and writes no log line</h3>
+      <span class="chip crit">Silent</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      <code>xen-reply-vvs</code> lines 190-195 set <code>XEN_VVS_NO_SMS=1</code> whenever the reply
+      body contains any of <code>self-test</code>, <code>probe at</code>, <code>proof at</code>,
+      <code>delivery probe</code>, <code>hand test</code>, and similar. The match is case-insensitive
+      and matches <strong>anywhere in the body</strong>, and it <strong>emits no log record at all</strong>.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      An ordinary sentence like "the smoke test at the shop passed" never reaches the phone, and
+      nothing anywhere records that it was dropped. This failure is invisible in every log.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Log the suppression. One line written whenever the kill-switch fires converts an invisible
+      failure into a visible one, before any change to the matching rules.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>Voice notes are transcribed correctly into a file nothing reads</h3>
+      <span class="chip crit">Silent</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      The transcriber works. A voice note from <strong>Luckie Links</strong> was transcribed today at
+      16:19 UTC and written to <code>logs/voice-notes-transcribed.jsonl</code>. But
+      <code>handle_note()</code> calls <code>append_log()</code> and nothing else — no feed event, no
+      voice, no SMS. Grepping for that filename across <code>bin/</code>, <code>~/bin</code>, the hooks
+      directory and all LaunchAgents returns <strong>exactly one file: the writer itself</strong>.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      That transcript sat unread for about four hours. Its content was Luckie telling qi that Xen had
+      sent the same message "five six times in a row" — a real complaint from a real person that
+      nothing surfaced.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Add one emit to the feed at the end of <code>handle_note()</code> in
+      <code>bin/xen-vn-autowatch</code>. The transcript already exists; it just has no exit.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>The push-to-phone leg is dead code after an <code>exit 0</code></h3>
+      <span class="chip crit">Silent</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      <code>xen-reply-vvs</code> exits at line 325. The push-to-speak block at lines 327-328 sits
+      below it and has never once executed. The target script <code>~/bin/xen-notify-push</code> exists
+      and resolves fine — it has simply been unreachable since the day it was added, 2026-07-19.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      Two weeks of phone pushes that were written, deployed, believed to be working, and never fired.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Move the two-line push block above <code>exit 0</code> at <code>xen-reply-vvs:325</code>.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>Three files disagree about which number VVS actually texts</h3>
+      <span class="chip crit">Silent</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      Exactly one line is true: <code>xen-reply-vvs:177</code>, which routes to the current 1610 line.
+      Contradicting it in the same file are lines 11, 163 and 176, which still name the retired chat
+      ID, and lines 161-168, which explicitly instruct the reader <em>not</em> to change it — directly
+      contradicting the correction banner at lines 2-6 of that same file.
+      <code>beside-send.sh</code> lines 2-6 name the retired ID as canonical too.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      Delivery works right now. But four of the five statements about where SMS goes are wrong, and
+      the file argues with itself. This is precisely how the routing gets re-broken by the next edit.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Delete the stale chat ID and its contradicting comments from
+      <code>xen-reply-vvs</code> lines 11, 161-168, 176 and <code>beside-send.sh</code> lines 2-6.
+      Leave line 177 as the only statement of the route.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>A health check that hits <code>/status</code> gets HTML and calls it green</h3>
+      <span class="chip warn">Trap</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      OmniRoute at <code>127.0.0.1:20128</code> gates all outbound generation. Its <code>/status</code>
+      path returns <strong>HTTP 200 with a Next.js HTML page, not JSON</strong>. Any monitor that
+      requests it and parses JSON gets nothing and reports false-green or false-red without ever saying
+      why. <code>/api/status</code> returns 401 and <code>/pool</code> 404.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      The one component that can block every outgoing message is the one whose health is easiest to
+      misread.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Point every OmniRoute health check at <code>/healthz</code>, which returns a real 200, and never
+      at <code>/status</code>.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>"Healthy and silent" is byte-identical to "dead"</h3>
+      <span class="chip warn">Trap</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      <code>autowatch.log</code> is zero bytes because the sweep only prints when it finds something
+      new. A daemon working perfectly and a daemon that died hours ago produce the exact same empty
+      file. Separately, the audit writer in <code>xen-voicenote-transcribe.py</code> lines 82-87
+      swallows <code>OSError</code> with a bare <code>pass</code> — if the M4 volume is unwritable, the
+      audit trail vanishes with no signal at all.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      There is no way to distinguish a working watcher from a stopped one by looking at its log. That
+      is how finding number eight went unnoticed for two days.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Write a heartbeat line on every sweep, including empty ones, so silence becomes evidence of
+      death rather than evidence of nothing.
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ SECTION 3: BLIND ============ -->
+<section>
+  <div class="sec-head">
+    <h2>Sees less than it claims to see</h2>
+    <span class="sec-count">5 findings · 4 VERIFIED, 1 UNVERIFIED</span>
+  </div>
+  <p class="sec-note">
+    These make a live rail look dead and a delivered message look absent. They are why an inbox can
+    appear handled while whole accounts are missing from it.
+  </p>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>The chat list caps at 25 rows and claims there are more, with no way to get them</h3>
+      <span class="chip crit">Hides accounts</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      <code>GET /v1/chats?limit=100</code> returns 25 items. <code>?limit=200</code> also returns 25.
+      Both set <code>hasMore: true</code> but expose <strong>no usable cursor</strong> — the expected
+      <code>nextCursor</code> field simply is not there. Meanwhile
+      <code>/v1/chats/search?limit=200</code> happily returns 200.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      Naive pagination sees <strong>25 of 301 chats — 8 percent</strong> — and believes it saw
+      everything. My own first pass hit exactly this and reported 8 of 10 accounts:
+      <strong>LinkedIn and Slack were completely invisible</strong>, with no error anywhere. This is
+      the single most dangerous finding on this page, because it makes entire accounts disappear
+      quietly.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Enumerate chats through <code>/v1/chats/search</code>, never <code>/v1/chats</code>, everywhere
+      in the codebase.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>Message search cannot see low-priority chats, and the flag to reveal them does not work</h3>
+      <span class="chip crit">Hides messages</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      Five Telegram chats with fresh activity return <strong>zero messages</strong> from
+      <code>/v1/messages/search</code> — and still zero with
+      <code>excludeLowPriority=false&amp;includeMuted=true</code> explicitly set. Control test: a chat
+      that is muted but not low-priority returns 20 messages normally, and reading one of the silent
+      chats directly via list-messages returns full message bodies. The content exists; the search
+      index is blind to it, and the flag meant to fix that is ignored.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      Nine chats are invisible to every search-based sweep. Anything asking "did I miss a message"
+      answers no while messages sit unread in them.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val">
+      <span class="chip mine">Mine (workaround)</span> &nbsp;The index bug itself is upstream in Beeper.
+    </div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Read the nine low-priority chats via list-messages on a known chat ID, and never rely on search
+      to prove a chat is empty.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>Looking someone up by name misses a live thread with exactly that name</h3>
+      <span class="chip crit">Wrong recipient</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      Searching titles for "Lleh" returns fifteen fuzzy non-matches and <strong>not</strong> the chat
+      literally titled <code>Lleh</code>. That chat is real and active: Google Messages, chat ID
+      <code>354</code>, a two-way conversation today at 18:26, 18:30 and 18:31 local. It was found only
+      by sweeping a date window of messages.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      An instruction like "text Lleh" resolves to nothing or to the wrong person, while the correct
+      thread sits right there. This is the same chat ID 354 where a resend loop put four copies of one
+      message earlier today.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Resolve people to pinned chat IDs from a maintained map, and never send to a chat found by title
+      search alone.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>One person, up to four separate chat IDs</h3>
+      <span class="chip crit">Wrong thread</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      301 chats resolve to only <strong>246 distinct titles</strong> — 27 titles duplicate, producing
+      55 redundant rows. <strong>Derrick</strong> appears four times (Google Messages 369, plus Google
+      Voice 385, 386, 387 — three of them carrying an unread). <strong>Luckie</strong> appears four
+      times across WhatsApp, Google Messages and Telegram. <strong>Halo</strong> twice, both on Google
+      Voice. <strong>Lamar</strong> twice. "EAST ALLEN" thirteen times. Google Voice is fragmenting
+      single people by itself, beyond the ordinary cloud-and-local mirroring.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      A reply to Derrick can land in whichever of his four threads he is not reading. The thread that
+      actually delivered to him today was Google Messages 369 — the other three look equally valid
+      from the outside.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Build one canonical person-to-chat-ID map keyed on the thread that most recently delivered, and
+      route every outbound message through it.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>The announcing voice-note watcher cannot see any non-numeric chat ID</h3>
+      <span class="chip crit">Blind 2 days</span>
+      <span class="chip v">Verified</span>
+    </div>
+    <p>
+      <code>xen-voicenote-transcribe.py</code> line 231 extracts chat IDs with two regexes that both
+      demand a <strong>purely numeric</strong> ID. Every Matrix-format chat ID — the kind that begins
+      with <code>!</code> and ends in <code>:beeper.local</code>, which is what Luckie's chat uses — is
+      silently filtered out of the watch list. All six IDs it currently knows are the same one.
+      Two further defects compound it: a chat is "primed" the first time it is seen and its whole
+      payload adopted silently, so a <strong>first-ever voice note from a new contact is never
+      announced</strong>; and its emit at lines 245-246 is the only writer in the pipeline that omits
+      the auth header, so it breaks the moment the feed enforces auth.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      Last announcement: <strong>2026-07-30 at 23:39</strong>. Two full days of "watching, 0 new" while
+      structurally incapable of seeing most of the network — and the log reads healthy the entire time.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Widen the chat ID pattern at <code>xen-voicenote-transcribe.py:231</code> to accept Matrix-format
+      IDs, not just digits.
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <h3>Two speech workers are draining the same queue</h3>
+      <span class="chip warn">Hazard</span>
+      <span class="chip u">Unverified as a live fault</span>
+    </div>
+    <p>
+      Two <code>xen-say-worker</code> processes, PIDs 10919 and 59963, are both consuming
+      <code>/tmp/xen-say-queue</code>. That is exactly the overlapping-speech condition documented in
+      the comments of <code>xen-reply-vvs</code> at lines 91-95. <strong>I did not observe it
+      misbehaving during this probe and I did not restart anything</strong>, so this is flagged as a
+      hazard rather than a confirmed fault.
+    </p>
+    <div class="row"><div class="k">Costs</div><div class="val cost">
+      If it fires, two voices speak over each other, or one worker eats a line the other should have
+      spoken and it is never heard.
+    </div></div>
+    <div class="row"><div class="k">Whose hands</div><div class="val"><span class="chip mine">Mine</span></div></div>
+    <div class="row"><div class="k">One step</div><div class="val">
+      Confirm which PID the launch agent owns, then retire the orphan. Nothing was stopped during this
+      audit by design.
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ SECTION 4: WORKING ============ -->
+<section>
+  <div class="sec-head">
+    <h2>Working</h2>
+    <span class="sec-count">Read confirmed on 10 rails</span>
+  </div>
+  <p class="sec-note">
+    Green rows need no explanation. Each rail below was confirmed by <strong>reading real message
+    traffic and checking its newest timestamp</strong> — not by trusting a <code>status: connected</code>
+    field, which every one of them reports regardless.
+  </p>
+
+  <div class="tbl-scroll">
+    <table>
+      <thead>
+        <tr><th>Rail</th><th>Chats</th><th>Newest message seen</th><th>Read</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="rail">Google Messages</td><td class="mono">34</td><td class="mono">Aug 2, 00:08 UTC</td><td><span class="dot g"></span>Verified</td></tr>
+        <tr><td class="rail">Telegram</td><td class="mono">72</td><td class="mono">Aug 1, 23:40 UTC</td><td><span class="dot g"></span>Verified</td></tr>
+        <tr><td class="rail">Instagram</td><td class="mono">28</td><td class="mono">Aug 1, 23:10 UTC</td><td><span class="dot g"></span>Verified</td></tr>
+        <tr><td class="rail">Facebook</td><td class="mono">56</td><td class="mono">Aug 1, 22:57 UTC</td><td><span class="dot g"></span>Verified</td></tr>
+        <tr><td class="rail">Google Voice</td><td class="mono">43</td><td class="mono">Aug 1, 21:57 UTC</td><td><span class="dot g"></span>Verified</td></tr>
+        <tr><td class="rail">WhatsApp (cloud)</td><td class="mono">11</td><td class="mono">Aug 1, 19:44 UTC</td><td><span class="dot g"></span>Verified</td></tr>
+        <tr><td class="rail">WhatsApp (local)</td><td class="mono">11</td><td class="mono">Aug 1, 19:44 UTC</td><td><span class="dot g"></span>Verified</td></tr>
+        <tr><td class="rail">Beeper / Matrix</td><td class="mono">10</td><td class="mono">Aug 1, 19:36 UTC</td><td><span class="dot g"></span>Verified</td></tr>
+        <tr><td class="rail">Slack</td><td class="mono">22</td><td class="mono">Aug 1, 13:47 UTC</td><td><span class="dot g"></span>Verified</td></tr>
+        <tr><td class="rail">LinkedIn</td><td class="mono">14</td><td class="mono">Jul 28, 01:05 UTC</td><td><span class="dot a"></span>Verified, quiet 5 days</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="sec-note" style="margin-top:16px">
+    LinkedIn is not broken — 14 chats load and search returns messages normally. It is simply the
+    coldest rail. Every other rail moved within eleven hours.
+  </p>
+
+  <div class="tbl-scroll" style="margin-top:18px">
+    <table>
+      <thead>
+        <tr><th>Delivery leg</th><th>What was actually tested</th><th>State</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="rail">Voice, desktop</td>
+          <td>Queue file present and draining; the enabling flag confirmed set</td>
+          <td><span class="dot g"></span>Verified</td>
+        </tr>
+        <tr>
+          <td class="rail">Voice, web feed</td>
+          <td>Health endpoint 200; the voice lane had counted 3,684 events, most recent 2 seconds prior</td>
+          <td><span class="dot g"></span>Verified</td>
+        </tr>
+        <tr>
+          <td class="rail">SMS</td>
+          <td>Log shows a real send accepted with HTTP 200 minutes before the probe</td>
+          <td><span class="dot g"></span>Verified</td>
+        </tr>
+        <tr>
+          <td class="rail">Vision</td>
+          <td>187 frames posted; last screen capture timestamped 6 minutes before the probe</td>
+          <td><span class="dot g"></span>Verified</td>
+        </tr>
+        <tr>
+          <td class="rail">Feed server</td>
+          <td>Root and health both 200; up 19.2 hours, 4 live subscribers, queue empty</td>
+          <td><span class="dot g"></span>Verified</td>
+        </tr>
+        <tr>
+          <td class="rail">Phone surface</td>
+          <td>Served 200 with real page content</td>
+          <td><span class="dot g"></span>Verified</td>
+        </tr>
+        <tr>
+          <td class="rail">Outbound generation</td>
+          <td>Four of four completions succeeded, routed on first attempt in 2 milliseconds</td>
+          <td><span class="dot g"></span>Verified</td>
+        </tr>
+        <tr>
+          <td class="rail">Send provisioning</td>
+          <td>Per-chat capabilities read on all 301 chats: 288 writable, 13 read-only</td>
+          <td><span class="dot a"></span>Inferred, not exercised</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ SECTION 5: HONESTY ============ -->
+<section>
+  <div class="sec-head">
+    <h2>What this page does not claim</h2>
+    <span class="sec-count">Scope of the probe</span>
+  </div>
+
+  <div class="callout">
+    <h3>Send was never exercised</h3>
+    <p>
+      <strong>No message was sent on any rail during this audit.</strong> Every statement about send
+      capability is inferred from provisioning data and per-chat permission flags, never from a
+      delivered message. The strongest honest claim is: 288 of 301 chats are marked writable, and every
+      account qi actually converses on is provisioned for sending. Whether a specific message would
+      arrive is untested.
+    </p>
+  </div>
+
+  <div class="callout">
+    <h3>Bridge-level errors are not evidence of breakage</h3>
+    <p>
+      Three bridges return a 502 on the capabilities endpoint and six cloud bridges return a 500. That
+      is <strong>not</strong> proof of a dead rail. Google Voice throws the 502 while simultaneously
+      carrying 43 healthy chats, a message three hours old, and a fully populated per-chat capability
+      object. It means only that the local bridge does not implement that one endpoint. The trustworthy
+      send signal is per-chat, not per-bridge.
+    </p>
+  </div>
+
+  <div class="callout">
+    <h3>The outbound router is green, conditionally</h3>
+    <p>
+      The failure that blocked three sends earlier today is not reproducing — four of four test
+      completions succeeded on the first attempt. The root cause was an upstream rejection of the
+      default request identity, and the fix depends on that identity staying correct. Two caveats stand:
+      the fix is fragile in that specific way, and <strong>there is no endpoint that reports pool health
+      without consuming a real completion</strong>, so the pool cannot be monitored cheaply. That is the
+      remaining hole.
+    </p>
+  </div>
+
+  <div class="callout">
+    <h3>Nothing was touched</h3>
+    <ul>
+      <li>No messages sent, no chats started, no replies drafted.</li>
+      <li>No daemon restarted, stopped, or reloaded — including the duplicate speech worker.</li>
+      <li>No authentication flow run, no account connected or removed.</li>
+      <li>No credential value read, printed, or copied anywhere. This page contains none.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ INVENTORY ============ -->
+<section>
+  <div class="sec-head">
+    <h2>The working set, counted</h2>
+    <span class="sec-count">VERIFIED · full census including muted</span>
+  </div>
+
+  <div class="score">
+    <div class="tile">
+      <div class="n">301</div>
+      <div class="l">Total chats across all ten accounts, muted and archived included.</div>
+    </div>
+    <div class="tile">
+      <div class="n">38</div>
+      <div class="l">Opted out: 34 muted, 9 low-priority, 4 archived, overlapping.</div>
+    </div>
+    <div class="tile">
+      <div class="n">263</div>
+      <div class="l">Live working set after removing everything opted out.</div>
+    </div>
+    <div class="tile">
+      <div class="n">~208</div>
+      <div class="l">Distinct live conversations once the 55 mirrored rows collapse.</div>
+    </div>
+  </div>
+
+  <p class="sec-note" style="margin-top:6px">
+    Telegram carries 24 of the 38 opt-outs and Slack another 10. Google Messages, Google Voice, both
+    WhatsApps, Facebook and LinkedIn have <strong>zero</strong> opt-outs — every chat on those rails is
+    in the live working set.
+  </p>
+</section>
+
+<footer>
+  <p><strong>Method.</strong> Every claim on this page is labeled Verified or Unverified. Verified means
+  a command was run and its real output read — an HTTP response, a file, a process list, a log, or the
+  source itself. Where only source was read, the finding says so.</p>
+  <p><strong>Read health was tested by reading traffic.</strong> A rail is called alive only if it
+  returned real messages with a recent timestamp. No rail on this page is called working on the
+  strength of a status field.</p>
+  <p>Probed 2026-08-02T01:08:40Z · No secrets, tokens, or credential values appear anywhere on this page.</p>
+</footer>
+
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

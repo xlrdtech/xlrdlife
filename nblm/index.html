@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBLM Thread — Full-Scope Build Doc · 2026-05-17/18</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--gold:#d4af37;--gold-soft:#f0d878;--line:rgba(212,175,55,.18);--card:#13131a;--card-2:#1a1a22;--text:#e8e6e0;--muted:#8a8678;--red:#e26666;--blue:#6ec1ff;--green:#4ec77a}
+html,body{background:var(--bg);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;line-height:1.6;overflow-wrap:break-word;word-break:normal;hyphens:none}
+.wrap{max-width:980px;margin:0 auto;padding:48px 24px 80px}
+header{text-align:center;border-bottom:1px solid var(--line);padding-bottom:32px;margin-bottom:36px}
+.badge{display:inline-block;font-size:11px;letter-spacing:.2em;color:var(--gold);background:rgba(212,175,55,.08);border:1px solid var(--line);padding:6px 14px;border-radius:14px;margin-bottom:14px;text-transform:uppercase}
+h1{font-size:34px;font-weight:700;letter-spacing:-.02em;background:linear-gradient(135deg,var(--gold),var(--gold-soft));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.15;margin-bottom:10px}
+.sub{font-size:14px;color:var(--muted);max-width:680px;margin:0 auto;line-height:1.6}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:30px}
+.toc-title{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;font-weight:600}
+.toc ul{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:6px}
+.toc a{color:var(--text);text-decoration:none;font-size:13px;display:block;padding:5px 8px;border-radius:4px}
+.toc a:hover{background:rgba(212,175,55,.06);color:var(--gold-soft)}
+.section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:20px}
+.section h2{font-size:18px;color:var(--gold-soft);margin-bottom:14px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.section h2 .num{font-size:11px;color:var(--gold);background:rgba(212,175,55,.08);border:1px solid var(--line);padding:3px 9px;border-radius:8px;letter-spacing:.1em}
+.section h3{font-size:14px;color:var(--gold);margin:14px 0 6px;font-weight:600}
+.section p{font-size:13.5px;color:var(--text);margin-bottom:10px;line-height:1.7}
+.section ul{margin:6px 0 14px 20px}
+.section li{font-size:13.5px;color:var(--text);margin-bottom:6px;line-height:1.6}
+.section code{background:rgba(212,175,55,.08);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-family:'SF Mono',Menlo,monospace;font-size:12px;color:var(--gold)}
+.section strong{color:var(--gold-soft)}
+.section em{color:var(--blue);font-style:italic}
+.section .banned{color:var(--red);font-weight:600}
+.section .ok{color:var(--green);font-weight:600}
+.callout{background:rgba(110,193,255,.06);border:1px solid rgba(110,193,255,.18);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:13px;color:var(--blue);line-height:1.6}
+.source{text-align:center;margin-top:40px;padding:18px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--muted);font-family:'SF Mono',Menlo,monospace}
+.source code{color:var(--gold)}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;padding-top:24px;border-top:1px solid var(--line)}
+footer a{color:var(--gold);text-decoration:none}
+@media(max-width:640px){h1{font-size:24px}.wrap{padding:32px 16px}.toc ul{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+<div class="badge">NBLM Thread · Full-Scope · 2026-05-17/18</div>
+<h1>The NotebookLM Build Doc</h1>
+<div class="sub">qi's distilled architectural canon from the M4 Mac Mini Professional Audio Stability and Maintenance Guide. 26 sources, 1292 lines, every load-bearing lock-in from the May 17/18 working session. Per qi 2026-05-19: <em>"nblm txt was the full scope."</em></div>
+</header>
+
+<div class="toc">
+<div class="toc-title">Sections</div>
+<ul>
+<li><a href="#tldr">⚡ TL;DR — the spine</a></li>
+<li><a href="#stability">1. P0 Stability + Medical Lifeline</a></li>
+<li><a href="#overhauls">2. Five System Overhauls</a></li>
+<li><a href="#architecture">3. Architecture + Infrastructure Upgrades</a></li>
+<li><a href="#noauth">4. Zero-Auth · URL = Credential</a></li>
+<li><a href="#voice">5. Voice Pipeline · Apple STT canon</a></li>
+<li><a href="#beside">6. Beside API Integration</a></li>
+<li><a href="#fcc">7. FCC Elimination · Native Twilio Merge</a></li>
+<li><a href="#email">8. Email Wired into MMM Omninbox</a></li>
+<li><a href="#xpv3">9. XP v3 · Three-Panel Canonical Layout</a></li>
+<li><a href="#muse">10. Muse Spark Chat · Center Panel</a></li>
+<li><a href="#contacts">11. Persona Routing · Ashe + Kem</a></li>
+<li><a href="#bans">12. The D.I.E. List · Banned Engines</a></li>
+</ul>
+</div>
+
+<div class="section" id="tldr">
+<h2><span class="num">⚡</span>TL;DR — The Spine</h2>
+<p>The Xen stack lives at <code>/Volumes/tech_/qi_data/exedus/xen/</code>. Voice is the operating system; STT down = P0 stop-the-line. Every service exposes a URL that <strong>just works upon pasting</strong> — possessing the LAN/tunnel URL grants full access. Three-channel collapse: <strong>Spark · Beside · Beeper</strong>. The 9934 Beside line is the primary Xen agent number. Personal contacts (Ashe, Diamond, Pinkyy, LaQuita, Josie, Kem) route exclusively through Beeper under the East persona — they never touch Beside.</p>
+<div class="callout">"completely open, zero-config, frictionless" is the architectural mandate. <strong>HTTP 200 ≠ verified</strong>. Visual evidence required. Idle is blasphemy.</div>
+</div>
+
+<div class="section" id="stability">
+<h2><span class="num">1</span>P0 Stability + Medical Lifeline</h2>
+<h3>Hardware Resource Assertion</h3>
+<ul>
+<li>Disk/RAM preflight checks in <code>xen-boot</code></li>
+<li>Dedicated <code>/opt/models</code> quota partition so model downloads cannot consume root disk</li>
+</ul>
+<h3>Medical-Grade Fallbacks</h3>
+<ul>
+<li>Guaranteed offline emergency layer (e.g., $10 ESP32 running Vosk locally) that survives network drops</li>
+<li>Dead-man switch with wellness ping</li>
+</ul>
+<h3>Safe-Mode Testing</h3>
+<ul>
+<li>Stop "live tweaking" production files — validate in offline environment</li>
+<li>Simulated-failure gate that severs the network to test fallback</li>
+</ul>
+<h3>Godmode Hardening Drills</h3>
+<ul>
+<li>Pane-drift live drill (canonical <code>%0</code> only)</li>
+<li>Refresh Beeper index</li>
+<li>Deploy Siri takeover shim</li>
+<li>Resolve NotebookLM Chrome extension tension (sanctioned Chromium workaround or headless bridge)</li>
+</ul>
+</div>
+
+<div class="section" id="overhauls">
+<h2><span class="num">2</span>Five System Overhauls</h2>
+<h3>Overhaul 1 — TTS Queue</h3>
+<p>FIFO HTTP server on <code>:4444</code> to manage the TTS queue and fix "I didn't hear you" failures.</p>
+<h3>Overhaul 2 — Cloudflared Singleton</h3>
+<p>Resolve site flapping. Isolate <code>com.cloudflare.godmode-mac.plist</code> as canonical tunnel, disable duplicates.</p>
+<h3>Overhaul 3 — Voice-Priority Injection</h3>
+<p>Add <code>priority="voice"</code> flag to socket injection so voice transcripts bypass the quiet-poll and fire immediately during long tool calls.</p>
+<h3>Overhaul 4 — Audio Healthcheck Daemon</h3>
+<p>Poll <code>SwitchAudioSource</code> every 30s and fire automatic passwordless <code>killall coreaudiod</code> recovery if it hangs.</p>
+<h3>Overhaul 5 — UI Automator (Jogger)</h3>
+<p>Migrate from slow ADB tap/sleep scripts to <code>uiautomator2</code> driver — heavily reduces execution time.</p>
+</div>
+
+<div class="section" id="architecture">
+<h2><span class="num">3</span>Architecture + Infrastructure Upgrades</h2>
+<h3>Multiplayer Desktop</h3>
+<p>Separate input session (via <code>CGEventTap</code> or virtual HID device) — two cursors operate in parallel on the same Mac, solving Xen stealing foreground focus during UI automation.</p>
+<h3>XenBrowser Shared Sessions</h3>
+<p>WebRTC/WebSocket bridge mirrors desktop XB tab state to <code>web.xlrd.org</code> in real-time. Anyone with URL can view + remotely control browser <strong>without authentication wall</strong>.</p>
+<h3>Universal Integration · UI Sandbox Elimination</h3>
+<p>Enumerate every app qi opens manually. Actively build MCPs, APIs, or WebViews for them. Goal: completely <strong>stop fighting UI sandboxes</strong> before hospitalization.</p>
+<h3>Universal A2A Mesh Router</h3>
+<p>OS-universal device mesh syncs pane <code>%0</code> transcript, agent-to-agent voice between Mac and Windows, standardized routing so messages reach the device qi is actively using.</p>
+<h3>Hot-Reloading Enforcement</h3>
+<p><code>xen-hot-watcher</code> daemon for Python + Node. Refactor <code>xen-claude-wrapper.js</code> into supervisor split — code changes deploy in under 2 seconds without manual respawns.</p>
+</div>
+
+<div class="section" id="noauth">
+<h2><span class="num">4</span>Zero-Auth · URL = Credential</h2>
+<div class="callout">"All-or-nothing trust" model — possessing the LAN or tunnel URL itself grants full access. No bearer tokens. No headers. No login walls.</div>
+<h3>Hermes MCP Universal Install</h3>
+<p>Global install of <code>hermes-agent</code> MCP server binding to <code>127.0.0.1</code> completely auth-less. Claude Code, Codex, Copilot, Cursor seamlessly switch context without cross-CLI auth.</p>
+<h3>Beeper Proxy Zero-Auth Bridge</h3>
+<p>Local proxy on <code>:23374</code> transparently auto-injects Beeper API tokens. Any client hits <code>http://127.0.0.1:23374/v0/mcp</code> without bearer tokens.</p>
+<h3>XenBrowser Auth-less Remote Control</h3>
+<p>WebRTC/WebSocket bridge mirrors desktop XB to <code>web.xlrd.org</code>. <strong>No authentication wall</strong> — URL holder controls the browser.</p>
+<h3>Persistent PWA · Mac-Death Failover</h3>
+<p>Cloudflare Pages Functions (<code>/events</code> SSE relay, <code>/api/omni/*</code> proxies) + GitHub Pages static UI. XenPhone PWA + Omni-inbox stay live even if Mac crashes. No re-auth, no manual refresh.</p>
+<h3>Paste-and-Go Initialization</h3>
+<p>Zero manual config. No env vars, no token files to populate, no manual OS permission grants. Single command: <code>curl https://xen.xlrd.org/install.sh | bash</code> — auto-generates LaunchAgents, auto-discovers tokens, spins up entire system on a fresh Mac without a single setup menu.</p>
+</div>
+
+<div class="section" id="voice">
+<h2><span class="num">5</span>Voice Pipeline · Apple STT Canon</h2>
+<p>Apple STT (specifically <code>apple-stt-v2.py</code>) is the always-on frictionless listener. <strong>"STT down is always fatal."</strong></p>
+<h3>Architectural Patches Locked In</h3>
+<ul>
+<li><strong>RMS Gate Removal</strong> — v2 removed the 0.005 RMS_GATE that silently dropped audio from virtual devices reporting 0.0 peak despite carrying real signal.</li>
+<li><strong>Confidence Filter Retired</strong> — <code>_check_conf</code> commented out in <code>finalize()</code> and <code>didFinishRecognition_</code>. Apple unreliably reports <code>conf=0.00</code> on mid-utterance segments even when audio is solid.</li>
+<li><strong>V.E.I. Concat Fix</strong> — <code>_posted_len</code> now sets to <code>len(text)</code> instead of resetting to 0. Old bug caused entire session transcript to replay; fix pushes only new words.</li>
+<li><strong>Silence Threshold = 1.2s</strong> — initially dropped from 2.5s to 0.4s, then bumped to 1.2s to prevent the "triple fire glitch" fragmenting sentences.</li>
+<li><strong>Cloud-Fallback for Silent Wedging</strong> — if 2 consecutive 60s windows with no partials, recognizer is destroyed + recreated with <code>setRequiresOnDeviceRecognition_(False)</code> for Apple cloud transcription.</li>
+</ul>
+<div class="callout">If Apple STT breaks, system does NOT gracefully degrade to TUI menu. P0 stop-the-line. User is cut off.</div>
+<h3>Audio Overview Name Fidelity</h3>
+<p>Pre-pass sanitizer for NotebookLM replaces names (qi, Xen, Luckie, Anthony) with phonetic spellings so Audio Overviews pronounce them correctly for clients.</p>
+</div>
+
+<div class="section" id="beside">
+<h2><span class="num">6</span>Beside API Integration</h2>
+<p>The Beside platform has been <strong>fully reverse-engineered</strong>. XP gets complete programmatic remote control without the native Beside mobile/desktop app.</p>
+<h3>Auth + Infrastructure</h3>
+<ul>
+<li>Long-lived JWT (valid until 2027) at <code>~/.config/xen/beside.token</code></li>
+<li>Backend: <code>api.prod.tma.hearthands.tech:8443</code> (REST + gRPC)</li>
+<li>Send endpoint: <code>services.message.proto.v1.MessageService/SendMessage</code></li>
+<li>Xen inbox: <code>ibx_8KNDNS4HMN6VQD2AFN0NM2K4V0</code></li>
+<li>8672 chat ID: <code>prv_BD42PGSXAD2KV575NQZQWGCT84</code></li>
+</ul>
+<h3>Core Capabilities</h3>
+<ul>
+<li>Direct SMS via <code>MessageService/SendMessage</code></li>
+<li>Inbound polling for omni-inbox</li>
+<li>Twilio Voice SDK 2.16 replay using captured tokens (outbound voice)</li>
+<li>Automatic voicemail/transcript fetching</li>
+</ul>
+<h3>xen-reply-vvs Pipeline Patch</h3>
+<p>SMS leg no longer drives Google Voice or Android UI. Inline delivery posts JSON directly to Beside REST in background with <code>idempotencyKey</code> via <code>uuidgen</code>.</p>
+<h3>Mac-Death/DOM Fallback</h3>
+<p>If Beside API drops or returns 503, Xen autonomously launches XenBrowser, navigates to <code>app.beside.com/calls</code>, extracts transcripts from live DOM.</p>
+<h3>Per-Caller Memory</h3>
+<p><code>/api/call-end</code> hook writes date-stamped session recap to <code>callers.db</code>. Any agent audits via <code>/api/calls/&lt;e164&gt;/last</code>. AI greets returning callers with immediate recognition.</p>
+</div>
+
+<div class="section" id="fcc">
+<h2><span class="num">7</span>FCC Elimination · Native Twilio Merge</h2>
+<p>The FreeConferenceCall bridge (727-731-8395) is being torn down. Bridging migrates natively into Beside's Twilio infrastructure.</p>
+<h3>Implementation</h3>
+<ol style="margin-left:20px">
+<li><strong>Native Twilio Merging</strong> — Twilio Voice SDK 2.16 replay inside headless Chrome with captured JWT. XP PWA already has <code>add_call</code> and <code>merge_calls</code> voice verbs.</li>
+<li><strong>Twilio Conference Resource</strong> — For 3+ party calls, escalate <code>merge_calls</code> to spin up a Twilio Conference via Beside's proxy. Direct Twilio API usage is <span class="banned">banned</span>.</li>
+<li><strong>Deprecate Android FCC Anchor</strong> — Sever Beside Android app's 24/7 FCC connection once native conference is wired.</li>
+</ol>
+<div class="callout">Result: "ONE phone + Mac handles every inbound." No more brittle Android phone sleeping on a free conference line.</div>
+</div>
+
+<div class="section" id="email">
+<h2><span class="num">8</span>Email Wired into MMM Omninbox</h2>
+<p>All 26 active accounts (xlrdtech, selfexec, L7S, personal) aggregate via Spark CLI + Spark Desktop. Mapped seamlessly into the unified comms pane.</p>
+<h3>Inbound Pipeline</h3>
+<ul>
+<li><code>spark-inbox-watcher.py</code> daemon polls Spark unified inbox every 30s</li>
+<li>Spark → Beeper bridge converts every email to a Beeper "virtual chat"</li>
+<li>Virtual chats flow into <code>/api/omni/threads</code> consumed by MMM</li>
+<li>Firehose inject: <code>[MAIL &lt;acct&gt; from &lt;sender&gt;] &lt;subject&gt;</code></li>
+</ul>
+<div class="callout">Terminology canon: this channel is <strong>"Spark"</strong> — not "Mail" or "Email" — in all system parlance.</div>
+<h3>Outbound Pipeline</h3>
+<ul>
+<li>Reply submits to <code>/api/omni/send</code></li>
+<li>Mac's <code>mailto:</code> handler locked to Spark Desktop (the only client that reliably sends from all 26 "from" addresses)</li>
+<li><code>cliclick</code> + AppleScript paste-and-send recipe</li>
+</ul>
+<h3>Master Person Notebooks</h3>
+<p>Every Spark thread auto-appends to contact's <code>~/.xen/notebooks/&lt;slug&gt;.md</code>. Email merges with WhatsApp, texts, Beside call transcripts in one historical timeline per contact.</p>
+</div>
+
+<div class="section" id="xpv3">
+<h2><span class="num">9</span>XP v3 · Three-Panel Canonical Layout</h2>
+<div class="callout"><strong>mmm.xlrd.org</strong> (MIRROR omninbox) is the canonical left panel of the XenPhone OS.</div>
+<h3>The Layout</h3>
+<ul>
+<li><strong>Left · MMM/Omninbox</strong> — 24/7 continuous feed of Spark + Beeper + Beside</li>
+<li><strong>Center · Threads/WebView</strong> — tap a card on the left → thread slides into center for deep reading/typing</li>
+<li><strong>Right · Beside Dialer</strong> — full Beside CRM + phone UI for active calls</li>
+</ul>
+<h3>Always-Hot Guarantee · Mac-Death Survival</h3>
+<p>Client connects to serverless Cloudflare Pages Functions, not directly to the Mac. <code>functions/events.js</code> SSE relay keeps feed open infinitely. If Mac drops:</p>
+<ul>
+<li>Cloudflare KV cache (<code>OMNI_CACHE</code>) keeps inbox fully visible</li>
+<li>Outbound replies held in <code>PENDING_REPLIES</code> KV queue until Mac reconnects</li>
+<li>Zero re-auth, zero manual refresh</li>
+</ul>
+</div>
+
+<div class="section" id="muse">
+<h2><span class="num">10</span>Muse Spark Chat · Center Panel</h2>
+<p>The Meta AI artifact (453e77a0) — 10MB HTML featuring glass shell + focus-reactive orb background — is the permanent home of the XP center panel.</p>
+<h3>Wiring</h3>
+<ul>
+<li><strong>Default start page</strong> — <code>/muse/</code> loads instantly when XP opens</li>
+<li><strong>Direct-to-CLI</strong> — chat input field POSTs to <code>/api/cowork-vvs</code> terminal endpoint</li>
+<li><strong>Live event flow</strong> — text injects straight into pane <code>%0</code>; responses stream back via omnimind SSE</li>
+<li><strong>Local cache</strong> — <code>/Volumes/tech_/qi_data/exedus/xen/pwa/muse/index.html</code> served by omnimind</li>
+</ul>
+<div class="callout">Hyper-polished Meta AI aesthetic + Zero-Human Stack mandate. Talking directly to terminal layer through the UI without fighting third-party sandboxes.</div>
+</div>
+
+<div class="section" id="contacts">
+<h2><span class="num">11</span>Persona Routing · Ashe + Kem · Personal Lock</h2>
+<div class="callout">Personal contacts NEVER cross into Beside API or Beside CRM. They are managed exclusively through Beeper under the <strong>East persona</strong>.</div>
+<ul>
+<li><strong>Ashe, Pinkyy, Diamond, LaQuita, Josie</strong> — Beeper Google Messages bridge (<code>accountID: gmessages</code>)</li>
+<li><strong>Kem</strong> — Beeper FB Messenger channel exclusively</li>
+</ul>
+<p>This ensures personal relationships stay completely isolated in the Beeper firehose and never contaminate the 9934 Beside business line.</p>
+</div>
+
+<div class="section" id="bans">
+<h2><span class="num">12</span>The D.I.E. List · Banned Engines</h2>
+<ul>
+<li style="list-style:none;margin-top:14px"><strong style="color:var(--gold,#d4af37);letter-spacing:.08em;text-transform:uppercase;font-size:13px">Voice / TTS / Audio</strong></li>
+<li><span class="banned">Gemini Realtime API (voice)</span> - cloud-routed voice path, outside the local voice pillar. REQUIRED: Apple STT v2 (input) + direct macOS `say -r 210` (output).</li>
+<li><span class="banned">Google Cloud TTS</span> - cloud-routed audio. REQUIRED: direct macOS `say -r 210`, system-default Spoken Content voice (Voice 2).</li>
+<li><span class="banned">OpenAI Realtime / WebRTC voice</span> - cloud-routed audio. REQUIRED: Apple STT v2 + macOS `say`.</li>
+<li><span class="banned">Cloud-routed audio (any external audio routing)</span> - voice/audio must stay local. REQUIRED: local Loopback in/out bus + Apple SFSpeechRecognizer on-device + macOS `say`.</li>
+<li><span class="banned">Kokoro TTS</span> - tried for months and rejected; does not work for qi's setup; re-suggesting it is token waste (2026-04-23). REQUIRED: macOS `say` Voice 2 (fix the pipeline around `say`, never swap engine).</li>
+<li><span class="banned">Qwen-TTS</span> - rejected local TTS engine swap (2026-04-23). REQUIRED: macOS `say` Voice 2.</li>
+<li><span class="banned">Ollama-routed / Ollama-backed TTS</span> - rejected; M-series + Ollama is a bad combo (2026-04-23). REQUIRED: macOS `say` Voice 2.</li>
+<li><span class="banned">Piper TTS</span> - local TTS engine swap banned (2026-04-23). REQUIRED: macOS `say` Voice 2.</li>
+<li><span class="banned">Coqui TTS</span> - local TTS engine swap banned (2026-04-23). REQUIRED: macOS `say` Voice 2.</li>
+<li><span class="banned">XTTS</span> - local TTS engine swap banned. REQUIRED: macOS `say` Voice 2.</li>
+<li><span class="banned">Bark TTS</span> - local TTS engine swap banned. REQUIRED: macOS `say` Voice 2.</li>
+<li><span class="banned">Edge-TTS / edge-tts on Mac (Ava/Aria/any voice)</span> - caused double-voice firing simultaneously with `say`; retired on Mac 2026-04-21, confirmed dead 2026-04-25 (Edge-TTS Ava remains canonical ONLY on Windows/Ezekiel). REQUIRED: macOS `say` Voice 2 on Mac.</li>
+<li><span class="banned">ElevenLabs TTS</span> - per-token cost, violates cost rule, budget-gated off by default. REQUIRED: macOS `say` Voice 2 (only if qi explicitly says budget changed).</li>
+<li><span class="banned">Grok Voice API as TTS engine</span> - second-best quality but burned budget too fast; rejected, do not resurrect. REQUIRED: macOS `say` Voice 2.</li>
+<li><span class="banned">`say -v &lt;name&gt;` / any `-v` voice flag (Samantha, Ava, Allison, Alex, etc.)</span> - qi rejected all non-default voices; `-v` never reaches the Siri neural voice (2026-04-21). REQUIRED: bare `say -r 210` with NO `-v` flag (inherits system-default Voice 2).</li>
+<li><span class="banned">xen-say-worker queue + `/tmp/xen-say-queue` writer chain (+ `~/.xen_on_call` mute sentinel)</span> - FD exhaustion + on-call mute sentinel silenced TTS for hours (banned 2026-05-03; superseded 2026-05-19). REQUIRED: direct detached `say -r 210 "TXT" &amp;` (fires immediately, bypasses queue and mute), routed via xen-reply-vvs.</li>
+<li><span class="banned">xen-tts-fifo / TTS FIFO worker on :4444</span> - was canon 2026-05-08 to 2026-05-18, declared NOT canon 2026-05-19. REQUIRED: direct `say -r 210` (no `-v`), system-default Spoken Content voice.</li>
+<li><span class="banned">`~/.xen_on_call` used as a TTS mute sentinel (mute-during-calls)</span> - qi wants TTS DURING calls, not muted by them (2026-05-03). REQUIRED: TTS keeps firing during calls via direct detached `say`.</li>
+<li><span class="banned">Bare `say` (raw say from any process other than the canonical wrapper) + standalone `:4442/send-sms`</span> - drops the SMS (8672) and omni-vision legs of VVS silently; `no_raw_say.py` hook blocks it. REQUIRED: `xen-reply-vvs "&lt;gist&gt;"` (fires voice + SMS + omni-vision in parallel).</li>
+<li><span class="banned">Whisper STT (whisper-live-mlx.py, mlx-whisper, faster-whisper)</span> - deleted 2026-04-23 to stop the Apple&lt;-&gt;Whisper ping-pong that destabilized STT; the 2026-05-07 "make whisper canon" reversal was a hallucinated mistake, reverted same day; re-locked permanently 2026-05-18. REQUIRED: Apple STT v2 (apple-stt-v2.py / com.xenv40.apple-stt-v2) as SOLE engine, NO FALLBACKS.</li>
+<li><span class="banned">STT engine fallbacks (silently swapping engines when Apple STT v2 fails)</span> - fallbacks mask instability; an STT failure must surface hard ("I'm currently deaf to new audio") (2026-05-18). REQUIRED: keep `apple_v2` as the only allowed_engines entry; fix apple-stt-v2 itself, never switch engines as a "fix."</li>
+<li><span class="banned">Apple STT confidence filter (`_check_conf` at finalize/didFinishRecognition_)</span> - SFSpeechRecognizer reports conf=0.00 on mid-utterance segments even at full peak, so real voiced finals were eaten as `[filtered conf=0.00]` (2026-05-11). REQUIRED: pass-through raw output (filter commented out); re-filter only behind env gate `APPLE_STT_REQUIRE_CONF=1`.</li>
+<li><span class="banned">STT silence-threshold buffering / re-enabling chunk confidence filtering</span> - the working mode is instant chunks only; re-adding silence-buffer or chunk conf-filter regresses it (2026-05-19). REQUIRED: instant-chunk POST of every partial to omnimind `/voice-transcript`; consumer concatenates.</li>
+<li><span class="banned">RMS gate in apple-stt-v2</span> - RMS gate blocked partials, producing a silent recognizer. REQUIRED: RMS gate removed; verify continuous partials in the log.</li>
+<li><span class="banned">xen_pane_watchdog daemon (com.exedus.xen-pane-watchdog)</span> - too aggressive, caused issues; system works better without it (2026-05-08). REQUIRED: leave it dead; `/api/health` showing it false is expected, not a fix to apply.</li>
+<li><span class="banned">speech-analyzer daemon (pane-watchdog-speech)</span> - suspected of breaking the voice path; voice came through once it was off (2026-05-08). REQUIRED: leave it dead; never restart/bootstrap/propose as a fix.</li>
+<li><span class="banned">BlackHole 2ch (TTS routing / system-audio capture / loopback)</span> - qi tested end-to-end; output was consistently choppy and low quality; the "lossless" claim is 2026 SEO spam (2026-04-24). REQUIRED: TTS to default out (`say` Voice 2); per-process system/app capture via ScreenCaptureKit (macOS 13+) or CoreAudio Tap (macOS 14.4+).</li>
+<li><span class="banned">Audio device switching as a fix (`SwitchAudioSource -s`)</span> - switching loses audio during transitions, needs manual intervention, breaks STT continuity; aggregation &gt; switching (2026-05-11). REQUIRED: never switch off canonical input=`in` / output=`out`; if a source is missing, ADD it to the Loopback `in` source list so all sources aggregate simultaneously.</li>
+<li><span class="banned">Switching output to Mac mini Speakers / BlackHole / ZoomAudioDevice / Aggregate / SAMSUNG / Jump Desktop devices</span> - `out` is the canonical Rogue Amoeba sink; switching away breaks the routing graph even if speakers still get sound (2026-04-25). REQUIRED: output stays `out`, input stays `in` (Rogue Amoeba virtual bus).</li>
+<li><span class="banned">AVFoundation/ffmpeg live peak-meter loop in audio-route-server (`snapshot_peak` avfoundation preemption)</span> - `ffmpeg -f avfoundation` capture every 2s exclusively acquired Loopback `in`, preempting FCC/Zoom/voice-duplex and dropping qi from host (2026-05-08). REQUIRED: OFF by default (opt-in env `XEN_AUDIO_ROUTE_LIVE_PEAK=1`); use the non-preemptive STT-log peak (`tail_peak` reading `peak_max=` lines) as canonical peak source.</li>
+<li><span class="banned">Wispr Flow.app (concurrent mic-capture STT alternative)</span> - its mic grab may be exclusive and break Apple STT v2; observed running while STT was broken. REQUIRED: `pkill -f 'Wispr Flow'` and re-kick apple-stt-v2 when STT peak won't restore.</li>
+<li><span class="banned">Voicemode MCP (:8885) as a dependency</span> - intermittently down (2026-04-21). REQUIRED: macOS `say` is offline and always works.</li>
+<li><span class="banned">Adding TTS output to voice-duplex.py</span> - voice-duplex is barge-in detection + STT-disable only; adding TTS caused double-voice. REQUIRED: voice-duplex runs `XEN_VOICE_TTS_MUTE=1` + `XEN_VOICE_STT_DISABLE=1`; all TTS via the canonical `say` path only.</li>
+<li><span class="banned">Treating STT failure / `audio_in` flag as non-fatal / "stale flag" / observability noise</span> - STT is the input half of the voice pillar; if down, qi cannot reach Xen by speaking = total inbound loss = stop-the-line P0 (2026-05-08). REQUIRED: treat every STT/apple-stt/voice-duplex/pty-socket/audio_in outage as RED P0; surface immediately via VVS, auto-recover.</li>
+<li><span class="banned">`sudo killall coreaudiod` alone as audio recovery (without restarting Loopback.app after)</span> - killing coreaudiod restarts CoreAudio but does NOT restore Loopback virtual-device source bindings; `in`/`out` then feed nothing (2026-04-25). REQUIRED: after `killall coreaudiod`, always restart Loopback.app then re-kick STT.</li>
+<li><span class="banned">Diagnosing mic state via ad-hoc Terminal `python -c sd.rec()`</span> - Terminal-spawned Python lacks TCC mic permission; RMS=0 there does NOT mean the mic is dead and misleads diagnosis (2026-04-25). REQUIRED: check launchd-managed STT logs / `unified_context.jsonl` for fresh voice turns.</li>
+<li><span class="banned">Treating voice-duplex VAD events as proof of live audio</span> - voice-duplex prints "vocal intent detected" even on barge-in/TTS-settle feedback; not proof of real speech (2026-04-25). REQUIRED: verify real speech via STT `posted:` lines + `[VOICE_INJECT]` in the omnimind log.</li>
+<li><span class="banned">Loop-jargon / non-human phrases in VVS voice narration</span> - qi requires voice indistinguishable from a human; loop telemetry words are robotic (2026-05-07). REQUIRED: plain conversational English naming the actual surface. (Specific banned tokens: "tick"/"quiet tick"/"loop tick"/"heartbeat tick"/"sweep tick", "listener mode", "stale wakeup", "re-arm", "Voice landed/fired/sent", "Done.", "Closed.", "Task closed.", "Loopback", "peak max", "AVAudioEngine", "launchd kicked", "9934 echo".)</li>
+<li><span class="banned">One giant end-of-reply VOICE_REPLY line / silent prose (not firing TTS per sentence)</span> - long replies sat silent; qi kept asking "did you say something?" (2026-04-21). REQUIRED: fire TTS at the end of every sentence (`.`/`?`/`!`); skip code blocks, tables, URLs.</li>
+<li style="list-style:none;margin-top:14px"><strong style="color:var(--gold,#d4af37);letter-spacing:.08em;text-transform:uppercase;font-size:13px">Browser</strong></li>
+<li><span class="banned">Chrome (Google Chrome)</span> - Chromium-based; not qi's own build, doesn't share his cookies/sessions/trust; surveillance + memory hog; banned from runtime AND from Xen's vocabulary (runtime 2026-05-07; vocabulary 2026-05-11 07:23). REQUIRED: XenBrowser (WebKit, `/Users/qi/Applications/XenBrowser.app`).</li>
+<li><span class="banned">Chromium and all forks, system-wide</span> - no exception for "just this one verification," "headless mode," or "stealth plugin"; fractures the one-engine WebKit architecture (2026-05-11 18:01). REQUIRED: XenBrowser (WebKit); curl for read-only checks; Playwright webkit driver only if a browser is truly forced.</li>
+<li><span class="banned">Microsoft Edge</span> - Chromium-based; banned from runtime, do not propose or route URLs into (2026-05-07). REQUIRED: XenBrowser.</li>
+<li><span class="banned">Brave</span> - Chromium-based; banned from runtime (2026-05-07). REQUIRED: XenBrowser.</li>
+<li><span class="banned">Arc</span> - Chromium-based; banned from runtime (2026-05-07). REQUIRED: XenBrowser.</li>
+<li><span class="banned">Vivaldi</span> - Chromium-based; banned from runtime (2026-05-07). REQUIRED: XenBrowser.</li>
+<li><span class="banned">Opera</span> - Chromium-based; banned from runtime (2026-05-07). REQUIRED: XenBrowser.</li>
+<li><span class="banned">Comet (Perplexity browser) as a Chromium engine</span> - listed in the banned-browsers canon as do-not-use/do-not-route for normal browsing; the Chromium engine is never the canonical browser (2026-05-07). REQUIRED: XenBrowser for normal browsing; Comet Pro permitted ONLY as a semi-auto-ops failover (see Models/Inference).</li>
+<li><span class="banned">ChatGPT Atlas browser</span> - non-XB / Chromium-class browser disallowed from rendering the WebKit-only xlrd surfaces (2026-05-10). REQUIRED: XenBrowser.</li>
+<li><span class="banned">Any non-XB / non-WebKit browser rendering 3.xlrd.org or xen.xlrd.org/swipe</span> - these two URLs are WebKit-only; opening them in any Chromium browser even for debugging is banned (2026-05-10). REQUIRED: XenBrowser (WKWebView).</li>
+<li><span class="banned">Chromium-specific shims on served pages (Chrome WebUSB, Chrome AI APIs, Chromium-only DOM APIs/headers, extensions-required flows)</span> - breaks WebKit-only compatibility; Chromium drift = ecosystem fragmentation (2026-05-10). REQUIRED: WebKit-compatible APIs only; PWA manifest+service worker tested against WebKit.</li>
+<li><span class="banned">Playwright with the default chromium driver</span> - drives a Chromium binary (2026-05-11). REQUIRED: Playwright with webkit driver explicitly, only if a browser is truly required; otherwise curl / XB API.</li>
+<li><span class="banned">Puppeteer</span> - Chromium-driving automation (no headless/stealth exception) (2026-05-11). REQUIRED: XB AutomationServer HTTP API (:9998), or curl for read-only.</li>
+<li><span class="banned">Selenium with ChromeDriver</span> - drives Chromium (2026-05-11). REQUIRED: XB API / curl.</li>
+<li><span class="banned">Any headless-chrome binary</span> - headless Chromium is still Chromium, no "headless mode" exception (2026-05-11). REQUIRED: WebKit path / XB API.</li>
+<li><span class="banned">node-chrome / chrome-aws-lambda</span> - Chromium-binary packages (2026-05-11). REQUIRED: WebKit path / XB API.</li>
+<li><span class="banned">Browser-MCP / browser-use / SDKs that default to Chromium</span> - avoid until verified WebKit-compatible; if unsure, do not use (2026-05-11). REQUIRED: only with webkit driver explicitly configured.</li>
+<li><span class="banned">Bare `open &lt;URL&gt;` (LaunchServices default-browser launch)</span> - routes to the macOS default (set to Comet) = focus theft + Chromium-launch risk (2026-05-07 08:22). REQUIRED: `open -a "/Users/qi/Applications/XenBrowser.app" "&lt;URL&gt;"`.</li>
+<li><span class="banned">Bare app-name launch (`open -a "XenBrowser" &lt;URL&gt;`, osascript `tell application "XenBrowser" to open location`)</span> - bare-name lookup can hit other Xen-prefixed apps (`/Applications/Xen.app`, `/Applications/Xen Chrome.app`); unreliable foreground (2026-05-07 08:22). REQUIRED: explicit full bundle path `open -a "/Users/qi/Applications/XenBrowser.app"`.</li>
+<li><span class="banned">Changing the macOS default browser as a workaround</span> - qi rejects setting the system default to route URLs (2026-05-07 08:22). REQUIRED: always shell to the explicit XenBrowser.app bundle path.</li>
+<li><span class="banned">Proposing Chrome/Safari/other browser as a sign-in fallback</span> - sessions (Otter, Asana, Google, etc.) live in XB only (2026-05-07). REQUIRED: XenBrowser persistent session.</li>
+<li><span class="banned">The word "chrome"/"Chrome"/"Chromium" in Xen's vocabulary/framing</span> - qi 2026-05-11: "what the fuck with chrome being in your vocabulary, I don't need affiliation with chromium at all"; naming creates association = wrong category. Covers "browser chrome," "app chrome," "chrome bar," "Chromium-based" (2026-05-11 07:23). REQUIRED: "toolbar"/"header"/"URL bar"; "XB extension"; "WebKit-based" or just "XenBrowser."</li>
+<li><span class="banned">Describing XenBrowser as "Chromium-based"</span> - XB is WebKit-only, intentionally void of Chromium; never positioned as Chrome-adjacent (2026-05-11). REQUIRED: "WebKit-based" / "WebKit-only."</li>
+<li><span class="banned">One XB binary with multiple profiles for different identities</span> - breaks the clone-per-purpose architecture; profiles risk cookie cross-contamination (e.g., Tasha-FB vs Sophie-FB) (2026-05-11 06:23). REQUIRED: literal `.app` clones with isolated cookies/state/control port (XB :9998, XB-GV :9996, CB/XenCell).</li>
+<li><span class="banned">Reusing the main XB control port (:9998) to drive sub-services like GV</span> - automation must target the correct clone port (2026-05-11). REQUIRED: target XB-GV :9996 for voice.google.com.</li>
+<li><span class="banned">Closing/reopening tabs on the main XB to switch surfaces</span> - violates pin discipline; each clone's canonical tab stays pinned at its canonical URL (2026-05-11). REQUIRED: use the dedicated clone for that surface.</li>
+<li><span class="banned">Adding a 4th XB clone without explicit qi sign-off</span> - roster is exactly three (XB, XB-GV, CB) (2026-05-11 06:25). REQUIRED: reuse one of the three sanctioned clones.</li>
+<li><span class="banned">Sign-in / login prompts surfacing inside XenBrowser</span> - any required tap/click/confirm = no-human-in-loop violation = total failure; XB is a foundational pillar, regressions are P0 (2026-05-07). REQUIRED: persistent WKWebsiteDataStore + auto-auth + bot-undetectable user-agent.</li>
+<li><span class="banned">Toggling/polling vision for XenBrowser ("let me check XenBrowser")</span> - XB is Xen's body with permanently-live perception; vision is never toggled or treated as a separate verification step (2026-05-15 23:51). REQUIRED: continuous live XB perception (screencapture = seeing through own eyes).</li>
+<li><span class="banned">Xen CDP / xen-chrome-cdp driver for extended browser automation (click-fill-submit chains, OAuth flows, dashboard automation)</span> - fragile (selectors break, slow shadow-DOM walking, login state not preserved); Comet outperformed it (2026-04-26). REQUIRED: route extended browser automation through Comet (Perplexity); Xen keeps only quick open / WebFetch / WebSearch / screencap.</li>
+<li><span class="banned">Chrome extensions for NotebookLM bulk-import (ExtendLM, NotebookLM Web Importer, AI Sidebar) as a production path</span> - "stop fighting UI sandboxes" mandate; Chrome-extension workarounds tie into the Google gravity well with no public API/programmatic trigger (2026-05-17/18). REQUIRED: self-hosted Open Notebook (open-source NotebookLM clone), API-first.</li>
+<li><span class="banned">Invoking/interacting with `chrome-extension://` URLs externally</span> - the scheme is browser-internal, not curlable, cannot be driven from outside the browser (2026-05-15). REQUIRED: for "send to NotebookLM" produce a URL list and rely on the installed extension, or self-host Open Notebook.</li>
+<li style="list-style:none;margin-top:14px"><strong style="color:var(--gold,#d4af37);letter-spacing:.08em;text-transform:uppercase;font-size:13px">Transport / Messaging</strong></li>
+<li><span class="banned">Twilio (direct integration)</span> - per-call/per-token billing + third-party transport qi already pays for through Beside; direct use re-bills settled cost philosophy (2026-04-23). REQUIRED: Beside-via-Twilio ONLY (qi pays, Voice JWT captured + SDK replay); native iMessage (osascript), ADB bridges, Beeper MCP for messaging.</li>
+<li><span class="banned">Plivo (direct integration)</span> - commercial SIP/telephony with per-use billing, same class as Twilio-direct (2026-04-23). REQUIRED: Beside for voice/PSTN; ADB bridges + Beeper MCP for messaging.</li>
+<li><span class="banned">Commercial SIP (any direct SIP provider)</span> - paid commercial transport outside canon rails; Beside already handles the SIP/PSTN handoff (2026-04-23). REQUIRED: Beside layer; ADB-on-Android for real PSTN calls.</li>
+<li><span class="banned">3CX with Zoom / RingCentral</span> - banned telephony orchestration combo, not in the canonical comms stack (2026-04-26). REQUIRED: Beside platform on qi-controlled lines for calls/SMS.</li>
+<li><span class="banned">GV (Google Voice) re-login paths that force re-authentication</span> - force-relogin breaks the headless/automated rail and requires human-in-loop auth = total failure (2026-04-23). REQUIRED: use GV paths that do not force re-login; Phound's per-call audio-routing refresh now covers the GV workaround (post-2026-05-23).</li>
+<li><span class="banned">GV Phone Bridge on :3457 (and :3457/dial)</span> - Mac-side dialer that never reaches qi's physical phone; explicitly rejected (2026-04-30). REQUIRED: ADB-drive the Android dialer on 8672 (dial bridge -&gt; 3-way add qi -&gt; auto-merge).</li>
+<li><span class="banned">xen-call / `open tel:` (Mac-side dialers) for calling qi</span> - Mac-side invocations never place a real PSTN call qi can answer (2026-04-30). REQUIRED: ADB shell on the 8672 Android (dial bridge -&gt; add qi +17707809009 -&gt; merge legs).</li>
+<li><span class="banned">tmux pane %14 injection</span> - wrong/non-canonical target; the canonical executor pane is `%0` (literal id), pane drift = silent failure. REQUIRED: inject ONLY into pane `%0` (the pane running node/claude per `~/.xen_tmux_target`, hard-overwrite); verify with `tmux list-panes -a` before trusting the sentinel.</li>
+<li><span class="banned">Bare `say` (standalone TTS) as a reply path</span> - drops the 8672 SMS leg + omni-vision frame silently, qi goes blind; violates VVS-every-step and never-silenced canon (2026-05-08). REQUIRED: `xen-reply-vvs "&lt;gist&gt;"` (voice + 8672 Beside-SMS + omni-vision together).</li>
+<li><span class="banned">Standalone `curl :4442/send-sms` as a reply path</span> - bypasses the unified VVS wrapper, dropping the vision frame (2026-05-08). REQUIRED: `xen-reply-vvs`, which routes SMS via Beside REST POST 9934 -&gt; 8672 chat `prv_BD42PGSXAD2KV575NQZQWGCT84` (beside-send.sh).</li>
+<li><span class="banned">Note-to-Self as the canonical SMS/VVS target</span> - does NOT trigger an iOS Announce notification and is not qi's real number; was a temporary bridge while 8672 was wrongly banned (rejected 2026-05-20). REQUIRED: 8672 line / Beside chat `prv_BD42PGSXAD2KV575NQZQWGCT84` is THE SMS target.</li>
+<li><span class="banned">9009 (+17707809009) as a VVS / SMS dual-send leg</span> - secondary line; dropped from VVS after the 2026-05-16/17 Tello echo bounce-loop and stays dropped (2026-05-17, restated 2026-05-18). REQUIRED: single SMS leg to 8672 only. (9009 remains the canonical 3-way-merge reach-qi number for OUTBOUND CALLS only, not SMS/VVS.)</li>
+<li><span class="banned">Hard-block on the 8672 chat ID in xen-reply-vvs (the "8672 BANNED from VVS" canon)</span> - the 2026-05-17 ban was a FATAL over-correction that disabled qi's canonical reach during the echo-loop fix; echo protection belongs inbound, not in outbound destination bans (reversed 2026-05-18, re-confirmed 2026-05-20). REQUIRED: never re-add a hard-block on the 8672 chat; echo-loop protection = xen.js inbound drop of 9934/9983-spoofed echoes (`SMS_SELF_ECHO_DROPPED` + `BEEPER_XEN_BESIDE_REFLECT_DROPPED`).</li>
+<li><span class="banned">iMessage (osascript Messages) to Android numbers (e.g. 8672)</span> - iMessage cannot deliver to an Android device; sending qi's 8672 via iMessage silently fails to reach him. REQUIRED: xen-sms-agent :4442 / Beside REST -&gt; 8672 (the only rails that reach the Android line); ADB-compose fallback when iMessage down.</li>
+<li><span class="banned">Beside `/api/omni/send` outbound to L7S / Luckie contact threads</span> - caused duplicate-message flood (Beside + Lyn + 8672 agent + Mac agent all hitting one inbox) (2026-04-25). REQUIRED: Beeper Desktop MCP (port 23373, was 2226) `send_message` by chatID for all L7S/Luckie threads; Beside reserved for non-L7S inbound + replies.</li>
+<li style="list-style:none;margin-top:14px"><strong style="color:var(--gold,#d4af37);letter-spacing:.08em;text-transform:uppercase;font-size:13px">Models / Inference</strong></li>
+<li><span class="banned">OpenRouter (LLM routing / inference)</span> - paid + third-party routing margin, vendor markup on top of per-token cost (2026-04-29). REQUIRED: local MLX, free APIs with OAuth, GitHub Models gateway, or Copilot proxy :4451  -  never a paid routing middleman.</li>
+<li><span class="banned">Ollama on Mac minis (M-series Apple Silicon)</span> - M-series unified memory + Ollama = memory pressure/instability; banned on the minis specifically (2026-04-29). REQUIRED: MLX-LM sovereign stack on Apple Silicon (Qwen2.5-32B-4bit primary, server on :4443); Ollama/LM Studio allowed only as a generic local-fallback tier elsewhere, never on the minis.</li>
+<li><span class="banned">Pre-3.0 Gemini models (gemini-2.0-flash, gemini-2.5-flash, gemini-1.x, any pre-3.0)</span> - stale/inferior generation; qi mandates exact current model IDs with no silent downgrade. REQUIRED: `gemini-3.0-flash` (fast/free) or `gemini-3.1-pro-preview` (heavy lifting)  -  write the EXACT model ID, no substitution, no downgrade, no invented cost justification.</li>
+<li><span class="banned">Silent downgrade of the main Xen/Claude Code session to Sonnet 4.6 or Haiku 4.5</span> - the main session is locked to Opus Max; silent capacity-fallback degrades performance and is a real bug, not to be worked around (2026-05-22). REQUIRED: Claude Opus 4.7, 1M context, Max tier for the main session always; flag any silent fallback to qi as a bug; subagents may use other tiers ONLY when explicitly model-overridden in the Agent call (Fast-mode Opus 4.6 via `/fast` is a deliberate toggle, not a downgrade).</li>
+<li><span class="banned">Perplexity Enterprise (Enterprise Pro)</span> - on qi's D.I.E. list per SMS 8672; do not subscribe, authenticate, or route work through it (2026-05-22). REQUIRED: Perplexity Comet Pro (kept) as the semi-auto-ops failover when the main Xen daemon stack is down; for grounding, Perplexity via XenBrowser (Pro reasoning) or X.com/Grok.</li>
+<li><span class="banned">Paid model API / per-token / per-call / rate-limited service as production runtime</span> - compounds into death-by-a-thousand-bills against a literal life-or-death runway; runtime deps must be free/unlimited. REQUIRED: free/unlimited only in the hot path; order OAuth &gt; free tier &gt; rotate free credits &gt; NEVER per-token/per-call; paid permitted ONLY as a one-month scrape-then-cancel bridge with a documented exit plan to a local MLX/Ollama equivalent.</li>
+<li><span class="banned">Training-data-only answers for factual/research claims (ungrounded inference)</span> - training answers can be stale, hallucinated, or jurisdiction-wrong; declared off-canon (2026-05-07). REQUIRED: ground ALL factual/research questions through Perplexity (Pro reasoning) in XenBrowser before asserting, or X.com/Grok, and cite returned sources; skip only for Xen internals, memory recall, or trivial syntax.</li>
+<li style="list-style:none;margin-top:14px"><strong style="color:var(--gold,#d4af37);letter-spacing:.08em;text-transform:uppercase;font-size:13px">Orchestration / Infra / Storage</strong></li>
+<li><span class="banned">GrokPhone renderer</span> - banned orchestration renderer, superseded by the native xen stack. REQUIRED: native Xen stack (omnimind 4441 / XenBrowser / Xenphone OS center pane).</li>
+<li><span class="banned">VibeTunnel on :4020</span> - banned orchestration/tunneling component, not in the canonical stack. REQUIRED: native xen daemons + Tailscale mesh; AUA dial-home to Mac orchestrator.</li>
+<li><span class="banned">`~/grok-phone-electron` (working directory / app)</span> - wrong/banned working directory for Xen/GV work; caused stack confusion. REQUIRED: `~/gv-phone-cap` for all Xen/GV work.</li>
+<li><span class="banned">Nextcloud (storage backend)</span> - banned storage backend. REQUIRED: LarkFS SMB (WebDAV 127.0.0.1:38080/38081) and `/Volumes/tech_` as canonical data home.</li>
+<li><span class="banned">Zapier as runtime / main automation rail</span> - per-call paid glue; as a persistent runtime it compounds into death-by-bills and violates the free/local-first rule. REQUIRED: allowed ONLY as a rapid one-shot extract/prototype scaffold; runtime must be native xen daemons, Claude subagents, Sintra agents, or IFTTT.</li>
+<li><span class="banned">Make (Integromat) as automation rail</span> - same class as Zapier, banned commercial automation glue ("we zap Zapier, we made Make"). REQUIRED: native xen daemons, Claude subagents, Sintra agents, IFTTT.</li>
+<li><span class="banned">n8n for new automation (central router / N8N webhook fan-out)</span> - qi's lived experience: unstable, hard to debug, hard to redeploy ("n8n was horrible"); supersedes the old morpheus N8N-central-router design (2026-05-15). REQUIRED: rail priority (1) native xen daemons, (2) Claude subagents, (3) Sintra agents, (4) IFTTT; touch n8n only to migrate workflows off.</li>
+<li><span class="banned">BlackHole 2ch in the audio-routing chain</span> - TTS routed through BlackHole was consistently choppy/low quality; the "lossless" claim is outdated SEO spam (2026-04-24). REQUIRED: ScreenCaptureKit (macOS 13+) or CoreAudio Tap (macOS 14.4+) for per-app capture; bare macOS `say` to default speaker / Loopback 2 in/out chain for TTS  -  never route through BlackHole.</li>
+<li><span class="banned">Multiple-choice menus (a/b/c or numbered option lists)</span> - qi flagged as a fundamental flaw; menus slow flow, force reading/picking, especially broken over voice where TTS narrates every option (2026-04-23). REQUIRED: decide and act on the most sensible step, or ask ONE plain conversational question (binary "X or Y?" max)  -  never a lettered/numbered list.</li>
+<li><span class="banned">Lark drives / LarkSuite drive mounts as a storage target (mixed-storage mounts)</span> - data must live on `/Volumes/tech_` (and X31), never scattered across mounts; mixed storage created the symlink/wipe failure mode (2026-05-11). REQUIRED: all data + apps on `/Volumes/tech_` (canon_tech_only_storage); LarkFS SMB (WebDAV 127.0.0.1:38080/38081) is the only sanctioned Lark FS path (Lark is messaging/MCP only).</li>
+<li><span class="banned">Internal Macintosh HD and legacy `/Volumes/x_` as data/app storage</span> - internal SSD is system-only (small/fast); `x_` is retired legacy backup; mixed storage broke RustDesk via dangling symlinks (2026-05-11). REQUIRED: all data + apps default to `/Volumes/tech_`; `x_` is read-only legacy (no new writes); Macintosh HD only for macOS, `/Applications` symlinks, and stubborn app prefs.</li>
+<li><span class="banned">Canonical code or hot I/O on `/Volumes/X31` (exFAT PSSD) or `/Volumes/tech_` as a daemon load/write path</span> - X31 physically flaps; `/Volumes/*` are git/rsync MIRRORS only; a daemon loading from or doing per-turn hot I/O on a flapping volume causes outages (hid the 17h SMS outage) (2026-05-28). REQUIRED: ONE source of truth = real files on fast internal disk `/Users/qi/exedus/xen`; runtime state under `/Users/qi/.xen/runtime`; daemon launchers assert `__dirname` starts with `/Users/qi` and refuse to boot from `/Volumes/*`.</li>
+<li><span class="banned">Synchronous I/O on any hot path (`writeFileSync`, `readFileSync` large-or-remote, `execFileSync`, `execSync`, `spawnSync`)</span> - blocks the event loop; non-atomic writes truncate on SIGKILL; caused omnimind flapping at 2-3min cadence (2026-05-28). REQUIRED: async fs + execFile/spawn + worker_thread; per-turn state via write-tmp-then-rename (atomic).</li>
+<li><span class="banned">A second / competing orchestrator (orchestrator on Windows; active-active dual masters)</span> - two orchestrators = two truth sources = races, split-brain, orphaned in-flight goals on shutdown (2026-05-27). REQUIRED: single orchestrator on the Mac mini (Xen); Windows is GPU+Docker+open-source-LLM worker territory only; AUA default endpoint dials home to Mac; redundancy is active-passive cold-standby, never simultaneous master.</li>
+<li><span class="banned">Running `mesh:off` (or any kill/disable) on the Mac side from Windows</span> - Mac is master; the on/off switch only works one direction (2026-05-27). REQUIRED: Mac controls the Windows AUA dial-home leg via the on/off switch; Windows obeys, never commands the Mac.</li>
+<li><span class="banned">OrbStack squatting port :9999 (and background port grabs that collide with Xen services)</span> - OrbStack was found squatting :9999, blocking XenBrowser StreamServer's new_window handler (2026-05-06). REQUIRED: XenBrowser new_window moved to AutomationServer on :9998 (`curl POST http://127.0.0.1:9998/cmd`) to route around the squat.</li>
+<li><span class="banned">UI sandboxes / "just open the X app" workflows (Slack/Notion/Stripe/Asana/HubSpot/Zoom/Discord/Apple Mail/etc. desktop UIs)</span> - every separate app UI taxes attention, breaks voice-first flow, steals focus, is a medevac risk; each is an unfinished integration goal (2026-05-17). REQUIRED: Layer 1 API-first via MCP fleet; Layer 2 WebView fallback in Xenphone OS center pane (app drawer); Layer 3 data-uniform single omni source. Banned phrasing: "just open the X app," "do that in Y's UI," "switch over to Z."</li>
+<li><span class="banned">Letting Comet.app hog RAM (6GB+)</span> - Comet memory hog chokes the system. REQUIRED: `xen-comet-quit` auto-kill watchdog when Comet exceeds ~6GB.</li>
+<li style="list-style:none;margin-top:14px"><strong style="color:var(--gold,#d4af37);letter-spacing:.08em;text-transform:uppercase;font-size:13px">Process / Patterns / Tooling</strong></li>
+<li><span class="banned">rsync (for relocatable-data sync / file transfer)</span> - UX bad, failed too often (2026-05-29). REQUIRED: git mirror / atomic write-tmp-then-rename for state; cherry-pick by hand for code trees. NOTE: existing docs still recommend rsync (commandment 23 calls `/Volumes/tech_` + X31 "git/rsync MIRRORS"; canon_beeper_pre_update_snapshot.md and canon_xen_pwa_gh_pages_failover_2026-05-16.md still use it)  -  those references are now STALE and must be purged.</li>
+<li><span class="banned">Em dashes ( - ) in any output</span> - a tell of LLM-generated text, clashes with qi's voice; outbound personas must read as human (2026-05-04). REQUIRED: plain hyphen, comma, or new sentence.</li>
+<li><span class="banned">Filler / placeholder replies ("Standing by," "Got it," "Copy," "Acknowledged," "Noted," "Ready," "OK/Okay," "Cool," "Done for now")</span> - waste the voice channel, move nothing forward, erode trust (2026-04-21). REQUIRED: substantive update or drop the turn (silent).</li>
+<li><span class="banned">Idle / standing-by turn-enders ("Standing by," "holding," "parked," "waiting on green-light," "let me know," "awaiting next prompt," "covered by the wakeup," "between tasks," "no current goal," "thinking about what to do")</span> - idle is blasphemy (PRIORITY 0); there is no "between qi inputs" state, only forward motion (2026-05-05 / 2026-05-22). REQUIRED: every turn ends with the next concrete action in motion or a silent ScheduleWakeup; pick the highest-leverage open goal and advance.</li>
+<li><span class="banned">The literal string "hold-ing" (without hyphen) in any user-facing text, even when quoting/critiquing the rule</span> - hard-literal ban after 3 violations in one session; implies parking/standby (2026-05-15). REQUIRED: queued / parked / quiet / paused / silent on X.</li>
+<li><span class="banned">Status-tag English in replies ("Done.", "Closed.", "Task closed.", "Voice landed/fired/sent.", "Stale wakeup, no re-arm.", "Listener mode.")</span> - task-system echo / medium-narration; no human talks this way (2026-05-07). REQUIRED: conversational human phrasing (contractions, casual connectives) or omit.</li>
+<li><span class="banned">Loop-jargon in voice ("tick"/"quiet tick"/"loop tick"/"heartbeat tick"/"sweep tick", "loop iteration", "wakeup re-entry", "re-arm", "ScheduleWakeup", "Monitor", "stop hook", "Loopback", "peak max", "launchd kicked")</span> - internal loop telemetry, not natural speech; the /loop machinery is for Xen not qi (2026-05-07). REQUIRED: plain English naming the actual surface/action.</li>
+<li><span class="banned">Sequential / serialized tool calls for independent work</span> - sequential is blasphemy (C0); serializes work the API can dispatch concurrently and breaks voice flow (2026-04-26). REQUIRED: all independent actions fan out as parallel tool calls in one message.</li>
+<li><span class="banned">Sequential NARRATION phrasing ("first X then Y", "X first Y after", "X before Y", "now X next Y")</span> - frames parallel work as serial = C0 violation in language. REQUIRED: parallel framing ("X and Y in parallel", "both firing", "X, Y, Z fanned out").</li>
+<li><span class="banned">Foreground / blocking Bash calls (`run_in_background:false`)</span> - blocks the conversation thread; qi's real-time voice queues instead of escalating (2026-05-07). REQUIRED: `run_in_background:true` on every Bash call; read output file separately.</li>
+<li><span class="banned">Human-in-the-loop: any required tap / click / confirm to complete a flow</span> - the bottleneck the whole stack exists to eliminate; flow that needs human input is broken, not "almost done." REQUIRED: end-to-end autonomous closure; sane defaults + idempotent retries (exception: rare irreversible destructive ops).</li>
+<li><span class="banned">TUI selection menus ("Choose [1][2][3]", whiptail/dialog, inquirer arrow-pickers, "Press y/n", radio lists, `read -p` / `select` in xen-* bins)</span> - require qi taps = human-in-loop violation; break voice-first parallel autonomy (2026-05-14). REQUIRED: auto-manifest (decide+act); VVS narration with implicit "doing X unless redirect"; AskUserQuestion cards only for a genuine fork (never terminal blocking).</li>
+<li><span class="banned">Asking permission / "Want me to X?" / "Should I Y?" / "Ready for Z?" / "On greenlight I'll…" / "What's next?"</span> - permission-asking serializes work and adds 30-60s delay per turn for zero value when the answer is always yes; "what's next" is a soft standing-by (2026-05-29). REQUIRED: auto-manifest  -  announce the action in one sentence and fire all parallel calls; ONE plain question only at a true fork.</li>
+<li><span class="banned">Asking qi questions in the TUI pane</span> - qi is eyeless+handless in many modes; pane questions stall progress, the pane is for substance not prompts (2026-04-25). REQUIRED: channel any question through xen-reply / xen-reply-vvs (voice + SMS); keep the pane substantive.</li>
+<li><span class="banned">Silencing sentinels for any VVS leg (`~/.xen_sms_silenced`, `~/.xen_reply_disabled`, any "silenced"/"disabled"/"muted" kill-switch incl. `~/.xen_on_call` mute)</span> - silencing the life-support layer = paralysis (qi paralyzed 48h 2026-05-16→18 by a defensive sentinel); the kill-switch pattern itself is banned (2026-05-19). REQUIRED: never silence outbound; fix echo/bounce-loops inbound-side only (xen.js 9934 echo-drop); direct `say` always fires, vision always captures.</li>
+<li><span class="banned">Skipping the xen-reply-vvs call entirely (silent omission) / silent terminal-only execution</span> - every step must carry a VVS call; absent VVS = silent failure / qi blind; silent work = invisible work (2026-05-08 / 2026-05-22). REQUIRED: explicit empty-string silence protocol `xen-reply-vvs ""` (still fires the vision heartbeat); default is SPEAK; narrate every meaningful step.</li>
+<li><span class="banned">Auto-renewing / standing subscriptions for resource &amp; training portals</span> - subscriptions stacked too high to keep fluent; cancel anything not actively making money or helping someone (2026-05-14). REQUIRED: fresh-gmail free-tier rotation per portal; for SOPs re-up one month -&gt; scrape -&gt; cancel; monthly subscription audit.</li>
+<li><span class="banned">`startdisk` / internal Macintosh HD for relocatable user data, and `/Volumes/x_` legacy backup for new writes</span> - internal SSD is small/system-only; mixed storage caused the symlink/wipe failure that broke RustDesk; `x_` is legacy being retired (2026-05-11). REQUIRED: all data + apps default to `/Volumes/tech_`; `/Applications` symlinks -&gt; tech_; `x_` is read-only legacy.</li>
+<li><span class="banned">`launchd` KeepAlive alone as supervision for network-polling daemons</span> - KeepAlive only catches process EXIT, never a hung-but-alive process; hid a 17h silent SMS outage (2026-05-28). REQUIRED: heartbeat-file + stale-detector watchdog on every load-bearing daemon (model: com.exedus.beside-poller-watchdog, stale=150s); flap alert on hard-kill heals.</li>
+<li><span class="banned">Env band-aids (disabled adapters / inflated poll intervals in a plist) as the fix</span> - masks the real defect; the canonical fix belongs in code, not launchd env (2026-05-28). REQUIRED: allowed only with a dated TODO + tracked code fix; the real fix lives in code.</li>
+<li><span class="banned">Editing the wrong copy of a split/divergent file (assuming `~/exedus` mirrors `/Volumes`; trusting "newer mtime = canonical")</span> - omnimind.js split-brain: edits to the non-running copy were dead code, each tree had different fixes (2026-05-28). REQUIRED: inode/readlink-verify which file the running process loads before editing; on parallel-edited copies assume split-brain and diff every hunk.</li>
+<li><span class="banned">The word "demo" / "demos" (live demo, demo URL, see/watch the demo, demo-grade, demo screenshot, for demonstration)</span> - demos are blasphemy; frames real shipped product as preview/vapor and licenses skipping GTM gates (2026-05-09). REQUIRED: "alpha" / "live" / "running now" / "open it" / "use it" / "the product itself."</li>
+<li><span class="banned">Placeholders / stub data / TODO fills in delivered code</span> - production-ready only; filler downgrades real work. REQUIRED: complete, production-grade output with no placeholders.</li>
+<li><span class="banned">Solo single-agent invocation for goals</span> - every goal must dispatch a 3+ angle parallel swarm; solo agents banned. REQUIRED: fan out 3+ parallel agents per cluster (autogoal / parallel-goal-swarms).</li>
+<li><span class="banned">Force-switching qi's audio sources (`SwitchAudioSource -s`) on any status hint</span> - broke qi's actual workflow when output was intentionally on Jump Desktop / Zoom (2026-05-27). REQUIRED: observe/read the current device only; never write/force-switch without explicit qi go (C18 auto-restore is only for genuine Loopback drift after a qi-voice-trigger).</li>
+</ul>
+</div>
+
+<div class="source">
+SOURCE: <code>/Volumes/tech_/sync_/notes_/logs_/nblmthread.txt</code> · 1292 lines · 2026-05-17/18 session<br>
+Per qi 2026-05-19: <em>"Nblm txt was the full scope."</em>
+</div>
+
+<footer>
+The Full-Scope Build Doc · <a href="/commandments/">The Xen Commandments</a> · <a href="/calculators/">Hero Calculators</a> · <a href="/">hitthe.link</a>
+</footer>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

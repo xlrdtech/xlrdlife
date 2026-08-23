@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Letterform Prompts — XLRD</title>
+<meta name="description" content="A working library for generating hero letterforms as rendered objects. Decoded from reference, not guessed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080a; --panel:#0f0f13; --panel-2:#15151b;
+  --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.16);
+  --ink:#f4f4f6; --ink-2:#a8a8b3; --ink-3:#6e6e7a;
+  --accent:#7fd4ff; --accent-2:#c9a6ff;
+  --display:'Space Grotesk',system-ui,sans-serif;
+  --body:'Plus Jakarta Sans',system-ui,sans-serif;
+  --mono:'Space Mono',ui-monospace,monospace;
+  --maxw:900px;
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--body);
+  font-weight:300; line-height:1.65; letter-spacing:.01em;
+  -webkit-font-smoothing:antialiased;
+  padding:0 20px 96px;
+}
+.wrap{max-width:var(--maxw);margin:0 auto}
+
+/* ---------- masthead ---------- */
+header{padding:72px 0 44px;text-align:center;border-bottom:1px solid var(--line)}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:22px
+}
+h1{
+  font-family:var(--display);font-weight:700;letter-spacing:-.035em;line-height:.98;
+  font-size:clamp(2.4rem,9vw,4.25rem);
+  background:linear-gradient(96deg,#fff 8%,var(--accent) 48%,var(--accent-2) 92%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sub{
+  margin:20px auto 0;max-width:56ch;color:var(--ink-2);
+  font-size:clamp(.98rem,2.4vw,1.08rem)
+}
+
+/* ---------- sections ---------- */
+section{padding:56px 0 8px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+h2{
+  font-family:var(--display);font-weight:500;letter-spacing:-.02em;
+  font-size:clamp(1.35rem,4.4vw,1.85rem);text-align:center;margin-bottom:10px
+}
+.lede{text-align:center;color:var(--ink-2);max-width:60ch;margin:0 auto 34px;font-size:.98rem}
+
+/* ---------- reference ---------- */
+figure{margin:0 auto;max-width:420px;text-align:center}
+figure img{
+  width:100%;height:auto;display:block;border-radius:14px;
+  border:1px solid var(--line-2);background:#fff
+}
+figcaption{
+  font-family:var(--mono);font-size:11px;color:var(--ink-3);
+  margin-top:14px;letter-spacing:.05em;line-height:1.7
+}
+
+/* ---------- anatomy ---------- */
+.anatomy{
+  margin:34px auto 0;max-width:660px;
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)
+}
+.arow{display:grid;grid-template-columns:132px 1fr;gap:0;border-bottom:1px solid var(--line)}
+.arow:last-child{border-bottom:0}
+.arow dt{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);padding:16px 14px;background:var(--panel-2);
+  border-right:1px solid var(--line);display:flex;align-items:center
+}
+.arow dd{padding:16px 18px;font-size:.94rem;color:var(--ink-2)}
+.arow dd b{color:var(--ink);font-weight:500}
+@media(max-width:560px){
+  .arow{grid-template-columns:1fr}
+  .arow dt{border-right:0;border-bottom:1px solid var(--line);padding:11px 16px}
+}
+
+/* ---------- formula ---------- */
+.formula{
+  margin:30px auto 0;max-width:720px;text-align:center;
+  font-family:var(--mono);font-size:clamp(.78rem,2.6vw,.95rem);line-height:2.1;
+  padding:26px 20px;border:1px dashed var(--line-2);border-radius:14px;background:var(--panel);
+  color:var(--ink-2);overflow-x:auto
+}
+.formula .slot{color:var(--accent);font-weight:700}
+.formula .fixed{color:var(--ink)}
+
+/* ---------- banks ---------- */
+.bank{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:26px}
+.chip{
+  border:1px solid var(--line);border-radius:11px;padding:13px 15px;background:var(--panel);
+  font-size:.88rem;color:var(--ink-2);transition:border-color .18s,background .18s
+}
+.chip:hover{border-color:var(--line-2);background:var(--panel-2)}
+.chip b{display:block;color:var(--ink);font-family:var(--display);font-weight:500;
+  font-size:.94rem;margin-bottom:3px;letter-spacing:-.01em}
+
+/* ---------- ready prompts ---------- */
+.card{
+  border:1px solid var(--line);border-radius:15px;background:var(--panel);
+  padding:22px;margin-top:14px
+}
+.card h3{
+  font-family:var(--display);font-weight:500;font-size:1.02rem;letter-spacing:-.01em;
+  margin-bottom:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap
+}
+.tag{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--bg);background:var(--accent);border-radius:99px;padding:3px 9px;font-weight:700
+}
+.card p.why{color:var(--ink-3);font-size:.86rem;margin-bottom:14px}
+.prompt{
+  font-family:var(--mono);font-size:.82rem;line-height:1.85;color:var(--ink);
+  background:#000;border:1px solid var(--line);border-radius:10px;
+  padding:15px 16px;white-space:pre-wrap;word-break:break-word
+}
+.copy{
+  margin-top:11px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;background:transparent;color:var(--ink-3);
+  border:1px solid var(--line);border-radius:99px;padding:8px 15px;cursor:pointer;
+  transition:color .18s,border-color .18s
+}
+.copy:hover{color:var(--accent);border-color:var(--accent)}
+.copy.done{color:var(--accent);border-color:var(--accent)}
+
+/* ---------- rules ---------- */
+ol.rules{max-width:640px;margin:26px auto 0;padding-left:0;list-style:none;counter-reset:r}
+ol.rules li{
+  counter-increment:r;position:relative;padding:0 0 18px 46px;
+  color:var(--ink-2);font-size:.95rem
+}
+ol.rules li::before{
+  content:counter(r,decimal-leading-zero);position:absolute;left:0;top:1px;
+  font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.08em
+}
+ol.rules li b{color:var(--ink);font-weight:500}
+
+footer{padding:56px 0 0;text-align:center}
+footer p{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-3);line-height:2}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">XLRD · Letterform Studio</div>
+  <h1>Font Prompts</h1>
+  <p class="sub">Hero letterforms generated as <em>rendered objects</em> — not typeset, sculpted. Decoded from a real reference card, then broken into parts you can recombine.</p>
+</header>
+
+<section>
+  <h2>The reference</h2>
+  <p class="lede">One pin. The whole method is printed on it.</p>
+  <figure>
+    <img src="ref-gemstone-blackletter.jpg" alt="Blackletter LE monogram rendered as carved clear gemstone on a pure white background, with prismatic rainbow dispersion across the facets.">
+    <figcaption>Blackletter “LE” monogram, carved gemstone, pure white ground.<br>The caption under it <em>is</em> the prompt.</figcaption>
+  </figure>
+
+  <dl class="anatomy">
+    <div class="arow"><dt>Render verb</dt><dd><b>“A hyper-realistic 3D render of…”</b> — this is what stops the model producing flat vector art. It asks for a photographed physical object.</dd></div>
+    <div class="arow"><dt>The slot</dt><dd><b>[LOGO]</b> in literal brackets. This is the swappable part — your mark, your monogram, your two letters.</dd></div>
+    <div class="arow"><dt>Material</dt><dd><b>“made of carved gemstones”</b> — one short material clause does all the heavy lifting. Facets, refraction and rainbow dispersion are consequences of it, not separate instructions.</dd></div>
+    <div class="arow"><dt>Ground</dt><dd><b>“Pure white background.”</b> Full stop, own sentence. Kills scene clutter and gives you a clean cut-out for compositing.</dd></div>
+    <div class="arow"><dt>Unstated</dt><dd>The <b>blackletter</b> letterform genre is carried by the reference image, not the words. If you want it, you have to say it.</dd></div>
+  </dl>
+</section>
+
+<section>
+  <h2>The formula</h2>
+  <p class="lede">Four slots. Everything else in this page is a fill for one of them.</p>
+  <div class="formula">
+<span class="fixed">A hyper-realistic 3D render of</span> <span class="slot">[MARK]</span> <span class="fixed">in</span> <span class="slot">[LETTERFORM]</span><span class="fixed">,</span><br>
+<span class="fixed">made of</span> <span class="slot">[MATERIAL]</span><span class="fixed">.</span> <span class="slot">[GROUND]</span><span class="fixed">.</span> <span class="slot">[LIGHT]</span><span class="fixed">.</span>
+  </div>
+</section>
+
+<section>
+  <h2>Letterform bank</h2>
+  <p class="lede">The genre the model carves. Name it — the image won’t infer it.</p>
+  <div class="bank">
+    <div class="chip"><b>Blackletter</b>Old English, spiked terminals, dense verticals. The reference.</div>
+    <div class="chip"><b>Geometric grotesk</b>Even strokes, closed apertures. Reads modern, corporate-clean.</div>
+    <div class="chip"><b>High-contrast Didone</b>Hairline serifs against fat stems. Luxury, editorial.</div>
+    <div class="chip"><b>Extended slab</b>Wide, heavy, blunt. Signage weight, reads at distance.</div>
+    <div class="chip"><b>Interlocked monogram</b>Two letters sharing a stem. Best for two-letter marks.</div>
+    <div class="chip"><b>Script ligature</b>Continuous single stroke. Fluid, needs a glossy material.</div>
+    <div class="chip"><b>Stencil</b>Broken counters, military/industrial. Great in brushed metal.</div>
+    <div class="chip"><b>Chrome bubble</b>Inflated soft-body letterform. Y2K, maximum specularity.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Material bank</h2>
+  <p class="lede">The single highest-leverage clause. One phrase changes everything.</p>
+  <div class="bank">
+    <div class="chip"><b>Carved gemstones</b>Faceted, prismatic rainbow dispersion. The reference material.</div>
+    <div class="chip"><b>Liquid mercury</b>Perfect mirror, no colour of its own — reflects the room.</div>
+    <div class="chip"><b>Iridescent titanium</b>Oil-slick heat colouring across a brushed surface.</div>
+    <div class="chip"><b>Frosted acrylic with inner glow</b>Soft edge light, translucent depth.</div>
+    <div class="chip"><b>Polished obsidian</b>Deep black gloss, single hard specular highlight.</div>
+    <div class="chip"><b>Cracked ice</b>Internal fractures scattering light. Cold, fragile.</div>
+    <div class="chip"><b>Molten gold</b>Viscous, dripping, warm falloff. Reads wealth immediately.</div>
+    <div class="chip"><b>Woven carbon fibre</b>Visible twill, matte clear-coat. Technical, expensive.</div>
+    <div class="chip"><b>Holographic foil</b>Diffraction rainbow that shifts with angle.</div>
+    <div class="chip"><b>Wet clay</b>Hand-formed, thumbprints, matte. The anti-luxury option.</div>
+    <div class="chip"><b>Blown glass with trapped smoke</b>Interior movement. Depth without colour.</div>
+    <div class="chip"><b>Brushed steel and neon inlay</b>Hard body, emissive channel routed through it.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Ground &amp; light</h2>
+  <p class="lede">The reference uses the cheapest, most reliable pair. Change one at a time.</p>
+  <div class="bank">
+    <div class="chip"><b>Pure white background</b>Clean cut-out. Compositing-ready. The default.</div>
+    <div class="chip"><b>Seamless black void</b>Material reads by highlight alone. Dramatic, riskier.</div>
+    <div class="chip"><b>Soft studio gradient</b>Gentle falloff, product-shot feel.</div>
+    <div class="chip"><b>High-key softbox lighting</b>Even, shadowless, catalogue-clean.</div>
+    <div class="chip"><b>Single hard key, long shadow</b>Sculptural. Shows the form’s depth.</div>
+    <div class="chip"><b>Caustic light through the object</b>Only worth it for glass and gemstone.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Ready to paste</h2>
+  <p class="lede">Your actual marks, already slotted. Copy, run, iterate one clause at a time.</p>
+
+  <div class="card">
+    <h3>XLRD <span class="tag">gemstone · reference-exact</span></h3>
+    <p class="why">The reference recipe, unchanged except the mark. Run this first — it is your control.</p>
+    <div class="prompt">A hyper-realistic 3D render of the [XLRD] monogram in blackletter, made of carved gemstones. Pure white background.</div>
+    <button class="copy">Copy</button>
+  </div>
+
+  <div class="card">
+    <h3>Self Exec <span class="tag">mercury · executive</span></h3>
+    <p class="why">Mirror-finish reads as authority. Interlocked S/E keeps it a mark, not a word.</p>
+    <div class="prompt">A hyper-realistic 3D render of an interlocked [SE] monogram in extended slab letterforms, made of liquid mercury with a perfect mirror finish. Pure white background. Single hard key light with a long soft shadow.</div>
+    <button class="copy">Copy</button>
+  </div>
+
+  <div class="card">
+    <h3>L7S <span class="tag">titanium · technical</span></h3>
+    <p class="why">Iridescent titanium is the closest material to the stylism direction — metallic and oil-slick at once.</p>
+    <div class="prompt">A hyper-realistic 3D render of [L7S] in a geometric grotesk letterform, made of iridescent heat-treated titanium with an oil-slick surface. Pure white background. High-key softbox lighting.</div>
+    <button class="copy">Copy</button>
+  </div>
+
+  <div class="card">
+    <h3>BIG 3 ATL <span class="tag">obsidian · street</span></h3>
+    <p class="why">Blackletter plus obsidian is the culturally correct pairing here. Gloss carries it.</p>
+    <div class="prompt">A hyper-realistic 3D render of [BIG 3] in heavy blackletter, made of polished obsidian with a single hard specular highlight. Seamless black void background. Rim lighting only.</div>
+    <button class="copy">Copy</button>
+  </div>
+
+  <div class="card">
+    <h3>DCZ <span class="tag">steel + neon · signage</span></h3>
+    <p class="why">Diamond Cutz — brushed steel with a neon inlay reads as a physical shop sign, not a logo file.</p>
+    <div class="prompt">A hyper-realistic 3D render of [DCZ] in a stencil letterform, made of brushed steel with a neon inlay routed through the strokes. Seamless black void background. The neon is the only light source.</div>
+    <button class="copy">Copy</button>
+  </div>
+
+  <div class="card">
+    <h3>East <span class="tag">gold · personal</span></h3>
+    <p class="why">Script ligature needs a viscous material to justify the continuous stroke. Molten gold does it.</p>
+    <div class="prompt">A hyper-realistic 3D render of [East] as a single continuous script ligature, made of molten gold, viscous and slowly dripping. Pure white background. Soft studio gradient falloff.</div>
+    <button class="copy">Copy</button>
+  </div>
+</section>
+
+<section>
+  <h2>How to actually get better</h2>
+  <ol class="rules">
+    <li><b>Change one clause per run.</b> If you swap material and lighting together you learn nothing about either.</li>
+    <li><b>Name the letterform.</b> The reference image carries “blackletter” silently. Words don’t. Unnamed, you get whatever the model defaults to.</li>
+    <li><b>Keep the ground as its own sentence.</b> “Pure white background.” buried in a comma-list gets diluted.</li>
+    <li><b>Brackets are a signal, not syntax.</b> They mark the slot for you. Most models treat the contents as literal text to render — which is what you want for a monogram.</li>
+    <li><b>Two letters beat five.</b> Every generator degrades on long strings. Monogram the mark, set the wordmark in real type underneath.</li>
+    <li><b>Save the ones that land, with their exact prompt.</b> A result without its recipe is a dead end.</li>
+  </ol>
+</section>
+
+<footer>
+  <p>Decoded from reference · not guessed<br>XLRD — Executive Leverage Research Development</p>
+</footer>
+
+</div>
+<script>
+document.querySelectorAll('.copy').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var txt = btn.previousElementSibling.textContent;
+    navigator.clipboard.writeText(txt).then(function(){
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(function(){ btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>XLRD — Executive Leverage Research Development</title>
+<meta name="description" content="Open-source automation architecture for mission-driven organizations. Transparent code, no black boxes. A 501(c)(3) nonprofit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<style>
+/* ══ direction 01 · OPHANIM ══════════════════════════════════════════
+   The living object is the site. Content floats over it in offset
+   columns — never centred, never a card.
+   Motion vocabulary measured from qi's Lusion capture:
+     expo-out  cubic-bezier(.19,1,.22,1)   300ms / 1.3s / 1500ms
+     word-by-word reveal, letter hover
+   Rhythm from the Davies capture: 120 / 80 / 60px section padding.
+   Type contrast is the Lusion move: 10px caps labels vs viewport-scale
+   display. Nothing in between.                                        */
+:root{
+  --ink:#000; --grn:#00ff44; --grn-dim:#00ff4426;
+  --w:#fff; --w64:rgba(255,255,255,.64); --w38:rgba(255,255,255,.38);
+  --w12:rgba(255,255,255,.12); --w06:rgba(255,255,255,.06);
+  --exp:cubic-bezier(.19,1,.22,1);
+  --tr:cubic-bezier(.23,1,.32,1);
+  --gut:clamp(18px,4.5vw,64px);
+  --maxw:1326px;                 /* the theme's REAL container */
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--ink);color:var(--w);
+  font:400 16px/1.55 Figtree,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+
+/* the object lives behind everything, always */
+#gl{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;display:block}
+#veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 80% at 70% 40%,transparent 0%,rgba(0,0,0,.55) 55%,#000 100%)}
+main{position:relative;z-index:2}
+
+.wrap{width:100%;max-width:var(--maxw);margin-inline:auto;padding-inline:var(--gut)}
+section{padding-block:60px}
+@media(min-width:768px){section{padding-block:80px}}
+@media(min-width:1200px){section{padding-block:120px}}
+
+/* ── the two type registers, nothing between ── */
+.lab{font-size:10px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--w38);margin:0}
+.lab b{color:var(--grn);font-weight:600}
+.disp{font-weight:600;line-height:.86;letter-spacing:-.045em;margin:0;
+  font-size:clamp(3.1rem,13vw,10.5rem)}
+.disp-2{font-weight:600;line-height:.9;letter-spacing:-.04em;margin:0;
+  font-size:clamp(2.2rem,7.5vw,5.2rem)}
+.body{font-size:clamp(.95rem,.9rem + .35vw,1.15rem);color:var(--w64);margin:0;max-width:44ch}
+
+/* ── word-by-word reveal (Lusion fadeInByWord) ── */
+.rv .wd{display:inline-block;opacity:0;transform:translateY(.62em) rotateX(-42deg);
+  transition:opacity .95s var(--exp),transform 1.3s var(--exp)}
+.rv.in .wd{opacity:1;transform:none}
+.up{opacity:0;transform:translateY(24px);
+  transition:opacity 1s var(--exp),transform 1.1s var(--exp)}
+.up.in{opacity:1;transform:none}
+
+/* ══ HERO — offset, not centred ══ */
+.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;
+  padding-bottom:clamp(28px,7vh,72px);padding-top:96px}
+.hero .disp{margin-left:-.055em}          /* optical hang into the gutter */
+.hero .grn{color:var(--grn)}
+.herofoot{display:grid;gap:22px;margin-top:clamp(20px,4vh,40px)}
+@media(min-width:900px){
+  .herofoot{grid-template-columns:1fr auto;align-items:end;gap:48px}
+}
+.stat{display:inline-flex;align-items:center;gap:.5rem}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--grn);
+  box-shadow:0 0 0 0 var(--grn);animation:pl 2.6s var(--exp) infinite}
+@keyframes pl{70%,100%{box-shadow:0 0 0 10px transparent}}
+
+.act{display:inline-flex;align-items:center;gap:.6rem;padding:.9rem 1.5rem;border-radius:2px;
+  font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  border:1px solid var(--w12);transition:all .3s var(--tr);white-space:nowrap}
+.act:hover{border-color:var(--grn);color:var(--grn);transform:translateY(-2px)}
+.act.fill{background:var(--grn);border-color:var(--grn);color:#001b06}
+.act.fill:hover{color:#001b06;filter:brightness(1.15)}
+.acts{display:flex;flex-wrap:wrap;gap:10px}
+
+/* ══ offset editorial rows — the anti-card ══ */
+.rows{border-top:1px solid var(--w12)}
+.ln{display:grid;gap:.35rem;padding:clamp(18px,3.4vw,34px) 0;
+  border-bottom:1px solid var(--w12);transition:background .5s var(--exp),padding-left .5s var(--exp)}
+.ln:hover{background:linear-gradient(90deg,var(--grn-dim),transparent 60%);padding-left:14px}
+.ln .n{font-size:10px;letter-spacing:.24em;color:var(--grn);font-weight:700}
+.ln .h{font-size:clamp(1.5rem,4.6vw,2.6rem);font-weight:600;letter-spacing:-.035em;line-height:1.02}
+.ln .d{color:var(--w64);font-size:.95rem;max-width:52ch}
+@media(min-width:900px){
+  .ln{grid-template-columns:64px minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:baseline}
+  /* every other row pushed right — breaks the stack */
+  .ln:nth-child(even){padding-left:9%}
+}
+
+/* ══ staggered service blocks, alternating sides ══ */
+.svc{display:grid;gap:clamp(34px,7vw,72px)}
+.blk{display:grid;gap:14px;max-width:640px}
+@media(min-width:900px){
+  .blk{max-width:none;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:56px;align-items:start}
+  .blk:nth-child(2){margin-left:auto;width:min(100%,88%)}
+  .blk:nth-child(3){margin-left:auto;width:min(100%,76%)}
+}
+.blk ul{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:.5rem}
+.blk li{color:var(--w64);font-size:.94rem}
+.blk li::before{content:"//";color:var(--grn);margin-right:.55rem;font-weight:700}
+
+/* ══ tiers — flush rail, no boxes ══ */
+.tier{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
+  padding:1.15rem 0;border-bottom:1px solid var(--w12);transition:padding-left .45s var(--exp),color .3s}
+.tier:first-child{border-top:1px solid var(--w12)}
+.tier:hover{padding-left:14px;color:var(--grn)}
+.tier .v{font-size:clamp(1.4rem,4.5vw,2.1rem);font-weight:600;letter-spacing:-.035em}
+.tier .k{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--w38)}
+.tier:hover .k{color:var(--grn)}
+
+footer{border-top:1px solid var(--w12);padding-block:44px;position:relative;z-index:2;
+  background:linear-gradient(to bottom,transparent,rgba(0,0,0,.9))}
+.fr{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center}
+
+@media(prefers-reduced-motion:reduce){
+  .rv .wd,.up{opacity:1!important;transform:none!important;transition:none}
+  .pulse{animation:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+<div id="veil"></div>
+
+<main>
+  <!-- ══ HERO ══ -->
+  <section class="hero">
+    <div class="wrap">
+      <p class="lab up"><span class="stat"><span class="pulse"></span>System online</span> &nbsp;·&nbsp; 501(c)(3) nonprofit</p>
+      <h1 class="disp rv" data-split style="margin-top:.22em">Executive <span class="grn">Leverage</span></h1>
+      <div class="herofoot">
+        <p class="body up">Open-source automation architecture for mission-driven organizations.
+          Transparent code, no black boxes — you own everything we build.</p>
+        <div class="acts up">
+          <a class="act fill" href="#support">Support the work</a>
+          <a class="act" href="#build">What we build</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ WORK ══ -->
+  <section id="work">
+    <div class="wrap">
+      <p class="lab up"><b>01</b> &nbsp;/&nbsp; Shipped and live</p>
+      <div class="rows" style="margin-top:clamp(22px,4vw,44px)">
+        <div class="ln up"><span class="n">001</span>
+          <span class="h">hitthe.link</span>
+          <span class="d">Public delivery surface. Static, versioned, no auth wall — client one-pagers and product overviews ship here.</span></div>
+        <div class="ln up"><span class="n">002</span>
+          <span class="h">LifeNote</span>
+          <span class="d">Product overview built from the source specification and published to the open web.</span></div>
+        <div class="ln up"><span class="n">003</span>
+          <span class="h">Agent fleet</span>
+          <span class="d">Always-on background workers under process supervision — file intake, alerting, device control, scheduled tasks.</span></div>
+        <div class="ln up"><span class="n">004</span>
+          <span class="h">Voice &amp; messaging relay</span>
+          <span class="d">One canonical output path fanning a single message to speech, SMS and on-screen display in parallel.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SERVICES ══ -->
+  <section id="build">
+    <div class="wrap">
+      <p class="lab up"><b>02</b> &nbsp;/&nbsp; Capabilities</p>
+      <h2 class="disp-2 rv" data-split style="margin:.3em 0 clamp(28px,5vw,56px)">What we build</h2>
+      <div class="svc">
+        <div class="blk up">
+          <div><p class="lab"><b>01</b></p><h3 class="disp-2" style="font-size:clamp(1.6rem,4vw,2.4rem);margin-top:.3em">Workflow automation</h3></div>
+          <div><p class="body">Orchestration architecture that replaces repetitive human process end to end.</p>
+            <ul><li>Event-driven pipelines</li><li>Scheduled and supervised jobs</li>
+                <li>Data intake and transform</li><li>Failure alerting that proves delivery</li></ul></div>
+        </div>
+        <div class="blk up">
+          <div><p class="lab"><b>02</b></p><h3 class="disp-2" style="font-size:clamp(1.6rem,4vw,2.4rem);margin-top:.3em">Cognitive AI</h3></div>
+          <div><p class="body">Language-model agents grounded in your own organizational knowledge, not a generic index.</p>
+            <ul><li>Retrieval over your corpus</li><li>Tool-using agents</li>
+                <li>Durable memory</li><li>Human-readable audit trail</li></ul></div>
+        </div>
+        <div class="blk up">
+          <div><p class="lab"><b>03</b></p><h3 class="disp-2" style="font-size:clamp(1.6rem,4vw,2.4rem);margin-top:.3em">Strategic technology</h3></div>
+          <div><p class="body">Architecture-level guidance tying technical decisions to mission outcomes.</p>
+            <ul><li>Systems architecture</li><li>Build-versus-buy analysis</li>
+                <li>Migration planning</li><li>Handover and documentation</li></ul></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ STANDARD ══ -->
+  <section>
+    <div class="wrap">
+      <p class="lab up"><b>03</b> &nbsp;/&nbsp; Core values</p>
+      <h2 class="disp-2 rv" data-split style="margin:.3em 0 clamp(24px,4vw,44px)">The Ophanim Standard</h2>
+      <div style="display:grid;gap:clamp(24px,4vw,48px)">
+        <p class="body up" style="max-width:62ch;font-size:clamp(1.05rem,1rem + .6vw,1.5rem);color:var(--w)">
+          <span style="color:var(--grn)">All-seeing automation.</span> Systems that monitor, execute and report
+          with no human in the loop — and that surface their own failures instead of reporting success by default.</p>
+        <p class="body up" style="max-width:62ch;font-size:clamp(1.05rem,1rem + .6vw,1.5rem);color:var(--w);margin-left:auto">
+          <span style="color:var(--grn)">Open-source DNA.</span> Transparent code, no black boxes. The architecture
+          is yours: you keep it, run it, and change it without asking anyone's permission.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SUPPORT ══ -->
+  <section id="support">
+    <div class="wrap">
+      <p class="lab up"><b>04</b> &nbsp;/&nbsp; Contribute</p>
+      <h2 class="disp-2 rv" data-split style="margin:.3em 0 .5em">Fuel the engine</h2>
+      <p class="body up" style="margin-bottom:clamp(24px,4vw,40px)">
+        A 501(c)(3) nonprofit. Contributions fund open-source development that stays free to use.</p>
+      <div class="up">
+        <a class="tier" href="https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&amp;no_recurring=0&amp;currency_code=USD&amp;amount=111" target="_blank" rel="noopener">
+          <span class="k">Quick consult</span><span class="v">$111</span></a>
+        <a class="tier" href="https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&amp;no_recurring=0&amp;currency_code=USD&amp;amount=222" target="_blank" rel="noopener">
+          <span class="k">Starter build</span><span class="v">$222</span></a>
+        <a class="tier" href="https://www.paypal.com/donate/?business=4FHD7ZZ8DECCQ&amp;no_recurring=0&amp;currency_code=USD&amp;amount=555" target="_blank" rel="noopener">
+          <span class="k">Full architecture</span><span class="v">$555</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CONTACT ══ -->
+  <section>
+    <div class="wrap">
+      <p class="lab up"><b>05</b> &nbsp;/&nbsp; Contact</p>
+      <a href="mailto:info@xlrd.org" class="disp rv" data-split
+         style="display:block;margin:.24em 0 0;font-size:clamp(2rem,9vw,6.5rem);word-break:break-word">info@xlrd.org</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap fr">
+    <p class="lab" style="margin:0">© <span id="yr">2026</span> xlrd.org · Executive Leverage Research Development</p>
+    <a class="lab" href="#" style="color:var(--grn)">Back to top ↑</a>
+  </div>
+</footer>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+/* split headings into words for the Lusion-style stagger */
+document.querySelectorAll('[data-split]').forEach(function(el){
+  var html = el.innerHTML;
+  var tmp = document.createElement('div'); tmp.innerHTML = html;
+  var out = '';
+  tmp.childNodes.forEach(function(n){
+    if (n.nodeType === 3) {
+      n.textContent.split(/(\s+)/).forEach(function(t){
+        out += /^\s+$/.test(t) ? t : (t ? '<span class="wd">'+t+'</span>' : '');
+      });
+    } else { out += '<span class="wd">'+n.outerHTML+'</span>'; }
+  });
+  el.innerHTML = out;
+  el.querySelectorAll('.wd').forEach(function(w,i){ w.style.transitionDelay = (i*72)+'ms'; });
+});
+
+if ('IntersectionObserver' in window){
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  },{rootMargin:'0px 0px -10% 0px',threshold:.08});
+  document.querySelectorAll('.rv,.up').forEach(function(el,i){
+    if (el.classList.contains('up')) el.style.transitionDelay = ((i%4)*90)+'ms';
+    io.observe(el);
+  });
+} else {
+  document.querySelectorAll('.rv,.up').forEach(function(el){ el.classList.add('in'); });
+}
+</script>
+
+<script type="module">
+/* ── the Ophanim. Ported from qi's own xlrd.org page — real brand imagery,
+     not decoration: concentric metal rings studded with blinking green eyes,
+     a central iris whose pupil tracks the cursor and dilates over links. ── */
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }     from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass }from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const cv = document.getElementById('gl');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x000000, .05);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, .1, 100);
+camera.position.set(0,0,15);
+
+const low = innerWidth < 760 || matchMedia('(prefers-reduced-motion:reduce)').matches;
+const renderer = new THREE.WebGLRenderer({canvas:cv, antialias:false, alpha:false, powerPreference:'high-performance'});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, low ? 1 : 1.5));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight), 1.5, .4, .85);
+bloom.threshold = .2; bloom.strength = low ? .7 : 1.0; bloom.radius = .5;
+composer.addPass(bloom);
+
+const N = 512, data = new Uint8Array(N*N*4);
+for (let i=0;i<N*N*4;i+=4){ const v = Math.floor(Math.random()*255); data[i]=data[i+1]=data[i+2]=v; data[i+3]=255; }
+const noise = new THREE.DataTexture(data,N,N,THREE.RGBAFormat); noise.needsUpdate = true;
+const metal = new THREE.MeshStandardMaterial({color:0x222222,roughness:.6,metalness:.8,bumpMap:noise,bumpScale:.05});
+const eyeMat = new THREE.MeshBasicMaterial({color:0x00ff44});
+
+const oph = new THREE.Group(); scene.add(oph);
+const eyes = [];
+function ring(r, tube, count){
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.TorusGeometry(r,tube,low?16:32,low?60:100), metal));
+  const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(tube*.7,low?8:16,low?8:16), eyeMat, count);
+  const d = new THREE.Object3D();
+  for(let i=0;i<count;i++){
+    const a=(i/count)*Math.PI*2, x=Math.cos(a)*r, y=Math.sin(a)*r;
+    d.position.set(x,y,0); d.lookAt(x*2,y*2,0); d.translateZ(tube*.75); d.updateMatrix();
+    inst.setMatrixAt(i,d.matrix);
+    eyes.push({mesh:inst,index:i,base:d.scale.clone(),dummy:d.clone(),blink:0,speed:.1+Math.random()*.2});
+  }
+  g.add(inst); return g;
+}
+const r1=ring(3,.35,low?18:30), r2=ring(4.5,.45,low?26:45), r3=ring(6,.35,low?34:60);
+oph.add(r1,r2,r3);
+
+const core = new THREE.ShaderMaterial({
+  uniforms:{uTime:{value:0},uMouse:{value:new THREE.Vector2()},uDil:{value:0}},
+  vertexShader:`varying vec2 vUv;varying vec3 vN;
+    void main(){vUv=uv;vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform float uTime;uniform vec2 uMouse;uniform float uDil;varying vec2 vUv;varying vec3 vN;
+    float rand(vec2 n){return fract(sin(dot(n,vec2(12.9898,4.1414)))*43758.5453);}
+    float noise(vec2 p){vec2 ip=floor(p),u=fract(p);u=u*u*(3.-2.*u);
+      float r=mix(mix(rand(ip),rand(ip+vec2(1,0)),u.x),mix(rand(ip+vec2(0,1)),rand(ip+vec2(1,1)),u.x),u.y);return r*r;}
+    void main(){vec2 uv=vUv;
+      vec2 c=vec2(.5)+uMouse*vec2(.3)+vec2(-.15,0.);
+      float d=distance(uv,c);
+      float pupil=.18+uDil*.07+sin(uTime*1.5)*.03;
+      vec3 col=vec3(0.);
+      if(d>pupil){float n=noise(uv*25.-uTime*.5);
+        float a=atan(uv.y-c.y,uv.x-c.x);float f=sin(a*40.+n*10.);
+        col=vec3(0.,.8+f*.3,.1); if(d>.48) col*=.1;}
+      col+=pow(max(dot(vN,normalize(vec3(1.))),0.),40.)*.8;
+      gl_FragColor=vec4(col,1.);}`
+});
+oph.add(new THREE.Mesh(new THREE.SphereGeometry(1.5,low?32:64,low?32:64), core));
+
+const sg = new THREE.BufferGeometry(), SC = low?900:3000, pos = new Float32Array(SC*3);
+for(let i=0;i<SC*3;i+=3){
+  const r=30+Math.random()*30, t=Math.random()*Math.PI*2, p=Math.acos(2*Math.random()-1);
+  pos[i]=r*Math.sin(p)*Math.cos(t); pos[i+1]=r*Math.sin(p)*Math.sin(t); pos[i+2]=r*Math.cos(p);
+}
+sg.setAttribute('position', new THREE.BufferAttribute(pos,3));
+scene.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff,size:.05,transparent:true,opacity:.6})));
+
+scene.add(new THREE.AmbientLight(0xffffff,.1));
+const key = new THREE.DirectionalLight(0xffffff,1.5); key.position.set(10,10,10); scene.add(key);
+const rim = new THREE.DirectionalLight(0x00ff88,1); rim.position.set(-5,5,-10); scene.add(rim);
+
+let mx=0,my=0,tmx=0,tmy=0,tDil=0,cDil=0,prog=0;
+const interactive = el => !!el && (el.tagName==='A'||el.tagName==='BUTTON'||el.closest('a')||el.closest('button'));
+addEventListener('mousemove', e => {
+  tmx = (e.clientX/innerWidth)*2-1; tmy = -(e.clientY/innerHeight)*2+1;
+  tDil = interactive(e.target) ? 1 : 0;
+}, {passive:true});
+addEventListener('touchstart', e => { tDil = e.touches[0] && interactive(e.touches[0].target) ? 1 : 0; }, {passive:true});
+addEventListener('touchend', () => { tDil = 0; }, {passive:true});
+
+const clock = new THREE.Clock();
+(function loop(){
+  requestAnimationFrame(loop);
+  const t = clock.getElapsedTime();
+  core.uniforms.uTime.value = t;
+
+  const max = document.documentElement.scrollHeight - innerHeight;
+  prog += ((scrollY/(max||1)) - prog) * .05;
+
+  /* scroll orbits the camera around the object */
+  const rad = 14 - Math.sin(prog*Math.PI)*4, ang = prog*Math.PI*2 + .5;
+  camera.position.set(Math.sin(ang)*rad, (prog-.5)*8, Math.cos(ang)*rad);
+  camera.lookAt(0,0,0);
+
+  r1.rotation.x=t*.2; r1.rotation.y=t*.1;
+  r2.rotation.y=t*.15+1; r2.rotation.z=t*.05;
+  r3.rotation.x=t*.1+2; r3.rotation.z=t*.1;
+
+  mx += (tmx-mx)*.05; my += (tmy-my)*.05;
+  cDil += Math.abs(tDil-cDil) > .0084 ? Math.sign(tDil-cDil)*.0084 : (tDil-cDil);
+  core.uniforms.uMouse.value.set(mx,my);
+  core.uniforms.uDil.value = cDil;
+
+  const touched = new Set();
+  eyes.forEach(e => {
+    if (e.blink===0 && Math.random()<.0015) e.blink = .01;
+    if (e.blink>0){
+      e.blink += e.speed;
+      if (e.blink>=Math.PI){ e.blink=0; e.dummy.scale.copy(e.base); }
+      else { const s = 1-Math.sin(e.blink)*.9; e.dummy.scale.set(e.base.x, e.base.y*s, e.base.z); }
+      e.dummy.updateMatrix(); e.mesh.setMatrixAt(e.index, e.dummy.matrix); touched.add(e.mesh);
+    }
+  });
+  touched.forEach(m => m.instanceMatrix.needsUpdate = true);
+
+  composer.render();
+})();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>

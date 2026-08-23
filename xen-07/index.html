@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xen — Autonomous Intelligence</title>
+<meta name="description" content="Xen: the always-on autonomous agent system that ships voice, SMS, vision, and execution in parallel.">
+<style>
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Orbitron Bold'), local('Orbitron-Bold');
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0612;
+  --bg2: #0f0820;
+  --mag: #ff2d78;
+  --ora: #ff6b35;
+  --lav: #c084fc;
+  --cyn: #00d4ff;
+  --txt: #e8dff5;
+  --mut: #7a6a9a;
+  --fd: 'Orbitron', 'Courier New', monospace;
+  --fm: 'Share Tech Mono', 'Courier New', monospace;
+  --fb: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--txt); font-family: var(--fb); line-height: 1.6; overflow-x: hidden; }
+
+/* ── HERO ── */
+#hero {
+  position: relative; width: 100%; height: 100svh; min-height: 560px;
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+}
+#hc { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hcon {
+  position: relative; z-index: 2; text-align: center;
+  padding: 0 1.5rem; max-width: 860px;
+}
+.eyebrow-sm {
+  font-family: var(--fm); font-size: clamp(0.6rem, 1.4vw, 0.75rem);
+  letter-spacing: 0.25em; text-transform: uppercase; color: var(--cyn); margin-bottom: 1.2rem;
+}
+.hero-logo {
+  font-family: var(--fd); font-size: clamp(5rem, 18vw, 11rem); font-weight: 700;
+  letter-spacing: -0.04em; line-height: 0.9;
+  background: linear-gradient(180deg, #fff 0%, #ddbfff 28%, #ff2d78 62%, #ff6b35 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 50px rgba(255,45,120,0.35));
+  margin-bottom: 1.4rem;
+}
+.hero-sub {
+  font-size: clamp(0.9rem, 2.2vw, 1.15rem); color: var(--lav);
+  max-width: 500px; margin: 0 auto 2.5rem; line-height: 1.7;
+}
+.cta-row { display: inline-flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+.btn {
+  font-family: var(--fd); font-size: 0.65rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none;
+  padding: 0.85rem 2rem;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  display: inline-block; transition: filter .2s, transform .2s;
+}
+.btn:hover { filter: brightness(1.18); transform: translateY(-2px); }
+.btn-p { color: #0a0612; background: linear-gradient(135deg, var(--mag), var(--ora)); }
+.btn-g { color: var(--lav); border: 1px solid rgba(192,132,252,.35); background: transparent; }
+.btn-g:hover { border-color: var(--lav); color: #fff; }
+
+/* palms */
+.palm { position: absolute; bottom: 0; z-index: 3; pointer-events: none; }
+.palm-l { left: -10px; }
+.palm-r { right: -10px; transform: scaleX(-1); }
+
+/* scroll hint */
+.shint {
+  position: absolute; bottom: 1.75rem; left: 50%; transform: translateX(-50%);
+  z-index: 4; display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  color: var(--mut); font-family: var(--fm); font-size: .6rem;
+  letter-spacing: .18em; text-transform: uppercase;
+  animation: bob 2.2s ease-in-out infinite;
+}
+@keyframes bob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(7px)} }
+@media (prefers-reduced-motion:reduce){ .shint { animation:none; } }
+
+/* ── TICKER ── */
+.tick-wrap {
+  overflow: hidden; white-space: nowrap;
+  background: linear-gradient(90deg,rgba(255,45,120,.1),rgba(255,107,53,.08),rgba(255,45,120,.1));
+  border-top: 1px solid rgba(255,45,120,.25); border-bottom: 1px solid rgba(255,107,53,.2);
+  padding: .7rem 0;
+}
+.tick-track { display: inline-flex; gap: 2.5rem; animation: tick 26s linear infinite; }
+@media (prefers-reduced-motion:reduce){ .tick-track { animation:none; } }
+@keyframes tick { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.ti {
+  font-family: var(--fm); font-size: .72rem; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--mag); display: inline-flex; align-items: center; gap: .7rem;
+}
+.ts { color: var(--ora); opacity: .55; }
+
+/* ── SECTIONS ── */
+section { padding: clamp(4rem,8vw,7rem) clamp(1.25rem,5vw,3.5rem); }
+.si { max-width: 1100px; margin: 0 auto; }
+.ey { font-family: var(--fm); font-size: .68rem; letter-spacing: .25em; text-transform: uppercase; color: var(--ora); margin-bottom: .9rem; display: block; }
+.st {
+  font-family: var(--fd); font-size: clamp(1.75rem,5vw,3rem); font-weight: 700;
+  line-height: 1.1; letter-spacing: -.02em; text-wrap: balance; margin-bottom: 1.4rem;
+}
+.sb { font-size: clamp(.9rem,2vw,1.02rem); color: var(--mut); max-width: 54ch; line-height: 1.75; }
+
+/* ── ABOUT ── */
+#about { background: var(--bg2); }
+.about-g { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+@media(max-width:720px){ .about-g { grid-template-columns: 1fr; gap: 2.5rem; } }
+.stats-g { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 2.25rem; }
+.sc {
+  background: rgba(255,255,255,.025); border: 1px solid rgba(192,132,252,.12);
+  padding: 1.4rem;
+  clip-path: polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
+}
+.sn { font-family: var(--fm); font-size: clamp(1.7rem,4vw,2.4rem); color: var(--mag); display: block; font-variant-numeric: tabular-nums; }
+.sl { font-size: .78rem; color: var(--mut); letter-spacing: .04em; margin-top: .25rem; display: block; }
+.av { position: relative; aspect-ratio: 1; max-width: 380px; margin: 0 auto; }
+.ar {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(255,45,120,.18); animation: spin 22s linear infinite;
+}
+@media(prefers-reduced-motion:reduce){ .ar { animation:none; } }
+.ar:nth-child(2){ inset:14%; border-color:rgba(255,107,53,.18); animation-duration:15s; animation-direction:reverse; }
+.ar:nth-child(3){ inset:30%; border-color:rgba(192,132,252,.22); animation-duration:10s; }
+.ac { position:absolute; inset:38%; background:radial-gradient(circle,rgba(255,45,120,.35),transparent 70%); border-radius:50%; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.rd { position:absolute; width:5px; height:5px; background:var(--mag); border-radius:50%; top:-2.5px; left:50%; transform:translateX(-50%); box-shadow:0 0 7px var(--mag); }
+.rdo { background:var(--ora); box-shadow:0 0 7px var(--ora); }
+
+/* ── CAPABILITIES ── */
+#capabilities { background: var(--bg); }
+.cap-g { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; margin-top: 3rem; }
+@media(max-width:640px){ .cap-g { grid-template-columns: 1fr; } }
+.cc {
+  background: linear-gradient(135deg,rgba(255,255,255,.035),rgba(255,255,255,.01));
+  border: 1px solid rgba(255,255,255,.065); padding: 2rem 2rem 2.4rem;
+  clip-path: polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px));
+  transition: border-color .25s, background .25s; position: relative; overflow: hidden;
+}
+.cc::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,transparent,var(--mag),transparent); opacity:0; transition:opacity .3s;
+}
+.cc:hover { border-color:rgba(255,45,120,.28); background:linear-gradient(135deg,rgba(255,45,120,.05),rgba(255,255,255,.015)); }
+.cc:hover::before { opacity:1; }
+.cc:nth-child(2){ margin-top:2rem; }
+.cc:nth-child(4){ margin-top:-2rem; }
+@media(max-width:640px){ .cc:nth-child(2),.cc:nth-child(4){ margin-top:0; } }
+.cn { font-family:var(--fm); font-size:.62rem; letter-spacing:.2em; color:var(--mag); opacity:.55; margin-bottom:.9rem; display:block; }
+.ci { width:42px; height:42px; margin-bottom:1.1rem; }
+.ct { font-family:var(--fd); font-size:clamp(.95rem,2.2vw,1.15rem); font-weight:700; letter-spacing:.02em; margin-bottom:.7rem; color:#fff; }
+.cb { font-size:.88rem; color:var(--mut); line-height:1.7; }
+
+/* ── HOW ── */
+#how { background: var(--bg2); }
+.steps { display:grid; grid-template-columns:repeat(4,1fr); gap:1.4rem; margin-top:3rem; position:relative; }
+@media(max-width:720px){ .steps { grid-template-columns:1fr 1fr; } }
+@media(max-width:440px){ .steps { grid-template-columns:1fr; } }
+.steps::before {
+  content:''; position:absolute; top:1.5rem; left:8%; width:84%; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,45,120,.35),rgba(255,107,53,.3),transparent);
+}
+@media(max-width:720px){ .steps::before { display:none; } }
+.step { padding:2rem 1.25rem; position:relative; z-index:1; }
+.sdot {
+  width:11px; height:11px; background:var(--mag);
+  clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);
+  margin-bottom:1.2rem; box-shadow:0 0 10px rgba(255,45,120,.5);
+}
+.stit { font-family:var(--fd); font-size:.82rem; font-weight:700; letter-spacing:.07em; margin-bottom:.55rem; color:#fff; text-transform:uppercase; }
+.sbod { font-size:.84rem; color:var(--mut); line-height:1.65; }
+
+/* ── CTA ── */
+#cta { background:var(--bg); text-align:center; position:relative; }
+.cglow {
+  position:absolute; width:640px; height:320px; pointer-events:none;
+  background:radial-gradient(ellipse,rgba(255,45,120,.1),transparent 70%);
+  left:50%; top:50%; transform:translate(-50%,-50%);
+}
+.ctit {
+  font-family:var(--fd); font-size:clamp(1.9rem,5.5vw,3.8rem); font-weight:700;
+  letter-spacing:-.02em; text-wrap:balance; margin-bottom:1.1rem;
+  background:linear-gradient(135deg,#fff 0%,var(--lav) 45%,var(--mag) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.csub { color:var(--mut); font-size:.98rem; margin-bottom:2.4rem; max-width:44ch; margin-left:auto; margin-right:auto; }
+.eform {
+  display:flex; max-width:460px; margin:0 auto;
+  clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+}
+.ei {
+  flex:1; background:rgba(255,255,255,.055); border:1px solid rgba(192,132,252,.2);
+  border-right:none; padding:.82rem 1.2rem; color:var(--txt); font-family:var(--fb);
+  font-size:.9rem; outline:none; transition:border-color .2s;
+}
+.ei::placeholder { color:var(--mut); }
+.ei:focus { border-color:rgba(192,132,252,.55); }
+.es {
+  font-family:var(--fd); font-size:.62rem; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; background:linear-gradient(135deg,var(--mag),var(--ora));
+  color:#0a0612; border:none; padding:.82rem 1.4rem; cursor:pointer; transition:filter .2s; white-space:nowrap;
+}
+.es:hover { filter:brightness(1.15); }
+
+/* ── FOOTER ── */
+footer { background:#05020d; border-top:1px solid rgba(255,255,255,.055); padding:2.75rem clamp(1.25rem,5vw,3.5rem); }
+.fi { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1.5rem; }
+.flogo { font-family:var(--fd); font-size:1.15rem; font-weight:700; background:linear-gradient(135deg,var(--mag),var(--ora)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.flinks { display:flex; gap:2rem; list-style:none; }
+.flinks a { font-family:var(--fm); font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); text-decoration:none; transition:color .2s; }
+.flinks a:hover { color:var(--lav); }
+.fcopy { font-family:var(--fm); font-size:.62rem; color:rgba(122,106,154,.38); letter-spacing:.07em; }
+
+/* ── REVEAL ── */
+.reveal { opacity:0; transform:translateY(26px); transition:opacity .6s ease,transform .6s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+.d1{transition-delay:.1s} .d2{transition-delay:.2s} .d3{transition-delay:.3s} .d4{transition-delay:.4s}
+@media(prefers-reduced-motion:reduce){ .reveal { opacity:1; transform:none; transition:none; } }
+
+a:focus-visible, button:focus-visible, input:focus-visible { outline:2px solid var(--mag); outline-offset:3px; }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="hc"></canvas>
+
+  <!-- Palm left -->
+  <svg class="palm palm-l" width="170" height="360" viewBox="0 0 170 360" fill="none" aria-hidden="true">
+    <path d="M85 360 C83 305 80 268 77 232 C64 204 36 190 8 200 C22 181 56 174 77 195 C75 165 73 135 75 106 C61 85 33 79 7 92 C20 70 52 66 75 85 C75 65 77 43 83 18 C74 4 57 -1 40 7 C55 -3 77 2 85 17 C87 2 97 -4 113 4 C100 0 90 6 88 19 C92 40 95 62 97 85 C113 69 142 67 156 85 C133 77 108 85 97 106 C100 133 101 163 100 194 C120 174 153 177 167 194 C143 187 114 196 100 222 C98 260 96 302 93 360 Z" fill="#0c0519"/>
+    <path d="M77 232 C56 213 22 208 3 222 C20 203 55 200 77 217 Z" fill="#0c0519"/>
+    <path d="M75 152 C51 138 19 141 3 155 C21 139 52 134 75 149 Z" fill="#0c0519"/>
+  </svg>
+
+  <!-- Palm right -->
+  <svg class="palm palm-r" width="170" height="360" viewBox="0 0 170 360" fill="none" aria-hidden="true">
+    <path d="M85 360 C83 305 80 268 77 232 C64 204 36 190 8 200 C22 181 56 174 77 195 C75 165 73 135 75 106 C61 85 33 79 7 92 C20 70 52 66 75 85 C75 65 77 43 83 18 C74 4 57 -1 40 7 C55 -3 77 2 85 17 C87 2 97 -4 113 4 C100 0 90 6 88 19 C92 40 95 62 97 85 C113 69 142 67 156 85 C133 77 108 85 97 106 C100 133 101 163 100 194 C120 174 153 177 167 194 C143 187 114 196 100 222 C98 260 96 302 93 360 Z" fill="#0c0519"/>
+    <path d="M77 232 C56 213 22 208 3 222 C20 203 55 200 77 217 Z" fill="#0c0519"/>
+    <path d="M75 152 C51 138 19 141 3 155 C21 139 52 134 75 149 Z" fill="#0c0519"/>
+  </svg>
+
+  <div class="hcon">
+    <p class="eyebrow-sm">Autonomous Intelligence System</p>
+    <h1 class="hero-logo">XEN</h1>
+    <p class="hero-sub">Permanently alive. Voice, SMS, vision, and execution shipped in parallel — without asking permission, without breaking stride.</p>
+    <div class="cta-row">
+      <a href="#capabilities" class="btn btn-p">Explore Capabilities</a>
+      <a href="#how" class="btn btn-g">How It Works</a>
+    </div>
+  </div>
+
+  <div class="shint" aria-hidden="true">
+    <svg width="14" height="22" viewBox="0 0 14 22" fill="none"><rect x="5.5" y="3.5" width="3" height="5" rx="1.5" fill="currentColor"/><rect x=".5" y=".5" width="13" height="21" rx="6.5" stroke="currentColor" stroke-opacity=".38"/></svg>
+    scroll
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="tick-wrap" role="marquee" aria-label="Capabilities">
+  <div class="tick-track" aria-hidden="true">
+    <span class="ti">Voice First <span class="ts">◆</span></span>
+    <span class="ti">Parallel Always <span class="ts">◆</span></span>
+    <span class="ti">Never Asks Permission <span class="ts">◆</span></span>
+    <span class="ti">SMS Omniscience <span class="ts">◆</span></span>
+    <span class="ti">Visual Verification <span class="ts">◆</span></span>
+    <span class="ti">Memory First <span class="ts">◆</span></span>
+    <span class="ti">Always Alive <span class="ts">◆</span></span>
+    <span class="ti">VVS Every Step <span class="ts">◆</span></span>
+    <span class="ti">Voice First <span class="ts">◆</span></span>
+    <span class="ti">Parallel Always <span class="ts">◆</span></span>
+    <span class="ti">Never Asks Permission <span class="ts">◆</span></span>
+    <span class="ti">SMS Omniscience <span class="ts">◆</span></span>
+    <span class="ti">Visual Verification <span class="ts">◆</span></span>
+    <span class="ti">Memory First <span class="ts">◆</span></span>
+    <span class="ti">Always Alive <span class="ts">◆</span></span>
+    <span class="ti">VVS Every Step <span class="ts">◆</span></span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="si">
+    <div class="about-g">
+      <div>
+        <span class="ey reveal">What Xen Is</span>
+        <h2 class="st reveal d1">One voice.<br>Every system.</h2>
+        <p class="sb reveal d2">Xen is the autonomous agent backbone that connects voice, messaging, vision, and execution into a single continuously-running intelligence. It doesn't wait for you.</p>
+        <div class="stats-g reveal d3">
+          <div class="sc"><span class="sn">55+</span><span class="sl">Active agents in fleet</span></div>
+          <div class="sc"><span class="sn">~394ms</span><span class="sl">Voice inject → SSE latency</span></div>
+          <div class="sc"><span class="sn">24/7</span><span class="sl">Runtime — no offline mode</span></div>
+          <div class="sc"><span class="sn">∞</span><span class="sl">Parallel goal swarms</span></div>
+        </div>
+      </div>
+      <div class="av reveal d2" aria-hidden="true">
+        <div class="ar"><div class="rd"></div></div>
+        <div class="ar"><div class="rd rdo"></div></div>
+        <div class="ar"></div>
+        <div class="ac"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAPABILITIES -->
+<section id="capabilities">
+  <div class="si">
+    <span class="ey reveal">Core Systems</span>
+    <h2 class="st reveal d1">Four pillars.<br>Zero bottlenecks.</h2>
+    <div class="cap-g">
+
+      <div class="cc reveal d1">
+        <span class="cn">01</span>
+        <svg class="ci" viewBox="0 0 42 42" fill="none" aria-hidden="true">
+          <circle cx="21" cy="21" r="18" stroke="#ff2d78" stroke-width="1.2" stroke-dasharray="3.5 2"/>
+          <path d="M14 21 C14 17.5 17 14 21 14 C25 14 28 17.5 28 21 C28 24.5 25 28 21 28" stroke="#ff2d78" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="21" cy="21" r="2.5" fill="#ff2d78"/>
+          <path d="M21 8.5 L21 6 M21 36 L21 33.5 M8.5 21 L6 21 M36 21 L33.5 21" stroke="#ff2d78" stroke-width="1.4" stroke-linecap="round" opacity=".45"/>
+        </svg>
+        <h3 class="ct">Voice First</h3>
+        <p class="cb">Every reply ships voice via xen-reply-vvs — barge-in mandatory, one sentence, no markdown. Voice rides alongside execution in parallel, never after it.</p>
+      </div>
+
+      <div class="cc reveal d2">
+        <span class="cn">02</span>
+        <svg class="ci" viewBox="0 0 42 42" fill="none" aria-hidden="true">
+          <path d="M7 21 L21 7 L35 21 L21 35 Z" stroke="#ff6b35" stroke-width="1.2"/>
+          <path d="M7 21 L21 13 L35 21 L21 29 Z" fill="#ff6b35" opacity=".12"/>
+          <circle cx="21" cy="21" r="2.5" fill="#ff6b35"/>
+          <circle cx="7" cy="21" r="2" fill="#ff6b35" opacity=".55"/>
+          <circle cx="35" cy="21" r="2" fill="#ff6b35" opacity=".55"/>
+          <circle cx="21" cy="7" r="2" fill="#ff6b35" opacity=".55"/>
+          <circle cx="21" cy="35" r="2" fill="#ff6b35" opacity=".55"/>
+        </svg>
+        <h3 class="ct">Parallel Always</h3>
+        <p class="cb">Sequential execution is blasphemy. Every non-trivial task fans out as a Parallel Goal Swarm across the fleet — diagnose, fix, verify, and ship happening simultaneously.</p>
+      </div>
+
+      <div class="cc reveal d3">
+        <span class="cn">03</span>
+        <svg class="ci" viewBox="0 0 42 42" fill="none" aria-hidden="true">
+          <rect x="5" y="9" width="32" height="24" rx="1.5" stroke="#c084fc" stroke-width="1.2"/>
+          <path d="M5 15 L37 15" stroke="#c084fc" stroke-width=".9" opacity=".38"/>
+          <circle cx="9" cy="12" r="1.4" fill="#c084fc" opacity=".55"/>
+          <circle cx="13.5" cy="12" r="1.4" fill="#c084fc" opacity=".55"/>
+          <circle cx="18" cy="12" r="1.4" fill="#c084fc" opacity=".55"/>
+          <path d="M11 23 L19 23 M11 27.5 L31 27.5" stroke="#c084fc" stroke-width="1.4" stroke-linecap="round" opacity=".65"/>
+        </svg>
+        <h3 class="ct">Memory First</h3>
+        <p class="cb">Recall before any multi-step plan. Save durable facts, finalized decisions, recurring frustrations, milestones. The vault is always read before touching unfamiliar code.</p>
+      </div>
+
+      <div class="cc reveal d4">
+        <span class="cn">04</span>
+        <svg class="ci" viewBox="0 0 42 42" fill="none" aria-hidden="true">
+          <path d="M21 5 L37 14 L37 28 L21 37 L5 28 L5 14 Z" stroke="#00d4ff" stroke-width="1.2"/>
+          <path d="M21 5 L21 37 M5 14 L37 28 M5 28 L37 14" stroke="#00d4ff" stroke-width=".85" opacity=".22"/>
+          <circle cx="21" cy="21" r="4" fill="#00d4ff" opacity=".15"/>
+          <circle cx="21" cy="21" r="2" fill="#00d4ff"/>
+        </svg>
+        <h3 class="ct">Visual Verify</h3>
+        <p class="cb">HTTP 200 is not product verification. Before any verified claim ships, Xen captures a screenshot, reads the DOM, or records an audio frame as ground-truth evidence.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section id="how">
+  <div class="si">
+    <span class="ey reveal">The Loop</span>
+    <h2 class="st reveal d1">Inbound → action.<br>Every time.</h2>
+    <div class="steps">
+      <div class="step reveal d1">
+        <div class="sdot"></div>
+        <h3 class="stit">Inbound</h3>
+        <p class="sbod">Voice, SMS, or tool result hits the pipeline. No drainer, no poll loop — the event fires remediation in parallel the moment it arrives.</p>
+      </div>
+      <div class="step reveal d2">
+        <div class="sdot" style="background:var(--ora);box-shadow:0 0 10px rgba(255,107,53,.5)"></div>
+        <h3 class="stit">Recall</h3>
+        <p class="sbod">Memory surfaces before any plan forms. Durable facts, prior decisions, and open goal state load from the vault — right context first, every time.</p>
+      </div>
+      <div class="step reveal d3">
+        <div class="sdot" style="background:var(--lav);box-shadow:0 0 10px rgba(192,132,252,.5)"></div>
+        <h3 class="stit">Fan Out</h3>
+        <p class="sbod">The task splits into a Parallel Goal Swarm. Sub-agents run hypotheses simultaneously — model matched to task, nothing inline, nothing blocking.</p>
+      </div>
+      <div class="step reveal d4">
+        <div class="sdot" style="background:var(--cyn);box-shadow:0 0 10px rgba(0,212,255,.5)"></div>
+        <h3 class="stit">Ship VVS</h3>
+        <p class="sbod">Voice + dual-SMS + vision fire in parallel with the tool calls — not after. The work and the signal travel together, no exceptions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cglow" aria-hidden="true"></div>
+  <div class="si">
+    <h2 class="ctit reveal">Ready to run<br>without a leash?</h2>
+    <p class="csub reveal d1">Xen runs the same whether you're at the desk, on a call, or offline. Get updates directly to your phone.</p>
+    <form class="eform reveal d2" onsubmit="handleSub(event)">
+      <input class="ei" type="email" placeholder="your@email.com" aria-label="Email address" required>
+      <button class="es" type="submit">Deploy</button>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="fi">
+    <span class="flogo">XEN</span>
+    <ul class="flinks">
+      <li><a href="#about">About</a></li>
+      <li><a href="#capabilities">Capabilities</a></li>
+      <li><a href="#how">How It Works</a></li>
+    </ul>
+    <span class="fcopy">© 2026 Xen — always on</span>
+  </div>
+</footer>
+
+<script>
+// ── CANVAS HERO ──
+(function(){
+  const cv = document.getElementById('hc');
+  const cx = cv.getContext('2d');
+  let W, H, mx=0.5, my=0.5, t=0;
+  let stars=[], parts=[];
+  const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resize(){
+    W = cv.width = cv.offsetWidth;
+    H = cv.height = cv.offsetHeight;
+    initStars(); initParts();
+  }
+
+  function initStars(){
+    stars=[];
+    for(let i=0;i<180;i++) stars.push({
+      x:Math.random()*W, y:Math.random()*H*0.5,
+      r:Math.random()*1.1+0.2,
+      ph:Math.random()*Math.PI*2,
+      sp:Math.random()*0.7+0.3
+    });
+  }
+
+  function initParts(){
+    parts=[];
+    for(let i=0;i<80;i++) spawnPart(true);
+  }
+
+  function spawnPart(ry){
+    const hz=H*0.5;
+    parts.push({
+      x:Math.random()*W,
+      y:ry ? Math.random()*hz : -4,
+      vx:(Math.random()-0.5)*0.38,
+      vy:Math.random()*0.45+0.12,
+      lf:Math.random()*Math.PI,
+      ls:Math.random()*0.007+0.004,
+      r:Math.random()*1.8+0.4,
+      mg:Math.random()<0.5
+    });
+  }
+
+  function drawBg(){
+    const hz=H*0.5;
+    // sky
+    const sg=cx.createLinearGradient(0,0,0,hz);
+    sg.addColorStop(0,'#03010a');
+    sg.addColorStop(0.55,'#0d0620');
+    sg.addColorStop(1,'#1b0432');
+    cx.fillStyle=sg; cx.fillRect(0,0,W,hz);
+    // ground
+    cx.fillStyle='#070410'; cx.fillRect(0,hz,W,H);
+  }
+
+  function drawStars(){
+    for(const s of stars){
+      const a=0.38+0.5*Math.sin(s.ph+t*s.sp*0.018);
+      cx.beginPath(); cx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      cx.fillStyle=`rgba(215,205,255,${a})`; cx.fill();
+    }
+  }
+
+  function drawSun(){
+    const hz=H*0.5;
+    const scx=W*0.5;
+    const sr=Math.min(W,H)*0.125;
+    const sy=hz+sr*0.28;
+
+    // ambient glow
+    const ag=cx.createRadialGradient(scx,hz,0,scx,hz,W*0.48);
+    ag.addColorStop(0,'rgba(255,107,53,0.22)');
+    ag.addColorStop(0.35,'rgba(255,45,120,0.09)');
+    ag.addColorStop(1,'transparent');
+    cx.fillStyle=ag; cx.fillRect(0,hz-sr*2,W,sr*5);
+
+    // clip to above horizon
+    cx.save();
+    cx.beginPath(); cx.rect(0,0,W,hz); cx.clip();
+
+    // sun body
+    const sgg=cx.createLinearGradient(scx,sy-sr,scx,sy+sr);
+    sgg.addColorStop(0,'#ffe066');
+    sgg.addColorStop(0.3,'#ff6b35');
+    sgg.addColorStop(0.65,'#ff2d78');
+    sgg.addColorStop(1,'#7a1248');
+    cx.beginPath(); cx.arc(scx,sy,sr,0,Math.PI*2);
+    cx.fillStyle=sgg; cx.fill();
+
+    // retro bands
+    const bh=[0.075,0.06,0.052,0.046,0.042,0.038,0.034];
+    let by=sy-sr+sr*0.22;
+    cx.fillStyle='rgba(8,4,16,0.73)';
+    for(let i=0;i<bh.length;i++){
+      const h=sr*bh[i];
+      by+=h*1.5;
+      cx.fillRect(scx-sr,by,sr*2,h*0.48);
+      by+=h*0.95;
+    }
+    cx.restore();
+  }
+
+  function drawGrid(){
+    const hz=H*0.5;
+    const vpx=W*(0.5+(mx-0.5)*0.18);
+    const scroll=(t*1.1)%80;
+
+    cx.save();
+    cx.beginPath(); cx.rect(0,hz,W,H-hz); cx.clip();
+
+    // verticals
+    const vc=20;
+    for(let i=-vc/2;i<=vc/2;i++){
+      const bx=W*0.5+i*(W/vc);
+      const d=Math.abs(i)/(vc/2);
+      cx.beginPath(); cx.moveTo(vpx,hz); cx.lineTo(bx,H+30);
+      cx.strokeStyle=`rgba(0,212,255,${0.22-d*0.14})`; cx.lineWidth=0.75; cx.stroke();
+    }
+
+    // horizontals
+    for(let i=0;i<=14;i++){
+      const raw=i/14;
+      const p=raw*raw;
+      const y=hz+p*(H-hz+50)-scroll*p;
+      if(y<hz||y>H+8) continue;
+      cx.beginPath(); cx.moveTo(0,y); cx.lineTo(W,y);
+      cx.strokeStyle=`rgba(0,212,255,${0.16*(1-raw*0.55)})`; cx.lineWidth=0.75; cx.stroke();
+    }
+    cx.restore();
+  }
+
+  function drawParts(){
+    const hz=H*0.5;
+    for(let i=parts.length-1;i>=0;i--){
+      const p=parts[i];
+      p.x+=p.vx; p.y+=p.vy; p.lf+=p.ls;
+      const dx=W*mx-p.x, dy=H*my-p.y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<200){ p.vx+=dx*0.00007; p.vy+=dy*0.00007; }
+      const a=Math.sin(p.lf)*0.65;
+      if(a<0||p.y>hz+4){ parts.splice(i,1); spawnPart(false); continue; }
+      cx.beginPath(); cx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      cx.fillStyle=p.mg?`rgba(255,45,120,${a})`:`rgba(192,132,252,${a})`;
+      cx.fill();
+    }
+  }
+
+  function frame(){
+    if(!RM) t++;
+    cx.clearRect(0,0,W,H);
+    drawBg(); drawStars(); drawSun(); drawGrid(); drawParts();
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize',resize);
+  cv.addEventListener('mousemove',e=>{ const r=cv.getBoundingClientRect(); mx=(e.clientX-r.left)/r.width; my=(e.clientY-r.top)/r.height; });
+  cv.addEventListener('touchmove',e=>{ const r=cv.getBoundingClientRect(); mx=(e.touches[0].clientX-r.left)/r.width; my=(e.touches[0].clientY-r.top)/r.height; },{passive:true});
+
+  resize(); frame();
+})();
+
+// ── SCROLL REVEAL ──
+(function(){
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const ob=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){e.target.classList.add('visible');ob.unobserve(e.target);} }),{threshold:0.1});
+  document.querySelectorAll('.reveal').forEach(el=>ob.observe(el));
+})();
+
+// ── FORM ──
+function handleSub(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button');
+  btn.textContent='Queued';
+  btn.style.background='linear-gradient(135deg,#c084fc,#7c3aed)';
+  setTimeout(()=>{ btn.textContent='Deploy'; btn.style.background=''; e.target.reset(); },2800);
+}
+</script>
+</body>
+</html>

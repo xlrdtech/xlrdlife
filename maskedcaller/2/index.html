@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en" data-vol="2">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MASKED CALLER — VOLUME TWO</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#050506">
+<meta name="description" content="MASKED CALLER — VOLUME TWO. Three faces, one room.">
+<meta property="og:title" content="MASKED CALLER — VOLUME TWO">
+<meta property="og:description" content="Three faces, one room. Chapter Two is almost here.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MASKED CALLER — VOLUME TWO">
+<meta name="twitter:description" content="Three faces, one room. Chapter Two is almost here.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bone:#e9e6df; --bone-dim:#b9b4ab;
+    --blood:#c1121f; --blood-hot:#ff2d3d;
+    --void:#050506; --ash:#0c0c0f;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    /* qi 2026-08-08: "100% failure on all fonts. Especially the title."
+       Cinzel is his canonical display face (stylism-tokens.css:49). A Roman
+       inscriptional serif also carries a horror wordmark far better than the
+       system mono this page shipped with.
+       PALETTE LEFT ALONE ON PURPOSE: bone/blood/void is this brand's own
+       horror identity and qi never said it was wrong — his colour complaint
+       was notifs, lifenote and asset-coverage. --void and --blood already sit
+       near canonical --ink and --oxblood if he ever wants them aligned. */
+    --display:"Cinzel","Instrument Serif",Georgia,serif;
+  }
+  html,body{height:100%;background:var(--void);color:var(--bone);overflow-x:hidden}
+  body{
+    font-family:var(--mono);
+    -webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;align-items:center;
+    text-align:center;
+  }
+  #gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+  /* film grain + vignette, both pure CSS so they cost nothing on the GPU budget */
+  #grain{position:fixed;inset:-50%;z-index:2;pointer-events:none;opacity:.055;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+    animation:grain 900ms steps(4,end) infinite}
+  @keyframes grain{
+    0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}
+    50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-2%)}100%{transform:translate(0,0)}}
+  #vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 42%,transparent 28%,rgba(5,5,6,.72) 74%,#050506 100%)}
+
+  .wrap{position:relative;z-index:3;width:100%;max-width:940px;
+        padding:0 20px;display:flex;flex-direction:column;align-items:center}
+
+  /* ── hero ─────────────────────────────────────────── */
+  header{min-height:100svh;display:flex;flex-direction:column;
+         align-items:center;justify-content:center;gap:22px;width:100%}
+  .vol{font-size:11px;letter-spacing:.62em;color:var(--blood);text-indent:.62em;
+       text-transform:uppercase}
+  /* the type carries its own scrim. Legibility must NEVER depend on what the
+     shader happens to render behind it — the mask moves, the copy cannot. */
+  h1{font-family:var(--display);
+     font-size:clamp(2.6rem,13vw,7.4rem);line-height:.86;letter-spacing:-.03em;
+     font-weight:400;text-transform:uppercase;
+     text-shadow:0 0 60px rgba(233,230,223,.14),0 2px 24px rgba(5,5,6,.95),
+                 0 0 10px rgba(5,5,6,.85)}
+  h1 em{font-style:normal;display:block;color:var(--blood);
+        text-shadow:0 0 44px rgba(193,18,31,.5)}
+  .sub{font-size:12px;letter-spacing:.3em;color:var(--bone-dim);text-transform:uppercase;
+       max-width:44ch;line-height:2}
+  .scrollcue{position:absolute;bottom:26px;font-size:10px;letter-spacing:.4em;
+             color:#5a5750;text-transform:uppercase;animation:pulse 2.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.28}50%{opacity:.9}}
+
+  /* ── the three ────────────────────────────────────── */
+  section{width:100%;padding:min(18vh,140px) 0;display:flex;
+          flex-direction:column;align-items:center;gap:34px}
+  .lbl{font-size:10px;letter-spacing:.5em;color:var(--blood);text-transform:uppercase}
+  h2{font-size:clamp(1.5rem,5.4vw,2.7rem);font-weight:400;letter-spacing:-.01em;
+     text-transform:uppercase;line-height:1.1}
+  .three{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+         gap:18px;width:100%}
+  /* a real control, not decoration: it drives the mask above it.
+     button reset so it works with touch, mouse AND keyboard. */
+  .mask{position:relative;border:1px solid #1a1a1f;background:rgba(12,12,15,.62);
+        backdrop-filter:blur(3px);padding:30px 20px 26px;
+        font:inherit;color:inherit;text-align:center;width:100%;
+        -webkit-tap-highlight-color:transparent;
+        transition:border-color .45s,transform .45s,background .45s;cursor:pointer}
+  .mask:hover,.mask:focus-visible{border-color:var(--blood);transform:translateY(-5px);
+              background:rgba(20,10,12,.7);outline:none}
+  /* .on = this face is the one currently worn. Works on phone, where hover never fires. */
+  .mask.on{border-color:var(--blood);background:rgba(24,11,14,.78)}
+  .mask.on .t{color:var(--bone)}
+  .mask .n{font-size:10px;letter-spacing:.4em;color:#6a665f}
+  .mask.on .n{color:var(--blood)}
+  .mask .t{margin-top:14px;font-size:1.06rem;letter-spacing:.05em;text-transform:uppercase}
+  .mask .d{margin-top:12px;font-size:11px;line-height:2;color:var(--bone-dim);
+           letter-spacing:.08em}
+  .mask::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+               background:var(--blood);transform:scaleX(0);transform-origin:left;
+               transition:transform .5s}
+  .mask:hover::after,.mask:focus-visible::after,.mask.on::after{transform:scaleX(1)}
+  .hint{font-size:10px;letter-spacing:.34em;color:#5a5750;text-transform:uppercase}
+
+  .rule{width:100%;height:1px;background:linear-gradient(90deg,transparent,#22222a,transparent)}
+
+  footer{padding:70px 0 90px;display:flex;flex-direction:column;
+         align-items:center;gap:16px;font-size:10px;letter-spacing:.34em;
+         color:#4e4b45;text-transform:uppercase}
+  footer .mark{color:var(--bone-dim)}
+
+  @media (prefers-reduced-motion:reduce){
+    #grain{animation:none}.scrollcue{animation:none}
+    .mask{transition:none}
+  }
+  @media (max-width:520px){
+    .vol{letter-spacing:.44em;text-indent:.44em}
+    .sub{letter-spacing:.2em}
+  }
+</style>
+</head>
+<body>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="vig"></div><div id="grain"></div>
+
+<div class="wrap">
+  <header>
+    <p class="vol">It&rsquo;s been a while</p>
+    <h1>Masked<em>Caller</em></h1>
+    <p class="sub">Chapter Two is almost here. You&rsquo;ll see some familiar faces,
+       a darker story, and a much more cinematic experience &mdash; the look and feel
+       we&rsquo;ve always wanted from the beginning.</p>
+    <p class="scrollcue">scroll</p>
+  </header>
+
+  <div class="rule"></div>
+
+  <section>
+    <p class="lbl">Volume Two</p>
+    <h2>Three faces, one room</h2>
+    <div class="three">
+      <button type="button" class="mask on" data-face="0" aria-pressed="true">
+        <span class="n">I</span><span class="t">The Shape</span>
+        <span class="d">Bone white. No expression to read. It does not hurry, and it does not stop.</span></button>
+      <button type="button" class="mask" data-face="1" aria-pressed="false">
+        <span class="n">II</span><span class="t">The Voice</span>
+        <span class="d">A mouth frozen mid-scream. It calls first. It asks what your favorite is.</span></button>
+      <button type="button" class="mask" data-face="2" aria-pressed="false">
+        <span class="n">III</span><span class="t">The Doll</span>
+        <span class="d">Painted grin, stitched seams. Small enough to hold. That is the problem.</span></button>
+    </div>
+    <p class="hint">Touch a name. The face becomes it.</p>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <p class="lbl">Chapter Two begins</p>
+    <h2>Meet me here<br>Thursday, 8 PM</h2>
+  </section>
+
+  <footer>
+    <p class="mark">Masked Caller — Volume Two</p>
+    <p>Move the cursor. It follows.</p>
+  </footer>
+</div>
+
+<script>
+/* ── MASKED CALLER VOL.2 — raymarched bone mask in fog ───────────────────────
+   One WebGL1 fragment shader, no libraries, no external assets.
+
+   THREE FACES, ONE PROGRAM. The Shape / The Voice / The Doll are NOT three
+   shaders and NOT three models — they are one signed-distance face whose
+   parameters are interpolated. Compiling three programs is exactly what
+   caused the 2026-08-07 ophanim ANR on a phone GL driver; morphing a
+   parameter vector costs one mix() per fragment and cannot ANR.
+
+   Every face is an ORIGINAL archetype — proportion and silhouette only,
+   never a likeness of a protected character. Zero IP surface by construction.
+
+   MOBILE-GATED FROM THE START: quality knobs key off screen size, the loop
+   sleeps when the tab is hidden, and the cards are real buttons so the
+   interaction is not hover-only.                                          */
+(function(){
+  "use strict";
+  var cv = document.getElementById("gl");
+  var gl = cv.getContext("webgl", {antialias:false, alpha:false, depth:false,
+                                   powerPreference:"low-power"});
+  if(!gl){ cv.style.display="none"; return; }          /* CSS scene still reads */
+
+  var isPhone = Math.min(innerWidth, innerHeight) < 760;
+  var STEPS   = isPhone ? 40 : 74;                      /* raymarch budget */
+  var MAXDPR  = isPhone ? 1.25 : 1.6;
+  var reduce  = matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+  var VS = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+
+  var FS = [
+  "precision highp float;",
+  "uniform vec2  uRes;",
+  "uniform float uT;",
+  "uniform vec2  uM;",      /* cursor, -1..1 */
+  "uniform float uReveal;", /* 0..1 scroll reveal */
+  "uniform float uFace;",   /* 0=Shape 1=Voice 2=Doll, continuous = morph */
+  "const int STEPS = "+STEPS+";",
+
+  /* face parameters, resolved ONCE per fragment in main() — not per march
+     step, which is why three faces cost the same as one. */
+  "vec3 gShellS; float gShellR, gHollow;",
+  "vec3 gJawP, gJawS; float gJawR;",
+  "vec3 gEyeO, gEyeS; float gEyeR;",
+  "vec3 gMouthP, gMouthS; float gMouthR;",
+  "vec3 gTint; float gRim;",
+
+  /* smooth-min for welding the mask parts together */
+  "float sm(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);",
+  "  return mix(b,a,h)-k*h*(1.-h);}",
+  "float sdSphere(vec3 p,float r){return length(p)-r;}",
+  "float sdBox(vec3 p,vec3 b){vec3 d=abs(p)-b;",
+  "  return length(max(d,0.))+min(max(d.x,max(d.y,d.z)),0.);}",
+
+  /* THE MASK — an archetype, not a likeness: bone shell, hollow eyes,
+     a torn mouth. Proportions come from gShell/gEye/gMouth, so the same
+     surface reads as a long blank shell, a screaming oval, or a small
+     round grinning head. Deliberately abstract. */
+  "float mask(vec3 p){",
+  "  vec3 q=p;",
+  "  float shell = sdSphere(q*gShellS, gShellR);",
+  "  float jaw   = sdSphere((q-gJawP)*gJawS, gJawR);",
+  "  float face  = sm(shell,jaw,0.34);",
+  "  float hollow= sdSphere(q*gShellS, gShellR*gHollow);",   /* thin the shell */
+  "  face = max(face,-hollow);",
+  "  face = max(face,-sdBox(q-vec3(0.,0.,-1.15),vec3(2.,2.,1.)));", /* open back */
+  /* eyes */
+  "  float eL=sdSphere((q-vec3(-gEyeO.x,gEyeO.y,gEyeO.z))*gEyeS, gEyeR);",
+  "  float eR=sdSphere((q-vec3( gEyeO.x,gEyeO.y,gEyeO.z))*gEyeS, gEyeR);",
+  "  face=max(face,-min(eL,eR));",
+  /* mouth — seam, scream or grin, same primitive */
+  "  float m=sdSphere((q-gMouthP)*gMouthS, gMouthR);",
+  "  face=max(face,-m);",
+  "  return face;",
+  "}",
+
+  "vec3 nrm(vec3 p){vec2 e=vec2(0.0016,0.);",
+  "  return normalize(vec3(mask(p+e.xyy)-mask(p-e.xyy),",
+  "                        mask(p+e.yxy)-mask(p-e.yxy),",
+  "                        mask(p+e.yyx)-mask(p-e.yyx)));}",
+
+  /* resolve the three parameter sets into one face */
+  "void setFace(float f){",
+  "  float a=clamp(f,0.,1.), b=clamp(f-1.,0.,1.);",
+  /*                    I THE SHAPE          II THE VOICE         III THE DOLL */
+  "  gShellS = mix(mix(vec3(1.00,0.80,1.28), vec3(1.00,0.86,1.24),a), vec3(1.00,1.02,1.14),b);",
+  "  gShellR = mix(mix(1.00,                 1.00,                a), 0.94,               b);",
+  /* shell thickness is per-face. The Doll's head is smaller but its eye and
+     mouth cuts are larger, so a constant hollow left almost no shell between
+     them and the silhouette collapsed into a RING. Thicker shell for the Doll. */
+  "  gHollow = mix(mix(0.90,                 0.895,               a), 0.855,              b);",
+  "  gJawP   = mix(mix(vec3(0.,-0.72,0.06),  vec3(0.,-0.70,0.06), a), vec3(0.,-0.48,0.06), b);",
+  "  gJawS   = mix(mix(vec3(1.12,1.50,1.30), vec3(1.06,1.30,1.26),a), vec3(1.28,1.02,1.26),b);",
+  "  gJawR   = mix(mix(0.72,                 0.74,                a), 0.60,               b);",
+  "  gEyeO   = mix(mix(vec3(0.34,0.16,0.62), vec3(0.31,0.19,0.60),a), vec3(0.33,0.08,0.58),b);",
+  "  gEyeS   = mix(mix(vec3(1.00,1.50,1.00), vec3(1.00,1.18,1.00),a), vec3(1.00,1.00,1.00),b);",
+  /* Doll features pulled in: on a smaller head, eye+mouth cuts sized for the
+     long Shape face ate the shell and the silhouette read as a ring. */
+  "  gEyeR   = mix(mix(0.200,                0.235,               a), 0.225,              b);",
+  /* A subtractive feature must REACH the surface it cuts or it silently does
+     nothing. The Doll's shell front sits at ~z 0.82; the grin was centred at
+     z 0.60 with r 0.14, spanning only to 0.74 — it never touched the face. */
+  "  gMouthP = mix(mix(vec3(0.,-0.52,0.52),  vec3(0.,-0.44,0.55), a), vec3(0.,-0.34,0.70), b);",
+  "  gMouthS = mix(mix(vec3(0.42,3.40,1.00), vec3(1.05,0.68,1.00),a), vec3(0.34,2.40,1.00),b);",
+  "  gMouthR = mix(mix(0.115,                0.270,               a), 0.155,              b);",
+  "  gTint   = mix(mix(vec3(0.913,0.902,0.874),vec3(0.900,0.888,0.870),a),vec3(0.930,0.870,0.820),b);",
+  "  gRim    = mix(mix(1.35,                 1.60,                a), 1.20,               b);",
+  /* THE RING FIX. The mask only collapsed into an annulus BETWEEN faces, never
+     at one: mid-morph the eye and mouth cut radii drift toward each other and
+     merge into a single hole, so the thinned shell reads as a ring. Shrink the
+     cuts in proportion to how deep into a transition we are — 0 at a pure
+     face, 1 at the midpoint — so all three target looks are untouched and only
+     the passage between them tightens. */
+  "  float seg = fract(clamp(f,0.,2.));",
+  "  float tr  = 1.0 - abs(seg*2.0 - 1.0);",
+  "  gEyeR   *= 1.0 - tr*0.34;",
+  "  gMouthR *= 1.0 - tr*0.42;",
+  "}",
+
+  "void main(){",
+  "  setFace(uFace);",
+  /* normalise by the SHORT side, not the height. Dividing by uRes.y alone
+     collapses the horizontal span to ~0.23 units on a portrait phone, which
+     puts the camera INSIDE the skull — the mask reads as a grey wall. On a
+     landscape screen min() IS the height, so desktop framing is unchanged. */
+  "  vec2 uv=(gl_FragCoord.xy-.5*uRes)/min(uRes.x,uRes.y);",
+  /* sit the head LOW in frame so the wordmark reads against fog, not bone */
+  "  uv.y += 0.34;",
+  "  vec3 ro=vec3(0.,0.,5.6);",
+  "  vec3 rd=normalize(vec3(uv,-1.55));",
+  /* the mask turns toward the cursor — the one thing qi always asks for */
+  "  float ax=uM.x*0.42, ay=-uM.y*0.30;",
+  "  ay += sin(uT*0.42)*0.045;",                 /* slow breathing */
+  "  ax += sin(uT*0.31)*0.05;",
+  "  mat3 Ry=mat3(cos(ax),0.,-sin(ax), 0.,1.,0., sin(ax),0.,cos(ax));",
+  "  mat3 Rx=mat3(1.,0.,0., 0.,cos(ay),-sin(ay), 0.,sin(ay),cos(ay));",
+  "  mat3 R=Ry*Rx;",
+  "  vec3 rot_ro=R*ro, rot_rd=R*rd;",
+  "  float t=0.; float hit=-1.;",
+  "  for(int i=0;i<STEPS;i++){",
+  "    vec3 p=rot_ro+rot_rd*t;",
+  "    float d=mask(p);",
+  "    if(d<0.0016){hit=t;break;}",
+  "    t+=d*0.84; if(t>8.)break;",
+  "  }",
+  "  vec3 col=vec3(0.019,0.019,0.023);",
+  "  if(hit>0.){",
+  "    vec3 p=rot_ro+rot_rd*hit; vec3 n=nrm(p);",
+  "    vec3 key=normalize(vec3(-0.42,0.66,0.86));",   /* cold bone key  */
+  "    vec3 rim=normalize(vec3(0.72,-0.18,0.42));",   /* blood rim      */
+  "    float dif=max(dot(n,key),0.);",
+  "    float rl =pow(max(dot(n,rim),0.),2.4);",
+  "    float fres=pow(1.-max(dot(n,-rot_rd),0.),3.2);",
+  "    vec3 bone=gTint;",
+  /* darker base + tighter key: bone should be a PRESENCE in fog, not a lit
+     white wall. A flat-lit ovoid reads as an egg, never as a face. */
+  "    col  = bone*(0.030+dif*0.52);",
+  "    col += vec3(0.757,0.070,0.121)*rl*gRim;",      /* red from the side */
+  "    col += bone*fres*0.22;",
+  "    col *= 1.0-smoothstep(3.0,6.4,hit)*0.92;",     /* fall into fog     */
+  "  }",
+  /* volumetric-ish red haze low in frame */
+  "  col += vec3(0.44,0.030,0.055)*pow(max(0.,1.-length(uv-vec2(0.,-0.62))),3.0)*0.30;",
+  /* reveal on first paint */
+  "  col *= mix(0.0,1.0,uReveal);",
+  /* ACES-ish + slight lift so blacks stay filmic, not crushed */
+  "  col=(col*(2.51*col+0.03))/(col*(2.43*col+0.59)+0.14);",
+  "  col=pow(max(col,0.),vec3(1./2.22));",
+  "  gl_FragColor=vec4(col,1.);",
+  "}"].join("\n");
+
+  /* compile status is checked PER SHADER — a driver that fails to compile but
+     still links leaves a black canvas with no diagnosis, which is how the
+     last silent failure hid. */
+  function sh(t,src){
+    var s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) return null;
+    return s;
+  }
+  var vs=sh(gl.VERTEX_SHADER,VS), fs=sh(gl.FRAGMENT_SHADER,FS);
+  if(!vs||!fs){ cv.style.display="none"; return; }
+  var prog=gl.createProgram();
+  gl.attachShader(prog,vs); gl.attachShader(prog,fs);
+  gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){ cv.style.display="none"; return; }
+  gl.useProgram(prog);
+
+  var buf=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  var loc=gl.getAttribLocation(prog,"p");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+
+  var uRes=gl.getUniformLocation(prog,"uRes"),
+      uT  =gl.getUniformLocation(prog,"uT"),
+      uM  =gl.getUniformLocation(prog,"uM"),
+      uRev=gl.getUniformLocation(prog,"uReveal"),
+      uFac=gl.getUniformLocation(prog,"uFace");
+
+  var mx=0,my=0,tx=0,ty=0,rev=0;
+  var face=0, faceTarget=0;          /* eased -> the morph */
+  addEventListener("mousemove",function(e){
+    tx=(e.clientX/innerWidth)*2-1; ty=-((e.clientY/innerHeight)*2-1);
+  },{passive:true});
+  addEventListener("touchmove",function(e){
+    if(!e.touches.length)return;
+    tx=(e.touches[0].clientX/innerWidth)*2-1;
+    ty=-((e.touches[0].clientY/innerHeight)*2-1);
+  },{passive:true});
+
+  /* ── the three cards drive the face ───────────────────────────────────── */
+  var cards=[].slice.call(document.querySelectorAll(".mask"));
+  var touched=false, idleAt=0;
+  function wear(n){
+    faceTarget=n;
+    for(var i=0;i<cards.length;i++){
+      var on = (+cards[i].getAttribute("data-face")===n);
+      cards[i].classList.toggle("on",on);
+      cards[i].setAttribute("aria-pressed",on?"true":"false");
+    }
+  }
+  cards.forEach(function(c){
+    var n=+c.getAttribute("data-face");
+    c.addEventListener("click",function(){touched=true;idleAt=performance.now();wear(n);});
+    c.addEventListener("mouseenter",function(){touched=true;idleAt=performance.now();wear(n);});
+    c.addEventListener("focus",function(){touched=true;idleAt=performance.now();wear(n);});
+  });
+
+  function resize(){
+    var dpr=Math.min(devicePixelRatio||1,MAXDPR);
+    var w=Math.floor(innerWidth*dpr), h=Math.floor(innerHeight*dpr);
+    if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;gl.viewport(0,0,w,h);}
+  }
+  var rt=null;
+  addEventListener("resize",function(){clearTimeout(rt);rt=setTimeout(resize,140);},{passive:true});
+  resize();
+
+  /* the loop sleeps when the tab is hidden — a raymarcher running behind a
+     locked phone screen is pure battery burn. */
+  var running=true, raf=null, t0=performance.now(), pausedAt=0;
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden){ running=false; pausedAt=performance.now();
+                         if(raf) cancelAnimationFrame(raf); raf=null; }
+    else if(!running){ t0+=performance.now()-pausedAt; running=true;
+                       raf=requestAnimationFrame(frame); }
+  });
+
+  function frame(now){
+    var t=(now-t0)/1000;
+    mx+=(tx-mx)*0.055; my+=(ty-my)*0.055;   /* lazy, heavy follow */
+    rev+=(1-rev)*0.022;
+    /* auto-cycle the three until someone chooses; then hand it back after a
+       long idle so an untouched page never freezes on one face. */
+    if(!reduce && (!touched || now-idleAt>22000)){
+      var n=Math.floor(t/6.5)%3;
+      if(n!==faceTarget) wear(n);
+    }
+    face+=(faceTarget-face)*0.045;          /* the morph, slow and heavy */
+    gl.uniform2f(uRes,cv.width,cv.height);
+    gl.uniform1f(uT,t);
+    gl.uniform2f(uM,mx,my);
+    gl.uniform1f(uRev,rev);
+    gl.uniform1f(uFac,face);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    raf=requestAnimationFrame(frame);
+  }
+  raf=requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

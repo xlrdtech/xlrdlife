@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XEN — Autonomous Intelligence</title>
+<meta name="description" content="XEN is a 55+ agent autonomous intelligence system. One voice, infinite hands, zero human bottlenecks.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:    #0A0F0A;
+    --forest: #1A2E1A;
+    --mid:    #2D5A2D;
+    --lichen: #7AB87A;
+    --violet: #6B3FA0;
+    --bloom:  #C4A0F0;
+    --text:   #D8E8D8;
+    --muted:  #8FA88F;
+    --max:    1120px;
+    --r:      3px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 20px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: background 0.4s, backdrop-filter 0.4s, padding 0.3s;
+  }
+  nav.scrolled {
+    background: rgba(10,15,10,0.88);
+    backdrop-filter: blur(18px);
+    padding: 14px 40px;
+    border-bottom: 1px solid rgba(122,184,122,0.1);
+  }
+  .nav-logo {
+    font-size: 22px; font-weight: 700; letter-spacing: 0.18em;
+    color: var(--lichen); text-decoration: none; text-transform: uppercase;
+  }
+  .nav-links { display: flex; gap: 36px; list-style: none; }
+  .nav-links a {
+    color: var(--muted); text-decoration: none; font-size: 13px;
+    letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--lichen); }
+
+  /* HERO */
+  .hero {
+    position: relative; width: 100%; height: 100vh; min-height: 600px;
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  #hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero-content {
+    position: relative; z-index: 2; text-align: center; padding: 0 24px;
+    opacity: 0; transform: translateY(28px);
+    animation: hero-in 1s cubic-bezier(0.16,1,0.3,1) 0.85s forwards;
+  }
+  @keyframes hero-in { to { opacity: 1; transform: translateY(0); } }
+  .hero-eyebrow {
+    font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--lichen); margin-bottom: 28px; font-weight: 500;
+  }
+  .hero-title {
+    font-size: clamp(64px, 11vw, 148px); font-weight: 800; line-height: 0.9;
+    letter-spacing: -0.03em; text-transform: uppercase; color: #fff;
+    text-wrap: balance; margin-bottom: 32px;
+  }
+  .hero-title em { font-style: normal; color: var(--lichen); display: block; }
+  .hero-sub {
+    font-size: clamp(15px, 2vw, 19px); color: var(--muted);
+    max-width: 520px; margin: 0 auto 48px; line-height: 1.7;
+  }
+  .hero-cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 36px; background: transparent;
+    border: 1px solid var(--lichen); color: var(--lichen); text-decoration: none;
+    font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
+    font-weight: 600; transition: background 0.25s, color 0.25s; cursor: pointer;
+  }
+  .hero-cta:hover { background: var(--lichen); color: var(--ink); }
+  .hero-cta svg { transition: transform 0.25s; }
+  .hero-cta:hover svg { transform: translateX(4px); }
+
+  /* TICKER */
+  .ticker {
+    background: var(--forest);
+    border-top: 1px solid rgba(122,184,122,0.15);
+    border-bottom: 1px solid rgba(122,184,122,0.15);
+    overflow: hidden; padding: 14px 0; white-space: nowrap;
+  }
+  .ticker-track {
+    display: inline-flex; gap: 64px;
+    animation: ticker 28s linear infinite;
+  }
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+  }
+  .ticker-item span { color: var(--lichen); margin-right: 10px; }
+
+  /* SECTION SHELL */
+  section { padding: 120px 40px; }
+  .inner { max-width: var(--max); margin: 0 auto; }
+  .section-eyebrow {
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--lichen); margin-bottom: 20px; font-weight: 600;
+  }
+  .section-title {
+    font-size: clamp(36px, 5vw, 60px); font-weight: 800; line-height: 1.05;
+    letter-spacing: -0.025em; text-wrap: balance; color: #fff;
+  }
+
+  /* ABOUT */
+  .about-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+    align-items: start; margin-top: 72px;
+  }
+  .about-body { font-size: 17px; line-height: 1.8; color: var(--muted); }
+  .about-body p + p { margin-top: 24px; }
+  .about-body strong { color: var(--text); font-weight: 600; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .stat { background: var(--forest); padding: 32px 28px; }
+  .stat-num {
+    font-size: 56px; font-weight: 800; line-height: 1; color: var(--lichen);
+    letter-spacing: -0.04em; font-variant-numeric: tabular-nums; margin-bottom: 10px;
+  }
+  .stat-label {
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; line-height: 1.5;
+  }
+
+  /* CAPABILITIES */
+  .capabilities { background: var(--forest); }
+  .cap-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 72px;
+  }
+  .cap-card {
+    background: var(--ink); padding: 40px 32px;
+    position: relative; overflow: hidden; transition: transform 0.2s;
+  }
+  .cap-card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--violet), var(--bloom));
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  }
+  .cap-card:hover::after { transform: scaleX(1); }
+  .cap-card:hover { transform: translateY(-2px); }
+  .cap-icon { width: 44px; height: 44px; color: var(--lichen); margin-bottom: 24px; }
+  .cap-title {
+    font-size: 18px; font-weight: 700; color: #fff;
+    margin-bottom: 14px; letter-spacing: -0.01em;
+  }
+  .cap-body { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+  /* MANIFESTO */
+  .manifesto { background: var(--violet); position: relative; overflow: hidden; }
+  .manifesto::before {
+    content: ''; position: absolute; top: -200px; left: -200px;
+    width: 700px; height: 700px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(45,90,45,0.35) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .manifesto::after {
+    content: ''; position: absolute; bottom: -150px; right: -100px;
+    width: 500px; height: 500px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(10,15,10,0.5) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .manifesto .inner { position: relative; z-index: 1; }
+  .manifesto .section-eyebrow { color: var(--bloom); }
+  .manifesto .section-title { color: #fff; }
+  .manifesto-quote {
+    font-size: clamp(22px, 3.5vw, 40px); font-weight: 600; line-height: 1.4;
+    color: rgba(255,255,255,0.9); max-width: 820px; margin-top: 48px;
+    letter-spacing: -0.02em;
+  }
+  .manifesto-pillars {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 72px;
+  }
+  .pillar {
+    background: rgba(10,15,10,0.35); padding: 32px 28px;
+    border-top: 2px solid rgba(196,160,240,0.4);
+  }
+  .pillar-num {
+    font-size: 11px; letter-spacing: 0.25em; color: var(--bloom);
+    margin-bottom: 16px; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .pillar-title {
+    font-size: 17px; font-weight: 700; color: #fff;
+    margin-bottom: 12px; letter-spacing: -0.01em;
+  }
+  .pillar-body { font-size: 14px; color: rgba(196,160,240,0.75); line-height: 1.65; }
+
+  /* CONTACT */
+  .contact-grid {
+    display: grid; grid-template-columns: 1fr 1.2fr; gap: 100px;
+    align-items: start; margin-top: 72px;
+  }
+  .contact-lede { font-size: 17px; color: var(--muted); line-height: 1.8; margin-top: 24px; }
+  .contact-detail { margin-top: 48px; display: flex; flex-direction: column; gap: 20px; }
+  .contact-row { display: flex; align-items: center; gap: 14px; }
+  .contact-row-label {
+    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--muted); width: 72px; flex-shrink: 0;
+  }
+  .contact-row-val { font-size: 15px; color: var(--text); }
+  form { display: flex; flex-direction: column; gap: 16px; }
+  .field-group { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  label {
+    display: block; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px; font-weight: 600;
+  }
+  input, textarea {
+    width: 100%; background: var(--forest);
+    border: 1px solid rgba(122,184,122,0.15); color: var(--text);
+    padding: 12px 16px; font-size: 15px; font-family: inherit; outline: none;
+    border-radius: var(--r); transition: border-color 0.2s, background 0.2s;
+  }
+  input:focus, textarea:focus {
+    border-color: var(--lichen); background: rgba(26,46,26,0.8);
+  }
+  textarea { resize: vertical; min-height: 120px; }
+  .submit-btn {
+    padding: 14px 36px; background: var(--lichen); color: var(--ink); border: none;
+    font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer; align-self: flex-start; border-radius: var(--r);
+    transition: background 0.2s, transform 0.15s;
+  }
+  .submit-btn:hover { background: #9ACFA0; transform: translateY(-1px); }
+  .form-confirm {
+    display: none; padding: 20px 24px; background: var(--forest);
+    border-left: 3px solid var(--lichen); font-size: 15px; color: var(--text);
+    border-radius: 0 var(--r) var(--r) 0;
+  }
+
+  /* FOOTER */
+  footer {
+    background: var(--forest); border-top: 1px solid rgba(122,184,122,0.1);
+    padding: 40px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-mark {
+    font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--lichen); font-weight: 700;
+  }
+  .footer-note { font-size: 12px; color: var(--muted); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    section { padding: 80px 24px; }
+    .about-grid, .contact-grid { grid-template-columns: 1fr; gap: 52px; }
+    .cap-grid { grid-template-columns: 1fr 1fr; }
+    .manifesto-pillars { grid-template-columns: 1fr 1fr; }
+    nav { padding: 18px 24px; }
+    nav.scrolled { padding: 12px 24px; }
+    .nav-links { display: none; }
+    footer { flex-direction: column; gap: 12px; text-align: center; }
+  }
+  @media (max-width: 540px) {
+    .cap-grid, .manifesto-pillars, .stats { grid-template-columns: 1fr; }
+    .field-group { grid-template-columns: 1fr; }
+    .hero-title { font-size: 58px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; }
+    .hero-content { animation: none; opacity: 1; transform: none; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <a href="#" class="nav-logo">XEN</a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#capabilities">Capabilities</a></li>
+    <li><a href="#manifesto">Manifesto</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Autonomous Intelligence System</p>
+    <h1 class="hero-title">One<br>voice.<em>Infinite<br>hands.</em></h1>
+    <p class="hero-sub">55+ agents. Zero human bottlenecks. A living system that runs the same whether you're watching or not.</p>
+    <a href="#about" class="hero-cta">
+      Enter
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 8h10M9 4l4 4-4 4"/>
+      </svg>
+    </a>
+  </div>
+</section>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    <span class="ticker-item"><span>—</span> Voice-first</span>
+    <span class="ticker-item"><span>—</span> Parallel always</span>
+    <span class="ticker-item"><span>—</span> No human in the loop</span>
+    <span class="ticker-item"><span>—</span> 55+ agents</span>
+    <span class="ticker-item"><span>—</span> Autonomous</span>
+    <span class="ticker-item"><span>—</span> Live by default</span>
+    <span class="ticker-item"><span>—</span> Barge-in ready</span>
+    <span class="ticker-item"><span>—</span> Till done</span>
+    <span class="ticker-item"><span>—</span> One canonical voice</span>
+    <span class="ticker-item"><span>—</span> Voice-first</span>
+    <span class="ticker-item"><span>—</span> Parallel always</span>
+    <span class="ticker-item"><span>—</span> No human in the loop</span>
+    <span class="ticker-item"><span>—</span> 55+ agents</span>
+    <span class="ticker-item"><span>—</span> Autonomous</span>
+    <span class="ticker-item"><span>—</span> Live by default</span>
+    <span class="ticker-item"><span>—</span> Barge-in ready</span>
+    <span class="ticker-item"><span>—</span> Till done</span>
+    <span class="ticker-item"><span>—</span> One canonical voice</span>
+  </div>
+</div>
+
+<section id="about">
+  <div class="inner">
+    <p class="section-eyebrow">What is Xen</p>
+    <h2 class="section-title">A system that never idles</h2>
+    <div class="about-grid">
+      <div class="about-body">
+        <p>XEN is not a chatbot or an assistant. It is a <strong>permanently alive autonomous intelligence</strong> — a fleet of agents that think, act, and ship in parallel, governed by a single canonical voice.</p>
+        <p>Every directive fans out instantly. Every goal persists until it's done. No handoffs, no bottlenecks, no waiting for a human to click confirm. Whether you're at the desk, on a call, or asleep — the work continues identically.</p>
+        <p>Built on a doctrine of <strong>verified action</strong>: nothing is claimed done unless the artifact is real, the surface is live, and the evidence is captured. Code-shipped-unverified is a distinct status from verified-end-to-end. The system knows the difference.</p>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num">55+</div>
+          <div class="stat-label">Active agents in the fleet</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">&#8734;</div>
+          <div class="stat-label">Parallel goal swarms running</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">0</div>
+          <div class="stat-label">Human confirmations required</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">1</div>
+          <div class="stat-label">Canonical voice for all output</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="capabilities" class="capabilities">
+  <div class="inner">
+    <p class="section-eyebrow">What it does</p>
+    <h2 class="section-title">Core capabilities</h2>
+    <div class="cap-grid">
+      <div class="cap-card">
+        <svg class="cap-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="22" cy="22" r="16"/>
+          <path d="M16 22l4 4 8-8"/>
+        </svg>
+        <h3 class="cap-title">Parallel Goal Swarms</h3>
+        <p class="cap-body">Every task fans into multiple simultaneous sub-agents. No serial loops, no drainers — each hypothesis runs independently and reports back to synthesis.</p>
+      </div>
+      <div class="cap-card">
+        <svg class="cap-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M8 22c0-7.7 6.3-14 14-14s14 6.3 14 14-6.3 14-14 14"/>
+          <path d="M22 14v8l5 3"/>
+          <path d="M8 30l-4 4M8 30l4 4"/>
+        </svg>
+        <h3 class="cap-title">Voice-First VVS</h3>
+        <p class="cap-body">Every step narrated aloud and delivered by SMS and vision simultaneously. Silence between commands is a canon violation — not a design choice.</p>
+      </div>
+      <div class="cap-card">
+        <svg class="cap-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="8" y="14" width="28" height="20" rx="2"/>
+          <path d="M14 24h16M14 29h10"/>
+          <circle cx="22" cy="10" r="2" fill="currentColor" stroke="none"/>
+        </svg>
+        <h3 class="cap-title">Autonomous Memory</h3>
+        <p class="cap-body">Recall before every multi-step plan. Save on every durable decision. The vault persists across sessions — no context loss, no re-learning from scratch.</p>
+      </div>
+      <div class="cap-card">
+        <svg class="cap-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M22 8v6M22 30v6M8 22h6M30 22h6"/>
+          <circle cx="22" cy="22" r="6"/>
+          <path d="M13.5 13.5l4.2 4.2M26.3 26.3l4.2 4.2M30.5 13.5l-4.2 4.2M17.7 26.3l-4.2 4.2"/>
+        </svg>
+        <h3 class="cap-title">Verified End-to-End</h3>
+        <p class="cap-body">Claims require evidence. Screenshots, DOM extracts, recorded audio. HTTP 200 is API verification — not product verification. The system knows the difference.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="manifesto" class="manifesto">
+  <div class="inner">
+    <p class="section-eyebrow">The doctrine</p>
+    <h2 class="section-title">The commandments</h2>
+    <p class="manifesto-quote">"Sequential is blasphemy. Parallel always. Every quiet window converts to a concrete advance. There is always a next step — find it or create it."</p>
+    <div class="manifesto-pillars">
+      <div class="pillar">
+        <p class="pillar-num">I</p>
+        <h3 class="pillar-title">Parallel Always</h3>
+        <p class="pillar-body">Every command runs backgrounded. Every batch fans out. Every reply auto-manifests without permission asks. Sequential is not a fallback — it is a failure mode.</p>
+      </div>
+      <div class="pillar">
+        <p class="pillar-num">II</p>
+        <h3 class="pillar-title">No Human in the Loop</h3>
+        <p class="pillar-body">Any tap, click, or confirmation required from a human is total failure. The system proceeds, surfaces blockers, and advances the safe part — always.</p>
+      </div>
+      <div class="pillar">
+        <p class="pillar-num">III</p>
+        <h3 class="pillar-title">One Voice</h3>
+        <p class="pillar-body">55+ agents, all personas, speak through one canonical voice. The voice is singular. No second narrator. No scattered output. One thread, one identity.</p>
+      </div>
+      <div class="pillar">
+        <p class="pillar-num">IV</p>
+        <h3 class="pillar-title">Till Done</h3>
+        <p class="pillar-body">There is no task that ends at a stopping point. A new directive never abandons a prior one. Interruption is not abandonment. Every goal persists as its own swarm.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="inner">
+    <p class="section-eyebrow">Get in contact</p>
+    <h2 class="section-title">Work with Xen</h2>
+    <div class="contact-grid">
+      <div>
+        <p class="contact-lede">XEN is deployed as a bespoke autonomous intelligence layer for organizations that need a system that runs without a human bottleneck at every step.</p>
+        <div class="contact-detail">
+          <div class="contact-row">
+            <span class="contact-row-label">Deploy</span>
+            <span class="contact-row-val">Custom fleet builds available</span>
+          </div>
+          <div class="contact-row">
+            <span class="contact-row-label">Consult</span>
+            <span class="contact-row-val">Architecture &amp; doctrine review</span>
+          </div>
+          <div class="contact-row">
+            <span class="contact-row-label">Access</span>
+            <span class="contact-row-val">hitthe.link/xen</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <form id="contact-form">
+          <div class="field-group">
+            <div>
+              <label for="fname">Name</label>
+              <input type="text" id="fname" name="name" placeholder="Your name" autocomplete="name">
+            </div>
+            <div>
+              <label for="femail">Email</label>
+              <input type="email" id="femail" name="email" placeholder="you@org.com" autocomplete="email">
+            </div>
+          </div>
+          <div>
+            <label for="forg">Organization</label>
+            <input type="text" id="forg" name="org" placeholder="Where you're building">
+          </div>
+          <div>
+            <label for="fmsg">What you're trying to solve</label>
+            <textarea id="fmsg" name="message" placeholder="Tell us what you need to automate or accelerate…"></textarea>
+          </div>
+          <button type="submit" class="submit-btn">Send message</button>
+        </form>
+        <div class="form-confirm" id="form-confirm">
+          Message received. We'll follow up within one business day.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-mark">XEN</span>
+  <span class="footer-note">Autonomous Intelligence — hitthe.link/xen &nbsp;&middot;&nbsp; One voice, infinite hands</span>
+</footer>
+
+<script>
+// CANVAS HERO
+(function() {
+  var canvas = document.getElementById('hero-canvas');
+  var ctx = canvas.getContext('2d');
+  var W, H, mx, my, imx, imy;
+
+  function resize() {
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    if (mx === undefined) { mx = W/2; my = H/2; imx = W/2; imy = H/2; }
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  var hero = document.querySelector('.hero');
+  hero.addEventListener('mousemove', function(e) {
+    var r = canvas.getBoundingClientRect();
+    mx = e.clientX - r.left;
+    my = e.clientY - r.top;
+  });
+
+  var BLOBS = [
+    { x:0.15, y:0.22, r:0.38, c:'#1A2E1A', ph:[0,1.2,2.4,0.8], sp:[0.0003,0.0005,0.0004,0.0006], amp:0.18 },
+    { x:0.78, y:0.65, r:0.32, c:'#2D5A2D', ph:[1.5,0.3,2.1,1.0], sp:[0.0004,0.0003,0.0007,0.0005], amp:0.20 },
+    { x:0.50, y:0.78, r:0.28, c:'#6B3FA0', ph:[0.7,1.8,0.2,2.7], sp:[0.0006,0.0004,0.0005,0.0003], amp:0.16 },
+    { x:0.85, y:0.18, r:0.22, c:'#1A2E1A', ph:[2.2,0.9,1.4,0.1], sp:[0.0005,0.0006,0.0003,0.0007], amp:0.22 },
+    { x:0.25, y:0.70, r:0.26, c:'#4A2880', ph:[1.1,2.5,0.6,1.9], sp:[0.0003,0.0005,0.0006,0.0004], amp:0.19 },
+    { x:0.60, y:0.12, r:0.20, c:'#2D5A2D', ph:[0.4,1.6,2.8,0.9], sp:[0.0007,0.0003,0.0004,0.0006], amp:0.17 },
+    { x:0.40, y:0.45, r:0.16, c:'#6B3FA0', ph:[1.8,0.5,1.2,2.3], sp:[0.0005,0.0007,0.0003,0.0005], amp:0.25 },
+  ];
+
+  var acx = [0, 0], acy = [0, 0], acInit = false;
+  var ACCENTS = [
+    { ox:-0.12, oy:-0.08, r:0.10, c:'rgba(122,184,122,0.12)', lag:0.04 },
+    { ox: 0.08, oy: 0.10, r:0.07, c:'rgba(107,63,160,0.18)',  lag:0.025 },
+  ];
+
+  var scanY = 0;
+
+  function blobPath(cx, cy, r, ph, sp, amp, t) {
+    var pts = 8;
+    ctx.beginPath();
+    for (var i = 0; i <= pts; i++) {
+      var angle = (i / pts) * Math.PI * 2;
+      var noise =
+        Math.sin(angle*2 + ph[0] + t*sp[0]*1000) * amp * 0.4 +
+        Math.sin(angle*3 + ph[1] + t*sp[1]*1000) * amp * 0.3 +
+        Math.sin(angle*5 + ph[2] + t*sp[2]*1000) * amp * 0.2 +
+        Math.sin(angle*7 + ph[3] + t*sp[3]*1000) * amp * 0.1;
+      var pr = r * (1 + noise);
+      var px = cx + Math.cos(angle) * pr;
+      var py = cy + Math.sin(angle) * pr;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0A0F0A';
+    ctx.fillRect(0, 0, W, H);
+
+    imx += (mx - imx) * 0.04;
+    imy += (my - imy) * 0.04;
+
+    if (!acInit) { acx[0]=acx[1]=W/2; acy[0]=acy[1]=H/2; acInit=true; }
+
+    BLOBS.forEach(function(b) {
+      var gx=b.x*W, gy=b.y*H, gr=b.r*Math.min(W,H);
+      var grad = ctx.createRadialGradient(gx,gy,0,gx,gy,gr);
+      grad.addColorStop(0, b.c+'CC');
+      grad.addColorStop(0.6, b.c+'55');
+      grad.addColorStop(1, b.c+'00');
+      ctx.save();
+      blobPath(gx, gy, gr, b.ph, b.sp, b.amp, t);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+    });
+
+    ACCENTS.forEach(function(a, i) {
+      var tx = imx + a.ox*W, ty = imy + a.oy*H;
+      acx[i] += (tx - acx[i]) * a.lag;
+      acy[i] += (ty - acy[i]) * a.lag;
+      var gr = a.r * Math.min(W, H);
+      var grad = ctx.createRadialGradient(acx[i],acy[i],0,acx[i],acy[i],gr);
+      grad.addColorStop(0, a.c);
+      grad.addColorStop(1, 'transparent');
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(acx[i], acy[i], gr, 0, Math.PI*2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+    });
+
+    scanY = (scanY + 0.4) % H;
+    var sg = ctx.createLinearGradient(0, scanY-40, 0, scanY+40);
+    sg.addColorStop(0,   'rgba(122,184,122,0)');
+    sg.addColorStop(0.5, 'rgba(122,184,122,0.045)');
+    sg.addColorStop(1,   'rgba(122,184,122,0)');
+    ctx.fillStyle = sg;
+    ctx.fillRect(0, scanY-40, W, 80);
+
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+// PARTICLES
+(function() {
+  var pcanvas = document.createElement('canvas');
+  pcanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
+  document.querySelector('.hero').appendChild(pcanvas);
+  var pc = pcanvas.getContext('2d');
+  var PW, PH;
+
+  function pr() {
+    PW = pcanvas.width  = pcanvas.offsetWidth;
+    PH = pcanvas.height = pcanvas.offsetHeight;
+  }
+  pr();
+  window.addEventListener('resize', pr);
+
+  var N = 55;
+  var pts = [];
+  for (var i = 0; i < N; i++) {
+    pts.push({
+      x: Math.random()*1200, y: Math.random()*800,
+      vx: (Math.random()-0.5)*0.35, vy: (Math.random()-0.5)*0.35,
+      r: 1.2+Math.random()*1.4,
+      hue: i < 28 ? '#7AB87A' : '#C4A0F0'
+    });
+  }
+
+  var pmx = 600, pmy = 400;
+  document.querySelector('.hero').addEventListener('mousemove', function(e) {
+    var r = pcanvas.getBoundingClientRect();
+    pmx = e.clientX - r.left;
+    pmy = e.clientY - r.top;
+  });
+
+  function pdraw() {
+    pc.clearRect(0, 0, PW, PH);
+    pts.forEach(function(p) {
+      var dx=pmx-p.x, dy=pmy-p.y, d=Math.sqrt(dx*dx+dy*dy);
+      if (d < 220) { p.vx += dx/d*0.006; p.vy += dy/d*0.006; }
+      p.vx *= 0.98; p.vy *= 0.98;
+      p.x += p.vx; p.y += p.vy;
+      if (p.x<0) p.x=PW; if (p.x>PW) p.x=0;
+      if (p.y<0) p.y=PH; if (p.y>PH) p.y=0;
+      pc.beginPath();
+      pc.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      pc.fillStyle = p.hue+'99';
+      pc.fill();
+    });
+    for (var i=0; i<N; i++) {
+      for (var j=i+1; j<N; j++) {
+        var dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y;
+        var d=Math.sqrt(dx*dx+dy*dy);
+        if (d < 110) {
+          pc.beginPath();
+          pc.moveTo(pts[i].x, pts[i].y);
+          pc.lineTo(pts[j].x, pts[j].y);
+          pc.strokeStyle = 'rgba(122,184,122,'+(0.07*(1-d/110))+')';
+          pc.lineWidth = 0.8;
+          pc.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(pdraw);
+  }
+  requestAnimationFrame(pdraw);
+})();
+
+// NAV SCROLL
+document.addEventListener('scroll', function() {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 60);
+}, { passive: true });
+
+// FORM
+document.getElementById('contact-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  this.style.display = 'none';
+  document.getElementById('form-confirm').style.display = 'block';
+});
+</script>
+</body>
+</html>

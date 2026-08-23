@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Omni_Fused — the architecture, permanently</title>
+<meta name="description" content="The screen-control stack as actually built on a 24GB M4: what runs, what was cut and why, and the file map to rebuild it from zero.">
+<style>
+  :root{
+    --bg:#ffffff; --panel:#f7f7f5; --ink:#16161a; --ink2:#4a4a52;
+    --line:#e2e2dd; --line2:#cfcfc8; --code:#f4f4f1;
+    --ok:#1f6f43; --okbg:#eaf4ee; --cut:#8a2c2c; --cutbg:#fbeeee;
+    --warn:#7a4b00; --warnbg:#fdf3e0;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:780px; margin:0 auto; padding:28px 20px 96px}
+
+  header{padding:12px 0 26px; border-bottom:1px solid var(--line)}
+  .kicker{font:600 11px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink2)}
+  h1{font-size:clamp(28px,7vw,42px); line-height:1.1; letter-spacing:-.02em; margin:12px 0 10px; font-weight:700}
+  .sub{color:var(--ink2); font-size:17px; margin:0}
+  .stamp{margin-top:16px; font:12px/1.5 var(--mono); color:var(--ink2)}
+
+  h2{font-size:clamp(20px,4.6vw,25px); letter-spacing:-.01em; margin:52px 0 4px; font-weight:700}
+  h2 .n{font:600 12px/1 var(--mono); color:var(--ink2); display:block; margin-bottom:8px; letter-spacing:.12em}
+  h3{font-size:17px; margin:28px 0 6px; font-weight:650}
+  p{margin:12px 0}
+  strong{font-weight:650}
+  a{color:#0b5fb0}
+
+  .lede{font-size:17px; color:var(--ink2)}
+  hr{border:0; border-top:1px solid var(--line); margin:44px 0}
+
+  code{font:13.5px/1.5 var(--mono); background:var(--code); padding:.12em .38em; border:1px solid var(--line); border-radius:4px; word-break:break-word}
+  pre{
+    background:var(--code); border:1px solid var(--line); border-radius:8px;
+    padding:14px; overflow-x:auto; -webkit-overflow-scrolling:touch; margin:16px 0;
+  }
+  pre code{background:none; border:0; padding:0; font-size:12.8px; line-height:1.6; white-space:pre}
+
+  .box{border:1px solid var(--line2); border-radius:10px; padding:16px 18px; margin:20px 0; background:var(--panel)}
+  .box h4{margin:0 0 8px; font-size:13px; font-family:var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ink2); font-weight:600}
+  .box p:first-of-type{margin-top:0}
+  .box p:last-child{margin-bottom:0}
+  .box.danger{background:var(--cutbg); border-color:#e6c3c3}
+  .box.danger h4{color:var(--cut)}
+  .box.note{background:var(--warnbg); border-color:#ecd9ae}
+  .box.note h4{color:var(--warn)}
+  .box.good{background:var(--okbg); border-color:#c3ddcc}
+  .box.good h4{color:var(--ok)}
+
+  ul,ol{margin:12px 0; padding-left:22px}
+  li{margin:7px 0}
+  li::marker{color:var(--ink2)}
+
+  .tbl{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:18px 0; border:1px solid var(--line); border-radius:8px}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{background:var(--panel); font:600 12px/1.4 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink2)}
+  tr:last-child td{border-bottom:0}
+  td code{font-size:12.5px}
+
+  .tag{display:inline-block; font:600 11px/1.6 var(--mono); padding:1px 7px; border-radius:999px; border:1px solid currentColor}
+  .tag.live{color:var(--ok)} .tag.cutx{color:var(--cut)}
+
+  .cut{border:1px solid var(--line2); border-radius:10px; padding:16px 18px; margin:16px 0}
+  .cut h3{margin:0 0 6px; font-size:17px; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .cut p{margin:8px 0 0; font-size:15px}
+  .cut .why{color:var(--ink2); font-size:13.5px; font-family:var(--mono); margin-top:10px}
+
+  footer{margin-top:60px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink2); font-size:13.5px}
+
+  @media (max-width:520px){
+    .wrap{padding:20px 16px 72px}
+    pre code{font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Xen · screen-control stack</div>
+  <h1>Omni_Fused</h1>
+  <p class="sub">The architecture as actually built, in one place that cannot corrupt, loop, or vanish when you open a different phone.</p>
+  <p class="stamp">Verified on the real machine — 2026-08-01 21:00 EDT<br>Base M4 · 24GB unified memory · macOS 26 · arm64 · MPS only, no CUDA</p>
+</header>
+
+<p class="lede">Every technical claim below was checked against the running system tonight. Anything not checked is labeled <strong>UNVERIFIED</strong>. Nothing here is guessed.</p>
+
+<div class="box">
+  <h4>The 30-second version</h4>
+  <p>Three components survived. Four were cut. <strong>Docker is not required</strong> — the venv is the whole environment. Screen work routes DOM-first to Stagehand, falls back to pixels via OmniParser, then acts through xen-computer-use. And the shell is registered as an OpenAI-compatible <em>provider</em>, which turns every OpenAI client on the box into a remote control.</p>
+</div>
+
+<hr>
+
+<h2><span class="n">01</span>The stack as built</h2>
+
+<p>Three surviving components, each doing exactly one job. Nothing here overlaps with anything else — that was the filter.</p>
+
+<div class="tbl">
+<table>
+  <thead><tr><th>Component</th><th>Job</th><th>State</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>OmniParser V2</strong><br><code>vendor/OmniParser</code></td>
+      <td>Sees any pixels. Hand it a screenshot, get back every element with coordinates and a description. Works where there is no DOM at all — canvas apps, native windows, anything behind an overlay.</td>
+      <td><span class="tag live">INSTALLED</span><br>MIT weights, 1.3GB</td>
+    </tr>
+    <tr>
+      <td><strong>Stagehand / CDP</strong></td>
+      <td>Reads the DOM directly over Chrome DevTools Protocol. Exact and fast because it is CPU work, not inference. Preferred whenever a DOM exists.</td>
+      <td><span class="tag live">WIRED</span><br>routes when CDP is reachable</td>
+    </tr>
+    <tr>
+      <td><strong>xen-computer-use</strong></td>
+      <td>The hands. Click, type, hotkey, drag on the real machine. Takes a pixel coordinate and acts on it.</td>
+      <td><span class="tag live">LIVE</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>The router, plainly</h3>
+
+<pre><code>screen work arrives
+        |
+        +-- DOM reachable over CDP?
+        |        |
+        |       YES  -->  Stagehand      (exact, CPU-speed, preferred)
+        |        |
+        |        NO  -->  OmniParser     (pixels, works on anything)
+        |
+        +-- either path returns THE SAME element schema
+        |
+        +-- an LLM reads that schema and picks an element
+        |
+        +-- act:  xen-computer-use  (click / type / hotkey)
+                  or Open Interpreter for shell-shaped steps</code></pre>
+
+<p>DOM and pixels are <strong>not competitors, they are a fallback chain</strong>. DOM is faster and exact but blind to canvas, shadow DOM, virtualized lists, and anything behind an overlay — where it does not just fail, it silently returns the wrong thing. Pixels always work because pixels are what a person sees. So: try DOM, fall back to pixels, never run both.</p>
+
+<p>The live router state is not a guess — <code>xen-do backends</code> reports what is actually wired versus missing, and prints which route it would take right now.</p>
+
+<pre><code>xen-do see                   what is on screen right now (auto-routes)
+xen-do see --url &lt;u&gt;         look at a page (DOM path)
+xen-do backends              what is actually wired vs missing
+xen-do see --force-vision    skip the DOM, go straight to pixels</code></pre>
+
+<div class="box note">
+  <h4>Honest latency — measured, not marketed</h4>
+  <p>OmniParser is a 0.23B captioner. On this M4 it took <strong>over 6 minutes to parse one screenshot</strong>. That is the real MPS number, measured tonight. The 200-600ms figures published anywhere else are GPU numbers and do not apply to this machine.</p>
+  <p>This is exactly why the DOM path is preferred and the vision path is the fallback. Do not design a loop that parses pixels every step.</p>
+</div>
+
+<div class="box good">
+  <h4>One thing that is easier here than expected</h4>
+  <p>This display is <strong>1:1, not Retina-scaled</strong> — a screenshot measures 1920x1080 against a 1920pt screen, scale factor exactly 1.00x. So there is <strong>no coordinate-doubling problem on this Mac</strong>. Pixels from the parser are pixels the clicker can use directly.</p>
+</div>
+
+<hr>
+
+<h2><span class="n">02</span>The common element schema</h2>
+
+<p>This is the integration contract. It is the reason the fusion works at all: both the DOM path and the pixel path return the same shape, so the model deciding what to click never needs to know which backend produced it.</p>
+
+<p>Coordinates come back as <strong>both</strong> normalized (0–1, as OmniParser emits) <strong>and</strong> absolute pixels, plus a precomputed center point. Converting at the call site is exactly where off-by-a-screen bugs come from, so it is done once, here.</p>
+
+<pre><code>{
+  "image":  "/Volumes/M4/.../data/shot.png",
+  "width":  1920,
+  "height": 1080,
+  "count":  47,
+  "elements": [
+    {
+      "id":          0,
+      "type":        "icon",
+      "interactive": true,
+      "text":        "Sign in",
+      "bbox_norm":   [0.8203, 0.0417, 0.9109, 0.0741],
+      "bbox_px":     [1575, 45, 1749, 80],
+      "center_px":   [1662, 62]
+    }
+  ]
+}</code></pre>
+
+<div class="tbl">
+<table>
+  <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>Index into this parse. Stable only within one parse — never cache it across screenshots.</td></tr>
+    <tr><td><code>type</code></td><td>Element class as the detector saw it (e.g. icon, text).</td></tr>
+    <tr><td><code>interactive</code></td><td>Whether the element is clickable. Filter on this before asking a model to choose.</td></tr>
+    <tr><td><code>text</code></td><td>The caption or extracted text — what the model actually reasons over.</td></tr>
+    <tr><td><code>bbox_norm</code></td><td>Normalized xyxy, 0–1. Resolution-independent.</td></tr>
+    <tr><td><code>bbox_px</code></td><td>Absolute pixel xyxy against <code>width</code>/<code>height</code>.</td></tr>
+    <tr><td><code>center_px</code></td><td><strong>The point to click.</strong> A clicker needs one point, not a box.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Because the schema <em>is</em> the interface, no extra "computer use agent" model is needed in the middle. An LLM reads the element list and picks an id; the actor clicks its <code>center_px</code>. That is the entire loop.</p>
+
+<pre><code>xen-omniparse                    parse the current screen
+xen-omniparse shot.png           parse an image file
+xen-omniparse --json             machine-readable
+xen-omniparse --find "sign in"   only matching elements</code></pre>
+
+<hr>
+
+<h2><span class="n">03</span>What was cut, and why</h2>
+
+<p class="lede">This is the most useful section on the page. Each of these looked good on paper. Each was checked and rejected for a specific, durable reason. Read this before re-litigating any of them.</p>
+
+<div class="cut">
+  <h3>Ferret-UI 2 <span class="tag cutx">CUT</span></h3>
+  <p><strong>The weights were never released.</strong> Apple shipped Ferret-UI 1 only, in October 2024. There is nothing to download.</p>
+  <p>Even if there were: the license is <strong>CC BY-NC 4.0 — research-only, non-commercial</strong>, which rules it out for any paid work. The repo has been dead for 22 months.</p>
+  <p class="why">Verdict: not a tradeoff. There is no artifact and no commercial license. Nothing to reconsider later.</p>
+</div>
+
+<div class="cut">
+  <h3>OS-Atlas <span class="tag cutx">CUT</span></h3>
+  <p>Two variants, both rejected for different reasons. <strong>OS-Atlas-Base duplicates the grounding OmniParser already does</strong> — pure overlap, no new capability. <strong>OS-Atlas-Pro</strong> is the actual action model, but it is roughly 15 months stale on a Qwen2-VL base, its code is CUDA-shaped, and there is no verified MPS path.</p>
+  <p>Licensed Apache-2.0, so it is legally fine. It is simply not worth the disk or the port.</p>
+  <p class="why">Verdict: legal, just redundant and stale. If you revisit grounding models, go to Holo2 instead — see below.</p>
+</div>
+
+<div class="cut">
+  <h3>Magentic-UI <span class="tag cutx">CUT</span></h3>
+  <p><strong>It is a browser orchestrator with its own multi-agent loop.</strong> It replaces a planner rather than plugging into one — wrong shape for a stack that already has a planner. It also requires Docker.</p>
+  <p>MIT licensed. And to correct a common misreading: <strong>its human-in-the-loop can be fully disabled</strong> — the paper says so explicitly. So the cut is about architectural shape, not about autonomy.</p>
+  <p class="why">Verdict: cut for shape, not for autonomy. Do not re-open this thinking the HITL was the blocker.</p>
+</div>
+
+<div class="cut">
+  <h3>OmniBox <span class="tag cutx">CUT</span></h3>
+  <p>It is a Windows 11 VM in Docker whose only purpose is to give an agent a machine to look at. <strong>qi already has the machine</strong> — this Mac, his real browsers, his real logged-in sessions.</p>
+  <p>It is also structurally impossible here: KVM-dependent, and Microsoft's own note says it runs only on Windows and Linux. This is Apple Silicon, and Docker is not installed.</p>
+  <p class="why">Verdict: solves a problem that does not exist here, and could not run if it did.</p>
+</div>
+
+<div class="box good">
+  <h4>The one you were not told about — Holo2</h4>
+  <p><strong>Holo2</strong> (H Company, Apache-2.0, November 2025, Qwen3-VL base) does <strong>both grounding and navigation</strong>. It is the best future upgrade path for this stack and the clear replacement to evaluate before any of the four cuts above get revisited.</p>
+  <p><strong>UNVERIFIED:</strong> Holo2 has not been installed or benchmarked on this machine. Its MPS performance on a 24GB M4 is unknown. Treat it as the next experiment, not as a working component.</p>
+</div>
+
+<h3>Licensing note worth keeping</h3>
+<p>The OmniParser <code>LICENSE</code> file is <strong>CC BY 4.0</strong> — the MIT badge in its README is wrong. Both permit commercial use, so the stack is clear for paid work. The practical difference: <strong>CC BY carries no patent grant.</strong> Verified by reading the LICENSE file directly tonight.</p>
+
+<hr>
+
+<h2><span class="n">04</span>No Docker. At all.</h2>
+
+<p>Docker is <strong>not installed</strong> on this machine and <strong>is not required</strong> by anything in the stack.</p>
+
+<p>Only two components ever wanted it — <strong>OmniBox</strong> and <strong>Magentic-UI</strong> — and both are cut, for reasons that have nothing to do with Docker. Cutting them removed the Docker dependency as a side effect, not as a compromise.</p>
+
+<div class="box">
+  <h4>The environment is the venv</h4>
+  <p>A Python venv at <code>vendor/OmniParser/.venv</code> holds everything the vision path needs. That is the whole isolation story. No daemon, no images, no layers, no VM.</p>
+  <p><strong>AGPL cleanup, verified:</strong> the AGPL <code>ultralytics</code> package was removed, and <code>import ultralytics</code> now fails with <code>ModuleNotFoundError</code> — which is the correct result. The MIT <code>icon_detect_v3</code> YOLOv9 detector is used instead, with the older Ultralytics-built <code>icon_detect</code> only as a fallback if v3 is absent.</p>
+</div>
+
+<hr>
+
+<h2><span class="n">05</span>Shell as a model provider</h2>
+
+<p class="lede">qi's own idea, and the sharpest thing in the stack.</p>
+
+<h3>Provider vs tool — the distinction that makes it work</h3>
+
+<p>A <strong>tool</strong> is something a model <em>decides</em> to call. There is still a model in the loop, still a prompt, still an integration written for each tool, still a chance the model declines.</p>
+
+<p>A <strong>provider</strong> is what the router routes <em>to</em>. It sits where an LLM would sit.</p>
+
+<p>OmniRoute already runs on this box at <code>127.0.0.1:20128</code> and routes to providers by URL. Registering the shell as one more provider means a request carrying <code>{"model": "tmux"}</code> sends the prompt straight to the shell and returns stdout as the assistant message.</p>
+
+<p><strong>The consequence:</strong> every OpenAI-compatible client on the machine becomes a remote control for this Mac, with <strong>zero per-tool integration</strong>. Any app with a base-URL field and a model picker — and there are dozens — inherits shell access by pointing at it. Nothing has to be taught what tools exist.</p>
+
+<pre><code>base_url = http://127.0.0.1:20129/v1
+model    = tmux        (or: shell)</code></pre>
+
+<p>Verified live tonight, all four:</p>
+<ul>
+  <li>The <code>/v1/models</code> endpoint lists <code>tmux</code> and <code>shell</code>, so client model pickers see them.</li>
+  <li>A request with no token returns <strong>401</strong>.</li>
+  <li>A real command executed and returned its output with <strong>exit code 0</strong>.</li>
+  <li><code>rm -rf /</code> was <strong>refused by the deny list</strong>.</li>
+</ul>
+
+<div class="box danger">
+  <h4>⚠ Security — this is remote code execution by design</h4>
+  <p>That is not a flaw, it is the entire feature. Which means the boundary has to be exact. Four controls, all live:</p>
+  <ul>
+    <li><strong>Loopback bind only.</strong> It binds <code>127.0.0.1</code> and <em>refuses</em> to bind anything else without an explicit override flag. Off-loopback, this endpoint hands the whole Mac to anyone who can reach the port.</li>
+    <li><strong>Bearer token required.</strong> Generated on first run, mode 0600, never printed and never written to logs. Compared with a constant-time check.</li>
+    <li><strong>Every command logged before it runs</strong> — append-only, so even a hang leaves a record.</li>
+    <li><strong>Deny list</strong> for the catastrophic cases: <code>rm -rf /</code>, filesystem format, raw disk write to <code>/dev/disk*</code>, fork bomb, <code>diskutil erase</code>, and credential exfiltration (reading a secret <em>and</em> piping it off-box in one line).</li>
+  </ul>
+  <p><strong>NEVER expose port 20129 publicly.</strong> Not through a tunnel, not through a reverse proxy, not "just for a minute."</p>
+  <p>Be honest about what the deny list is: a guard against catastrophic accidents, not a security boundary. Any list like it is trivially bypassed with base64, <code>$IFS</code>, or aliases. <strong>The token and the loopback bind are the actual boundary.</strong></p>
+</div>
+
+<div class="box">
+  <h4>Where the token lives</h4>
+  <p>File: <code>~/.xen/runtime/shell-model.token</code> — mode 0600, generated on first run.</p>
+  <p>The value is not printed here, is not in any log, and should never be pasted anywhere. Clients read it from that file at call time. If it is ever exposed, delete the file and restart the service to mint a new one.</p>
+</div>
+
+<h3>OmniRoute reachability</h3>
+<p>OmniRoute is on <code>127.0.0.1:20128</code>, loopback only. It is additionally reachable <strong>tailnet-only</strong> at <code>https://&lt;your-host&gt;.ts.net:8443</code> via <code>tailscale serve</code> — which is private network access, not public exposure. Its API key location is a config field; the value is not reproduced on this page.</p>
+
+<hr>
+
+<h2><span class="n">06</span>File map</h2>
+
+<p>Every path, so a rebuild is mechanical. Root is <code>/Volumes/M4/sync_/exedus/dev_/xen</code> — M4 is the only location; internal-disk copies are not the source of truth.</p>
+
+<div class="tbl">
+<table>
+  <thead><tr><th>Path</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr><td><code>bin/xen-do</code></td><td>The fused entry point. Routes DOM→Stagehand, pixels→OmniParser. <code>xen-do backends</code> reports real live status.</td></tr>
+    <tr><td><code>bin/xen-omniparse</code></td><td>Vision CLI. Returns the element schema with normalized + absolute coords and a center point.</td></tr>
+    <tr><td><code>bin/xen-shell-as-model.py</code></td><td>The shell-as-provider server. Serves <code>127.0.0.1:20129</code>.</td></tr>
+    <tr><td><code>bin/xen-browse</code></td><td>Presence of this file is what <code>xen-do backends</code> checks to confirm the act path is wired.</td></tr>
+    <tr><td><code>vendor/OmniParser/</code></td><td>Upstream OmniParser V2 checkout.</td></tr>
+    <tr><td><code>vendor/OmniParser/.venv/</code></td><td>The environment. This is what replaces Docker.</td></tr>
+    <tr><td><code>vendor/OmniParser/weights/</code></td><td>1.3GB of MIT weights.</td></tr>
+    <tr><td><code>vendor/OmniParser/weights/icon_detect_v3/model.pt</code></td><td>MIT YOLOv9 detector — preferred.</td></tr>
+    <tr><td><code>vendor/OmniParser/weights/icon_caption_florence/</code></td><td>Florence captioner. Note the rename from <code>icon_caption</code> after download.</td></tr>
+    <tr><td><code>vendor/OmniParser/LICENSE</code></td><td>CC BY 4.0 — the authoritative license, not the README badge.</td></tr>
+    <tr><td><code>data/</code></td><td>Where screenshots are captured before parsing.</td></tr>
+    <tr><td><code>logs/shell-as-model.jsonl</code></td><td>Append-only command audit, written before execution.</td></tr>
+    <tr><td><code>logs/omniparser-install.log</code></td><td>Install log — check here first if the venv is missing.</td></tr>
+    <tr><td><code>logs/omniparser-weights.log</code></td><td>Weights log — check here if the detector or captioner is missing.</td></tr>
+    <tr><td><code>~/.xen/runtime/shell-model.token</code></td><td>Bearer token, 0600. Location only — never print the value.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Rebuild from zero</h3>
+<ol>
+  <li>Clone OmniParser into <code>vendor/OmniParser</code>, create <code>.venv</code> inside it.</li>
+  <li>Download the weights: <code>huggingface-cli download microsoft/OmniParser-v2.0 --local-dir weights</code>, then <code>mv weights/icon_caption weights/icon_caption_florence</code>. The parser's own preflight prints this exact fix if the weights are absent.</li>
+  <li><strong>Uninstall <code>ultralytics</code></strong> from that venv — it is AGPL. Confirm with <code>python -c "import ultralytics"</code>; it must raise <code>ModuleNotFoundError</code>.</li>
+  <li>Grant the terminal <strong>Screen Recording</strong> permission in System Settings → Privacy &amp; Security, or <code>screencapture</code> silently returns nothing.</li>
+  <li>Run <code>xen-do backends</code>. It names what is missing and what the current route would be.</li>
+  <li>Start <code>xen-shell-as-model.py</code>. It mints the token on first run and prints its path, never its value.</li>
+</ol>
+
+<div class="box note">
+  <h4>One trap worth remembering — 64GB of RAM is not a GPU</h4>
+  <p>Not part of this stack, but it cost real time this week. <strong>System RAM is not VRAM.</strong> Standard Hetzner cloud instances have <strong>no GPU at all</strong>; their GPU line is a separate, pricier product. SSH to both Hetzner hosts rejects the current key (<code>Permission denied (publickey)</code>), verified today, and that box has 124GB of storage against 20–50GB of weights for a single video stack.</p>
+  <p>The single command that settles GPU presence on any box: <code>nvidia-smi</code>. No output means no GPU. Run it before believing any spec sheet.</p>
+</div>
+
+<footer>
+  <p><strong>Omni_Fused</strong> — the surviving stack, the rejected components, and the file map. Written 2026-08-01 21:00 EDT against a live system.</p>
+  <p>Claims are verified-on-this-machine unless explicitly marked UNVERIFIED. No secret values appear anywhere on this page — credential <em>locations</em> only.</p>
+</footer>
+
+</div>
+</body>
+</html>

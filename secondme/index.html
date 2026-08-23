@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Second Me — conversation map</title>
+<style>
+  :root{--bg:#0a0b10;--card:#12141c;--card2:#171a24;--line:#232838;--ink:#eef1f8;--dim:#8b93a8;
+    --cyan:#4fd6c9;--amber:#ffcf5c;--red:#ff6b6b;--grn:#5be89a;--vio:#a98bff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 18px 72px}
+  .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.2em;color:var(--dim);font-weight:600}
+  h1{font-size:27px;letter-spacing:-.02em;margin:5px 0 4px}h1 b{color:var(--vio)}
+  .sub{color:var(--dim);font-size:13.5px;margin-bottom:26px;max-width:62ch}
+  .sec{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:var(--dim);font-weight:600;margin:30px 0 12px}
+  .goal{background:linear-gradient(135deg,rgba(169,139,255,.1),rgba(79,214,201,.06));border:1px solid var(--line);border-radius:13px;padding:17px 19px;margin-bottom:8px}
+  .goal .t{font-weight:700;font-size:16px;color:var(--vio)}
+  .goal .d{color:var(--ink);font-size:14px;margin-top:5px}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:10px;position:relative;padding-left:52px}
+  .step .n{position:absolute;left:15px;top:15px;width:24px;height:24px;border-radius:7px;background:var(--card2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--cyan);font-variant-numeric:tabular-nums}
+  .step .t{font-weight:600;font-size:15px}
+  .step .d{color:var(--dim);font-size:13.5px;margin-top:3px}
+  .step .verdict{display:inline-block;margin-top:7px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:6px}
+  .rej{background:rgba(255,107,107,.13);color:var(--red)} .keep{background:rgba(91,232,154,.13);color:var(--grn)} .caveat{background:rgba(255,207,92,.13);color:var(--amber)}
+  .pick{background:var(--card2);border:1px solid var(--cyan);border-radius:13px;padding:18px 20px;margin-top:6px}
+  .pick .t{font-weight:700;font-size:16px;color:var(--cyan)}
+  .pick .d{font-size:14px;margin-top:6px;color:var(--ink)}
+  .pick ul{margin:9px 0 0 18px;color:var(--dim);font-size:13.5px}
+  .pick li{margin:3px 0}
+  .con{background:rgba(255,207,92,.08);border-left:3px solid var(--amber);border-radius:0 9px 9px 0;padding:11px 15px;margin:6px 0;font-size:14px}
+  .con b{color:var(--amber)}
+  .note{color:var(--dim);font-size:12px;margin-top:28px;padding-top:14px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Second Me · conversation map</div>
+  <h1>The <b>Omni-inbox</b> architecture debate</h1>
+  <div class="sub">Mapped from qi's Second Me conversation (with the Higinio Ochoa persona). The question, every path proposed, why each was kept or rejected, and where the reasoning landed.</div>
+
+  <div class="sec">The goal</div>
+  <div class="goal">
+    <div class="t">One inbox. Every channel. Live. His UI only.</div>
+    <div class="d">All social DMs + SMS + email + AI web-chats piped into ONE stream in one app qi builds — read AND reply from it, full history, always-on, never open another app again.</div>
+  </div>
+
+  <div class="sec">Paths proposed → verdict</div>
+  <div class="step"><span class="n">1</span><div class="t">Matrix + bridges</div><div class="d">Decentralized federation, bridges to nearly every protocol — the hacker default for control. qi already runs a mautrix stack.</div><span class="verdict caveat">Kept as option — wins only if decentralization/privacy is the priority</span></div>
+  <div class="step"><span class="n">2</span><div class="t">Self-hosted Mattermost / Rocket.Chat</div><div class="d">Less bridge overhead, tighter API, plays clean with n8n webhooks. Lose federation, gain simplicity + faster to stabilize.</div><span class="verdict caveat">Viable if he doesn't care about protocol politics — speed over federation</span></div>
+  <div class="step"><span class="n">3</span><div class="t">API-first: custom n8n aggregation layer</div><div class="d">Every platform with an API/webhook → routed into one stream. SMS via Twilio, email via catch-all parser, social DMs via notification webhooks. n8n normalizes to one payload.</div><span class="verdict rej">REJECTED by qi's hard constraint — "I can't depend on the API being available at all." APIs get revoked/rate-limited/don't exist.</span></div>
+  <div class="step"><span class="n">4</span><div class="t">Transport-layer interception (past-API)</div><div class="d">The pivot once API-first died. Capture BELOW the app: notification-scraping, DOM content-scripts, or wire-level.</div><span class="verdict keep">This is the direction — immune to API deprecation</span></div>
+
+  <div class="sec">The winning architecture</div>
+  <div class="pick">
+    <div class="t">A passive TAP, not a proxy</div>
+    <div class="d">qi's decider: "MITM must catch everything everywhere 24/7 but must NEVER disconnect me or my remotes." A proxy sits in the path = a failure point. A tap is out-of-band — if it dies, real traffic is untouched.</div>
+    <ul>
+      <li><b>Desktop:</b> SPAN port / network TAP at the managed switch → mirror ALL traffic to a capture box running <b>Suricata or Zeek</b> in IDS mode (passive). Extract message payloads from WebSocket/XHR → forward to n8n. Invisible, always-on, can't break the connection.</li>
+      <li><b>Mobile:</b> an always-on Android <b>NotificationListener</b> — pure observation, zero interference, catches even E2E messages after on-device decrypt → n8n webhook.</li>
+      <li><b>Desktop DMs / AI-chats:</b> browser-extension content-script watches the DOM for new messages (web.whatsapp, messenger, IG, AI-chat UIs), snags content + injects into the input field for outbound. Brittle to UI changes but API-proof.</li>
+      <li><b>Email:</b> the easy one — catch-all inbox + IMAP polling.</li>
+    </ul>
+  </div>
+
+  <div class="sec">Interesting points worth keeping</div>
+  <div class="con"><b>API dependency is the thing that kills these setups.</b> Building on platform goodwill = building on sand. Every resilient design here routes around the API entirely.</div>
+  <div class="con"><b>"Tap not proxy" is the whole insight.</b> The constraint (never interfere with live traffic) forces out-of-band capture — which is also more resilient. The constraint and the best design point the same way.</div>
+  <div class="con"><b>Reverse the protocol once, own it forever.</b> Wire-level interception is high upfront effort, but once mapped, no API shutdown can touch it.</div>
+  <div class="con"><b>Open question qi left:</b> custom dashboard for read+reply, vs aggregate-for-visibility with replies still native. He wants read+reply in ONE UI — so: full custom frontend.</div>
+
+  <div class="note">Mapped from qi's Second Me conversation. This is the reasoning captured — the build is a separate decision (qi's call). Plan also saved to Xen memory.</div>
+</div>
+</body>
+</html>

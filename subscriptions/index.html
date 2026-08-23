@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0e">
+<title>XLRD · Subscriptions</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --ink:#0a0a0e; --ink-2:#15151c; --ink-3:#1d1d27;
+  --oxblood:#5a0a14; --chrome:#c0c8d0; --chrome-hi:#e8eef2;
+  --iri-1:#7b2cbf; --iri-2:#06b6d4; --iri-3:#ec4899;
+  --cyan:#00e0ff; --amber:#ffb300; --text:#fbf9f4; --dim:#8a8a99;
+  --lift:0 1px 2px rgba(0,0,0,.6), 0 8px 24px rgba(0,0,0,.55), 0 0 0 1px rgba(192,200,208,.06) inset;
+  --grad-iri:conic-gradient(from 210deg,var(--iri-1),var(--iri-2),var(--cyan),var(--iri-3),var(--iri-1));
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--ink);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;min-height:100%}
+body{max-width:100%;overflow-x:hidden;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #1a1420 0%, var(--ink) 55%),
+    radial-gradient(60% 40% at 85% 20%, rgba(0,224,255,.10), transparent 60%),
+    radial-gradient(60% 45% at 10% 30%, rgba(123,44,191,.12), transparent 60%),
+    var(--ink);
+  background-attachment:fixed;}
+.wrap{max-width:1120px;margin:0 auto;padding:22px 16px 120px}
+.grain{position:fixed;inset:0;pointer-events:none;opacity:.04;z-index:1;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;z-index:2;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:12px}
+.sigil{width:34px;height:34px;border-radius:9px;background:var(--grad-iri);position:relative;box-shadow:0 0 24px rgba(0,224,255,.35), var(--lift)}
+.sigil::after{content:"";position:absolute;inset:2px;border-radius:7px;background:linear-gradient(160deg,var(--ink-3),#0c0c12)}
+.sigil::before{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--grad-iri);filter:blur(1px)}
+.brand b{font-weight:800;letter-spacing:.14em;font-size:13px}
+.brand span{display:block;font-size:10px;letter-spacing:.34em;color:var(--dim);margin-top:1px}
+.addbtn{border:0;cursor:pointer;color:#04121a;font-weight:800;letter-spacing:.05em;font-size:13px;padding:11px 18px;border-radius:12px;
+  background:linear-gradient(180deg,var(--chrome-hi),var(--chrome));box-shadow:var(--lift),0 0 0 1px rgba(0,224,255,.25);transition:transform .12s, box-shadow .2s}
+.addbtn:active{transform:translateY(1px)}
+.addbtn:hover{box-shadow:var(--lift),0 0 22px rgba(0,224,255,.4)}
+
+/* hero dashboard */
+.hero{position:relative;z-index:2;perspective:1400px;margin-bottom:26px}
+.dash{position:relative;border-radius:22px;padding:30px 28px;transform:rotateX(2.2deg);
+  background:linear-gradient(165deg,#191921,#0e0e14 70%);box-shadow:var(--lift),0 34px 70px rgba(0,0,0,.6);
+  border:1px solid rgba(192,200,208,.08);overflow:hidden}
+.dash::before{content:"";position:absolute;inset:-2px;border-radius:22px;padding:2px;background:var(--grad-iri);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.5;filter:blur(.3px)}
+.dash::after{content:"";position:absolute;width:280px;height:280px;right:-70px;top:-120px;border-radius:50%;background:var(--grad-iri);filter:blur(90px);opacity:.28}
+.dlabel{font-size:11px;letter-spacing:.32em;color:var(--dim);text-transform:uppercase}
+.big{font-weight:800;letter-spacing:-.02em;font-size:clamp(46px,13vw,80px);line-height:1;margin:6px 0 2px;
+  background:linear-gradient(180deg,#fff,var(--cyan) 60%,var(--iri-1));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 40px rgba(0,224,255,.15)}
+.per{color:var(--dim);font-size:13px;letter-spacing:.04em}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.stat{background:linear-gradient(180deg,rgba(29,29,39,.8),rgba(12,12,18,.8));border:1px solid rgba(192,200,208,.07);border-radius:13px;padding:13px 14px;text-align:center}
+.stat .v{font-size:clamp(18px,5.4vw,23px);font-weight:700;letter-spacing:-.01em}
+.stat .v.amber{color:var(--amber)} .stat .v.cyan{color:var(--cyan)}
+.stat .k{font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin-top:3px}
+.recon{margin-top:16px;font-size:11px;letter-spacing:.03em;color:var(--dim);text-align:center;line-height:1.6}
+.recon b{color:var(--chrome);font-weight:700}
+
+/* section head */
+.sh{display:flex;align-items:center;gap:10px;margin:34px 2px 14px;position:relative;z-index:2}
+.sh h2{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--chrome);font-weight:700;white-space:nowrap}
+.sh .line{flex:1;height:1px;background:linear-gradient(90deg,rgba(192,200,208,.22),transparent)}
+
+/* analytics row */
+.charts{display:grid;grid-template-columns:1fr;gap:15px;position:relative;z-index:2}
+@media(min-width:720px){.charts{grid-template-columns:0.85fr 1.15fr}}
+.panel{position:relative;border-radius:18px;padding:20px 20px 18px;background:linear-gradient(160deg,#181820,#0d0d14 74%);
+  box-shadow:var(--lift),0 20px 44px rgba(0,0,0,.5);border:1px solid rgba(192,200,208,.08);overflow:hidden}
+.panel h4{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:4px}
+.panel .sub{font-size:11px;color:var(--dim);margin-bottom:12px}
+
+/* donut */
+.donutwrap{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+.donut{position:relative;width:168px;height:168px;flex:0 0 auto}
+.donut .ctr{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.donut .ctr .n{font-size:24px;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(180deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.donut .ctr .l{font-size:9px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;margin-top:2px}
+.legend{display:flex;flex-direction:column;gap:9px;min-width:150px}
+.leg{display:flex;align-items:flex-start;gap:9px;font-size:12px}
+.leg .sw{width:11px;height:11px;border-radius:3px;flex:0 0 auto;margin-top:3px;box-shadow:0 0 8px rgba(0,224,255,.25)}
+.leg .nm{font-weight:600;color:var(--text)}
+.leg .mt{color:var(--dim);font-size:11px}
+
+/* monthly trend */
+.trend{position:relative}
+.tbars{display:flex;align-items:flex-end;gap:5px;height:120px;padding-top:6px}
+.tcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%;cursor:default}
+.tcol .bar{width:100%;max-width:20px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,rgba(192,200,208,.5),rgba(192,200,208,.14));transition:filter .2s;min-height:4px}
+.tcol.jul .bar{background:linear-gradient(180deg,var(--cyan),var(--iri-1));box-shadow:0 0 18px rgba(0,224,255,.4)}
+.tcol .ml{font-size:8.5px;letter-spacing:.04em;color:var(--dim);text-transform:uppercase}
+.tcol.jul .ml{color:var(--cyan);font-weight:700}
+.avgline{position:absolute;left:0;right:0;border-top:1px dashed rgba(255,179,0,.55);pointer-events:none}
+.avgtag{position:absolute;right:0;font-size:9px;letter-spacing:.08em;color:var(--amber);background:rgba(10,10,14,.7);padding:1px 5px;border-radius:5px;transform:translateY(-50%)}
+.tlegend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:10.5px;color:var(--dim)}
+.tlegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* renewal calendar strip */
+.calwrap{position:relative;z-index:2}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cd{aspect-ratio:1;border-radius:9px;background:linear-gradient(170deg,rgba(29,29,39,.7),rgba(12,12,18,.7));border:1px solid rgba(192,200,208,.06);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;font-size:11px;color:var(--dim)}
+.cd.pad{background:transparent;border:0}
+.cd .dn{font-weight:600}
+.cd.rnw{cursor:pointer;color:var(--text);border-color:rgba(0,224,255,.28);box-shadow:0 0 16px rgba(0,224,255,.12) inset}
+.cd.rnw .dn{color:var(--cyan)}
+.cd.rnw.multi{border-color:rgba(236,72,153,.4);box-shadow:0 0 16px rgba(236,72,153,.16) inset}
+.cd .dot{position:absolute;bottom:5px;display:flex;gap:2px}
+.cd .dot i{width:4px;height:4px;border-radius:50%;display:block}
+.cd.today{outline:1px solid rgba(255,179,0,.6);outline-offset:1px}
+.calhead{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+.calhead span{text-align:center;font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+
+/* cards grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;position:relative;z-index:2;perspective:1400px}
+.card{position:relative;border-radius:17px;padding:18px;background:linear-gradient(160deg,#191922,#0e0e15 72%);
+  box-shadow:var(--lift),0 20px 40px rgba(0,0,0,.5);border:1px solid rgba(192,200,208,.08);transition:transform .18s, box-shadow .25s;transform-style:preserve-3d;cursor:pointer;overflow:hidden}
+.card:hover{transform:translateY(-3px) rotateX(3deg);box-shadow:var(--lift),0 30px 54px rgba(0,0,0,.6)}
+.card .glow{position:absolute;width:150px;height:150px;right:-50px;top:-60px;border-radius:50%;filter:blur(60px);opacity:.4}
+.card .row1{display:flex;align-items:center;gap:12px;position:relative}
+.mono{width:42px;height:42px;border-radius:12px;flex:0 0 auto;display:grid;place-items:center;font-weight:800;font-size:16px;color:#04121a;box-shadow:var(--lift)}
+.card h3{font-size:15.5px;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.card .cat{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:2px}
+.card .cost{margin-top:16px;display:flex;align-items:baseline;gap:6px}
+.card .cost b{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.card .cost.unset b{color:var(--chrome);opacity:.55}
+.card .cost span{color:var(--dim);font-size:12px}
+.card .setp{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);border:1px solid rgba(0,224,255,.3);border-radius:14px;padding:3px 8px;margin-left:2px}
+.card .note{margin-top:7px;font-size:10.5px;color:var(--dim);font-style:italic;opacity:.8;min-height:1px}
+.card .meta{margin-top:12px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--dim)}
+.pill{font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:20px;border:1px solid rgba(192,200,208,.14);color:var(--chrome);white-space:nowrap}
+.pill.soon{border-color:rgba(255,179,0,.5);color:var(--amber);box-shadow:0 0 14px rgba(255,179,0,.18)}
+.empty{grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--dim);border:1px dashed rgba(192,200,208,.14);border-radius:16px}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(4,4,8,.72);backdrop-filter:blur(7px);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.scrim.on{display:flex}
+.sheet{width:100%;max-width:520px;background:linear-gradient(180deg,#16161e,#0d0d13);border:1px solid rgba(192,200,208,.1);border-radius:22px 22px 0 0;box-shadow:0 -30px 80px rgba(0,0,0,.7);padding:22px 20px 30px;position:relative}
+@media(min-width:560px){.scrim{align-items:center}.sheet{border-radius:22px}}
+.sheet h3{font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--chrome);margin-bottom:16px}
+.f{margin-bottom:13px}
+.f label{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.f input,.f select{width:100%;background:#0b0b11;border:1px solid rgba(192,200,208,.14);border-radius:11px;color:var(--text);padding:12px 13px;font-size:15px;font-family:inherit}
+.f input:focus,.f select:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,224,255,.16)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.sheet .go{width:100%;margin-top:8px;border:0;cursor:pointer;color:#04121a;font-weight:800;letter-spacing:.05em;padding:14px;border-radius:13px;background:linear-gradient(180deg,var(--chrome-hi),var(--chrome));box-shadow:var(--lift),0 0 20px rgba(0,224,255,.3)}
+.del{width:100%;margin-top:10px;background:transparent;border:1px solid rgba(90,10,20,.7);color:#e8909a;padding:12px;border-radius:12px;cursor:pointer;font-size:13px;letter-spacing:.08em}
+.x{position:absolute;top:16px;right:16px;background:transparent;border:0;color:var(--dim);font-size:22px;cursor:pointer;line-height:1}
+.foot{text-align:center;color:var(--dim);font-size:11px;letter-spacing:.12em;margin-top:40px;position:relative;z-index:2;line-height:1.7}
+.foot b{color:var(--chrome)}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="sigil"></div><div><b>SUBSCRIPTIONS</b><span>XLRD · CONTROL</span></div></div>
+    <button class="addbtn" onclick="openSheet()">+ ADD</button>
+  </div>
+
+  <div class="hero"><div class="dash">
+    <div class="dlabel">Yearly forecast</div>
+    <div class="big" id="yBig">$2,206</div>
+    <div class="per" id="perLine">across 14 active subscriptions · Jul 2026</div>
+    <div class="stats">
+      <div class="stat"><div class="v cyan" id="mAvg">$184</div><div class="k">Avg / month</div></div>
+      <div class="stat"><div class="v" id="count">14</div><div class="k">Active</div></div>
+      <div class="stat"><div class="v amber" id="julTot">$295.43</div><div class="k">July 2026</div></div>
+    </div>
+    <div class="recon" id="recon"></div>
+  </div></div>
+
+  <div class="sh"><h2>Spend Anatomy</h2><div class="line"></div></div>
+  <div class="charts">
+    <div class="panel">
+      <h4>By category</h4>
+      <div class="sub">Yearly spend · from Subscription Day</div>
+      <div class="donutwrap">
+        <div class="donut">
+          <svg viewBox="0 0 42 42" width="168" height="168" aria-label="Category donut">
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="#20202b" stroke-width="5.2"></circle>
+            <!-- Productivity 75% -->
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="url(#gProd)" stroke-width="5.2"
+              stroke-dasharray="75 25" stroke-dashoffset="25" stroke-linecap="butt" transform="rotate(-90 21 21)"></circle>
+            <!-- Other ~25% -->
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="#4a4a58" stroke-width="5.2"
+              stroke-dasharray="25 75" stroke-dashoffset="100" stroke-linecap="butt" transform="rotate(-90 21 21)"></circle>
+            <defs>
+              <linearGradient id="gProd" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#7b2cbf"/><stop offset="0.5" stop-color="#06b6d4"/><stop offset="1" stop-color="#00e0ff"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="ctr"><div><div class="n">$2,206</div><div class="l">per year</div></div></div>
+        </div>
+        <div class="legend">
+          <div class="leg"><span class="sw" style="background:linear-gradient(135deg,#7b2cbf,#00e0ff)"></span>
+            <span><span class="nm">Productivity — 75%</span><br><span class="mt">$1,655.74 / yr</span></span></div>
+          <div class="leg"><span class="sw" style="background:#4a4a58;box-shadow:none"></span>
+            <span><span class="nm">Other categories — 25%</span><br><span class="mt">~$550 / yr · split not itemized</span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h4>Monthly outflow</h4>
+      <div class="sub">July is renewal-heavy — actual vs the $184 average</div>
+      <div class="trend">
+        <div class="avgline" id="avgline" style="bottom:0"><span class="avgtag">avg $184</span></div>
+        <div class="tbars" id="tbars"></div>
+      </div>
+      <div class="tlegend">
+        <span><i style="background:linear-gradient(180deg,#00e0ff,#7b2cbf)"></i>July actual — $295.43</span>
+        <span><i style="background:rgba(192,200,208,.4)"></i>other months at $184 avg</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sh"><h2>July Renewal Radar</h2><div class="line"></div></div>
+  <div class="calwrap">
+    <div class="calhead"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+    <div class="cal" id="cal"></div>
+  </div>
+
+  <div class="sh"><h2>The Ledger</h2><div class="line"></div></div>
+  <div class="grid" id="grid"></div>
+
+  <div class="foot">XLRD · built by Xen · data lives only on this device<br>
+    <b>—</b> price marks a renewal we know the date of but not yet the amount · tap any card to set it</div>
+</div>
+
+<div class="scrim" id="scrim">
+  <div class="sheet">
+    <button class="x" onclick="closeSheet()">×</button>
+    <h3 id="sheetTitle">New Subscription</h3>
+    <input type="hidden" id="fId">
+    <div class="f"><label>Name</label><input id="fName" placeholder="iCloud+, Apple Music, Setapp…"></div>
+    <div class="frow">
+      <div class="f"><label>Amount (blank = unknown)</label><input id="fAmt" type="number" step="0.01" placeholder="—"></div>
+      <div class="f"><label>Cycle</label><select id="fCycle"><option value="monthly">Monthly</option><option value="yearly">Yearly</option><option value="weekly">Weekly</option></select></div>
+    </div>
+    <div class="frow">
+      <div class="f"><label>Next renewal</label><input id="fDate" type="date"></div>
+      <div class="f"><label>Category</label><select id="fCat">
+        <option>Productivity</option><option>AI</option><option>Cloud</option><option>Entertainment</option><option>Social</option><option>Community</option><option>Utilities</option><option>Health</option><option>Other</option>
+      </select></div>
+    </div>
+    <button class="go" onclick="saveSub()">SAVE</button>
+    <button class="del" id="delBtn" onclick="delSub()" style="display:none">Delete subscription</button>
+  </div>
+</div>
+
+<script>
+const K='xlrd_subs_v1';
+/* Ground-truth aggregates from qi's Subscription Day app (verified 2026-07-26). These are the ONLY authoritative dollar figures. */
+const AGG={year:2206,avgMonth:184,july:295.43,active:14,prodYear:1655.74,prodPct:75};
+
+/* Category accent colors (metallic-leaning). */
+const CATCOL={Productivity:'#00e0ff',AI:'#ffb300',Cloud:'#68adf5',Entertainment:'#ec4899',Social:'#c0c8d0',Community:'#2ecc71',Utilities:'#7b2cbf',Health:'#5ad1a0',Other:'#8a8a99'};
+
+/* Seed = July renewal calendar read off the app (logos identified by qi). Amounts are NULL unless truly known.
+   Brand colors sourced from Subscription Day's services.json where the service exists there. */
+const SEED=[
+  {id:'sd-suno',   name:'Suno',            amt:null, cycle:'monthly', date:'2026-07-02', cat:'AI',          col:'#e8b04b', note:'AI music'},
+  {id:'sd-pplx',   name:'Perplexity',      amt:null, cycle:'monthly', date:'2026-07-10', cat:'AI',          col:'#c1272d', note:'likely — crimson starburst logo'},
+  {id:'sd-x',      name:'X',               amt:null, cycle:'monthly', date:'2026-07-12', cat:'Social',      col:'#5a5a63', note:'Twitter / X'},
+  {id:'sd-fapp',   name:"Red 'F' app",     amt:null, cycle:'monthly', date:'2026-07-12', cat:'Other',      col:'#c0392b', note:'unidentified — tap to name'},
+  {id:'sd-comm1',  name:'Community app',   amt:null, cycle:'monthly', date:'2026-07-14', cat:'Community',   col:'#2ecc71', note:'green community icon'},
+  {id:'sd-comm2',  name:'Community app 2', amt:null, cycle:'monthly', date:'2026-07-14', cat:'Community',   col:'#27ae60', note:'green community icon'},
+  {id:'sd-purple', name:'Purple AI chat',  amt:null, cycle:'monthly', date:'2026-07-15', cat:'AI',          col:'#7b2cbf', note:'purple chat/AI — tap to name'},
+  {id:'sd-setapp', name:'Setapp',          amt:9.99, cycle:'monthly', date:'2026-07-21', cat:'Productivity',col:'#e6c3a5', note:'colorful-spiral logo'},
+  {id:'sd-clean',  name:'Cleanup app',     amt:null, cycle:'monthly', date:'2026-07-21', cat:'Utilities',   col:'#64c4f7', note:'system cleanup — tap to name'},
+  {id:'sd-amusic', name:'Apple Music',     amt:null, cycle:'monthly', date:'2026-07-23', cat:'Entertainment',col:'#fd495c', note:'Apple Music'},
+  {id:'sd-audio',  name:'Audio app',       amt:null, cycle:'monthly', date:'2026-07-23', cat:'Entertainment',col:'#06b6d4', note:'audio / waveform — tap to name'},
+  {id:'sd-icloud', name:'iCloud+ 2TB',     amt:9.99, cycle:'monthly', date:'2026-07-26', cat:'Cloud',       col:'#68adf5', note:'Apple iCloud+'}
+];
+
+let subs=load();
+function load(){
+  try{
+    const r=localStorage.getItem(K);
+    if(r){
+      const p=JSON.parse(r);
+      if(Array.isArray(p)&&p.length){
+        // Migrate off the legacy v1 auto-seed (only iCloud+Setapp placeholders) so real 2026-07 data lands.
+        const legacyOnly=p.every(s=>s&&(s.id==='seed-icloud'||s.id==='seed-setapp'));
+        if(!legacyOnly)return p;        // genuine / user-touched data — keep it
+      }
+    }
+  }catch(e){}
+  localStorage.setItem(K,JSON.stringify(SEED));
+  return SEED.map(s=>Object.assign({},s));
+}
+function save(){try{localStorage.setItem(K,JSON.stringify(subs));}catch(e){}}
+function monthly(s){if(s.amt==null||isNaN(s.amt))return null;return s.cycle==='yearly'?s.amt/12:s.cycle==='weekly'?s.amt*52/12:s.amt;}
+function money(n){return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function money0(n){return '$'+Math.round(n).toLocaleString('en-US');}
+function initials(n){return n.replace(/[^a-zA-Z0-9 ]/g,'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'•';}
+function colOf(s){return s.col||CATCOL[s.cat]||'#8a8a99';}
+function daysUntil(d){if(!d)return null;const t=new Date();t.setHours(0,0,0,0);let n=new Date(d+'T00:00:00');let dd=Math.round((n-t)/864e5);while(dd<0)dd+=30;return dd;}
+function fmtDay(d){if(!d)return '';const n=new Date(d+'T00:00:00');return n.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+const $=id=>document.getElementById(id);
+function esc(t){return(t||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
+
+/* ---- header (ground-truth aggregates + live reconciliation) ---- */
+function renderHeader(){
+  $('yBig').textContent=money0(AGG.year);
+  $('mAvg').textContent=money0(AGG.avgMonth);
+  $('count').textContent=AGG.active;
+  $('julTot').textContent=money(AGG.july);
+  $('perLine').textContent='across '+AGG.active+' active subscriptions · Jul 2026';
+  const priced=subs.filter(s=>monthly(s)!=null);
+  const acc=priced.reduce((a,s)=>a+monthly(s),0);
+  $('recon').innerHTML= priced.length
+    ? 'Reconciled so far — <b>'+money(acc)+'/mo</b> across <b>'+priced.length+'</b> of '+AGG.active+' priced. The rest show <b>—</b> until you set them.'
+    : 'No amounts set yet — every card shows <b>—</b>. Tap one to fill its real price.';
+}
+
+/* ---- monthly trend (real July spike vs real $184 avg baseline) ---- */
+function renderTrend(){
+  const months=['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul'];
+  const avg=AGG.avgMonth, jul=AGG.july, peak=jul*1.12;
+  const bars=$('tbars');bars.innerHTML='';
+  months.forEach(m=>{
+    const isJul=m==='Jul';const val=isJul?jul:avg;
+    const h=Math.max(6,Math.round(val/peak*100));
+    const col=document.createElement('div');col.className='tcol'+(isJul?' jul':'');
+    col.title=isJul?('July 2026 — '+money(jul)+' (actual)'):(m+' — projected at $184 avg');
+    col.innerHTML='<div class="bar" style="height:'+h+'%"></div><div class="ml">'+m+'</div>';
+    bars.appendChild(col);
+  });
+  // avg dashed line positioned relative to the 120px bar area (avg/peak of the 100% inner height, inside 6px top pad)
+  const frac=avg/peak; const lineBottom=Math.round(frac*(120-14)); // 14px reserved for month labels
+  $('avgline').style.bottom=(lineBottom+14)+'px';
+}
+
+/* ---- July renewal calendar strip ---- */
+function renderCal(){
+  const cal=$('cal');cal.innerHTML='';
+  const y=2026,mo=6; // July = month index 6
+  const first=new Date(y,mo,1).getDay(); // 0=Sun
+  const days=31;
+  const today=new Date();const isThisMonth=(today.getFullYear()===y&&today.getMonth()===mo);const td=today.getDate();
+  // map day-of-month -> subs renewing that day
+  const byDay={};
+  subs.forEach(s=>{if(!s.date)return;const n=new Date(s.date+'T00:00:00');if(n.getFullYear()===y&&n.getMonth()===mo){(byDay[n.getDate()]=byDay[n.getDate()]||[]).push(s);}});
+  for(let i=0;i<first;i++){const p=document.createElement('div');p.className='cd pad';cal.appendChild(p);}
+  for(let d=1;d<=days;d++){
+    const cell=document.createElement('div');const list=byDay[d]||[];
+    cell.className='cd'+(list.length?' rnw':'')+(list.length>1?' multi':'')+(isThisMonth&&d===td?' today':'');
+    let dots='';
+    if(list.length){dots='<div class="dot">'+list.slice(0,3).map(s=>'<i style="background:'+colOf(s)+'"></i>').join('')+'</div>';}
+    cell.innerHTML='<div class="dn">'+d+'</div>'+dots;
+    if(list.length){cell.title=list.map(s=>s.name).join(', ')+' · '+fmtDay(list[0].date);cell.onclick=()=>openSheet(list[0].id);}
+    cal.appendChild(cell);
+  }
+}
+
+/* ---- ledger cards ---- */
+function renderGrid(){
+  const grid=$('grid');grid.innerHTML='';
+  if(!subs.length){grid.innerHTML='<div class="empty">No subscriptions yet.<br>Tap <b>+ ADD</b> to start tracking what\'s bleeding you.</div>';return;}
+  subs.slice().sort((a,b)=>{const ma=monthly(a),mb=monthly(b);if(ma==null&&mb==null)return (daysUntil(a.date)??999)-(daysUntil(b.date)??999);if(ma==null)return 1;if(mb==null)return -1;return mb-ma;}).forEach(s=>{
+    const col=colOf(s);const d=daysUntil(s.date);const soon=d!=null&&d<=7;const m=monthly(s);
+    const el=document.createElement('div');el.className='card';el.onclick=()=>openSheet(s.id);
+    const cost = m!=null
+      ? '<div class="cost"><b>'+money(s.amt)+'</b><span>/ '+(s.cycle==='monthly'?'mo':s.cycle==='yearly'?'yr':'wk')+'</span></div>'
+      : '<div class="cost unset"><b>—</b><span class="setp">set price</span></div>';
+    const metaLeft = m!=null ? money(m)+'/mo effective' : (s.date?'renews '+fmtDay(s.date):'no date set');
+    el.innerHTML='<div class="glow" style="background:'+col+'"></div>'
+      +'<div class="row1"><div class="mono" style="background:linear-gradient(160deg,#e8eef2,'+col+')">'+initials(s.name)+'</div>'
+      +'<div><h3>'+esc(s.name)+'</h3><div class="cat">'+esc(s.cat)+'</div></div></div>'
+      +cost
+      +(s.note?'<div class="note">'+esc(s.note)+'</div>':'')
+      +'<div class="meta"><span>'+metaLeft+'</span>'+(d!=null?'<span class="pill '+(soon?'soon':'')+'">'+d+'d left</span>':'<span class="pill">no date</span>')+'</div>';
+    grid.appendChild(el);
+  });
+}
+
+function render(){renderHeader();renderTrend();renderCal();renderGrid();}
+
+/* ---- modal ---- */
+function openSheet(id){
+  $('scrim').classList.add('on');
+  if(id){const s=subs.find(x=>x.id===id);$('sheetTitle').textContent='Edit';$('fId').value=s.id;$('fName').value=s.name;$('fAmt').value=(s.amt==null?'':s.amt);$('fCycle').value=s.cycle||'monthly';$('fDate').value=s.date||'';$('fCat').value=s.cat||'Other';$('delBtn').style.display='block';}
+  else{$('sheetTitle').textContent='New Subscription';$('fId').value='';$('fName').value='';$('fAmt').value='';$('fCycle').value='monthly';$('fDate').value='';$('fCat').value='Productivity';$('delBtn').style.display='none';setTimeout(()=>$('fName').focus(),80);}
+}
+function closeSheet(){$('scrim').classList.remove('on');}
+$('scrim').addEventListener('click',e=>{if(e.target===$('scrim'))closeSheet();});
+function saveSub(){
+  const name=$('fName').value.trim();if(!name){$('fName').focus();return;}
+  const raw=$('fAmt').value.trim();const amt=raw===''?null:parseFloat(raw);
+  if(raw!==''&&!(amt>=0)){$('fAmt').focus();return;}
+  const id=$('fId').value;const prev=subs.find(x=>x.id===id);
+  const rec={id:id||('s'+Date.now()),name,amt:(amt==null?null:amt),cycle:$('fCycle').value,date:$('fDate').value,cat:$('fCat').value,
+             col:prev?prev.col:(CATCOL[$('fCat').value]||null),note:prev?prev.note:''};
+  const i=subs.findIndex(x=>x.id===rec.id);if(i>=0)subs[i]=rec;else subs.push(rec);
+  save();render();closeSheet();
+}
+function delSub(){const id=$('fId').value;subs=subs.filter(x=>x.id!==id);save();render();closeSheet();}
+
+render();
+if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
+</script>
+</body>
+</html>

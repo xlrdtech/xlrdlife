@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Freedom Number — find your baseline, set your price</title>
+<meta name="description" content="Separate the cost to do you from the cost to do business. Find your magic number, your freedom number, and the price floor you should never quote below.">
+<style>
+:root{
+  --bg:#07080a; --bg2:#0c0e12; --card:#101318; --line:#1d222b;
+  --ink:#e9edf4; --dim:#8b95a7; --faint:#5b6475;
+  --gold:#d8b45f; --gold2:#f2dc9a; --cyan:#5fd8d0; --rose:#e07a8b;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{background:
+  radial-gradient(1100px 620px at 50% -180px,rgba(216,180,95,.10),transparent 62%),
+  radial-gradient(760px 460px at 92% 8%,rgba(95,216,208,.06),transparent 60%),
+  var(--bg);
+  overflow-x:hidden}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px;text-align:center}
+header{padding:72px 0 26px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--faint);margin:0 0 20px}
+h1{margin:0;font-size:clamp(38px,8vw,74px);line-height:.98;font-weight:800;letter-spacing:-.03em;
+  background:linear-gradient(174deg,#fff 4%,var(--gold2) 42%,var(--gold) 66%,#8e7538 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{margin:22px auto 0;max-width:620px;font-size:clamp(15px,2.4vw,18px);line-height:1.62;color:var(--dim)}
+.rule{width:60px;height:1px;margin:38px auto;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+
+h2{font-size:clamp(21px,4vw,29px);letter-spacing:-.02em;margin:0 0 12px;font-weight:750}
+h2 .n{font-family:var(--mono);font-size:.52em;color:var(--gold);vertical-align:middle;margin-right:12px;letter-spacing:.16em}
+section{padding:36px 0}
+p{line-height:1.68;color:var(--dim);max-width:640px;margin:0 auto 15px;font-size:15.5px}
+strong{color:var(--ink);font-weight:650}
+em{color:var(--gold2);font-style:normal}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:26px 0;text-align:left}
+@media(max-width:680px){.two{grid-template-columns:1fr}}
+.card{background:linear-gradient(168deg,var(--card),var(--bg2));border:1px solid var(--line);border-radius:15px;padding:22px}
+.card h3{margin:0 0 6px;font-size:15px;letter-spacing:.01em}
+.card .tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:11px}
+.card ul{margin:10px 0 0;padding-left:17px;color:var(--dim);font-size:13.5px;line-height:1.78}
+.card.you{border-color:rgba(95,216,208,.24)}
+.card.you .tag{color:var(--cyan)}
+.card.biz{border-color:rgba(224,122,139,.22)}
+.card.biz .tag{color:var(--rose)}
+
+/* calculator */
+.calc{background:linear-gradient(168deg,#11151b,#0a0c10);border:1px solid var(--line);border-radius:19px;padding:26px 22px;margin:30px 0;text-align:left}
+.calc h3{margin:0 0 4px;font-size:17px;text-align:center}
+.calc .hint{font-size:12.5px;color:var(--faint);text-align:center;margin:0 0 22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:13px}
+label{display:block;font-size:11px;font-family:var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+input{width:100%;background:#080a0d;border:1px solid var(--line);color:var(--ink);border-radius:9px;
+  padding:11px 12px;font-family:var(--mono);font-size:14.5px;outline:none}
+input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(216,180,95,.11)}
+.calc .sep{height:1px;background:var(--line);margin:24px 0}
+
+.out{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:12px}
+.stat{background:#0a0d11;border:1px solid var(--line);border-radius:12px;padding:16px 15px}
+.stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:8px;line-height:1.5}
+.stat .v{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.stat .note{font-size:11.5px;color:var(--faint);margin-top:7px;line-height:1.5}
+.stat.hero{grid-column:1/-1;border-color:rgba(216,180,95,.34);background:linear-gradient(150deg,rgba(216,180,95,.09),#0a0d11 65%)}
+.stat.hero .v{font-size:clamp(34px,7vw,50px);
+  background:linear-gradient(172deg,#fff,var(--gold2) 48%,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat.mid{border-color:rgba(95,216,208,.26)}
+.stat.mid .v{color:var(--cyan)}
+
+table{width:100%;border-collapse:collapse;margin:22px 0;font-size:13.5px;text-align:left;display:block;overflow-x:auto;white-space:nowrap}
+th,td{padding:10px 13px;border-bottom:1px solid var(--line)}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);font-weight:500}
+td{color:var(--dim)}
+td:first-child{color:var(--ink);font-weight:600}
+code{font-family:var(--mono);font-size:12.5px;color:var(--gold2);background:rgba(216,180,95,.08);padding:2px 6px;border-radius:5px}
+
+.files{display:flex;flex-wrap:wrap;gap:11px;justify-content:center;margin:26px 0}
+.files a{display:inline-flex;align-items:center;gap:9px;background:#0c0f14;border:1px solid var(--line);
+  color:var(--ink);text-decoration:none;padding:12px 18px;border-radius:10px;font-family:var(--mono);font-size:12.5px;transition:.16s}
+.files a:hover{border-color:var(--gold);color:var(--gold2);transform:translateY(-1px)}
+.files a span{color:var(--faint);font-size:11px}
+
+.callout{border-left:2px solid var(--gold);background:rgba(216,180,95,.05);padding:16px 20px;border-radius:0 11px 11px 0;
+  margin:24px auto;max-width:640px;text-align:left}
+.callout p{margin:0;font-size:14.5px;color:var(--dim);max-width:none}
+footer{padding:56px 0 66px;color:var(--faint);font-size:12px;font-family:var(--mono);letter-spacing:.1em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Personal + Business Financial Baseline</p>
+  <h1>The Freedom<br>Number</h1>
+  <p class="sub">Two numbers run your whole financial life. The <em>magic number</em> is what it costs to survive. The <em>freedom number</em> is what it costs to be free. Everything else — your pricing, your targets, your goals — is arithmetic once you know both.</p>
+  <div class="rule"></div>
+</header>
+
+<section>
+  <h2><span class="n">01</span>Split the cost in two</h2>
+  <p>Most people fail here before they start. They add every expense into one pile, get a scary number, and learn nothing from it. Your money has two jobs, and they need separate books.</p>
+  <div class="two">
+    <div class="card you">
+      <span class="tag">Bucket one</span>
+      <h3>The cost to do you</h3>
+      <p style="margin:0;font-size:13.5px">What it costs to keep <strong>your life</strong> running if the business went quiet tomorrow.</p>
+      <ul>
+        <li>Housing, utilities, phone</li>
+        <li>Groceries — food, not restaurants</li>
+        <li>Transport: payment, insurance, fuel, repair reserve</li>
+        <li>Health: premium, prescriptions, copay reserve</li>
+        <li>Minimum debt payments only</li>
+      </ul>
+    </div>
+    <div class="card biz">
+      <span class="tag">Bucket two</span>
+      <h3>The cost to do business</h3>
+      <p style="margin:0;font-size:13.5px">What it costs to keep <strong>the machine</strong> running before you pay yourself a dime.</p>
+      <ul>
+        <li>Software, hosting, domains, AI spend</li>
+        <li>Insurance, licenses, registration</li>
+        <li>Equipment replacement reserve</li>
+        <li>Marketing that is actually producing leads</li>
+        <li>Processing fees, bank fees, contractors</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout">
+    <p><strong>The rule that makes this work:</strong> every line gets marked essential or not. Essential means the lights go off without it. Restaurants are not essential. Groceries are. That single column is what separates your magic number from your freedom number — and almost nobody draws it.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Run your numbers</h2>
+  <p>Defaults below are a realistic solo-operator profile. Replace them with yours — every output recalculates as you type.</p>
+
+  <div class="calc">
+    <h3>Inputs</h3>
+    <p class="hint">Monthly figures. Annual costs divided by twelve.</p>
+    <div class="grid">
+      <div><label>Personal — essential</label><input id="pe" type="number" value="4335" step="10"></div>
+      <div><label>Business — essential</label><input id="be" type="number" value="590" step="10"></div>
+      <div><label>Lifestyle — non-essential</label><input id="ls" type="number" value="858" step="10"></div>
+      <div><label>Combined tax rate</label><input id="tx" type="number" value="0.28" step="0.01"></div>
+      <div><label>Savings rate target</label><input id="sv" type="number" value="0.15" step="0.01"></div>
+      <div><label>Profit margin target</label><input id="pm" type="number" value="0.20" step="0.01"></div>
+      <div><label>Billable hours / month</label><input id="bh" type="number" value="80" step="5"></div>
+      <div><label>Average ticket</label><input id="at" type="number" value="1500" step="50"></div>
+      <div><label>Close rate</label><input id="cr" type="number" value="0.30" step="0.05"></div>
+      <div><label>Cash on hand</label><input id="ch" type="number" value="0" step="500"></div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="out">
+      <div class="stat mid"><span class="k">Magic number — survival</span><div class="v" id="o_magic">—</div><div class="note">Below this you are going backwards, no matter how busy you look.</div></div>
+      <div class="stat hero"><span class="k">Freedom number — monthly</span><div class="v" id="o_free">—</div><div class="note">Baseline + lifestyle + tax reserve + savings. What the business must clear for the life to work without strain.</div></div>
+      <div class="stat"><span class="k">Tax reserve</span><div class="v" id="o_tax">—</div><div class="note">Grossed up, not multiplied. This is the mistake that ends businesses in April.</div></div>
+      <div class="stat"><span class="k">Savings target</span><div class="v" id="o_sav">—</div><div class="note">Paying yourself forward.</div></div>
+      <div class="stat"><span class="k">Revenue target — monthly</span><div class="v" id="o_rev">—</div><div class="note">Freedom number with profit on top.</div></div>
+      <div class="stat"><span class="k">Revenue target — weekly</span><div class="v" id="o_wk">—</div><div class="note">The number you check on Fridays.</div></div>
+      <div class="stat"><span class="k">Price floor — hourly</span><div class="v" id="o_hr">—</div><div class="note">Never quote below this. It is a loss wearing an invoice.</div></div>
+      <div class="stat"><span class="k">Deals / month needed</span><div class="v" id="o_dl">—</div><div class="note">At your average ticket.</div></div>
+      <div class="stat"><span class="k">Qualified leads / month</span><div class="v" id="o_ld">—</div><div class="note">Your real marketing target, not a vibe.</div></div>
+      <div class="stat"><span class="k">Runway</span><div class="v" id="o_rw">—</div><div class="note">Months of survival on cash alone.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>The formulas</h2>
+  <p>Paste these straight into Google Sheets or Excel against the CSV columns below. Nothing here is proprietary — it is arithmetic most people were simply never shown.</p>
+  <table>
+    <tr><th>Metric</th><th>Formula</th><th>Why it is built that way</th></tr>
+    <tr><td>Cost to do you</td><td><code>SUMIFS(monthly,scope,"personal",essential,"yes")</code></td><td>Essentials only — that is the whole point of the column</td></tr>
+    <tr><td>Cost to do business</td><td><code>SUMIFS(monthly,scope,"business",essential,"yes")</code></td><td>Before owner pay, always</td></tr>
+    <tr><td>Magic number</td><td><code>= you + business</code></td><td>Survival line</td></tr>
+    <tr><td>Lifestyle</td><td><code>SUMIFS(monthly,essential,"no")</code></td><td>Both scopes together</td></tr>
+    <tr><td>Tax reserve</td><td><code>= base * rate / (1 - rate)</code></td><td><strong>Gross-up.</strong> Multiplying by the rate under-reserves every time</td></tr>
+    <tr><td>Savings target</td><td><code>= base * savings_rate</code></td><td>A line item, not leftovers</td></tr>
+    <tr><td>Freedom number</td><td><code>= base + tax + savings</code></td><td>The real target</td></tr>
+    <tr><td>Revenue target</td><td><code>= freedom / (1 - margin)</code></td><td>Profit comes off the top, not the bottom</td></tr>
+    <tr><td>Price floor hourly</td><td><code>= revenue_target / billable_hours</code></td><td>Billable capacity, not hours worked</td></tr>
+    <tr><td>Project floor</td><td><code>= floor_hourly * est_hours * (1 + buffer)</code></td><td>Scope creep is a certainty, price it</td></tr>
+    <tr><td>Deals / month</td><td><code>= revenue_target / avg_ticket</code></td><td></td></tr>
+    <tr><td>Leads / month</td><td><code>= deals / close_rate</code></td><td>Turns revenue into an activity target</td></tr>
+    <tr><td>Runway</td><td><code>= cash / magic_number</code></td><td>Magic, not freedom — survival is what runway measures</td></tr>
+  </table>
+  <div class="callout">
+    <p><strong>The gross-up is the one to understand.</strong> If you need $5,000 to live and tax is 28%, you do not need $6,400 — you need <code>5000 / 0.72 = $6,944</code>. Reserving 28% <em>of the need</em> instead of grossing up leaves you 544 dollars short every single month, and you will not notice until the bill arrives.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>The data files</h2>
+  <p>Import to Google Sheets or Excel, keep the column names, and any accounting or bookkeeping system can read them straight in. <strong>Start with the BLANK files</strong> — full category taxonomy, every amount at zero, ready for your real numbers. The EXAMPLE files carry the worked solo-operator profile used by the calculator above, so you can see the shape of a finished sheet.</p>
+  <div class="files">
+    <a href="csv/01-expenses-BLANK.csv" download>01-expenses-BLANK.csv <span>40 categories · $0</span></a>
+    <a href="csv/02-income-BLANK.csv" download>02-income-BLANK.csv <span>5 rows · $0</span></a>
+    <a href="csv/03-config.csv" download>03-config.csv <span>the knobs</span></a>
+    <a href="csv/04-summary.csv" download>04-summary.csv <span>13 metrics</span></a>
+    <a href="csv/01-expenses-EXAMPLE.csv" download>01-expenses-EXAMPLE.csv <span>worked example</span></a>
+    <a href="csv/02-income-EXAMPLE.csv" download>02-income-EXAMPLE.csv <span>worked example</span></a>
+  </div>
+  <p style="font-size:13.5px;color:var(--faint)">Schema: <code>scope</code> personal or business · <code>essential</code> yes or no · <code>cadence</code> monthly, annual, weekly, variable · <code>monthly_equivalent</code> the normalized figure every formula reads.</p>
+</section>
+
+<section>
+  <h2><span class="n">05</span>The metrics that run the machine</h2>
+  <p>The freedom number tells you what to <strong>clear</strong>. These tell you whether the machine that clears it is actually healthy. Same rule as above — replace the defaults with yours and every output moves as you type.</p>
+
+  <div class="calc">
+    <h3>Inputs — the operating picture</h3>
+    <p class="hint">Monthly figures unless the label says otherwise.</p>
+    <div class="grid">
+      <div><label>Gross revenue</label><input id="k_gr" type="number" value="12000" step="100"></div>
+      <div><label>COGS — cost of goods sold</label><input id="k_cg" type="number" value="3000" step="100"></div>
+      <div><label>Overhead — fixed</label><input id="k_oh" type="number" value="4500" step="100"></div>
+      <div><label>Marketing + sales spend</label><input id="k_ms" type="number" value="1200" step="50"></div>
+      <div><label>New customers / month</label><input id="k_nc" type="number" value="4" step="1"></div>
+      <div><label>Average ticket</label><input id="k_at" type="number" value="1500" step="50"></div>
+      <div><label>Customer lifespan — months</label><input id="k_cl" type="number" value="9" step="1"></div>
+      <div><label>Head count — self included</label><input id="k_hc" type="number" value="1" step="1"></div>
+      <div><label>Owner equity split</label><input id="k_es" type="number" value="1.00" step="0.05"></div>
+      <div><label>RevShare rate</label><input id="k_rs" type="number" value="0.10" step="0.01"></div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="out">
+      <div class="stat hero"><span class="k">Bottom line — net</span><div class="v" id="k_bl">—</div><div class="note">Gross revenue minus COGS minus overhead. The only number that is actually yours.</div></div>
+      <div class="stat mid"><span class="k">Gross revenue income · profit</span><div class="v" id="k_gp">—</div><div class="note">Revenue minus COGS, before overhead. Gross profit is capacity; net is reality.</div></div>
+      <div class="stat mid"><span class="k">Gross margin</span><div class="v" id="k_gm">—</div><div class="note">The single most load-bearing percentage in the business. Every metric below leans on it.</div></div>
+      <div class="stat"><span class="k">COGS — % of revenue</span><div class="v" id="k_cp">—</div><div class="note">Direct cost of delivery. Rises quietly as you discount.</div></div>
+      <div class="stat"><span class="k">CAC — customer acquisition cost</span><div class="v" id="k_cac">—</div><div class="note">Marketing and sales spend divided by new customers won.</div></div>
+      <div class="stat"><span class="k">LGTV — lifetime gross transaction value</span><div class="v" id="k_lgtv">—</div><div class="note">Everything a customer runs through you across their life. Gross, before cost.</div></div>
+      <div class="stat"><span class="k">LTV — lifetime value</span><div class="v" id="k_ltv">—</div><div class="note">LGTV at your gross margin. This is the figure CAC must be compared against — never the gross one.</div></div>
+      <div class="stat"><span class="k">LTV : CAC ratio</span><div class="v" id="k_ratio">—</div><div class="note">Under 1 you pay to lose customers. 3 or better is a business that can buy growth.</div></div>
+      <div class="stat"><span class="k">CAC payback</span><div class="v" id="k_pb">—</div><div class="note">Months of margin to earn back one acquisition. Cash dies here, not on paper.</div></div>
+      <div class="stat"><span class="k">BEP — break-even point</span><div class="v" id="k_bep">—</div><div class="note">Overhead divided by gross margin — not by revenue. That error makes break-even look closer than it is.</div></div>
+      <div class="stat"><span class="k">BEP — deals to break even</span><div class="v" id="k_bepu">—</div><div class="note">At your average ticket.</div></div>
+      <div class="stat"><span class="k">Overhead — % of revenue</span><div class="v" id="k_ohp">—</div><div class="note">Fixed cost load. This is what scale is supposed to shrink.</div></div>
+      <div class="stat"><span class="k">Rev per head — self included</span><div class="v" id="k_rph">—</div><div class="note">Counting yourself is the whole point. A team of one still has a per-head number.</div></div>
+      <div class="stat"><span class="k">Profit per head</span><div class="v" id="k_pph">—</div><div class="note">Whether each seat, yours included, actually pays for itself.</div></div>
+      <div class="stat"><span class="k">Profitability income equity split</span><div class="v" id="k_eq">—</div><div class="note">Your share of the bottom line at the stated split.</div></div>
+      <div class="stat"><span class="k">RevShare</span><div class="v" id="k_rev">—</div><div class="note">Off gross revenue, not off profit — which is why the rate matters so much.</div></div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>Metric</th><th>Formula</th><th>Why it is built that way</th></tr>
+    <tr><td>Gross profit</td><td><code>= gross_revenue - cogs</code></td><td>Before overhead, always</td></tr>
+    <tr><td>Gross margin</td><td><code>= (gross_revenue - cogs) / gross_revenue</code></td><td>Every ratio below depends on it</td></tr>
+    <tr><td>Bottom line</td><td><code>= gross_revenue - cogs - overhead</code></td><td>Net. What survives the month</td></tr>
+    <tr><td>CAC</td><td><code>= (marketing + sales) / new_customers</code></td><td>Full spend, not just ad cost</td></tr>
+    <tr><td>LGTV</td><td><code>= avg_ticket * lifespan_months</code></td><td>Gross transaction value across the relationship</td></tr>
+    <tr><td>LTV</td><td><code>= LGTV * gross_margin</code></td><td><strong>Margin, not revenue.</strong> Comparing gross LGTV to CAC flatters every business</td></tr>
+    <tr><td>LTV : CAC</td><td><code>= LTV / CAC</code></td><td>Under 1 is a leak; 3+ buys growth safely</td></tr>
+    <tr><td>CAC payback</td><td><code>= CAC / (avg_ticket * gross_margin)</code></td><td>Measured in months of margin, not revenue</td></tr>
+    <tr><td>BEP revenue</td><td><code>= overhead / gross_margin</code></td><td>Dividing by revenue instead of margin understates break-even</td></tr>
+    <tr><td>Rev per head</td><td><code>= gross_revenue / headcount</code></td><td>Self included — a solo operator still has one</td></tr>
+    <tr><td>Overhead load</td><td><code>= overhead / gross_revenue</code></td><td>The percentage scale is supposed to reduce</td></tr>
+    <tr><td>Equity split</td><td><code>= bottom_line * split_rate</code></td><td>Off net, after the machine is paid</td></tr>
+    <tr><td>RevShare</td><td><code>= gross_revenue * revshare_rate</code></td><td>Off gross — it is paid before you profit</td></tr>
+  </table>
+
+  <div class="callout">
+    <p><strong>LTV against CAC is where most operators fool themselves.</strong> Comparing lifetime <em>gross</em> value to acquisition cost makes almost any business look fundable. Run LTV at your real gross margin and the same business often reads under 3:1 — which is the truth you can act on before it costs you a quarter.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>The operating discipline</h2>
+  <p>These are not numbers, they are the practices that keep the numbers trustworthy. Skip them and every figure above becomes a guess with a dollar sign in front of it.</p>
+  <div class="two">
+    <div class="card you">
+      <span class="tag">ABCS</span>
+      <h3>Accounting · Bookkeeping · Calculations · Coordination · Schedules · Spreadsheets</h3>
+      <p style="margin:0;font-size:13.5px">The template stack. One place where every figure is entered once and read everywhere, so no two documents disagree.</p>
+    </div>
+    <div class="card biz">
+      <span class="tag">RevOps</span>
+      <h3>Revenue operations</h3>
+      <p style="margin:0;font-size:13.5px">The wiring between marketing, sales and delivery — so a lead, a deal and an invoice are the same object at three stages, not three systems that never reconcile.</p>
+    </div>
+    <div class="card you">
+      <span class="tag">Financial investigation</span>
+      <h3>Needs evaluation — assets and liabilities</h3>
+      <p style="margin:0;font-size:13.5px">A full look at monetary and economic position before any decision: what is owned, what is owed, what is actually producing, and what is quietly consuming.</p>
+    </div>
+    <div class="card biz">
+      <span class="tag">Charter of accounts</span>
+      <h3>The account taxonomy</h3>
+      <p style="margin:0;font-size:13.5px">Every dollar has exactly one correct home. Built once, before volume — retrofitting a chart of accounts across a year of transactions is a month you do not get back.</p>
+    </div>
+    <div class="card you">
+      <span class="tag">Reconciliation</span>
+      <h3>Books against bank</h3>
+      <p style="margin:0;font-size:13.5px">Monthly, without exception. Unreconciled books are not records, they are estimates — and they fail the moment a lender or an auditor reads them.</p>
+    </div>
+    <div class="card biz">
+      <span class="tag">"Reasonable salary"</span>
+      <h3>Owner compensation</h3>
+      <p style="margin:0;font-size:13.5px">A defensible wage for the work actually performed, separate from owner's distribution. It is what makes payroll, proof of income and the tax position hold together.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">07</span>The account architecture</h2>
+  <p>Money does not just need to be earned, it needs somewhere correct to land. Separate accounts are what turn intentions into arithmetic that cannot be spent by accident.</p>
+  <div class="two">
+    <div class="card you">
+      <span class="tag">Sweep account</span>
+      <h3>Deposits</h3>
+      <p style="margin:0;font-size:13.5px">Everything lands here first, then gets swept out to its purpose. One inbound door makes reconciliation and deposit history clean.</p>
+    </div>
+    <div class="card biz">
+      <span class="tag">Tax account</span>
+      <h3>10–20% offset and contributions</h3>
+      <p style="margin:0;font-size:13.5px">Swept aside on arrival, never at filing time. Pair it with the gross-up in section 03 so the reserve is actually sufficient rather than merely present.</p>
+    </div>
+    <div class="card you">
+      <span class="tag">Operations amount</span>
+      <h3>Expenses · transfers · bills · costs · subscriptions</h3>
+      <p style="margin:0;font-size:13.5px">The machine's own account. If operations and personal share a balance, neither number above can be trusted.</p>
+    </div>
+    <div class="card biz">
+      <span class="tag">Payroll accounts</span>
+      <h3>"Reasonable salary" + owner's distribution</h3>
+      <p style="margin:0;font-size:13.5px">Two distinct flows, kept distinct. Wage is documented compensation; distribution is a return on ownership. Merging them costs you the paper trail.</p>
+    </div>
+    <div class="card you">
+      <span class="tag">Payroll provider</span>
+      <h3>Documented proof of income</h3>
+      <p style="margin:0;font-size:13.5px">ADP, Paychex or equivalent — for verifiable income, employment verification and the data points capital consulting and compliance will ask for. Self-reported income is not the same instrument.</p>
+    </div>
+    <div class="card biz">
+      <span class="tag">Tax certificate · business licensing</span>
+      <h3>Primary NAICS with secondary codes, plus SIC</h3>
+      <p style="margin:0;font-size:13.5px">Industry classification is how institutions read you. Correct primary and secondary NAICS with SIC mapping drives market analysis, valuation comparables and stated income on applications — the foundation of a real banking relationship for financing and funding.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <p><strong>Reposits — living trust and trust EIN.</strong> Trust structures with their own EIN, and the 1099 series that reports against them (<code>1099-A</code>, <code>-B</code>, <code>-C</code>, <code>-OID</code>), are instruments that sit squarely in licensed territory. They belong in a plan built with a CPA and a tax attorney who put their own credentials behind it. Nothing on this page is tax or legal advice, and this line is deliberately a pointer rather than a procedure.</p>
+  </div>
+</section>
+
+<footer>BUILT BY EAST · XLRD TECH</footer>
+</div>
+
+<script>
+(function(){
+  var ids=["pe","be","ls","tx","sv","pm","bh","at","cr","ch"], el={};
+  ids.forEach(function(i){el[i]=document.getElementById(i)});
+  function money(n){
+    if(!isFinite(n)) return "—";
+    return "$"+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:0});
+  }
+  function set(id,v){document.getElementById(id).textContent=v}
+  function calc(){
+    var pe=+el.pe.value||0, be=+el.be.value||0, ls=+el.ls.value||0,
+        tx=+el.tx.value||0, sv=+el.sv.value||0, pm=+el.pm.value||0,
+        bh=+el.bh.value||0, at=+el.at.value||0, cr=+el.cr.value||0, ch=+el.ch.value||0;
+
+    var magic = pe + be;
+    var base  = magic + ls;
+    var tax   = tx < 1 ? base * tx/(1-tx) : 0;   // gross-up, not multiply
+    var sav   = base * sv;
+    var free  = base + tax + sav;
+    var rev   = pm < 1 ? free/(1-pm) : free;
+    var wk    = rev/4.333;
+    var hr    = bh>0 ? rev/bh : NaN;
+    var dl    = at>0 ? rev/at : NaN;
+    var ld    = (dl && cr>0) ? dl/cr : NaN;
+    var rw    = magic>0 ? ch/magic : NaN;
+
+    set("o_magic",money(magic));
+    set("o_free", money(free));
+    set("o_tax",  money(tax));
+    set("o_sav",  money(sav));
+    set("o_rev",  money(rev));
+    set("o_wk",   money(wk));
+    set("o_hr",   isFinite(hr)?"$"+hr.toFixed(0)+"/hr":"—");
+    set("o_dl",   isFinite(dl)?dl.toFixed(1):"—");
+    set("o_ld",   isFinite(ld)?Math.ceil(ld):"—");
+    set("o_rw",   isFinite(rw)?rw.toFixed(1)+" mo":"—");
+  }
+  ids.forEach(function(i){el[i].addEventListener("input",calc)});
+  calc();
+})();
+</script>
+<script>
+(function(){
+  var ids=["k_gr","k_cg","k_oh","k_ms","k_nc","k_at","k_cl","k_hc","k_es","k_rs"], el={};
+  ids.forEach(function(i){el[i]=document.getElementById(i)});
+  function money(n){
+    if(!isFinite(n)) return "—";
+    return "$"+n.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:0});
+  }
+  function pct(n){return isFinite(n)?(n*100).toFixed(1)+"%":"—"}
+  function set(id,v){document.getElementById(id).textContent=v}
+  function calc(){
+    var gr=+el.k_gr.value||0, cg=+el.k_cg.value||0, oh=+el.k_oh.value||0,
+        ms=+el.k_ms.value||0, nc=+el.k_nc.value||0, at=+el.k_at.value||0,
+        cl=+el.k_cl.value||0, hc=+el.k_hc.value||0, es=+el.k_es.value||0, rs=+el.k_rs.value||0;
+
+    var gp   = gr - cg;                       // gross profit
+    var gm   = gr>0 ? gp/gr : NaN;            // gross margin — everything below leans on this
+    var bl   = gr - cg - oh;                  // bottom line, net
+    var cac  = nc>0 ? ms/nc : NaN;
+    var lgtv = at * cl;                       // lifetime GROSS transaction value
+    var ltv  = isFinite(gm) ? lgtv*gm : NaN;  // at margin, never at gross
+    var ratio= (isFinite(ltv)&&cac>0) ? ltv/cac : NaN;
+    var pb   = (cac>0&&isFinite(gm)&&at*gm>0) ? cac/(at*gm) : NaN;
+    var bep  = (isFinite(gm)&&gm>0) ? oh/gm : NaN;   // overhead / margin, NOT / revenue
+    var bepu = (isFinite(bep)&&at>0) ? bep/at : NaN;
+    var ohp  = gr>0 ? oh/gr : NaN;
+    var cp   = gr>0 ? cg/gr : NaN;
+    var rph  = hc>0 ? gr/hc : NaN;
+    var pph  = hc>0 ? bl/hc : NaN;
+
+    set("k_bl",   money(bl));
+    set("k_gp",   money(gp));
+    set("k_gm",   pct(gm));
+    set("k_cp",   pct(cp));
+    set("k_cac",  money(cac));
+    set("k_lgtv", money(lgtv));
+    set("k_ltv",  money(ltv));
+    set("k_ratio",isFinite(ratio)?ratio.toFixed(2)+" : 1":"—");
+    set("k_pb",   isFinite(pb)?pb.toFixed(1)+" mo":"—");
+    set("k_bep",  money(bep));
+    set("k_bepu", isFinite(bepu)?bepu.toFixed(1):"—");
+    set("k_ohp",  pct(ohp));
+    set("k_rph",  money(rph));
+    set("k_pph",  money(pph));
+    set("k_eq",   money(bl*es));
+    set("k_rev",  money(gr*rs));
+  }
+  ids.forEach(function(i){el[i].addEventListener("input",calc)});
+  calc();
+})();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

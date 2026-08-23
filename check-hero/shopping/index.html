@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a0f">
+<title>Check Hero - Shopping List</title>
+<style>
+  :root{--bg:#0a0a0f;--ink:#fafaf6;--mute:#8a8a98;--gold:#d4af37;--gold-soft:#f0d878;--line:rgba(212,175,55,.18);--card:#13131a;--green:#5fcf80}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-wrap:break-word;word-break:normal;hyphens:none}
+  body{padding:28px 18px 90px}
+  .wrap{max-width:540px;margin:0 auto}
+  header{text-align:center;margin-bottom:26px}
+  .brand{font-size:11px;letter-spacing:.4em;color:var(--gold);text-transform:uppercase;font-weight:600;margin-bottom:10px}
+  h1{font-size:clamp(30px,8vw,46px);font-weight:800;letter-spacing:-.02em;line-height:1.05;background:linear-gradient(135deg,var(--ink),var(--gold-soft));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .sub{color:var(--mute);font-size:14px}
+  .bar{height:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:18px 0 6px}
+  .bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-soft));transition:width .35s ease}
+  .count{text-align:center;font-size:12px;color:var(--mute);letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px}
+  ul{list-style:none}
+  li{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 16px;margin-bottom:10px;cursor:pointer;transition:background .2s,opacity .2s,border-color .2s;user-select:none}
+  li:active{background:#1a1a24}
+  .box{width:26px;height:26px;flex-shrink:0;border:2px solid var(--gold);border-radius:8px;display:grid;place-items:center;font-size:16px;color:var(--bg);font-weight:800;transition:background .2s}
+  .item{font-size:17px;font-weight:600;letter-spacing:-.01em}
+  li.done{opacity:.5}
+  li.done .box{background:var(--gold)}
+  li.done .item{text-decoration:line-through;color:var(--mute)}
+  .amz{flex-shrink:0;margin-left:auto;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--bg);background:linear-gradient(135deg,#ff9900,#ffb84d);padding:8px 12px;border-radius:9px;text-decoration:none}
+  .amz:active{filter:brightness(.9)}
+  .actions{display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+  .cart-all{background:linear-gradient(135deg,#ff9900,#ffb84d);color:#15140e;border:none}
+  button{background:transparent;border:1px solid var(--line);color:var(--mute);padding:11px 20px;border-radius:10px;font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;font-family:inherit}
+  button:active{border-color:var(--gold);color:var(--gold)}
+  footer{text-align:center;margin-top:30px;color:var(--mute);font-size:11px}
+  footer .em{color:var(--gold);font-weight:600}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">L7S - Check Hero</div>
+    <h1>Shopping List</h1>
+    <p class="sub">Tap to check off. Saves as you go.</p>
+    <div class="bar"><div class="bar-fill" id="fill"></div></div>
+    <div class="count" id="count">0 of 0</div>
+  </header>
+  <ul id="list"></ul>
+  <div class="actions">
+    <button class="cart-all" id="cartall">Order all on Amazon</button>
+    <button id="reset">Reset all</button>
+  </div>
+  <footer><span class="em">L7S Check Hero</span> - tap an item to mark it got</footer>
+</div>
+<script>
+var ITEMS = [
+  "Essential oil",
+  "Brillo pads",
+  "Vyne",
+  "Peppermint candy",
+  "Paper plates",
+  "Water",
+  "Bananas",
+  "Hershey's chocolate squares",
+  "Bread",
+  "Apple Snapple",
+  "Jimmy Dean breakfast sandwiches"
+];
+var KEY = "check-hero-shopping-v1";
+var state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch(e){ state = {}; }
+var list = document.getElementById('list');
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function refresh(){
+  var done = ITEMS.filter(function(x){return state[x];}).length;
+  document.getElementById('count').textContent = done + " of " + ITEMS.length;
+  document.getElementById('fill').style.width = (ITEMS.length? (done/ITEMS.length*100):0) + "%";
+}
+function amzUrl(name){ return "https://www.amazon.com/s?k=" + encodeURIComponent(name); }
+ITEMS.forEach(function(name){
+  var li = document.createElement('li');
+  if(state[name]) li.className='done';
+  li.innerHTML = '<div class="box">'+(state[name]?'✓':'')+'</div><div class="item"></div><a class="amz" target="_blank" rel="noopener">Amazon</a>';
+  li.querySelector('.item').textContent = name;
+  li.querySelector('.amz').href = amzUrl(name);
+  li.querySelector('.amz').addEventListener('click', function(ev){ ev.stopPropagation(); });
+  li.addEventListener('click', function(){
+    state[name] = !state[name];
+    li.className = state[name] ? 'done' : '';
+    li.querySelector('.box').textContent = state[name] ? '✓' : '';
+    save(); refresh();
+  });
+  list.appendChild(li);
+});
+document.getElementById('cartall').addEventListener('click', function(){
+  // open an Amazon search tab per item (most reliable cross-account "cart all")
+  ITEMS.forEach(function(name, i){ setTimeout(function(){ window.open(amzUrl(name), '_blank', 'noopener'); }, i*250); });
+});
+document.getElementById('reset').addEventListener('click', function(){
+  state = {}; save();
+  [].forEach.call(list.children, function(li){ li.className=''; li.querySelector('.box').textContent=''; });
+  refresh();
+});
+refresh();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

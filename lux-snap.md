@@ -1,0 +1,354 @@
+- generic "Google Maps" [ref=e9]:
+  - generic [ref=e3]:
+    - application "Map · Use arrow keys to pan the map. · Get details about a place by pressing its corresponding number key." [ref=e10]
+    - search [ref=e15]:
+      - generic [ref=e16]:
+        - combobox [ref=e18]: Luxury Tax Services
+        - button "Search" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: 
+        - button "Close" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]: 
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - list [ref=e28]:
+          - listitem [ref=e29]:
+            - button "Menu" [ref=e30] [cursor=pointer]:
+              - generic [ref=e32]: 
+          - listitem [ref=e33]:
+            - button "Saved" [ref=e34] [cursor=pointer]:
+              - generic [ref=e36]: 
+              - generic [ref=e38]: Saved
+          - listitem [ref=e39]:
+            - button "Recents" [disabled] [ref=e40]:
+              - generic [ref=e42]: 
+              - generic [ref=e44]: Recents
+          - listitem [ref=e46]:
+            - button "Get app" [ref=e47] [cursor=pointer]:
+              - generic [ref=e49]: 
+              - generic [ref=e51]: Get app
+        - main "Luxury Tax Services" [ref=e56]:
+          - button "Photo of Luxury Tax Services" [active] [ref=e59] [cursor=pointer]:
+            - img [ref=e60]
+          - generic [ref=e63]:
+            - heading "Luxury Tax Services" [level=1] [ref=e65]: Luxury Tax Services
+            - generic [ref=e67]:
+              - generic [ref=e69]:
+                - generic [ref=e70]:
+                  - text: "4.8"
+                  - img "4.8 stars" [ref=e71]
+                - img "27 reviews" [ref=e79]: (27)
+              - generic [ref=e80]:
+                - button "Accountant" [ref=e83]
+                - text: ·
+                - img "Wheelchair accessible entrance" [ref=e84]: 
+          - tablist [ref=e87]:
+            - tab "Overview of Luxury Tax Services" [selected] [ref=e88]:
+              - generic [ref=e90]: Overview
+            - tab "Reviews for Luxury Tax Services" [ref=e92]:
+              - generic [ref=e94]: Reviews
+            - tab "About Luxury Tax Services" [ref=e96]:
+              - generic [ref=e98]: About
+          - region "Actions for Luxury Tax Services" [ref=e100]:
+            - button "Directions" [ref=e102] [cursor=pointer]:
+              - generic [ref=e104]: 
+              - generic [ref=e105]: Directions
+            - button "Save" [ref=e107] [cursor=pointer]:
+              - generic [ref=e109]: 
+              - generic [ref=e110]: Save
+            - button "Nearby" [ref=e112] [cursor=pointer]:
+              - generic [ref=e114]: 
+              - generic [ref=e115]: Nearby
+            - button "Send to phone" [ref=e117] [cursor=pointer]:
+              - generic [ref=e119]: 
+              - generic [ref=e120]: Send to phone
+            - button "Share" [ref=e122] [cursor=pointer]:
+              - generic [ref=e124]: 
+              - generic [ref=e125]: Share
+          - region "Information for Luxury Tax Services" [ref=e128]:
+            - generic [ref=e129]:
+              - 'button "Address: 6740 Shannon Pkwy STE 20, Union City, GA 30291" [ref=e130] [cursor=pointer]':
+                - generic [ref=e131]:
+                  - generic [ref=e133]: 
+                  - generic [ref=e135]: 6740 Shannon Pkwy STE 20, Union City, GA 30291
+              - button "Copy address" [ref=e138] [cursor=pointer]:
+                - generic [ref=e140]: 
+            - button "Floor 1 · Mission Square" [ref=e142] [cursor=pointer]:
+              - generic [ref=e146]: Floor 1 · Mission Square
+            - button "Hours Closed · Opens 10 AM Mon Show open hours for the week" [ref=e148] [cursor=pointer]:
+              - img "Hours" [ref=e149]: 
+              - generic [ref=e151]:
+                - generic [ref=e153]: Closed · Opens 10 AM Mon
+                - img "Show open hours for the week" [ref=e154]: 
+            - generic [ref=e155]:
+              - 'link "Website: luxurytaxservices.com" [ref=e156] [cursor=pointer]':
+                - /url: http://luxurytaxservices.com/contact/
+                - generic [ref=e157]:
+                  - generic [ref=e159]: 
+                  - generic [ref=e161]: luxurytaxservices.com
+              - generic [ref=e162]:
+                - link "Open website" [ref=e164] [cursor=pointer]:
+                  - /url: http://luxurytaxservices.com/contact/
+                  - generic [ref=e166]: 
+                - button "Copy website" [ref=e168] [cursor=pointer]:
+                  - generic [ref=e170]: 
+            - generic [ref=e171]:
+              - 'button "Phone: (770) 525-3072" [ref=e172] [cursor=pointer]':
+                - generic [ref=e173]:
+                  - generic [ref=e175]: 
+                  - generic [ref=e177]: (770) 525-3072
+              - generic [ref=e178]:
+                - button "Copy phone number" [ref=e180] [cursor=pointer]:
+                  - generic [ref=e182]: 
+                - link "Call phone number" [ref=e184] [cursor=pointer]:
+                  - /url: tel:+17705253072
+                  - generic [ref=e186]: 
+            - generic [ref=e187]:
+              - 'button "Plus code: HFC6+JJ Union City, Georgia" [ref=e188] [cursor=pointer]':
+                - generic [ref=e189]:
+                  - generic [ref=e191]: 
+                  - generic [ref=e193]: HFC6+JJ Union City, Georgia
+              - generic [ref=e194]:
+                - button "Copy plus code" [ref=e196] [cursor=pointer]:
+                  - generic [ref=e198]: 
+                - button "Learn more about plus codes" [ref=e200] [cursor=pointer]:
+                  - generic [ref=e202]: 
+          - button "Suggest an edit" [ref=e206] [cursor=pointer]:
+            - generic [ref=e207]:
+              - generic [ref=e208]: 
+              - generic [ref=e209]: Suggest an edit
+          - generic [ref=e212]:
+            - heading "Photos & videos" [level=2] [ref=e214]
+            - region "Photos of Luxury Tax Services" [ref=e215]:
+              - generic [ref=e218]:
+                - generic [ref=e219] [cursor=pointer]:
+                  - button "All" [ref=e220]
+                  - generic:
+                    - generic: All
+                - generic [ref=e221] [cursor=pointer]:
+                  - button "Street View & 360°" [ref=e222]
+                  - generic:
+                    - generic: Street View & 360°
+          - button "Add photos & videos" [ref=e227] [cursor=pointer]:
+            - generic [ref=e228]:
+              - generic [ref=e229]: 
+              - generic [ref=e230]: Add photos & videos
+          - generic [ref=e233]:
+            - heading "Review summary" [level=2] [ref=e234]
+            - button "More information about the review summary" [ref=e235] [cursor=pointer]:
+              - generic [ref=e236]: 
+          - generic [ref=e238] [cursor=pointer]:
+            - table [ref=e240]:
+              - rowgroup [ref=e241]:
+                - img "5 stars, 25 reviews" [ref=e242]: "5"
+                - img "4 stars, 1 review" [ref=e245]: "4"
+                - img "3 stars, 0 reviews" [ref=e248]: "3"
+                - img "2 stars, 0 reviews" [ref=e251]: "2"
+                - img "1 stars, 1 review" [ref=e254]: "1"
+            - generic [ref=e257]:
+              - generic [ref=e258]: "4.8"
+              - img "4.8 stars" [ref=e259]
+              - button "27 reviews" [ref=e265]:
+                - generic [ref=e267]: 27 reviews
+          - generic [ref=e269]:
+            - link "Photo of reviewer who wrote \"Couldn’t be happier with the outcome!\"" [ref=e270] [cursor=pointer]:
+              - /url: https://www.google.com/maps/contrib/103598220869589793563?hl=en-US
+            - button "\"Couldn’t be happier with the outcome!\"" [ref=e271] [cursor=pointer]:
+              - generic [ref=e272]: "\"Couldn’t be happier with the outcome!\""
+          - generic [ref=e274]:
+            - link "Photo of reviewer who wrote \"The communication with this company is very poor.\"" [ref=e275] [cursor=pointer]:
+              - /url: https://www.google.com/maps/contrib/110645634428427711286?hl=en-US
+            - button "\"The communication with this company is very poor.\"" [ref=e276] [cursor=pointer]:
+              - generic [ref=e277]: "\"The communication with this company is very poor.\""
+          - generic [ref=e279]:
+            - link "Photo of reviewer who wrote \"I Love Luxury Tax Service!!!\"" [ref=e280] [cursor=pointer]:
+              - /url: https://www.google.com/maps/contrib/102427747378958272379?hl=en-US
+            - button "\"I Love Luxury Tax Service!!!\"" [ref=e281] [cursor=pointer]:
+              - generic [ref=e282]: "\"I Love Luxury Tax Service!!!\""
+          - button "Write a review" [ref=e286] [cursor=pointer]:
+            - generic [ref=e287]:
+              - generic [ref=e288]: 
+              - generic [ref=e289]: Write a review
+          - generic [ref=e292]:
+            - generic [ref=e294]:
+              - heading "Reviews" [level=2] [ref=e297]
+              - button "Search reviews" [ref=e300] [cursor=pointer]:
+                - generic [ref=e302]: 
+            - button "Sort reviews" [ref=e304] [cursor=pointer]:
+              - generic [ref=e305]:
+                - generic [ref=e306]: 
+                - generic [ref=e307]: Sort
+          - radiogroup "Refine reviews" [ref=e308]:
+            - radio "All reviews" [checked] [ref=e310] [cursor=pointer]:
+              - generic [ref=e311]:
+                - generic [ref=e312]: 
+                - generic [ref=e313]: All
+            - radio "tax preparer, mentioned in 3 reviews" [ref=e315] [cursor=pointer]:
+              - generic [ref=e316]:
+                - generic [ref=e317]: tax preparer
+                - generic [ref=e318]: "3"
+            - radio "refunds, mentioned in 3 reviews" [ref=e320] [cursor=pointer]:
+              - generic [ref=e321]:
+                - generic [ref=e322]: refunds
+                - generic [ref=e323]: "3"
+            - radio "polite staff, mentioned in 2 reviews" [ref=e325] [cursor=pointer]:
+              - generic [ref=e326]:
+                - generic [ref=e327]: polite staff
+                - generic [ref=e328]: "2"
+            - radio "communication, mentioned in 7 reviews" [ref=e330] [cursor=pointer]:
+              - generic [ref=e331]:
+                - generic [ref=e332]: communication
+                - generic [ref=e333]: "7"
+            - radio "easy process, mentioned in 2 reviews" [ref=e335] [cursor=pointer]:
+              - generic [ref=e336]:
+                - generic [ref=e337]: easy process
+                - generic [ref=e338]: "2"
+            - radio "organized, mentioned in 2 reviews" [ref=e340] [cursor=pointer]:
+              - generic [ref=e341]:
+                - generic [ref=e342]: organized
+                - generic [ref=e343]: "2"
+            - radio "team, mentioned in 2 reviews" [ref=e345] [cursor=pointer]:
+              - generic [ref=e346]:
+                - generic [ref=e347]: team
+                - generic [ref=e348]: "2"
+          - generic "Tynisha Bailey" [ref=e349]:
+            - generic [ref=e351]:
+              - button "Photo of Tynisha Bailey" [ref=e352]
+              - generic [ref=e354]:
+                - button "Tynisha Bailey 1 review" [ref=e356]:
+                  - generic [ref=e357]: Tynisha Bailey
+                  - generic [ref=e358]: 1 review
+                - button "Actions for Tynisha Bailey's review" [ref=e359] [cursor=pointer]:
+                  - generic [ref=e361]: 
+              - generic [ref=e362]:
+                - generic [ref=e363]:
+                  - img "5 stars" [ref=e364]:
+                    - generic [ref=e365]: 
+                    - generic [ref=e366]: 
+                    - generic [ref=e367]: 
+                    - generic [ref=e368]: 
+                    - generic [ref=e369]: 
+                  - generic [ref=e370]: 4 years ago
+                - generic [ref=e372]:
+                  - text: I've been filling my income taxes with Luxury Tax Services since 2014 and have never had any issues!! Shauntee is SUPER PROFESSIONAL in every way. She gets you every cent that she can! She also explains in detail about the process and …
+                  - button "See more" [ref=e374] [cursor=pointer]: More
+                - generic [ref=e375]:
+                  - button "Like" [ref=e376]:
+                    - generic [ref=e377] [cursor=pointer]:
+                      - generic [ref=e378]: 
+                      - generic [ref=e380]: Like
+                  - button "Share Tynisha Bailey's review." [ref=e381]:
+                    - generic [ref=e382] [cursor=pointer]:
+                      - generic [ref=e383]: 
+                      - generic [ref=e384]: Share
+                - generic [ref=e385]:
+                  - generic [ref=e386]: Response from the owner 4 years ago
+                  - generic [ref=e387]: Thank you so much Tynisha, we are happy that you value our services and we want you to know that we appreciate your loyalty and trust in us.
+          - generic "K B" [ref=e391]:
+            - generic [ref=e393]:
+              - button "Photo of K B" [ref=e394]
+              - generic [ref=e396]:
+                - button "K B 4 reviews" [ref=e398]:
+                  - generic [ref=e399]: K B
+                  - generic [ref=e400]: 4 reviews
+                - button "Actions for K B's review" [ref=e401] [cursor=pointer]:
+                  - generic [ref=e403]: 
+              - generic [ref=e404]:
+                - generic [ref=e405]:
+                  - img "5 stars" [ref=e406]:
+                    - generic [ref=e407]: 
+                    - generic [ref=e408]: 
+                    - generic [ref=e409]: 
+                    - generic [ref=e410]: 
+                    - generic [ref=e411]: 
+                  - generic [ref=e412]: 2 years ago
+                - generic [ref=e414]: Shauntee is truly one of kind, she genuinely care about other people and will always ensure your setup to be successful. If you want to learn Due Diligence she is your girl. She will have you and your tax office setup for success. When she say no Tax Pro left behind that’s a fact!
+                - generic [ref=e415]:
+                  - button "Like" [ref=e416]:
+                    - generic [ref=e417] [cursor=pointer]:
+                      - generic [ref=e418]: 
+                      - generic [ref=e420]: Like
+                  - button "Share K B's review." [ref=e421]:
+                    - generic [ref=e422] [cursor=pointer]:
+                      - generic [ref=e423]: 
+                      - generic [ref=e424]: Share
+          - generic "Samantha Shoulders" [ref=e428]:
+            - generic [ref=e430]:
+              - button "Photo of Samantha Shoulders" [ref=e431]
+              - generic [ref=e433]:
+                - button "Samantha Shoulders 7 reviews · 4 photos" [ref=e435]:
+                  - generic [ref=e436]: Samantha Shoulders
+                  - generic [ref=e437]: 7 reviews · 4 photos
+                - button "Actions for Samantha Shoulders's review" [ref=e438] [cursor=pointer]:
+                  - generic [ref=e440]: 
+              - generic [ref=e441]:
+                - generic [ref=e442]:
+                  - img "5 stars" [ref=e443]:
+                    - generic [ref=e444]: 
+                    - generic [ref=e445]: 
+                    - generic [ref=e446]: 
+                    - generic [ref=e447]: 
+                    - generic [ref=e448]: 
+                  - generic [ref=e449]: 4 years ago
+                - generic [ref=e451]: This is my second year using Luxury Tax Services. Shauntee makes the process so easy! She is great, knowledgeable, and now my official tax lady! Couldn’t be happier with the outcome! I highly recommend LTS to everyone.
+                - generic [ref=e452]:
+                  - button "Like" [ref=e453]:
+                    - generic [ref=e454] [cursor=pointer]:
+                      - generic [ref=e455]: 
+                      - generic [ref=e457]: Like
+                  - button "Share Samantha Shoulders's review." [ref=e458]:
+                    - generic [ref=e459] [cursor=pointer]:
+                      - generic [ref=e460]: 
+                      - generic [ref=e461]: Share
+                - generic [ref=e462]:
+                  - generic [ref=e463]: Response from the owner 3 years ago
+                  - generic [ref=e464]: Thank you Samantha we are happy that you are satisfied and we truly appreciate your continued trust in our ability to service you.
+          - button "More reviews (24)" [ref=e468]:
+            - generic [ref=e470] [cursor=pointer]: More reviews (24)
+          - heading "People also search for" [level=2] [ref=e474]
+          - generic [ref=e478]:
+            - link "Luxury Tax Group · 4.0 stars · 8 reviews · Tax preparation service" [ref=e479] [cursor=pointer]:
+              - generic [ref=e482]:
+                - generic [ref=e484]: Luxury Tax Group
+                - img "4.0 stars 8 Reviews" [ref=e487]:
+                  - text: "4.0"
+                  - text: (8)
+                - generic [ref=e489]: Tax preparation service
+            - link "Luxury Tax and Accounting · 2.4 stars · 9 reviews · Tax preparation service" [ref=e490] [cursor=pointer]:
+              - generic [ref=e493]:
+                - generic [ref=e495]: Luxury Tax and Accounting
+                - img "2.4 stars 9 Reviews" [ref=e498]:
+                  - text: "2.4"
+                  - text: (9)
+                - generic [ref=e500]: Tax preparation service
+            - link "Liberty Tax · 4.9 stars · 281 reviews · Tax preparation" [ref=e501] [cursor=pointer]:
+              - generic [ref=e504]:
+                - generic [ref=e506]: Liberty Tax
+                - img "4.9 stars 281 Reviews" [ref=e509]:
+                  - text: "4.9"
+                  - text: (281)
+                - generic [ref=e511]: Tax preparation
+            - link "Luxury Tax Service · 5.0 stars · 58 reviews · Tax preparation service" [ref=e512] [cursor=pointer]:
+              - generic [ref=e515]:
+                - generic [ref=e517]: Luxury Tax Service
+                - img "5.0 stars 58 Reviews" [ref=e520]:
+                  - text: "5.0"
+                  - text: (58)
+                - generic [ref=e522]: Tax preparation service
+            - link "Maxx Taxes · 5.0 stars · 1 review · Tax preparation service" [ref=e523] [cursor=pointer]:
+              - generic [ref=e526]:
+                - generic [ref=e528]: Maxx Taxes
+                - img "5.0 stars 1 Reviews" [ref=e531]:
+                  - text: "5.0"
+                  - text: (1)
+                - generic [ref=e533]: Tax preparation service
+          - heading "Web results" [level=2] [ref=e538]
+          - region [ref=e541]
+          - link "About this data" [ref=e580] [cursor=pointer]:
+            - /url: https://support.google.com/local-listings?p=how_google_sources&authuser=0&hl=en
+            - generic [ref=e582]: About this data
+          - heading "Get the most out of Google Maps Sign in" [level=2] [ref=e586]:
+            - generic [ref=e587]: Get the most out of Google Maps
+            - button "Sign in" [ref=e590] [cursor=pointer]:
+              - generic [ref=e592]: Sign in
+      - button "Collapse side panel" [ref=e594] [cursor=pointer]:
+        - generic [ref=e595]: 

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Xen Voice Line — Status &amp; Fix Log</title>
+<style>
+  :root{--bg:#0a0c10;--panel:#12151c;--line:#1f2530;--gold:#d4af37;--green:#37d486;--red:#ff5d5d;--txt:#e7ebf0;--mut:#8b94a3}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 22px 80px}
+  h1{font-size:30px;margin:0 0 4px;letter-spacing:-.02em}
+  h1 .x{color:var(--gold)}
+  .sub{color:var(--mut);margin:0 0 28px;font-size:15px}
+  .badge{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--green);font-weight:600}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:24px 0 36px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .card .k{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+  .card .v{font-size:15px;font-weight:600}
+  .card .v.ok{color:var(--green)}
+  h2{font-size:18px;margin:34px 0 14px;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:8px}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+  td.fix{color:var(--green)}
+  code{background:#0e1219;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:#cdd6e3}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(55,212,134,.13);color:var(--green);border:1px solid rgba(55,212,134,.3)}
+  ol{padding-left:20px} ol li{margin:6px 0;color:var(--mut)}
+  ol li b{color:var(--txt)}
+  .foot{color:var(--mut);font-size:12.5px;margin-top:40px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="x">Xen</span> Voice Line</h1>
+  <p class="sub">Telnyx → FreeSWITCH → M4 receiver → faster-whisper → warm session → TTS → your ear. Status &amp; fix log — 2026-06-17.</p>
+  <span class="badge"><span class="dot"></span>LINE GREEN — two-way live on 470-369-6463</span>
+
+  <div class="grid">
+    <div class="card"><div class="k">Call Receiver</div><div class="v ok">:4451 healthy</div></div>
+    <div class="card"><div class="k">STT (faster-whisper)</div><div class="v ok">:8791 healthy</div></div>
+    <div class="card"><div class="k">Fast Brain (Sonnet)</div><div class="v ok">launchd · auto-restart</div></div>
+    <div class="card"><div class="k">Voice</div><div class="v ok">canonical · rate 210</div></div>
+    <div class="card"><div class="k">Barge-in</div><div class="v ok">re-enabled</div></div>
+    <div class="card"><div class="k">DID</div><div class="v">470-369-6463</div></div>
+  </div>
+
+  <h2>What was broken → what fixed it</h2>
+  <table>
+    <thead><tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>"autogoal daemon on"</td><td>fast-responder looping a placeholder report aloud</td><td class="fix">killed the loop + drained queue — no rogue daemon existed</td></tr>
+      <tr><td>"wrong voice"</td><td>call synth at rate <code>188</code>; canonical voice is <code>210</code> (same voice, slower = sounds different)</td><td class="fix"><code>ttsB64</code> pinned to rate 210 from <code>identity.json</code>, no <code>-v</code></td></tr>
+      <tr><td>placeholder / JSON read aloud</td><td>reply tee spoke <code>Working in the shell:</code> lines that carried the call tag</td><td class="fix">tee junk filter (shell / JSON / code-fence / tool-narration dropped)</td></tr>
+      <tr><td>~13s latency / "engine being blocked"</td><td>turns routed to heavy Opus session which blocks on reasoning</td><td class="fix">fast Sonnet twin now submits → receiver routes there</td></tr>
+      <tr><td>latency (transport)</td><td>buffered up to 8s of audio before transcribing</td><td class="fix">buffer cap 8s→4s · silence gap 900→600ms · flush at 0.4s</td></tr>
+      <tr><td>"not barging in"</td><td>barge-in disabled after an earlier self-cut bug</td><td class="fix">re-enabled w/ corrected send-time guard · rms&gt;2500 · 3-frame · debounce</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The big win — fast brain unblocked</h2>
+  <p>The fast Sonnet session (<code>/tmp/xen-fast.sock</code>) held its socket but <b>silently never submitted</b> any inject — so every call turn fell back to the slow Opus brain. <span class="pill">root cause</span> the wrapper wrote the text and the Enter key in <b>two separate writes</b>; Claude TUI 2.1.168 paste-detection ate the Enter (<code>[Pasted text #N]</code>). Fixed with an <b>atomic double-CR</b>, and the twin is now a permanent <code>launchd</code> service (login-shell launch for <code>CLAUDE_CONFIG_DIR</code>, KeepAlive, survives reboot). Verified: clean submit, omni-aware, stays up.</p>
+
+  <h2>Next tier — toward sub-2s</h2>
+  <ol>
+    <li><b>VAD-gated endpointing</b> (Silero + WebRTC pre-filter) — flush on 300-500ms silence, not a fixed window.</li>
+    <li><b>Streaming STT</b> (LocalAgreement-2 on faster-whisper) — partial hypotheses before the caller stops.</li>
+    <li><b>Token-stream the LLM</b> into sentence-chunked TTS — audio starts at first sentence, not full completion.</li>
+    <li><b>In-process PCMU encoding</b> — drop the per-utterance ffmpeg subprocess.</li>
+  </ol>
+
+  <div class="foot">Xen / Exodus · one brain, two arms (M4 + nitro) · verified end-to-end 2026-06-17. Internal status surface — noindex.</div>
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

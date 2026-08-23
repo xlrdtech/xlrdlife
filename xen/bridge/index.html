@@ -1,0 +1,73 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WebRTC Bridge — status &amp; ETA</title>
+<style>
+  :root{--bg:#0a0a0c;--fg:#e8e8ee;--dim:#8b8b96;--line:#22222a;--ok:#3ddc84;--warn:#ffc93c;--bad:#ff5c5c;--acc:#6ea8ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:15px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;padding:28px 20px 80px;max-width:860px;margin-inline:auto}
+  h1{font-size:19px;margin:0 0 4px;letter-spacing:.01em}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:26px}
+  h2{font-size:14px;margin:30px 0 10px;color:var(--acc);letter-spacing:.06em;text-transform:uppercase}
+  .row{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);align-items:baseline}
+  .tag{flex:0 0 92px;font-size:11px;font-weight:700;letter-spacing:.06em;padding-top:2px}
+  .ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+  .what{flex:1}
+  .note{color:var(--dim);font-size:13px;display:block;margin-top:2px}
+  .eta{border:1px solid var(--line);border-left:3px solid var(--acc);padding:16px 18px;margin:22px 0;background:#0e0e13}
+  .big{font-size:26px;font-weight:700;letter-spacing:-.01em}
+  .forbid{border:1px solid #3a1a1a;border-left:3px solid var(--bad);padding:14px 18px;background:#140e0e;margin:22px 0}
+  code{background:#16161c;padding:1px 5px;border-radius:3px;font-size:13px}
+  .ts{color:var(--dim);font-size:12px;margin-top:34px;border-top:1px solid var(--line);padding-top:12px}
+</style>
+
+<h1>Raw WebRTC Bridge — status &amp; hard ETA</h1>
+<div class="sub">GV auto-answer → Claude web voice, peer-to-peer. Scraped native signaling only.</div>
+
+<div class="forbid">
+<strong class="bad">FORBIDDEN — no third-party framework.</strong><br>
+LiveKit, Pipecat, Telnyx, SonoBus, AudioCodes: all tried before, none worked, all ruled out.
+No media server, no new platform, no desktop audio router, no Loopback in the stream.
+<strong>Exedus is the spine.</strong> The bridge wires the two native WebRTC legs directly together.
+</div>
+
+<h2>Done — 4 of 7</h2>
+<div class="row"><span class="tag ok">DONE</span><span class="what">Persistent browser driver <code>:4462</code>
+<span class="note">Measured: navigation median 145ms (min 90, max 371). Tab open avg 54ms, fastest 20.5ms. One reused CDP socket, BrowserOS only — no 9333 fallback, because 9333 serves logged-out pages that look like successes.</span></span></div>
+<div class="row"><span class="tag ok">DONE</span><span class="what">RTCPeerConnection capture wrapper
+<span class="note">Installed via <code>Page.addScriptToEvaluateOnNewDocument</code> then reload, so it exists <em>before</em> any PC is constructed. Attaching after load misses the handshake entirely. Records createOffer/createAnswer, setLocal/RemoteDescription, ICE candidates, track events.</span></span></div>
+<div class="row"><span class="tag ok">DONE</span><span class="what">Drift-watcher — <code>com.xen.webrtc-drift-watch</code>, 30 min
+<span class="note">Refuses to report "no drift" when the baseline never captured a real PeerConnection. A green verdict off an empty baseline is worse than a loud gap.</span></span></div>
+<div class="row"><span class="tag ok">DONE</span><span class="what">Local relay <code>:4461</code> — inbound repaired
+<span class="note">The Railway relay <em>and</em> its Redis had been deleted; the bridge 404-looped 127,905 times (~4.4 days). Rebuilt file-backed and supervised. 0 failures since repoint; a test message reached qi through it.</span></span></div>
+
+<h2>In progress — 2</h2>
+<div class="row"><span class="tag warn">WIP</span><span class="what">Media relay design
+<span class="note">The two legs cannot peer by exchanging SDP — Claude's leg is browser↔Anthropic, GV's is browser↔Google, and neither accepts the other's offer. It is a <strong>media</strong> problem: pull GV's remote track via <code>ontrack</code>, inject it into the Claude page as its microphone by overriding <code>getUserMedia</code>. Browser-native, no OS audio device.</span></span></div>
+<div class="row"><span class="tag warn">WIP</span><span class="what">GV control surface — <code>gv-mcp</code>
+<span class="note">Six tools: state, answer, hangup, mute, dial, probe. Puppets GV's own hidden buttons instead of reimplementing WebRTC. DOM selectors are <strong>unverified</strong> — no GV tab has ever loaded to test them against.</span></span></div>
+
+<h2>Blocked — 1, and it is the entire ETA</h2>
+<div class="row"><span class="tag bad">BLOCKED</span><span class="what">Signaling capture on both legs
+<span class="note"><strong>Needs a live call to exist.</strong> Signaling only appears while a session is actually running. A 30s capture window produced 0 PeerConnections and 0 ICE candidates because nothing was talking — the 5 endpoints it did find were Datadog telemetry and a Firebase push registration.</span></span></div>
+
+<h2>Two blockers, both human, neither is code</h2>
+<div class="row"><span class="tag bad">QI</span><span class="what">Google Voice is not provisioned on <code>xlrdtech@gmail.com</code>
+<span class="note">All four URL forms — <code>/u/0</code>, <code>/u/1</code>, <code>/u/2</code>, bare — redirect to the marketing page. Signed in as East Allen, so it is not an auth failure; that account simply has no Voice. The Google account that owns the number must be signed into BrowserOS.</span></span></div>
+<div class="row"><span class="tag bad">QI</span><span class="what">Claude voice mode must be running during capture
+<span class="note">Nothing to scrape until a voice session is actually live in the driven tab.</span></span></div>
+
+<div class="eta">
+<div class="big">90 min – 2 hrs</div>
+to a phone call you can talk on — <strong>measured from the moment both blockers clear.</strong><br><br>
+Capture both legs: <strong>~10 min</strong>. Then 60–90 min to write the track relay against
+<em>real</em> SDP instead of guessed SDP, and iterate on whatever voice mode does to a synthetic mic.<br><br>
+<strong class="bad">Without those two: infinite.</strong> Not slow — impossible. There is nothing to scrape.
+</div>
+
+<h2>The unknown I will not fake a number for</h2>
+<div class="row"><span class="tag warn">RISK</span><span class="what">Does Claude voice mode accept a synthesized mic track?
+<span class="note">Silence detection, echo cancellation, or track-constraint checks could each reject it. If any do, that is a different day's work — not part of the 90 minutes. I will know within 15 minutes of having a live capture, and will say so plainly rather than absorbing it into the estimate.</span></span></div>
+
+<div class="ts">Generated by Xen from pane %0 · figures are measured, not estimated · <span id="t"></span></div>
+<script>document.getElementById('t').textContent=new Date().toString();</script>

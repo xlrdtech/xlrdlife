@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L7S HERO | B.A.T.M.A.N. Infrastructure Hub</title>
+    <meta name="robots" content="noindex,nofollow">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Chart Container Requirements */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        /* Base & Theme Styles */
+        body {
+            background-color: #f8fafc; /* Light Slate */
+            color: #0f172a; /* Dark Slate */
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        .hero-gold { color: #d4af37; }
+        .hero-gold-bg { background-color: #d4af37; }
+        .hero-gold-border { border-color: #d4af37; }
+
+        .nav-item {
+            transition: all 0.2s ease-in-out;
+            border-left: 4px solid transparent;
+        }
+        .nav-item.active {
+            background-color: #1e293b;
+            border-left-color: #d4af37;
+            color: #d4af37;
+            font-weight: bold;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+    </style>
+</head>
+<body class="flex h-screen bg-slate-50">
+
+    <!-- Chosen Palette: L7S Gold (#d4af37), Slate Black (#0f172a), Slate White (#f8fafc) -->
+    <!-- Application Structure Plan: A centralized, dashboard-style SPA to act as the "Operator Hub" for Project B.A.T.M.A.N. It is structured into four primary operational theaters: 1. Core Directives (Identity & Pain Points), 2. System Architecture (ABC Models & Playbooks), 3. Fulfillment Infrastructure, and 4. The Artifact Generator (specifically featuring the requested Prompt Chains). This structure allows operators to move seamlessly from high-level strategy to direct execution (like copying prompt chains) without leaving the hub. -->
+    <!-- Visualization & Content Choices:
+         - Overview: Goal: Inform -> Interactive List -> Details the 5 Priority Pain Points. Justification: Keeps immediate action items front and center.
+         - ABC Model: Goal: Compare -> Doughnut Chart (Chart.js) -> Shows the product catalog structure. Justification: Visually breaks down deliverable types.
+         - 7 Playbooks: Goal: Organize -> Interactive Tabbed Cards -> JS updates content based on C4-C7 selection. Justification: Prevents text overwhelm while mapping complex data architectures (C.A.R.S, M.A.P.S).
+         - Artifacts/Prompts: Goal: Action/Inform -> Expanding Code Blocks -> Displays LaTeX prompts from the source report. Justification: Transforms static text into an actionable developer tool within the SPA.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-72 bg-slate-900 text-slate-300 flex-col hidden md:flex h-full shadow-2xl z-20 shrink-0">
+        <div class="p-6 bg-black border-b border-slate-800 flex items-center gap-4">
+            <!-- Logo hook: drop l7s_hero_logo_raster.png in this folder and it snaps in; falls back to ⚡ until then -->
+            <img src="l7s_hero_logo_raster.png" alt="L7S HERO" class="w-12 h-12 object-contain hidden"
+                 onload="this.classList.remove('hidden'); this.nextElementSibling.classList.add('hidden');">
+            <div class="text-4xl hero-gold">⚡</div>
+            <div>
+                <h1 class="text-white font-extrabold text-2xl tracking-wider">L7S HERO</h1>
+                <p class="text-[10px] uppercase tracking-widest hero-gold">B.A.T.M.A.N. Operator</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 py-6 space-y-1 overflow-y-auto" id="main-nav">
+            <button data-target="sec-directives" class="nav-item active w-full flex items-center gap-3 px-6 py-3 text-left hover:bg-slate-800">
+                <span>🎯</span> Core Directives & PPPs
+            </button>
+            <button data-target="sec-architecture" class="nav-item w-full flex items-center gap-3 px-6 py-3 text-left hover:bg-slate-800">
+                <span>🏗️</span> Architecture & Playbooks
+            </button>
+            <button data-target="sec-infrastructure" class="nav-item w-full flex items-center gap-3 px-6 py-3 text-left hover:bg-slate-800">
+                <span>⚙️</span> Fulfillment Engine
+            </button>
+            <button data-target="sec-artifacts" class="nav-item w-full flex items-center gap-3 px-6 py-3 text-left hover:bg-slate-800">
+                <span>📄</span> Artifact Generator (Prompts)
+            </button>
+        </nav>
+
+        <div class="p-6 border-t border-slate-800 bg-slate-900">
+            <div class="text-xs text-slate-500 font-mono mb-1">STATUS: ONLINE</div>
+            <div class="text-[10px] text-slate-600 uppercase">Omnipresent Memory Enabled</div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+
+        <!-- Mobile Header -->
+        <header class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center shadow-md z-30">
+            <div class="flex items-center gap-2">
+                <span class="text-xl hero-gold">⚡</span>
+                <h1 class="font-bold tracking-wider">L7S HERO</h1>
+            </div>
+            <select id="mobile-nav-select" class="bg-slate-800 text-white border border-slate-700 rounded p-2 text-sm">
+                <option value="sec-directives">Core Directives</option>
+                <option value="sec-architecture">Architecture & Playbooks</option>
+                <option value="sec-infrastructure">Fulfillment Engine</option>
+                <option value="sec-artifacts">Artifact Generator</option>
+            </select>
+        </header>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-6 md:p-12 scroll-smooth bg-slate-50">
+            <div class="max-w-6xl mx-auto pb-24">
+
+                <!-- SECTION 1: Core Directives -->
+                <section id="sec-directives" class="content-section fade-in">
+                    <header class="mb-10">
+                        <h2 class="text-4xl font-extrabold text-slate-900 mb-4">Core Directives & 5 PPPs</h2>
+                        <p class="text-lg text-slate-600 border-l-4 hero-gold-border pl-4 leading-relaxed">
+                            This section establishes the overarching business identity (NAICS) and tracks the resolution of the 5 Priority Pain Points (PPPs) that currently hinder Productivity, Production, and Profits.
+                        </p>
+                    </header>
+
+                    <!-- Identity -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <div class="text-3xl mb-3">💻</div>
+                            <h3 class="font-bold text-xl mb-2 text-slate-900">Computer Systems Design</h3>
+                            <p class="text-slate-600 text-sm">Designing software tools, SaaS products, systems, snapshots, and secure login portals.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <div class="text-3xl mb-3">🎓</div>
+                            <h3 class="font-bold text-xl mb-2 text-slate-900">Product Training</h3>
+                            <p class="text-slate-600 text-sm">Training clients/companies to utilize the designed software systems to achieve their specific use cases.</p>
+                        </div>
+                    </div>
+
+                    <!-- 5 PPPs -->
+                    <h3 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                        <span class="hero-gold">⚠️</span> Active Bottlenecks (The 5 PPPs)
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="group bg-white p-5 rounded-lg shadow-sm border border-slate-200 hover:border-[#d4af37] transition-all cursor-default">
+                            <div class="flex items-center gap-4">
+                                <div class="bg-slate-900 text-[#d4af37] w-8 h-8 rounded flex items-center justify-center font-bold">1</div>
+                                <h4 class="font-bold text-lg text-slate-800">Legal Documents</h4>
+                            </div>
+                            <p class="mt-2 ml-12 text-sm text-slate-600 hidden group-hover:block fade-in">Modernization to Gold/Black branding. Full fillable LaTeX buildouts for the 3-Page Master Portfolio.</p>
+                        </div>
+                        <div class="group bg-white p-5 rounded-lg shadow-sm border border-slate-200 hover:border-[#d4af37] transition-all cursor-default">
+                            <div class="flex items-center gap-4">
+                                <div class="bg-slate-900 text-[#d4af37] w-8 h-8 rounded flex items-center justify-center font-bold">2</div>
+                                <h4 class="font-bold text-lg text-slate-800">Stripe Products & Invoicing</h4>
+                            </div>
+                            <p class="mt-2 ml-12 text-sm text-slate-600 hidden group-hover:block fade-in">Standardizing checkout pages mapped to the ABC Model. Automated invoicing for Playbook gateways.</p>
+                        </div>
+                        <div class="group bg-white p-5 rounded-lg shadow-sm border border-slate-200 hover:border-[#d4af37] transition-all cursor-default">
+                            <div class="flex items-center gap-4">
+                                <div class="bg-slate-900 text-[#d4af37] w-8 h-8 rounded flex items-center justify-center font-bold">3</div>
+                                <h4 class="font-bold text-lg text-slate-800">Triage Systems (Uploader)</h4>
+                            </div>
+                            <p class="mt-2 ml-12 text-sm text-slate-600 hidden group-hover:block fade-in">Secured Document Uploader deployment via Cloud Concierge, routing to W.A.T.E.R. and M.A.P.S.</p>
+                        </div>
+                        <div class="group bg-white p-5 rounded-lg shadow-sm border border-slate-200 hover:border-[#d4af37] transition-all cursor-default">
+                            <div class="flex items-center gap-4">
+                                <div class="bg-slate-900 text-[#d4af37] w-8 h-8 rounded flex items-center justify-center font-bold">4</div>
+                                <h4 class="font-bold text-lg text-slate-800">Skool Community (K.I.S.S)</h4>
+                            </div>
+                            <p class="mt-2 ml-12 text-sm text-slate-600 hidden group-hover:block fade-in">Subjects and Scripts. Enforcing the $1 Zoom Test for Proof of Funds/Life.</p>
+                        </div>
+                        <div class="group bg-white p-5 rounded-lg shadow-sm border border-slate-200 hover:border-[#d4af37] transition-all cursor-default">
+                            <div class="flex items-center gap-4">
+                                <div class="bg-slate-900 text-[#d4af37] w-8 h-8 rounded flex items-center justify-center font-bold">5</div>
+                                <h4 class="font-bold text-lg text-slate-800">Affiliate Partnership Ecosystem</h4>
+                            </div>
+                            <p class="mt-2 ml-12 text-sm text-slate-600 hidden group-hover:block fade-in">Internal network infrastructure to manage exclusive fulfillment partners and routing.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 2: Architecture & Playbooks -->
+                <section id="sec-architecture" class="content-section hidden fade-in">
+                    <header class="mb-10">
+                        <h2 class="text-4xl font-extrabold text-slate-900 mb-4">Architecture & Playbooks</h2>
+                        <p class="text-lg text-slate-600 border-l-4 hero-gold-border pl-4 leading-relaxed">
+                            Interact with the visual models governing the L7S deliverables (The ABC Model) and dive deep into the specific operational routing and data architecture of the core service playbooks.
+                        </p>
+                    </header>
+
+                    <!-- ABC Model Chart -->
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-12">
+                        <div class="flex flex-col lg:flex-row items-center gap-10">
+                            <div class="flex-1 w-full">
+                                <h3 class="text-2xl font-bold text-slate-900 mb-2">The ABC Model</h3>
+                                <p class="text-slate-600 mb-6 text-sm">The framework categorizing all direct deliverables and physical products to the client.</p>
+
+                                <ul class="space-y-4">
+                                    <li class="flex items-start gap-3">
+                                        <div class="w-6 h-6 rounded bg-[#0f172a] text-white flex items-center justify-center text-xs font-bold mt-1">A</div>
+                                        <div><strong class="text-slate-900">Apps:</strong> SaaS products, system snapshots, login portals.</div>
+                                    </li>
+                                    <li class="flex items-start gap-3">
+                                        <div class="w-6 h-6 rounded bg-[#d4af37] text-white flex items-center justify-center text-xs font-bold mt-1">B</div>
+                                        <div><strong class="text-slate-900">Books:</strong> Educational materials and protocol documentation.</div>
+                                    </li>
+                                    <li class="flex items-start gap-3">
+                                        <div class="w-6 h-6 rounded bg-[#64748b] text-white flex items-center justify-center text-xs font-bold mt-1">C</div>
+                                        <div><strong class="text-slate-900">CDs/C-Suite:</strong> Calculators, Community classes, Checklists.</div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="flex-1 w-full">
+                                <div class="chart-container">
+                                    <canvas id="abcChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- The Playbooks Explorer -->
+                    <div class="bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-800">
+                        <div class="p-6 bg-black border-b border-slate-800">
+                            <h3 class="text-2xl font-bold hero-gold">The Core Playbooks Explorer</h3>
+                            <p class="text-slate-400 text-sm mt-1">Select a playbook to view its specific workflow and data architecture routing.</p>
+                        </div>
+                        <div class="flex flex-col md:flex-row">
+                            <!-- Playbook Tabs -->
+                            <div class="w-full md:w-1/3 bg-slate-800 border-r border-slate-700 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible">
+                                <button class="playbook-tab active-tab w-full text-left px-6 py-4 font-bold text-white border-b md:border-b-0 md:border-l-4 border-transparent hover:bg-slate-700 whitespace-nowrap md:whitespace-normal" data-pb="c4">
+                                    C4: Consumer Credit
+                                </button>
+                                <button class="playbook-tab w-full text-left px-6 py-4 font-bold text-slate-400 border-b md:border-b-0 md:border-l-4 border-transparent hover:bg-slate-700 whitespace-nowrap md:whitespace-normal" data-pb="c5">
+                                    C5: Cashflow
+                                </button>
+                                <button class="playbook-tab w-full text-left px-6 py-4 font-bold text-slate-400 border-b md:border-b-0 md:border-l-4 border-transparent hover:bg-slate-700 whitespace-nowrap md:whitespace-normal" data-pb="c6">
+                                    C6: Cryptocurrency
+                                </button>
+                                <button class="playbook-tab w-full text-left px-6 py-4 font-bold text-slate-400 border-b md:border-b-0 md:border-l-4 border-transparent hover:bg-slate-700 whitespace-nowrap md:whitespace-normal" data-pb="c7">
+                                    C7: Community
+                                </button>
+                            </div>
+                            <!-- Playbook Details -->
+                            <div class="w-full md:w-2/3 p-8 bg-slate-900 min-h-[350px]" id="playbook-display">
+                                <!-- Dynamic Content Injected Here via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 3: Fulfillment Infrastructure -->
+                <section id="sec-infrastructure" class="content-section hidden fade-in">
+                    <header class="mb-10">
+                        <h2 class="text-4xl font-extrabold text-slate-900 mb-4">Fulfillment Engine</h2>
+                        <p class="text-lg text-slate-600 border-l-4 hero-gold-border pl-4 leading-relaxed">
+                            The technical stack powering Project B.A.T.M.A.N. This displays how client data is ingested, processed via AI, and securely stored locally for agentic access.
+                        </p>
+                    </header>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 text-6xl opacity-5">🤖</div>
+                            <h4 class="font-bold text-slate-900 mb-2">AI Orchestration</h4>
+                            <p class="text-sm text-slate-600 mb-4">Bridging traditional web engineering with LLMs.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-mono">Otter.ai</span>
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-mono">NotebookLM</span>
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-mono">Google Studio</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 text-6xl opacity-5">🗂️</div>
+                            <h4 class="font-bold text-slate-900 mb-2">Local Knowledge Sync</h4>
+                            <p class="text-sm text-slate-600 mb-4">Localized markdown for LLMs, MCPs, and CLIs.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded font-mono">Obsidian Vault</span>
+                                <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded font-mono">Dropbox Parity</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 text-6xl opacity-5">📋</div>
+                            <h4 class="font-bold text-slate-900 mb-2">Project Mgmt (PMP)</h4>
+                            <p class="text-sm text-slate-600 mb-4">Matchmaking and tracking for the fulfillment network.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded font-mono">Monday.com</span>
+                                <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded font-mono">Asana / Notion</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ingestion Flow Diagram (HTML/CSS) -->
+                    <div class="bg-slate-900 p-8 rounded-2xl text-white">
+                        <h3 class="text-xl font-bold hero-gold mb-8 text-center">Client Ingestion Flow (One Simple Page)</h3>
+
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-4 max-w-4xl mx-auto">
+                            <!-- Node 1 -->
+                            <div class="bg-slate-800 border-2 hero-gold-border p-4 rounded-xl text-center w-full md:w-1/3 z-10 relative">
+                                <div class="text-2xl mb-2">🌐</div>
+                                <div class="font-bold">Cloud Concierge</div>
+                                <div class="text-xs text-slate-400 mt-1">JotForm / Typeform / Dropbox</div>
+                            </div>
+
+                            <!-- Arrow -->
+                            <div class="text-hero-gold text-2xl rotate-90 md:rotate-0">➔</div>
+
+                            <!-- Node 2 -->
+                            <div class="bg-slate-800 border-2 border-blue-400 p-4 rounded-xl text-center w-full md:w-1/3 z-10 relative">
+                                <div class="text-2xl mb-2">💧</div>
+                                <div class="font-bold">W.A.T.E.R.</div>
+                                <div class="text-xs text-slate-400 mt-1">Events & Exchanges</div>
+                            </div>
+
+                            <!-- Arrow -->
+                            <div class="text-blue-400 text-2xl rotate-90 md:rotate-0">➔</div>
+
+                            <!-- Node 3 -->
+                            <div class="bg-slate-800 border-2 border-emerald-400 p-4 rounded-xl text-center w-full md:w-1/3 z-10 relative">
+                                <div class="text-2xl mb-2">🗺️</div>
+                                <div class="font-bold">M.A.P.S. & C.A.R.S.</div>
+                                <div class="text-xs text-slate-400 mt-1">Profile & Attribute Storage</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 4: Artifact Generator (Prompt Chains) -->
+                <section id="sec-artifacts" class="content-section hidden fade-in">
+                    <header class="mb-10">
+                        <h2 class="text-4xl font-extrabold text-slate-900 mb-4">Artifact Generator: Prompt Chains</h2>
+                        <p class="text-lg text-slate-600 border-l-4 hero-gold-border pl-4 leading-relaxed">
+                            Direct execution module. This section provides the exact prompt engineering required to generate the print-ready, fillable LaTeX code for the 3-Page Master Portfolio. Copy these directly into Gemini or NotebookLM.
+                        </p>
+                        <div class="flex flex-wrap items-center gap-3 mt-4">
+                            <div class="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-sm font-bold border border-yellow-300">
+                                Target Output: Strict Gold (#d4af37) & Black Brand
+                            </div>
+                            <a href="L7S-HERO-Master-Portfolio.tex" download
+                               class="inline-flex items-center gap-2 bg-[#d4af37] text-black px-4 py-1.5 rounded font-bold text-sm hover:bg-yellow-400 transition">
+                                ⬇ Download compiled 3-Page Portfolio (.tex)
+                            </a>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-2">The .tex is already built — fully fillable, self-contained, Black &amp; Gold. Compile with <code class="bg-slate-100 px-1 rounded">lualatex L7S-HERO-Master-Portfolio.tex</code> (run twice for form fields). The prompt-chains below remain for regenerating or extending.</p>
+                    </header>
+
+                    <div class="space-y-6">
+                        <!-- Prompt 1 -->
+                        <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                            <div class="bg-slate-900 p-4 flex justify-between items-center">
+                                <h3 class="text-white font-bold text-lg"><span class="hero-gold mr-2">PAGE 1</span> U.S. Escrow & Multi-Sig</h3>
+                                <button class="copy-btn bg-[#d4af37] text-black px-4 py-1.5 rounded font-bold text-sm hover:bg-yellow-400 transition" data-target="prompt-1">Copy Prompt</button>
+                            </div>
+                            <div class="p-6 bg-slate-50">
+                                <pre id="prompt-1" class="whitespace-pre-wrap font-mono text-sm text-slate-700 bg-white p-4 rounded border border-slate-200 overflow-x-auto">"Act as an expert LaTeX developer and legal document architect. I need a single, fully self-contained LaTeX document for 'Page 1' of my Master Portfolio. The visual theme MUST be strict Black and Gold (hex #d4af37). Do NOT use red anywhere.
+
+Content: Create a highly professional, text-based 'Infographic' explaining U.S. Escrow and Multi-Sig transactional routing and trust logic.
+Structure: Use the `article` class. Include a centered header with 'L7S HERO' and a lightning bolt unicode symbol (⚡). Create clean, structured sections using `mdframed` or `tcolorbox` with gold borders to explain: 1) The Role of Escrow, 2) Multi-Sig Security Protocol, and 3) The Trust Logic.
+Requirement: Ensure the code compiles perfectly without external images (use pure LaTeX styling). Make it look devastatingly professional."</pre>
+                            </div>
+                        </div>
+
+                        <!-- Prompt 2 -->
+                        <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                            <div class="bg-slate-900 p-4 flex justify-between items-center">
+                                <h3 class="text-white font-bold text-lg"><span class="hero-gold mr-2">PAGE 2</span> Premium Direct Seller</h3>
+                                <button class="copy-btn bg-[#d4af37] text-black px-4 py-1.5 rounded font-bold text-sm hover:bg-yellow-400 transition" data-target="prompt-2">Copy Prompt</button>
+                            </div>
+                            <div class="p-6 bg-slate-50">
+                                <pre id="prompt-2" class="whitespace-pre-wrap font-mono text-sm text-slate-700 bg-white p-4 rounded border border-slate-200 overflow-x-auto">"Act as an expert LaTeX developer. I need 'Page 2' of my Master Portfolio: The Premium Direct Seller Template.
+
+Brand: Strict Black and Gold (#d4af37) theme. Title: 'L7S HERO - Premium Direct Seller Agreement'.
+Content & Layout: This document MUST contain fillable form fields (using the `hyperref` package's `\TextField` and `\CheckBox` commands).
+Sections required: > 1. Entity Information (Name, Date, ID).
+2. Fund Deployment Configuration (Include checkboxes for 'Public Funds' and 'Private Funds').
+3. Authorized Signatures.
+Styling: Use a clean, modern grid layout. The background should be white, text black, with gold accents for section headers and form field borders. Ensure it is print-ready and fully interactive."</pre>
+                            </div>
+                        </div>
+
+                        <!-- Prompt 3 -->
+                        <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                            <div class="bg-slate-900 p-4 flex justify-between items-center">
+                                <h3 class="text-white font-bold text-lg"><span class="hero-gold mr-2">PAGE 3</span> Discount Broker Side</h3>
+                                <button class="copy-btn bg-[#d4af37] text-black px-4 py-1.5 rounded font-bold text-sm hover:bg-yellow-400 transition" data-target="prompt-3">Copy Prompt</button>
+                            </div>
+                            <div class="p-6 bg-slate-50">
+                                <pre id="prompt-3" class="whitespace-pre-wrap font-mono text-sm text-slate-700 bg-white p-4 rounded border border-slate-200 overflow-x-auto">"Act as an expert LaTeX developer. I need 'Page 3' of my Master Portfolio: The Discount Broker Side Template.
+
+Brand: Black and Gold (#d4af37) theme. Title: 'L7S HERO - Discount Broker Sourcing'.
+Content: This document must map out 'The 4 Sources' for complete end-to-end transparency.
+Layout: Create a 2x2 grid or 4 distinct, beautifully styled blocks (using `tcolorbox` with subtle gold shading). Label them Source 1, Source 2, Source 3, and Source 4. Include fillable text areas (`\TextField` with multi-line enabled) under each source so the operator can type in the specifics. Add a final signature block at the bottom. The document must be completely self-contained."</pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+
+        <!-- Toast Notification (Hidden by default) -->
+        <div id="toast" class="absolute bottom-6 right-6 bg-slate-900 text-white px-6 py-3 rounded shadow-xl border-l-4 hero-gold-border transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+            Prompt copied to clipboard! 📋
+        </div>
+    </main>
+
+    <script>
+        // --- 1. State & Data Management ---
+        const playbooksData = {
+            c4: {
+                title: "C4: Consumer Credit",
+                sub: "C-Suite Contacts + COI",
+                workflow: "Credit Hero Workflow: AB Reports + 3-Bureau upload",
+                routing: ["PMS MFSN Client Portal", "Scribe Pro", "Asana/Notion/Monday"],
+                architecture: "M.A.P.S. (Profiles) ➔ connected to ➔ C.A.R.S. (Attributes)"
+            },
+            c5: {
+                title: "C5: Cashflow",
+                sub: "Contingencies & Costs",
+                workflow: "Cashflow Coverage Checklist Execution",
+                routing: ["WalletHub", "Monarch Money", "YNAB"],
+                architecture: "K.E.Y.S. (Know Even Your Self) ➔ F.I.N.E. M.E.N. (Sub-framework)"
+            },
+            c6: {
+                title: "C6: Cryptocurrency",
+                sub: "Content",
+                workflow: "Manage wallets, exchanges, fundamentals (CEX/DEX), Ledger/MetaMask",
+                routing: ["Secure Vault", "Asset Nodes"],
+                architecture: "C.A.R.S. ➔ integrated with ➔ K.E.Y.S."
+            },
+            c7: {
+                title: "C7: Community",
+                sub: "Channels",
+                workflow: "Skool enrollment & Membership portals",
+                routing: ["$1 Zoom Test (Mandatory)", "Proof of Funds/Life"],
+                architecture: "Community DB ➔ linked to ➔ Fulfillment Network"
+            }
+        };
+
+        // --- 2. Navigation Logic ---
+        const navItems = document.querySelectorAll('.nav-item');
+        const sections = document.querySelectorAll('.content-section');
+        const mobileSelect = document.getElementById('mobile-nav-select');
+
+        function activateSection(targetId) {
+            // Hide all sections
+            sections.forEach(sec => sec.classList.add('hidden'));
+
+            // Remove active state from nav
+            navItems.forEach(item => {
+                item.classList.remove('active', 'border-l-[#d4af37]', 'text-[#d4af37]');
+                item.classList.add('border-transparent');
+
+                if(item.getAttribute('data-target') === targetId) {
+                    item.classList.add('active', 'border-l-[#d4af37]');
+                    item.classList.remove('border-transparent');
+                    item.style.color = '#d4af37';
+                } else {
+                    item.style.color = '';
+                }
+            });
+
+            // Show target section
+            const targetEl = document.getElementById(targetId);
+            if(targetEl) {
+                targetEl.classList.remove('hidden');
+            }
+
+            // Sync mobile select
+            if(mobileSelect.value !== targetId) {
+                mobileSelect.value = targetId;
+            }
+        }
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                activateSection(e.currentTarget.getAttribute('data-target'));
+            });
+        });
+
+        mobileSelect.addEventListener('change', (e) => {
+            activateSection(e.target.value);
+        });
+
+        // --- 3. Playbook Interactive Logic ---
+        const playbookTabs = document.querySelectorAll('.playbook-tab');
+        const playbookDisplay = document.getElementById('playbook-display');
+
+        function renderPlaybook(key) {
+            const data = playbooksData[key];
+            const tags = data.routing.map(r => `<span class="bg-slate-700 text-slate-200 px-3 py-1 rounded-full text-xs">${r}</span>`).join('');
+
+            playbookDisplay.innerHTML = `
+                <div class="fade-in h-full flex flex-col justify-center">
+                    <div class="text-[#d4af37] text-sm font-bold tracking-widest uppercase mb-1">${data.sub}</div>
+                    <h4 class="text-3xl font-extrabold text-white mb-6">${data.title}</h4>
+
+                    <div class="space-y-6">
+                        <div class="bg-slate-800 p-4 rounded-lg border-l-4 border-[#d4af37]">
+                            <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Workflow</div>
+                            <div class="text-lg text-slate-200">${data.workflow}</div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Routing / Tools</div>
+                            <div class="flex flex-wrap gap-2">${tags}</div>
+                        </div>
+
+                        <div class="bg-[#1e293b] p-4 rounded-lg border border-slate-700">
+                            <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Data Architecture Alignment</div>
+                            <div class="font-mono text-sm text-[#d4af37]">${data.architecture}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        playbookTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                playbookTabs.forEach(t => {
+                    t.classList.remove('border-l-[#d4af37]', 'text-white', 'bg-slate-800');
+                    t.classList.add('border-transparent', 'text-slate-400');
+                    // Mobile border fixes
+                    t.classList.remove('border-b-[#d4af37]');
+                });
+
+                const current = e.currentTarget;
+                current.classList.remove('border-transparent', 'text-slate-400');
+                current.classList.add('text-white', 'bg-slate-800');
+
+                // Handle responsive borders
+                if (window.innerWidth >= 768) {
+                    current.classList.add('border-l-[#d4af37]');
+                } else {
+                    current.classList.add('border-b-[#d4af37]');
+                }
+
+                renderPlaybook(current.getAttribute('data-pb'));
+            });
+        });
+
+        // Initialize first playbook
+        renderPlaybook('c4');
+
+        // --- 4. Copy to Clipboard Logic ---
+        const copyBtns = document.querySelectorAll('.copy-btn');
+        const toast = document.getElementById('toast');
+
+        copyBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = e.currentTarget.getAttribute('data-target');
+                const textToCopy = document.getElementById(targetId).innerText;
+
+                // Create temp textarea to copy
+                const textarea = document.createElement('textarea');
+                textarea.value = textToCopy;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                // Show toast
+                toast.style.transform = 'translateY(0)';
+                toast.style.opacity = '1';
+
+                setTimeout(() => {
+                    toast.style.transform = 'translateY(20px)';
+                    toast.style.opacity = '0';
+                }, 3000);
+            });
+        });
+
+        // --- 5. Chart.js Initialization ---
+        // Need to wait slightly for section to be visible if it was hidden,
+        // but since section 2 is hidden on load, Chart.js handles 'maintainAspectRatio' fine when revealed.
+        const ctxAbc = document.getElementById('abcChart').getContext('2d');
+        new Chart(ctxAbc, {
+            type: 'doughnut',
+            data: {
+                labels: ['Apps (SaaS)', 'Books (Protocols)', 'CDs (C-Suite)'],
+                datasets: [{
+                    data: [45, 25, 30],
+                    backgroundColor: ['#0f172a', '#d4af37', '#64748b'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 20, font: { family: 'ui-sans-serif, system-ui, sans-serif' } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 13 },
+                        padding: 10,
+                        displayColors: true
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

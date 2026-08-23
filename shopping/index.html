@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Pickup · checklist</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--bg:#070b08;--panel:#0e150f;--line:#1d2b1f;--green:#39ff7a;--amber:#ffb347;--ink:#e9f4e9;--muted:#85998c;--mono:ui-monospace,Menlo,Consolas,monospace}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 var(--mono);padding:0 0 120px}
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px}
+  header{padding:30px 0 14px;border-bottom:1px solid var(--line)}
+  .kick{color:var(--green);letter-spacing:.28em;font-size:11px;text-transform:uppercase}
+  h1{font-size:26px;margin:.3em 0 .1em}
+  .sub{color:var(--muted);font-size:13px}
+  .prog{margin:14px 0 6px;height:16px;background:#0a0f0b;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .prog .f{height:100%;width:0;background:linear-gradient(90deg,#1f7a45,var(--green));box-shadow:0 0 14px rgba(57,255,122,.5);transition:width .25s}
+  .count{color:var(--amber);font-size:12px;letter-spacing:.12em}
+  ul{list-style:none;margin:14px 0;padding:0}
+  li{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:10px 0;cursor:pointer;transition:.15s;user-select:none}
+  li:active{transform:scale(.99)}
+  li.done{opacity:.5}
+  li.done .txt{text-decoration:line-through;color:var(--muted)}
+  .box{flex:0 0 26px;height:26px;border:2px solid var(--green);border-radius:7px;display:grid;place-items:center;font-size:17px;color:#061008}
+  li.done .box{background:var(--green)}
+  .txt{flex:1;font-size:18px}
+  .grp{color:var(--green);font-size:11px;letter-spacing:.22em;text-transform:uppercase;margin:22px 0 4px;border-left:3px solid #1f7a45;padding-left:9px}
+  .note{background:#13110a;border:1px solid #3a3115;border-radius:10px;padding:12px 14px;margin:14px 0;color:var(--amber);font-size:14px}
+  .add{display:flex;gap:8px;margin-top:18px}
+  .add input{flex:1;background:#0a0f0b;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:14px;font:16px var(--mono)}
+  .add button{background:var(--green);color:#061008;border:0;border-radius:10px;padding:0 18px;font:700 16px var(--mono)}
+  .clr{margin-top:20px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:10px 14px;font:13px var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kick">XEN · pickup list</div>
+    <h1>Pickup</h1>
+    <div class="sub">Tap to check off. Saves on this phone. Add anything missed.</div>
+    <div class="prog"><div class="f" id="f"></div></div>
+    <div class="count" id="c">0 of 0</div>
+  </header>
+
+  <div class="grp">Arby's</div>
+  <ul id="g-arbys"></ul>
+  <div class="grp">Taco Bell</div>
+  <ul id="g-tb"></ul>
+  <div class="grp">Drinks &amp; Juice</div>
+  <ul id="g-drinks"></ul>
+
+  <div class="note">Decide at the counter: trade an Arby's Philly for a Wendy's Triple only if the price matches AND Wendy's is still open. Xen is checking both.</div>
+
+  <div class="add">
+    <input id="new" placeholder="add an item..." autocomplete="off">
+    <button id="addbtn">Add</button>
+  </div>
+  <button class="clr" id="reset">uncheck all</button>
+</div>
+<script>
+  const SEED = {
+    arbys:  ["3 Philly cheesesteaks (cut up)"],
+    tb:     ["2 packs Cinnamon Twists"],
+    drinks: ["Hawaiian Punch","Watermelon juice","Red juice (fruit punch)"]
+  };
+  const KEY='xen-shop-v2';
+  let state = JSON.parse(localStorage.getItem(KEY)||'null');
+  if(!state){ state={items:[]};
+    SEED.arbys.forEach(t=>state.items.push({t,g:'arbys',d:false}));
+    SEED.tb.forEach(t=>state.items.push({t,g:'tb',d:false}));
+    SEED.drinks.forEach(t=>state.items.push({t,g:'drinks',d:false}));
+  }
+  const G={arbys:'g-arbys',tb:'g-tb',drinks:'g-drinks'};
+  function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+  function render(){
+    Object.values(G).forEach(id=>document.getElementById(id).innerHTML='');
+    state.items.forEach(it=>{
+      const li=document.createElement('li'); if(it.d)li.className='done';
+      li.innerHTML='<div class="box">'+(it.d?'✓':'')+'</div><div class="txt"></div>';
+      li.querySelector('.txt').textContent=it.t;
+      li.onclick=()=>{it.d=!it.d;save();render();};
+      document.getElementById(G[it.g]||'g-drinks').appendChild(li);
+    });
+    const done=state.items.filter(x=>x.d).length,n=state.items.length;
+    document.getElementById('c').textContent=done+' of '+n;
+    document.getElementById('f').style.width=(n?done/n*100:0)+'%';
+  }
+  document.getElementById('addbtn').onclick=()=>{
+    const v=document.getElementById('new').value.trim(); if(!v)return;
+    state.items.push({t:v,g:'drinks',d:false}); document.getElementById('new').value=''; save(); render();
+  };
+  document.getElementById('new').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('addbtn').click();});
+  document.getElementById('reset').onclick=()=>{state.items.forEach(x=>x.d=false);save();render();};
+  render();
+</script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

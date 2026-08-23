@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Asset Coverage — review deck</title>
+<meta name="description" content="Auto-advancing, editable review deck. Every line is correctable in place.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a0a0e;--ink-2:#15151c;--ink-3:#1f1f29;
+  --chrome:#c0c8d0;--chrome-hi:#e8eef2;--chrome-lo:#6a737d;--steel:#3a4048;
+  --iridescent-1:#7b2cbf;--iridescent-2:#06b6d4;--iridescent-3:#ec4899;
+  --gradient-iridescent:conic-gradient(from 0deg,var(--iridescent-1),var(--iridescent-2),var(--iridescent-3),var(--iridescent-1));
+  --oxblood:#5a0a14;--oxblood-hi:#8a1525;--cyan-glow:#00e0ff;--amber:#ffb300;
+  --text:#fbf9f4;--text-2:#a8aab2;--text-3:#6a6c74;
+  --lift:0 2px 4px rgba(0,224,255,.04),0 24px 60px rgba(10,10,14,.6),0 0 0 1px rgba(192,200,208,.08);
+  --fd:"Cinzel",Georgia,serif;--fb:"Inter",-apple-system,system-ui,sans-serif;--fm:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--text);font-family:var(--fb);overflow:hidden;
+  -webkit-font-smoothing:antialiased;height:100vh;height:100dvh;
+  background-image:
+    radial-gradient(circle at 18% 22%,rgba(123,44,191,.28),transparent 38%),
+    radial-gradient(circle at 84% 68%,rgba(6,182,212,.22),transparent 42%),
+    radial-gradient(circle at 50% 50%,var(--ink-2),var(--ink) 72%);}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:90;opacity:.045;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;opacity:.5}
+.orb.a{width:52vw;height:52vw;left:-14vw;top:-10vw;background:var(--iridescent-1);animation:da 26s ease-in-out infinite}
+.orb.b{width:44vw;height:44vw;right:-12vw;bottom:-8vw;background:var(--iridescent-2);animation:db 32s ease-in-out infinite}
+@keyframes da{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(7vw,5vh) scale(1.12)}}
+@keyframes db{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-6vw,-6vh) scale(1.15)}}
+
+/* ── scene stage ── */
+.deck{position:relative;z-index:10;height:100vh;height:100dvh;display:grid;
+  grid-template-rows:auto 1fr auto;perspective:1200px}
+.scene{grid-row:2;grid-column:1;display:none;place-content:center;padding:20px clamp(18px,5vw,64px);
+  max-width:1000px;margin:0 auto;width:100%;overflow-y:auto}
+.scene.on{display:grid;animation:enter .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes enter{from{opacity:0;transform:translateY(30px) rotateX(6deg)}to{opacity:1;transform:none}}
+
+.eyebrow{font-family:var(--fm);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--cyan-glow);margin-bottom:14px}
+h1{font-family:var(--fd);font-weight:700;font-size:clamp(34px,7vw,74px);line-height:1;margin:0 0 18px;letter-spacing:-.02em;
+  background:var(--gradient-iridescent);background-size:220% 220%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:irid 9s ease-in-out infinite}
+@keyframes irid{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+h2{font-family:var(--fd);font-size:clamp(22px,4vw,40px);font-weight:600;margin:0 0 16px;letter-spacing:-.01em}
+p{color:var(--text-2);font-size:clamp(15px,2vw,19px);line-height:1.65;margin:0 0 14px;font-weight:300}
+b{color:var(--text);font-weight:500}
+
+/* editable affordance — the whole point */
+[data-ed]{outline:none;border-radius:6px;padding:2px 6px;margin:-2px -6px;
+  transition:background .2s,box-shadow .2s;cursor:text}
+[data-ed]:hover{background:rgba(0,224,255,.06);box-shadow:inset 0 0 0 1px rgba(0,224,255,.22)}
+[data-ed]:focus{background:rgba(0,224,255,.1);box-shadow:inset 0 0 0 1px var(--cyan-glow)}
+[data-ed].edited{box-shadow:inset 0 0 0 1px var(--amber)}
+[data-ed].edited::after{content:"edited";font-family:var(--fm);font-size:9px;letter-spacing:.14em;
+  color:var(--amber);vertical-align:super;margin-left:7px;opacity:.85}
+
+.stack{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.layer{border-radius:14px;padding:18px 22px;background:linear-gradient(155deg,var(--ink-3),var(--ink-2));
+  border:1px solid rgba(192,200,208,.14);box-shadow:var(--lift)}
+.layer.hi{background:linear-gradient(155deg,var(--steel),var(--ink-3));border-color:rgba(192,200,208,.3)}
+.layer.spread{background:linear-gradient(155deg,rgba(0,224,255,.14),rgba(10,10,14,.6));border-color:rgba(0,224,255,.34)}
+.cap{font-family:var(--fm);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
+.fig{font-family:var(--fd);font-size:clamp(24px,4.5vw,38px);font-weight:600}
+.layer.hi .fig{color:var(--chrome-hi)}
+.layer.spread .fig{color:var(--cyan-glow);text-shadow:0 0 26px rgba(0,224,255,.45)}
+.note{font-size:14px;color:var(--text-2);margin-top:4px}
+
+.panel{padding:26px 28px;border-radius:14px;background:linear-gradient(155deg,var(--steel),var(--ink-3));
+  border:1px solid var(--chrome-lo);box-shadow:inset 0 1px 0 var(--chrome),0 12px 32px rgba(10,10,14,.7)}
+.caution{border-left:3px solid var(--oxblood-hi);background:linear-gradient(155deg,rgba(90,10,20,.5),var(--ink-2));
+  border-radius:14px;padding:24px 28px;box-shadow:var(--lift)}
+.pull{font-family:var(--fd);font-size:clamp(22px,4vw,38px);line-height:1.3;text-align:center;color:var(--chrome-hi)}
+
+/* ── transport ── */
+.top{grid-row:1;display:flex;align-items:center;gap:14px;padding:16px clamp(16px,4vw,32px);z-index:20}
+.progress{flex:1;height:3px;background:rgba(192,200,208,.12);border-radius:99px;overflow:hidden;display:flex;gap:3px}
+.seg{flex:1;background:rgba(192,200,208,.12);border-radius:99px;overflow:hidden;cursor:pointer}
+.seg i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--iridescent-2),var(--cyan-glow))}
+.seg.done i{width:100%}
+.seg.now i{animation:fill var(--dur,9s) linear forwards}
+@keyframes fill{to{width:100%}}
+.count{font-family:var(--fm);font-size:11px;color:var(--text-3);letter-spacing:.1em;min-width:44px;text-align:right}
+
+.bottom{grid-row:3;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  padding:16px clamp(16px,4vw,32px) 26px;z-index:20}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:999px;cursor:pointer;
+  background:linear-gradient(155deg,var(--chrome-hi),var(--chrome) 50%,var(--chrome-lo));
+  border:1px solid var(--chrome-lo);color:var(--ink);font-family:var(--fd);font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;font-size:12px;
+  box-shadow:inset 0 1px 0 var(--chrome-hi),inset 0 -8px 12px rgba(10,10,14,.25),0 8px 20px rgba(10,10,14,.5);
+  transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 var(--chrome-hi),0 12px 28px rgba(10,10,14,.55),0 0 32px rgba(0,224,255,.2)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:rgba(21,21,28,.8);border-color:rgba(192,200,208,.2);color:var(--text-2);box-shadow:none}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--oxblood);box-shadow:0 0 8px var(--oxblood-hi)}
+.dot.playing{background:var(--cyan-glow);box-shadow:0 0 10px var(--cyan-glow);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── corrections drawer ── */
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(92vw,420px);z-index:80;
+  background:linear-gradient(155deg,var(--ink-2),var(--ink));border-left:1px solid rgba(192,200,208,.16);
+  transform:translateX(100%);transition:transform .4s cubic-bezier(.2,.8,.2,1);
+  display:flex;flex-direction:column;box-shadow:-30px 0 60px rgba(0,0,0,.6)}
+.drawer.open{transform:none}
+.drawer h3{font-family:var(--fd);margin:0;padding:22px 24px 12px;font-size:18px}
+.dlist{flex:1;overflow-y:auto;padding:0 24px 20px}
+.corr{border:1px solid rgba(255,179,0,.3);background:rgba(255,179,0,.05);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.corr .k{font-family:var(--fm);font-size:9px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase}
+.corr .was{font-size:13px;color:var(--text-3);text-decoration:line-through;margin-top:5px}
+.corr .now{font-size:14px;color:var(--text);margin-top:3px}
+.dfoot{padding:16px 24px 24px;border-top:1px solid rgba(192,200,208,.12);display:flex;gap:8px;flex-wrap:wrap}
+.empty{color:var(--text-3);font-size:14px;padding:8px 0}
+.toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,20px);z-index:95;opacity:0;
+  background:var(--ink-3);border:1px solid var(--cyan-glow);color:var(--text);
+  padding:11px 20px;border-radius:99px;font-family:var(--fm);font-size:12px;
+  transition:opacity .3s,transform .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:600px){.deck{perspective:800px}.orb{filter:blur(60px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="orb a"></div><div class="orb b"></div>
+
+<div class="deck">
+
+  <div class="top">
+    <div class="progress" id="prog"></div>
+    <div class="count" id="count">1/6</div>
+  </div>
+
+  <!-- 1 -->
+  <section class="scene on">
+    <div class="eyebrow" data-ed="k1">Session notes · captured live</div>
+    <h1 data-ed="t1">Asset Coverage</h1>
+    <p data-ed="l1">Buy the business whose wind-down value already exceeds the loan. Then the bank is looking at the asset, not at your signature.</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="scene">
+    <div class="eyebrow">The numbers he gave</div>
+    <div class="stack">
+      <div class="layer hi"><div class="cap">Dissolution value</div><div class="fig" data-ed="n1">$21–22M</div><div class="note" data-ed="n1n">What the lender could recover if it were wound down</div></div>
+      <div class="layer"><div class="cap">Bank portion of purchase</div><div class="fig" data-ed="n2">$12M</div><div class="note" data-ed="n2n">The exposure being underwritten</div></div>
+      <div class="layer spread"><div class="cap">Cushion</div><div class="fig" data-ed="n3">≈ $9M</div><div class="note" data-ed="n3n">The gap that lets the asset carry the deal</div></div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="scene">
+    <div class="eyebrow">The mechanism</div>
+    <h2>Four moves</h2>
+    <p data-ed="m1"><b>01</b> — Buy an asset worth more than the money you need from the bank.</p>
+    <p data-ed="m2"><b>02</b> — Dissolution price is the recovery if the business were sold off or shut down.</p>
+    <p data-ed="m3"><b>03</b> — Recovery above the loan means the lender holds a cushion, not a risk.</p>
+    <p data-ed="m4"><b>04</b> — So the bank can look to the asset rather than a personal guarantee.</p>
+  </section>
+
+  <!-- 4 -->
+  <section class="scene">
+    <div class="eyebrow">Who was speaking</div>
+    <h2 data-ed="w0">Kelvin Squires</h2>
+    <div class="panel">
+      <p data-ed="w1">Describes himself as owner of an electrical contracting company in southeast Michigan, about ten years in. Teaches structuring deals so the asset supports the borrowing instead of the person signing.</p>
+      <p data-ed="w2" style="font-size:14px;color:var(--text-3)">Project book as stated: Henry Ford Health hospital Midtown Detroit ($2.2B) · Henry Ford / Michigan State research building · Wayne State medical research building · University of Michigan Troy cardiovascular ($15M). Recorded as spoken, not independently checked.</p>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="scene">
+    <div class="eyebrow">Read before pricing a plan on it</div>
+    <h2>The caveat</h2>
+    <div class="caution">
+      <p data-ed="c1"><b>Collateral-coverage lending is real</b> and the logic holds directionally. But a waived personal guarantee on an eight-figure acquisition is uncommon for a buyer with no operating track record in that industry. SBA 7(a) requires a guarantee from any owner of 20% or more, and most middle-market lenders ask as a matter of course.</p>
+      <p data-ed="c2">He borrows with a decade of contracting operations behind him. The structure works partly because of who is asking. Read the ratio as necessary, not sufficient.</p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="scene">
+    <div class="eyebrow">What transfers</div>
+    <div class="panel" style="padding:44px 28px">
+      <p class="pull" data-ed="p1">Borrow against an asset that covers itself, rather than against yourself.</p>
+    </div>
+    <p data-ed="p2" style="margin-top:18px">Different lane from services income. Services scale with hours and restart at zero every month. An acquisition financed against its own dissolution value is bought once and carries its own collateral.</p>
+  </section>
+
+  <div class="bottom">
+    <button class="btn ghost" id="prev">◀ Prev</button>
+    <button class="btn" id="play"><span class="dot playing" id="dot"></span><span id="playlbl">Pause</span></button>
+    <button class="btn ghost" id="next">Next ▶</button>
+    <button class="btn" id="opendrawer">Corrections <span id="cbadge">0</span></button>
+  </div>
+</div>
+
+<aside class="drawer" id="drawer">
+  <h3>Your corrections</h3>
+  <div class="dlist" id="dlist"><div class="empty">Click any line on the deck and type. Changes are saved on this device and listed here.</div></div>
+  <div class="dfoot">
+    <button class="btn" id="copy">Copy all</button>
+    <button class="btn ghost" id="reset">Reset</button>
+    <button class="btn ghost" id="close">Close</button>
+  </div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='ac-corrections-v1';
+const scenes=[...document.querySelectorAll('.scene')];
+const DUR=9000;
+let idx=0, playing=true, timer=null;
+
+// progress segments
+const prog=document.getElementById('prog');
+scenes.forEach((_,i)=>{const s=document.createElement('div');s.className='seg';s.innerHTML='<i></i>';
+  s.onclick=()=>go(i);prog.appendChild(s)});
+const segs=[...prog.children];
+
+function paint(){
+  scenes.forEach((s,i)=>s.classList.toggle('on',i===idx));
+  segs.forEach((s,i)=>{s.classList.toggle('done',i<idx);s.classList.remove('now');
+    s.querySelector('i').style.width=i<idx?'100%':'0'});
+  if(playing){segs[idx].style.setProperty('--dur',DUR+'ms');segs[idx].classList.add('now')}
+  else{segs[idx].querySelector('i').style.width='0'}
+  document.getElementById('count').textContent=(idx+1)+'/'+scenes.length;
+}
+function go(i){idx=(i+scenes.length)%scenes.length;paint();restart()}
+function restart(){clearTimeout(timer);if(playing)timer=setTimeout(()=>go(idx+1),DUR)}
+function setPlay(v){playing=v;
+  document.getElementById('playlbl').textContent=v?'Pause':'Play';
+  document.getElementById('dot').classList.toggle('playing',v);
+  paint();restart()}
+
+document.getElementById('next').onclick=()=>go(idx+1);
+document.getElementById('prev').onclick=()=>go(idx-1);
+document.getElementById('play').onclick=()=>setPlay(!playing);
+addEventListener('keydown',e=>{
+  if(e.target.isContentEditable)return;
+  if(e.key==='ArrowRight')go(idx+1);
+  if(e.key==='ArrowLeft')go(idx-1);
+  if(e.key===' '){e.preventDefault();setPlay(!playing)}
+});
+
+// ── editing ──
+const orig={},store=JSON.parse(localStorage.getItem(KEY)||'{}');
+document.querySelectorAll('[data-ed]').forEach(el=>{
+  const k=el.dataset.ed;orig[k]=el.innerHTML;
+  if(store[k]!==undefined){el.innerHTML=store[k];el.classList.add('edited')}
+  el.contentEditable=true;el.spellcheck=true;
+  el.addEventListener('focus',()=>setPlay(false));   // editing pauses the deck
+  el.addEventListener('input',()=>{
+    if(el.innerHTML!==orig[k]){store[k]=el.innerHTML;el.classList.add('edited')}
+    else{delete store[k];el.classList.remove('edited')}
+    localStorage.setItem(KEY,JSON.stringify(store));render();
+  });
+});
+
+function render(){
+  const ks=Object.keys(store);
+  document.getElementById('cbadge').textContent=ks.length;
+  const l=document.getElementById('dlist');
+  if(!ks.length){l.innerHTML='<div class="empty">Click any line on the deck and type. Changes are saved on this device and listed here.</div>';return}
+  l.innerHTML=ks.map(k=>`<div class="corr"><div class="k">${k}</div>
+    <div class="was">${strip(orig[k])}</div><div class="now">${strip(store[k])}</div></div>`).join('');
+}
+const strip=h=>{const d=document.createElement('div');d.innerHTML=h;return d.textContent.trim()};
+
+document.getElementById('opendrawer').onclick=()=>{document.getElementById('drawer').classList.add('open');setPlay(false)};
+document.getElementById('close').onclick=()=>document.getElementById('drawer').classList.remove('open');
+document.getElementById('copy').onclick=()=>{
+  const ks=Object.keys(store);
+  if(!ks.length)return toast('No corrections yet');
+  const txt=ks.map(k=>`[${k}]\nwas: ${strip(orig[k])}\nnow: ${strip(store[k])}`).join('\n\n');
+  navigator.clipboard.writeText(txt).then(()=>toast('Corrections copied')).catch(()=>toast('Copy blocked'));
+};
+document.getElementById('reset').onclick=()=>{
+  localStorage.removeItem(KEY);
+  document.querySelectorAll('[data-ed]').forEach(el=>{el.innerHTML=orig[el.dataset.ed];el.classList.remove('edited')});
+  for(const k in store)delete store[k];render();toast('Reset to original');
+};
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1900)}
+
+render();paint();restart();
+</script>
+</body>
+</html>

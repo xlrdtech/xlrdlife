@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex">
+<title>Music Video Spec — and the honest hardware verdict</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f5f7;
+  --card:#ffffff;
+  --ink:#0b0d12;
+  --ink-2:#3c4350;
+  --ink-3:#6b7480;
+  --line:#e2e5ea;
+  --line-2:#eceff3;
+  --red:#b42318;
+  --red-bg:#fef3f2;
+  --red-line:#fbc9c4;
+  --amber:#8a5a00;
+  --amber-bg:#fffaeb;
+  --amber-line:#fadf9a;
+  --green:#0f6b45;
+  --green-bg:#f0fdf6;
+  --green-line:#bfe5d1;
+  --blue:#1d4ed8;
+  --blue-bg:#f2f6ff;
+  --blue-line:#c9d9fa;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding:0 0 64px;
+  overflow-x:hidden;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+header{padding:28px 0 8px}
+.eyebrow{
+  font:600 11px/1 var(--mono);
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+}
+h1{
+  font-size:clamp(26px,7vw,38px);
+  line-height:1.08;
+  letter-spacing:-.022em;
+  margin:10px 0 8px;
+  font-weight:800;
+}
+.asof{
+  font:500 12.5px/1.45 var(--mono);
+  color:var(--ink-3);
+  margin:0 0 10px;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  margin:14px 0;
+}
+h2{
+  font-size:13px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  font-weight:700;
+  margin:0 0 12px;
+}
+h3{font-size:15.5px;margin:20px 0 8px;font-weight:700;letter-spacing:-.01em}
+h3:first-of-type{margin-top:4px}
+p{margin:0 0 10px}
+p:last-child{margin-bottom:0}
+.lede{font-size:16.5px;color:var(--ink-2)}
+.muted{color:var(--ink-3);font-size:13.5px;line-height:1.55}
+b,strong{font-weight:700}
+
+/* ---- SECTION NUMBER RULE ---- */
+.sec{margin:30px 0 0}
+.sec .num{
+  font:700 11px/1 var(--mono);
+  letter-spacing:.12em;
+  color:var(--ink-3);
+  text-transform:uppercase;
+  padding-bottom:10px;
+  display:block;
+  border-bottom:1px solid var(--line);
+  margin-bottom:2px;
+}
+
+/* ---- TAGS ---- */
+.tag{
+  display:inline-block;
+  font:700 9.5px/1.35 var(--mono);
+  letter-spacing:.07em;
+  padding:2px 5px;
+  border-radius:4px;
+  vertical-align:2px;
+  white-space:nowrap;
+}
+.t-v{background:var(--green-bg);color:var(--green);border:1px solid var(--green-line)}
+.t-m{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-line)}
+.t-u{background:#f2f3f6;color:var(--ink-3);border:1px solid var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:10px 0 0;font-size:12.5px;color:var(--ink-3)}
+.legend div{display:flex;gap:6px;align-items:baseline}
+
+/* ---- SPEC LIST ---- */
+.spec{counter-reset:s}
+.srow{
+  display:grid;
+  grid-template-columns:26px 1fr;
+  gap:12px;
+  padding:13px 0;
+  border-bottom:1px solid var(--line-2);
+}
+.srow:last-child{border-bottom:none;padding-bottom:0}
+.srow:first-child{padding-top:0}
+.srow .n{
+  font:700 12px/1.5 var(--mono);
+  color:var(--ink-3);
+  font-variant-numeric:tabular-nums;
+}
+.srow .t{font-weight:700;font-size:15.5px;letter-spacing:-.01em}
+.srow .d{font-size:14px;color:var(--ink-2);margin-top:3px;line-height:1.5}
+.q{color:var(--ink);font-style:italic}
+
+/* ---- SCORECARD ---- */
+.score .r{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:12px;
+  padding:10px 0;
+  border-bottom:1px solid var(--line-2);
+}
+.score .r:last-child{border-bottom:none;padding-bottom:0}
+.score .k{font-size:14.5px;font-weight:600}
+.score .k i{display:block;font-style:normal;font-weight:400;font-size:12.5px;color:var(--ink-3);margin-top:2px;line-height:1.45}
+.pill{
+  font:700 10px/1.4 var(--mono);
+  letter-spacing:.06em;
+  padding:3px 7px;
+  border-radius:5px;
+  white-space:nowrap;
+  flex:none;
+}
+.p-yes{background:var(--green-bg);color:var(--green);border:1px solid var(--green-line)}
+.p-part{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-line)}
+.p-no{background:var(--red-bg);color:var(--red);border:1px solid var(--red-line)}
+
+/* ---- TABLE ---- */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -18px;padding:0 18px}
+table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:400px}
+th{
+  text-align:left;
+  font:700 10.5px/1.3 var(--mono);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+  border-bottom:1px solid var(--line);
+  padding:0 10px 7px 0;
+  vertical-align:bottom;
+}
+td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line-2);vertical-align:top}
+td:last-child,th:last-child{padding-right:0}
+.nums{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th.nums{text-align:right}
+tr.hi td{background:#fbfcfe;font-weight:650}
+tr.hi td:first-child{border-radius:6px 0 0 6px}
+tr.hi td:last-child{border-radius:0 6px 6px 0}
+.note{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.45;margin-top:3px;font-weight:400}
+.thing{font-weight:600}
+
+/* ---- CALLOUTS (uniform borders only) ---- */
+.call{
+  border-radius:12px;
+  padding:15px 16px;
+  margin:16px 0;
+  font-size:14.5px;
+  line-height:1.55;
+}
+.call h4{
+  margin:0 0 7px;
+  font-size:12px;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  font-weight:800;
+}
+.call p{margin:0 0 8px}
+.call p:last-child{margin-bottom:0}
+.c-red{background:var(--red-bg);border:2px solid var(--red);color:#4a1512}
+.c-red h4{color:var(--red)}
+.c-red b{color:var(--red)}
+.c-amber{background:var(--amber-bg);border:1px solid var(--amber-line);color:#5c3d00}
+.c-amber h4{color:var(--amber)}
+.c-green{background:var(--green-bg);border:2px solid var(--green);color:#0c3d29}
+.c-green h4{color:var(--green)}
+.c-blue{background:var(--blue-bg);border:1px solid var(--blue-line);color:#12305e}
+.c-blue h4{color:var(--blue)}
+.c-plain{background:#fbfbfc;border:1px dashed var(--line);color:var(--ink-2)}
+.c-plain h4{color:var(--ink-3)}
+code{font-family:var(--mono);font-size:.88em;background:#eef0f4;padding:1.5px 5px;border-radius:4px;color:var(--ink)}
+.c-red code{background:#fbdedb}
+.c-amber code{background:#f8ecc9}
+.c-green code{background:#d8f2e5}
+
+/* ---- DRIFT DIAGRAM ---- */
+.drift{margin:14px 0 4px}
+.driftrow{margin:0 0 14px}
+.driftrow .cap{
+  display:flex;justify-content:space-between;gap:10px;align-items:baseline;
+  font-size:13px;margin-bottom:6px;
+}
+.driftrow .cap b{font-weight:700;font-size:13.5px}
+.driftrow .cap span{font:600 11px/1 var(--mono);color:var(--ink-3);white-space:nowrap}
+.frames{display:flex;gap:3px;height:34px}
+.frames i{
+  flex:1;
+  border-radius:3px;
+  border:1px solid rgba(11,13,18,.10);
+  background:var(--blue);
+  display:block;
+}
+.anchor{outline:2px solid var(--ink);outline-offset:1px;position:relative;z-index:1}
+.driftfoot{display:flex;justify-content:space-between;font:600 10.5px/1.3 var(--mono);color:var(--ink-3);margin-top:6px;gap:10px}
+.dkey{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12.5px;color:var(--ink-3);margin-top:12px;padding-top:12px;border-top:1px solid var(--line-2)}
+.dkey div{display:flex;gap:7px;align-items:center}
+.sw{width:15px;height:11px;border-radius:2px;border:1px solid rgba(11,13,18,.12);flex:none}
+
+/* ---- PATH STEPS ---- */
+.steps{counter-reset:p;margin:6px 0 0}
+.step{
+  display:grid;grid-template-columns:24px 1fr;gap:12px;
+  padding:11px 0;border-bottom:1px solid var(--line-2);
+}
+.step:last-child{border-bottom:none;padding-bottom:0}
+.step .n{font:700 12px/1.55 var(--mono);color:var(--green);font-variant-numeric:tabular-nums}
+.step .t{font-size:14.5px;line-height:1.5}
+.step .t b{font-weight:700}
+
+/* ---- WATCH LIST ---- */
+.watch .w{padding:14px 0;border-bottom:1px solid var(--line-2)}
+.watch .w:last-child{border-bottom:none;padding-bottom:0}
+.watch .w:first-child{padding-top:0}
+.watch .wt{font-weight:700;font-size:15px;letter-spacing:-.01em;margin-bottom:4px}
+.watch .wd{font-size:14px;color:var(--ink-2);line-height:1.5}
+.watch .wtest{
+  margin-top:8px;padding:9px 11px;background:#fbfbfc;border:1px solid var(--line);
+  border-radius:8px;font-size:13px;color:var(--ink-2);
+}
+.watch .wtest b{color:var(--ink)}
+
+footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3);line-height:1.6}
+footer p{margin:0 0 9px}
+footer b{color:var(--ink-2)}
+
+@media (max-width:430px){
+  .card{padding:15px}
+  .call{padding:13px 14px}
+  .scroll{margin:0 -15px;padding:0 15px}
+  table{font-size:14px}
+  .frames{height:28px}
+  .srow{grid-template-columns:22px 1fr;gap:10px}
+  .score .r{flex-direction:column;align-items:flex-start;gap:7px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">XLRD &middot; Music Video</div>
+  <h1>The spec, and what this machine can actually do.</h1>
+  <p class="asof">As of Sat Aug 1, 2026 &middot; 9:02 PM EDT</p>
+  <p class="lede">Several confident recommendations tonight were wrong about the hardware. This is the corrected
+  record: the spec stated cleanly, the chunking math worked out, why faces drift, and a truth table for a
+  24&nbsp;GB M4 &mdash; with every claim marked as measured on this machine or not yet tested.</p>
+  <div class="legend">
+    <div><span class="tag t-m">MEASURED</span> timed on this Mac tonight</div>
+    <div><span class="tag t-v">VERIFIED</span> checked against the machine or the source</div>
+    <div><span class="tag t-u">UNVERIFIED</span> not tested here &mdash; treat as open</div>
+  </div>
+</header>
+
+<!-- ============ 1. THE SPEC ============ -->
+<section class="sec">
+  <span class="num">01 &mdash; The spec</span>
+</section>
+<div class="card spec">
+  <h2>Seven requirements</h2>
+
+  <div class="srow">
+    <div class="n">1</div>
+    <div>
+      <div class="t">One-shot from the lyrics</div>
+      <div class="d">Hand it the song. Get a finished video back. Not a storyboard, not a shot list to assemble
+        by hand &mdash; one pass, one output.</div>
+    </div>
+  </div>
+
+  <div class="srow">
+    <div class="n">2</div>
+    <div>
+      <div class="t">Photorealistic</div>
+      <div class="d">Not illustrated, not stylized-by-default, not an anime filter hiding the seams. Real-looking
+        footage.</div>
+    </div>
+  </div>
+
+  <div class="srow">
+    <div class="n">3</div>
+    <div>
+      <div class="t">His likeness locked in every frame</div>
+      <div class="d">Not &ldquo;resembles him in the first shot.&rdquo; The same face, recognizably him, from the
+        first frame to the last. This is the requirement everything else breaks against &mdash; see section 03.</div>
+    </div>
+  </div>
+
+  <div class="srow">
+    <div class="n">4</div>
+    <div>
+      <div class="t">Seamless continuation</div>
+      <div class="d">Chunks that join without a visible reset &mdash; no jump in lighting, wardrobe, or face
+        between one segment and the next.</div>
+    </div>
+  </div>
+
+  <div class="srow">
+    <div class="n">5</div>
+    <div>
+      <div class="t">Flat monthly price</div>
+      <div class="d">Token metering is rejected outright. On the offer of 10 minutes a month for $29:
+        <span class="q">&ldquo;take it off the table.&rdquo;</span></div>
+    </div>
+  </div>
+
+  <div class="srow">
+    <div class="n">6</div>
+    <div>
+      <div class="t">Generous usage</div>
+      <div class="d">In his words, room to <span class="q">&ldquo;generate to my heart&rsquo;s content.&rdquo;</span>
+        A cap that forces rationing per song defeats the purpose.</div>
+    </div>
+  </div>
+
+  <div class="srow">
+    <div class="n">7</div>
+    <div>
+      <div class="t">Fast</div>
+      <div class="d">On two hours of render for a two-minute song: <span class="q">&ldquo;that is dead.&rdquo;</span>
+        Iteration speed is part of the product, not a nice-to-have.</div>
+    </div>
+  </div>
+</div>
+
+<div class="card score">
+  <h2>Where free + local on this M4 stands against each</h2>
+  <div class="r"><div class="k">1 &middot; One-shot from lyrics <i>No tool meets this today at photoreal quality with a locked likeness &mdash; free or paid.</i></div><span class="pill p-no">NOT MET</span></div>
+  <div class="r"><div class="k">2 &middot; Photorealistic <i>Achievable in stills. Not demonstrated here for continuous generated video.</i></div><span class="pill p-part">STILLS ONLY</span></div>
+  <div class="r"><div class="k">3 &middot; Likeness every frame <i>Met by the still-based path, where every frame is an image he approved. Not met by a video model.</i></div><span class="pill p-part">ONE PATH ONLY</span></div>
+  <div class="r"><div class="k">4 &middot; Seamless continuation <i>Requires last-frame chaining plus a trained face LoRA. Neither is running on this machine.</i></div><span class="pill p-no">NOT MET</span></div>
+  <div class="r"><div class="k">5 &middot; Flat monthly price <i>Local is flat at zero. This is the one requirement free-and-local wins outright.</i></div><span class="pill p-yes">MET</span></div>
+  <div class="r"><div class="k">6 &middot; Generous usage <i>Unlimited by billing. Bounded only by wall-clock time, which is the catch.</i></div><span class="pill p-yes">MET</span></div>
+  <div class="r"><div class="k">7 &middot; Fast <i>The only measured MPS datapoint on this Mac points hard the other way. Section 04.</i></div><span class="pill p-no">NOT MET</span></div>
+</div>
+
+<!-- ============ 2. CHUNKING MATH ============ -->
+<section class="sec">
+  <span class="num">02 &mdash; The chunking math</span>
+</section>
+<div class="card">
+  <h2>Worked out, reusable for any song length</h2>
+  <p>The structure is right, and it is the same structure professionals use: cut the song into
+  <b>30-second chunks</b>, give each chunk <b>4 image anchors</b>. For a two-minute song that is
+  <b>4 chunks and 16 anchors</b>. Thirty seconds is a sensible chunk because it is roughly a verse or a
+  hook, and because &mdash; per section 03 &mdash; short segments are how drift is contained.</p>
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Song length</th>
+        <th class="nums">Chunks<br>(30s)</th>
+        <th class="nums">Anchors<br>(4 / chunk)</th>
+        <th class="nums">Seconds per<br>anchor</th>
+        <th class="nums">Images if cutting<br>every 1.8&ndash;2.0s</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="thing">1:00</td><td class="nums">2</td><td class="nums">8</td><td class="nums">7.5s</td><td class="nums">30&ndash;33</td></tr>
+      <tr><td class="thing">1:30</td><td class="nums">3</td><td class="nums">12</td><td class="nums">7.5s</td><td class="nums">45&ndash;50</td></tr>
+      <tr class="hi"><td class="thing">2:00 &mdash; his example</td><td class="nums">4</td><td class="nums">16</td><td class="nums">7.5s</td><td class="nums">60&ndash;67</td></tr>
+      <tr><td class="thing">2:30</td><td class="nums">5</td><td class="nums">20</td><td class="nums">7.5s</td><td class="nums">75&ndash;83</td></tr>
+      <tr><td class="thing">3:00</td><td class="nums">6</td><td class="nums">24</td><td class="nums">7.5s</td><td class="nums">90&ndash;100</td></tr>
+      <tr><td class="thing">3:30</td><td class="nums">7</td><td class="nums">28</td><td class="nums">7.5s</td><td class="nums">105&ndash;117</td></tr>
+      <tr><td class="thing">4:00</td><td class="nums">8</td><td class="nums">32</td><td class="nums">7.5s</td><td class="nums">120&ndash;133</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="call c-amber">
+    <h4>One number to pin down before generating anything</h4>
+    <p>The chunk structure and the cut rhythm are two different dials, and the two figures describe
+    different things. Sixteen anchors across 120 seconds is <b>7.5 seconds of screen time each</b> &mdash;
+    not 1.8&ndash;2.0. Both numbers can be right, but only under one of these readings:</p>
+    <p><b>Reading A &mdash; anchors, not cuts.</b> The 16 images are anchor frames and a video model animates
+    between them. Each anchor then owns 7.5s of motion, and the 1.8&ndash;2.0s figure is the perceived rhythm
+    inside that &mdash; camera pushes, angle changes, transitions. 16 images is the correct count.</p>
+    <p><b>Reading B &mdash; hard cuts.</b> Every image is its own shot, held ~2s, then cut. A two-minute song
+    needs <b>60&ndash;67 images</b>, not 16 &mdash; about 15&ndash;16 per 30s chunk.</p>
+    <p>Reading B is the one that runs tonight (section 05), and it is the far larger image order. Worth
+    settling before the first batch, because the difference is 16 renders versus 64.</p>
+  </div>
+</div>
+
+<!-- ============ 3. TEMPORAL DRIFT ============ -->
+<section class="sec">
+  <span class="num">03 &mdash; Temporal drift, explained properly</span>
+</section>
+<div class="card">
+  <h2>Why the face stops being his face</h2>
+
+  <p>This is the crux of the whole spec, and it is usually explained wrong. The wrong version says
+  &ldquo;use InstantID and your likeness is locked.&rdquo; That sentence quietly swaps two different things.</p>
+
+  <h3>InstantID and IP-Adapter are still-image tools</h3>
+  <p>Both are <b>SDXL</b> tools. They take a face embedding and condition the generation of <b>one image</b>
+  on it. They lock identity in a <b>still</b>. That is what they do, and they do it well.</p>
+
+  <h3>The video model never learns his face</h3>
+  <p>AnimateDiff, SVD, Wan &mdash; these animate a frame that <b>already has</b> the face in it. Nothing in
+  their weights knows who he is. They know how pixels tend to move. So identity is locked at
+  <b>frame one</b> of a clip, and from frame two onward the model's own priors take over and pull the
+  face toward its generic average. That pull is temporal drift.</p>
+
+  <p><b>This is why professionals generate short shots.</b> Not for aesthetics, and not because long shots
+  look boring &mdash; because drift accumulates per frame, so the only reliable defense is to stop and
+  re-anchor before it becomes visible. Short shots are drift management.</p>
+
+  <div class="drift">
+    <div class="driftrow">
+      <div class="cap"><b>Frame one anchored, then left alone</b><span>drift compounds</span></div>
+      <div class="frames" role="img" aria-label="Identity strength across a single clip: strong at the first frame, fading steadily to weak by the last frame.">
+        <i class="anchor" style="opacity:1"></i><i style="opacity:.92"></i><i style="opacity:.84"></i><i style="opacity:.75"></i><i style="opacity:.66"></i><i style="opacity:.57"></i><i style="opacity:.48"></i><i style="opacity:.40"></i><i style="opacity:.32"></i><i style="opacity:.25"></i><i style="opacity:.19"></i><i style="opacity:.14"></i>
+      </div>
+      <div class="driftfoot"><span>frame 1 &mdash; his face</span><span>last frame &mdash; someone else</span></div>
+    </div>
+
+    <div class="driftrow">
+      <div class="cap"><b>Chaining alone &mdash; re-anchor every clip</b><span>slowed, not stopped</span></div>
+      <div class="frames" role="img" aria-label="Identity strength with last-frame chaining: it recovers at each clip boundary but each recovery starts lower than the one before.">
+        <i class="anchor" style="opacity:1"></i><i style="opacity:.90"></i><i style="opacity:.80"></i><i class="anchor" style="opacity:.80"></i><i style="opacity:.72"></i><i style="opacity:.64"></i><i class="anchor" style="opacity:.64"></i><i style="opacity:.57"></i><i style="opacity:.50"></i><i class="anchor" style="opacity:.50"></i><i style="opacity:.44"></i><i style="opacity:.38"></i>
+      </div>
+      <div class="driftfoot"><span>4 clips, chained</span><span>each restart is lower than the last</span></div>
+    </div>
+
+    <div class="driftrow">
+      <div class="cap"><b>Chaining + a trained face LoRA</b><span>held</span></div>
+      <div class="frames" role="img" aria-label="Identity strength with chaining plus a trained face LoRA: stays near full across all four clips.">
+        <i class="anchor" style="opacity:1"></i><i style="opacity:.97"></i><i style="opacity:.94"></i><i class="anchor" style="opacity:.99"></i><i style="opacity:.96"></i><i style="opacity:.93"></i><i class="anchor" style="opacity:.98"></i><i style="opacity:.95"></i><i style="opacity:.92"></i><i class="anchor" style="opacity:.97"></i><i style="opacity:.95"></i><i style="opacity:.92"></i>
+      </div>
+      <div class="driftfoot"><span>identity is in the weights now</span><span>every frame pulls back toward him</span></div>
+    </div>
+
+    <div class="dkey">
+      <div><span class="sw" style="background:#1d4ed8"></span> strong likeness</div>
+      <div><span class="sw" style="background:#1d4ed8;opacity:.3"></span> drifted</div>
+      <div><span class="sw" style="background:#1d4ed8;outline:2px solid #0b0d12;outline-offset:-1px"></span> anchored frame</div>
+    </div>
+    <p class="muted" style="margin-top:10px">Illustrative shape of the problem, not measured output.
+    <span class="tag t-u">UNVERIFIED</span></p>
+  </div>
+
+  <h3>The two mitigations, and why neither works alone</h3>
+
+  <div class="call c-blue">
+    <h4>Mitigation 1 &mdash; last-frame chaining</h4>
+    <p>Take the final frame of clip N and use it as the first frame of clip N+1. Wan 2.1 supports this
+    natively. <span class="tag t-u">UNVERIFIED</span> &mdash; documented capability, not run on this machine.</p>
+    <p><b>What it buys:</b> continuity across the seam. Wardrobe, lighting, and pose carry over, so the
+    chunks join without a reset. That is requirement 4.</p>
+    <p><b>What it does not buy:</b> identity. Chaining re-anchors on an <i>already slightly drifted</i>
+    frame, so error compounds across chunks &mdash; the middle row above. Over 4 chunks it is survivable.
+    Over 8 it is not.</p>
+  </div>
+
+  <div class="call c-blue">
+    <h4>Mitigation 2 &mdash; a trained face LoRA</h4>
+    <p>Fine-tune a small adapter on a set of his photos so the model itself knows his face.
+    <span class="tag t-u">UNVERIFIED</span> &mdash; not attempted on this machine.</p>
+    <p><b>What it buys:</b> identity that regenerates. Every frame is pulled back toward him instead of
+    away, because the likeness lives in the weights rather than in one conditioning image.</p>
+    <p><b>What it does not buy:</b> continuity. A LoRA will happily give him the right face in the wrong
+    jacket, in different light, at a different time of day, in the very next clip.</p>
+  </div>
+
+  <div class="call c-red">
+    <h4>They are not alternatives</h4>
+    <p>Chaining without a LoRA holds the scene together while the face slips. A LoRA without chaining
+    holds the face while the scene jumps. <b>Requirements 3 and 4 need both at once</b> &mdash; that is the
+    single most important sentence on this page, and it is the part most write-ups leave out.</p>
+  </div>
+</div>
+
+<!-- ============ 4. HARDWARE TRUTH TABLE ============ -->
+<section class="sec">
+  <span class="num">04 &mdash; The hardware truth table</span>
+</section>
+<div class="card">
+  <h2>This machine, checked tonight</h2>
+  <p class="muted" style="margin-bottom:14px">Apple M4 &middot; 24&nbsp;GB unified memory &middot; macOS 26.3.1 &middot; arm64 &middot;
+  383&nbsp;GB free on /Volumes/M4, 113&nbsp;GB on boot. <span class="tag t-v">VERIFIED</span></p>
+
+  <div class="call c-red">
+    <h4>The measured reference point</h4>
+    <p><b>OmniParser V2 &mdash; a 0.23&nbsp;billion-parameter captioner &mdash; took over six minutes to parse one
+    screenshot on this Mac.</b> <span class="tag t-m">MEASURED</span></p>
+    <p>That is the honest MPS latency figure. The 200&ndash;600&nbsp;ms numbers published for the same model are
+    GPU numbers. Keep the six minutes in view when reading any speed claim about this machine: video
+    diffusion models are an order of magnitude larger, run dozens of denoising steps, and do it across
+    many frames per clip.</p>
+  </div>
+
+  <div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>On this M4 (MPS)</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="thing">Any CUDA / NVIDIA path</td>
+        <td>Not available. <code>nvidia-smi</code> is not present.<span class="note">There is no GPU in the NVIDIA sense on this machine and no way to add one.</span></td>
+        <td><span class="tag t-v">VERIFIED</span></td>
+      </tr>
+      <tr>
+        <td class="thing">Docker-dependent tooling</td>
+        <td>Not available. Docker is not installed.<span class="note">Not a blocker for the video path &mdash; nothing below needs it.</span></td>
+        <td><span class="tag t-v">VERIFIED</span></td>
+      </tr>
+      <tr>
+        <td class="thing">OmniParser V2 <span style="font-weight:400;color:var(--ink-3)">(0.23B)</span></td>
+        <td>Runs. <b>Over 6 minutes per screenshot.</b><span class="note">Installed at vendor/OmniParser with MIT weights. The speed benchmark for everything else here.</span></td>
+        <td><span class="tag t-m">MEASURED</span></td>
+      </tr>
+      <tr>
+        <td class="thing">ffmpeg</td>
+        <td>Present &mdash; version 8.1.2 at <code>/opt/homebrew/bin/ffmpeg</code>.<span class="note">Assembly, transitions, beat-synced cuts, and audio mux all run here. Fast, CPU-side, no model involved.</span></td>
+        <td><span class="tag t-v">VERIFIED</span></td>
+      </tr>
+      <tr>
+        <td class="thing">SDXL still generation</td>
+        <td>Expected to run on MPS. Not benchmarked tonight.<span class="note">No timing figure is offered here because none was taken.</span></td>
+        <td><span class="tag t-u">UNVERIFIED</span></td>
+      </tr>
+      <tr>
+        <td class="thing">InstantID / IP-Adapter</td>
+        <td>SDXL-side, so expected to run wherever SDXL runs. Not tested tonight.<span class="note">Locks identity in a still only &mdash; section 03.</span></td>
+        <td><span class="tag t-u">UNVERIFIED</span></td>
+      </tr>
+      <tr>
+        <td class="thing">AnimateDiff</td>
+        <td>Not installed, not run. Memory headroom and speed both unproven here.<span class="note">This is the tool the 64&nbsp;GB advice was about. See the Hetzner box below.</span></td>
+        <td><span class="tag t-u">UNVERIFIED</span></td>
+      </tr>
+      <tr>
+        <td class="thing">Wan 2.1</td>
+        <td>Not installed, not run. Native last-frame chaining is documented, not confirmed here.<span class="note">Ecosystem tooling is CUDA-shaped; the MPS path is unproven on this machine.</span></td>
+        <td><span class="tag t-u">UNVERIFIED</span></td>
+      </tr>
+      <tr>
+        <td class="thing">Stable Video Diffusion</td>
+        <td>Not installed, not run.</td>
+        <td><span class="tag t-u">UNVERIFIED</span></td>
+      </tr>
+      <tr>
+        <td class="thing">Face LoRA training</td>
+        <td>Not attempted. Training is heavier than inference, and inference is already the bottleneck.<span class="note">Practically a CUDA workflow today.</span></td>
+        <td><span class="tag t-u">UNVERIFIED</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>The Hetzner correction</h3>
+  <div class="call c-red">
+    <h4>64&nbsp;GB of RAM will not run AnimateDiff</h4>
+    <p><b>System RAM is not VRAM.</b> They are different memory, attached to different processors, and a
+    diffusion model needs the second kind. Sixty-four gigabytes of system RAM on a CPU-only box runs
+    AnimateDiff the way a large fuel tank runs a car with no engine.</p>
+    <p><b>Standard Hetzner cloud instances have no GPU at all.</b> Their GPU line &mdash; GEX, RTX 4000 Ada &mdash;
+    is a separate and pricier product. The 64&nbsp;GB box is not on it. <span class="tag t-v">VERIFIED</span></p>
+    <p><b>Neither Hetzner host will take his SSH key.</b> Both returned <code>Permission denied (publickey)</code>
+    today. Nothing can be tested there until that is fixed. <span class="tag t-v">VERIFIED</span></p>
+    <p><b>Storage is 124&nbsp;GB on a disk he already called prone to fail.</b> SDXL plus AnimateDiff plus SVD
+    weights alone run roughly 20&ndash;50&nbsp;GB before a single output frame is written.
+    <span class="tag t-u">UNVERIFIED</span> on the weight sizes.</p>
+    <p style="margin-top:11px;padding-top:11px;border-top:1px solid var(--red-line)"><b>The one command that
+    settles it on any box, before believing any spec sheet:</b> run <code>nvidia-smi</code>. Output means a
+    GPU. No output means no GPU, and no amount of system RAM changes that answer.</p>
+  </div>
+</div>
+
+<!-- ============ 5. THE HONEST GAP ============ -->
+<section class="sec">
+  <span class="num">05 &mdash; The honest gap, and the path that runs tonight</span>
+</section>
+<div class="card">
+  <h2>Said plainly</h2>
+  <div class="call c-red">
+    <h4>The full spec does not exist on a 24&nbsp;GB M4 today</h4>
+    <p>One-shot from lyrics, photorealistic, likeness locked in every frame, seamless, fast, free, and
+    local &mdash; <b>all seven at once is not available on this machine.</b> Not with a better prompt, not
+    with a different checkpoint, not tonight.</p>
+    <p>Paid does not close it either. No service today delivers one-shot lyrics-to-photoreal video with a
+    genuinely locked likeness. The one-shot requirement is the hardest one in the list, and it is unmet
+    across the board.</p>
+  </div>
+
+  <p>That is the part worth being blunt about, because there is a paying client on the flyer commission
+  and a wrong recommendation costs them, not just him.</p>
+
+  <h3>What does run tonight</h3>
+  <p>The still-based path. It is not a downgrade of the spec &mdash; it satisfies the hardest requirement on
+  the list outright, and it does so by construction rather than by mitigation.</p>
+
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div class="t"><b>Generate the stills.</b> SDXL-class images with InstantID or IP-Adapter carrying his face. Every image gets looked at and approved before it goes in.</div></div>
+    <div class="step"><div class="n">2</div><div class="t"><b>Chunk them per his math.</b> 30-second sections, batch per section. Reading B from section 02 &mdash; roughly 15&ndash;16 images per chunk, 60&ndash;67 for a two-minute song.</div></div>
+    <div class="step"><div class="n">3</div><div class="t"><b>Animate each still.</b> Slow push-in, pan, parallax, rack focus. ffmpeg does this on CPU in seconds per shot &mdash; no model, no waiting.</div></div>
+    <div class="step"><div class="n">4</div><div class="t"><b>Cut on the beat.</b> Get the beat grid from the track, hand ffmpeg the timing list, and every transition lands on a hit instead of near one.</div></div>
+    <div class="step"><div class="n">5</div><div class="t"><b>Mux and ship.</b> Audio in, one file out. Iterate a shot by replacing one image and re-running &mdash; not by re-rendering the video.</div></div>
+  </div>
+
+  <div class="call c-green">
+    <h4>Why this is the strong option, not the consolation</h4>
+    <p><b>Zero temporal drift. Structurally, not approximately.</b> Every frame that reaches the screen is a
+    still he already approved. There is no video model in the loop pulling the face toward its average,
+    so there is nothing to drift. Requirement 3 &mdash; the one that breaks every other approach &mdash; is the
+    one this path satisfies most completely.</p>
+    <p><b>It is fast where it counts.</b> The slow step is image generation, which is parallel and
+    restartable. The assembly step is ffmpeg, which is seconds. Fixing shot 7 means regenerating one
+    image, not two hours of video.</p>
+    <p><b>It is flat and unlimited, at zero.</b> Requirements 5 and 6, met outright.</p>
+  </div>
+
+  <div class="call c-amber">
+    <h4>The honest trade, stated so no one is surprised</h4>
+    <p>This reads as animated photography &mdash; moving stills, cut to music &mdash; not continuous
+    photorealistic motion. It is a recognized and respected music-video language, but it is a
+    <b>different look</b>, and it is not requirement 1 or requirement 4.</p>
+    <p>For the flyer commission this is likely the right call regardless: a short piece built from
+    approved frames is more controllable, more on-brand, and safer to put in front of a client than a
+    video model that may hand back a face that is nearly him.</p>
+  </div>
+</div>
+
+<!-- ============ 6. WHAT WOULD CHANGE THE ANSWER ============ -->
+<section class="sec">
+  <span class="num">06 &mdash; What would change the answer</span>
+</section>
+<div class="card watch">
+  <h2>Three conditions, and how to test each</h2>
+
+  <div class="w">
+    <div class="wt">A real GPU</div>
+    <div class="wd">An NVIDIA card with 24&nbsp;GB or more of <b>VRAM</b> &mdash; 4090 or A6000 class &mdash; owned or
+    rented by the hour. This is the condition that unlocks AnimateDiff, Wan, SVD, and face-LoRA training
+    in one move. If Hetzner stays in the picture, it has to be the <b>GEX line</b>, not the 64&nbsp;GB box.
+    The SSH key rejection has to be cleared first either way.</div>
+    <div class="wtest"><b>Test:</b> first command on any box, before believing a single line of the spec
+    sheet &mdash; <code>nvidia-smi</code>. No output, no GPU, walk away.</div>
+  </div>
+
+  <div class="w">
+    <div class="wt">A flat-rate renderer with commercial rights</div>
+    <div class="wd">Four things have to be true together, and vendors tend to offer three: a genuinely flat
+    monthly price with <b>no per-second or per-token metering</b>; a usage ceiling high enough to iterate a
+    whole song; an <b>explicit commercial-use grant</b>, because there is a paying client; and a real
+    identity-lock feature &mdash; a trained character, not a reference-image upload, which is
+    frame-one conditioning under a friendlier name. <span class="tag t-u">UNVERIFIED</span> &mdash; no vendor was
+    evaluated tonight.</div>
+    <div class="wtest"><b>Test:</b> read the rights clause before any client work goes through it, and
+    price the plan against a full song&rsquo;s worth of re-rolls, not one clean render.</div>
+  </div>
+
+  <div class="w">
+    <div class="wt">An MLX-native video model</div>
+    <div class="wd">MLX is Apple&rsquo;s native Apple-Silicon framework. Today&rsquo;s video diffusion stack is
+    CUDA-shaped, which is the real reason the local path is unproven &mdash; not the 24&nbsp;GB. A solid MLX
+    port of a Wan or LTX-class model would change the local answer with <b>no hardware purchase at all</b>.
+    This is the one to watch, because it arrives as a download rather than an invoice.</div>
+    <div class="wtest"><b>Test:</b> the day an MLX video model ships, re-run section 04 &mdash; that table is
+    the thing that would change, and nothing else on this page has to.</div>
+  </div>
+
+  <div class="w">
+    <div class="wt">A shorter deliverable <span style="font-weight:400;color:var(--ink-3);font-size:13px">&mdash; already true</span></div>
+    <div class="wd">Not a future condition, just a reframe worth having on the table. A 15&ndash;30 second
+    flyer is a different problem from a 2&ndash;4 minute music video: one or two chunks, a handful of
+    anchors, and drift never gets time to accumulate. <b>The commission is reachable on the tonight path
+    without waiting on any of the three above.</b> The full-length music video is the piece that waits.</div>
+  </div>
+</div>
+
+<footer>
+  <p><b>How to read the tags.</b> <span class="tag t-m">MEASURED</span> means it was timed on this Mac tonight.
+  <span class="tag t-v">VERIFIED</span> means it was checked directly &mdash; against the machine, a command&rsquo;s
+  output, or the source itself. <span class="tag t-u">UNVERIFIED</span> means it was not tested here and is
+  carried as an open question, not a claim. Nothing on this page is presented as a benchmark that was not
+  actually taken; where a number is missing it is because no one measured it.</p>
+  <p><b>Verified on this machine tonight.</b> Apple M4, 24&nbsp;GB unified memory, macOS 26.3.1, arm64.
+  <code>nvidia-smi</code> not present. Docker not installed. ffmpeg 8.1.2 at <code>/opt/homebrew/bin/ffmpeg</code>.
+  383&nbsp;GB free on /Volumes/M4, 113&nbsp;GB on boot. OmniParser V2 installed and timed at over six minutes for a
+  single screenshot. Both Hetzner hosts returned <code>Permission denied (publickey)</code>.</p>
+  <p><b>Not verified, and marked as such throughout.</b> Every render-time figure for SDXL, AnimateDiff, Wan,
+  or SVD on Apple Silicon &mdash; none were run here, so none are quoted. Weight sizes are approximate. Wan 2.1
+  last-frame chaining is a documented capability that was not exercised on this machine. The drift diagram in
+  section 03 illustrates the shape of the problem; it is not plotted from measurements.</p>
+  <p><b>This page is informational.</b> It installs nothing, buys nothing, and commits to no vendor.
+  <span style="white-space:nowrap">As of Sat Aug 1, 2026 &middot; 9:02 PM EDT.</span></p>
+</footer>
+
+</div>
+</body>
+</html>

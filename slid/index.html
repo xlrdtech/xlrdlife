@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Gallery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for the playlist */
+        .playlist-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .playlist-scroll::-webkit-scrollbar-track {
+            background: #0f172a; 
+            border-radius: 8px;
+        }
+        .playlist-scroll::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 8px;
+        }
+        .playlist-scroll::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+        
+        /* Smooth fade transition for video elements */
+        #main-video {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 shadow-sm z-10">
+        <div class="container mx-auto max-w-6xl flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/rem" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Raindrop Media Player</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto max-w-6xl p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+        
+        <!-- Video Player Section -->
+        <div class="flex-grow flex flex-col gap-4 lg:w-2/3">
+            <div class="relative w-full aspect-video bg-black rounded-xl shadow-2xl overflow-hidden ring-1 ring-slate-800">
+                <video 
+                    id="main-video" 
+                    class="w-full h-full object-contain"
+                    controls 
+                    autoplay
+                    playsinline>
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            
+            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800 shadow-lg">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 id="current-title" class="text-2xl font-bold text-white">Loading...</h2>
+                    <span id="video-counter" class="text-sm font-medium text-slate-400 bg-slate-800 px-3 py-1 rounded-full">1 / 9</span>
+                </div>
+                <p class="text-slate-400 text-sm flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                    </span>
+                    Now Playing
+                </p>
+                
+                <div class="mt-6 flex gap-3">
+                    <button id="btn-prev" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 transition rounded-lg text-sm font-medium text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+                        Previous
+                    </button>
+                    <button id="btn-next" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 transition rounded-lg text-sm font-medium text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Playlist Section -->
+        <div class="lg:w-1/3 flex flex-col bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden h-[500px] lg:h-auto lg:max-h-[calc(100vh-8rem)]">
+            <div class="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                <h3 class="font-semibold text-lg flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    Playlist
+                </h3>
+                <span class="text-xs text-slate-500 font-medium tracking-wide uppercase">Autoplay ON</span>
+            </div>
+            
+            <div id="playlist-container" class="flex-grow overflow-y-auto playlist-scroll p-2 flex flex-col gap-1">
+                <!-- Playlist items injected via JS -->
+            </div>
+        </div>
+        
+    </main>
+
+    <script>
+        // Video Data Source
+        const videos = [
+            { id: 1635687296, title: "Video File 1", url: "https://api.raindrop.io/v2/raindrop/1635687296/file?type=video/mp4" },
+            { id: 1635687290, title: "Video File 2", url: "https://api.raindrop.io/v2/raindrop/1635687290/file?type=video/mp4" },
+            { id: 1635687288, title: "Video File 3", url: "https://api.raindrop.io/v2/raindrop/1635687288/file?type=video/mp4" },
+            { id: 1635687301, title: "Video File 4", url: "https://api.raindrop.io/v2/raindrop/1635687301/file?type=video/mp4" },
+            { id: 1635687332, title: "Video File 5", url: "https://api.raindrop.io/v2/raindrop/1635687332/file?type=video/mp4" },
+            { id: 1635687298, title: "Video File 6", url: "https://api.raindrop.io/v2/raindrop/1635687298/file?type=video/mp4" },
+            { id: 1635687285, title: "Video File 7", url: "https://api.raindrop.io/v2/raindrop/1635687285/file?type=video/mp4" },
+            { id: 1635687335, title: "Video File 8", url: "https://api.raindrop.io/v2/raindrop/1635687335/file?type=video/mp4" },
+            { id: 1635687278, title: "Video File 9", url: "https://api.raindrop.io/v2/raindrop/1635687278/file?type=video/mp4" }
+        ];
+
+        // State
+        let currentIndex = 0;
+
+        // DOM Elements
+        const mainVideo = document.getElementById('main-video');
+        const currentTitle = document.getElementById('current-title');
+        const videoCounter = document.getElementById('video-counter');
+        const playlistContainer = document.getElementById('playlist-container');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+
+        // Initialize App
+        function initApp() {
+            renderPlaylist();
+            loadVideo(currentIndex);
+            setupEventListeners();
+        }
+
+        // Render Playlist Items
+        function renderPlaylist() {
+            playlistContainer.innerHTML = '';
+            videos.forEach((video, index) => {
+                const isActive = index === currentIndex;
+                
+                const item = document.createElement('button');
+                item.className = `w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center gap-3 group border ${isActive ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-transparent border-transparent hover:bg-slate-800'}`;
+                
+                item.onclick = () => {
+                    currentIndex = index;
+                    loadVideo(currentIndex);
+                    renderPlaylist(); // re-render to update active state
+                };
+
+                // Number/Icon column
+                const iconBox = document.createElement('div');
+                iconBox.className = `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'}`;
+                
+                if (isActive) {
+                    iconBox.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+                } else {
+                    iconBox.innerHTML = `<span class="text-xs font-bold">${index + 1}</span>`;
+                }
+
+                // Text column
+                const textBox = document.createElement('div');
+                textBox.className = "flex-grow truncate";
+                textBox.innerHTML = `
+                    <p class="text-sm font-medium truncate ${isActive ? 'text-indigo-400' : 'text-slate-300'}">${video.title}</p>
+                    <p class="text-xs text-slate-500 truncate mt-0.5 font-mono">ID: ${video.id}</p>
+                `;
+
+                item.appendChild(iconBox);
+                item.appendChild(textBox);
+                playlistContainer.appendChild(item);
+            });
+        }
+
+        // Load specific video
+        function loadVideo(index) {
+            const video = videos[index];
+            
+            // Fade effect
+            mainVideo.style.opacity = '0';
+            
+            setTimeout(() => {
+                mainVideo.src = video.url;
+                currentTitle.textContent = video.title;
+                videoCounter.textContent = `${index + 1} / ${videos.length}`;
+                
+                mainVideo.play().catch(e => {
+                    console.log("Autoplay prevented or video failed to load", e);
+                });
+                
+                mainVideo.style.opacity = '1';
+            }, 300);
+
+            // Update buttons
+            btnPrev.disabled = index === 0;
+            btnNext.disabled = index === videos.length - 1;
+        }
+
+        // Event Listeners setup
+        function setupEventListeners() {
+            // Auto-advance when video ends
+            mainVideo.addEventListener('ended', () => {
+                if (currentIndex < videos.length - 1) {
+                    currentIndex++;
+                    loadVideo(currentIndex);
+                    renderPlaylist();
+                    
+                    // Auto-scroll playlist to active item
+                    const activeItem = playlistContainer.children[currentIndex];
+                    if (activeItem) {
+                        activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }
+            });
+
+            // Prev Button
+            btnPrev.addEventListener('click', () => {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    loadVideo(currentIndex);
+                    renderPlaylist();
+                }
+            });
+
+            // Next Button
+            btnNext.addEventListener('click', () => {
+                if (currentIndex < videos.length - 1) {
+                    currentIndex++;
+                    loadVideo(currentIndex);
+                    renderPlaylist();
+                }
+            });
+        }
+
+        // Start
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xen Unified System — Decision Canon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Archivo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0e;
+    --bg2:#0f0f15;
+    --panel:#13131b;
+    --panel2:#181820;
+    --ink:#ece7da;
+    --muted:#8d897e;
+    --gold:#c9a227;
+    --gold-bright:#e9c75a;
+    --gold-deep:#8a6f1a;
+    --metal-hi:#f4e9c4;
+    --metal-lo:#5a4d22;
+    --line:#26241c;
+    --green:#5fc77e;
+    --red:#d0594f;
+    --amber:#d9a441;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:
+      radial-gradient(1200px 700px at 78% -8%, rgba(201,162,39,.10), transparent 60%),
+      radial-gradient(900px 600px at 8% 102%, rgba(201,162,39,.06), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Archivo',system-ui,sans-serif;
+    line-height:1.62;
+    letter-spacing:.005em;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:6rem;
+  }
+  .wrap{max-width:1160px;margin:0 auto;padding:0 28px}
+  h1,h2,h3,h4{font-family:'Fraunces',Georgia,serif;font-weight:500;letter-spacing:-.01em;line-height:1.1}
+  .gold{color:var(--gold)}
+  .grad-gold{
+    background:linear-gradient(96deg,var(--metal-hi),var(--gold-bright) 30%,var(--gold) 55%,var(--gold-deep) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    position:relative;
+    padding:104px 0 70px;
+    border-bottom:1px solid var(--line);
+    overflow:hidden;
+  }
+  header.hero::before{
+    content:"";position:absolute;inset:0;
+    background:
+      linear-gradient(180deg,transparent,rgba(201,162,39,.04) 60%,transparent),
+      repeating-linear-gradient(115deg,transparent 0 38px,rgba(201,162,39,.015) 38px 39px);
+    pointer-events:none;
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:'Archivo';font-size:.72rem;font-weight:600;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--gold);margin-bottom:26px;
+    padding:7px 16px;border:1px solid rgba(201,162,39,.32);border-radius:40px;
+    background:linear-gradient(180deg,rgba(201,162,39,.10),rgba(201,162,39,.02));
+    box-shadow:inset 0 1px 0 rgba(244,233,196,.18),0 8px 22px rgba(0,0,0,.5);
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--gold-bright);box-shadow:0 0 12px var(--gold-bright)}
+  header.hero h1{font-size:clamp(2.7rem,6.4vw,5rem);font-weight:600;margin-bottom:18px}
+  header.hero .sub{font-size:clamp(1.05rem,2vw,1.32rem);color:var(--muted);max-width:760px;font-weight:300}
+  header.hero .sub b{color:var(--ink);font-weight:500}
+  .canon-tag{
+    margin-top:34px;display:flex;flex-wrap:wrap;gap:10px;
+  }
+  .canon-tag span{
+    font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+    padding:6px 13px;border:1px solid var(--line);border-radius:6px;background:var(--panel);
+  }
+
+  /* ---------- VERDICT BANNER ---------- */
+  .verdict{
+    margin:64px 0 0;position:relative;
+    border-radius:18px;
+    padding:3px;
+    background:linear-gradient(140deg,rgba(244,233,196,.5),rgba(201,162,39,.15) 35%,rgba(90,77,34,.4) 70%,rgba(244,233,196,.4));
+    box-shadow:0 36px 80px -30px rgba(0,0,0,.85);
+  }
+  .verdict-inner{
+    border-radius:15px;
+    background:linear-gradient(165deg,#16161f,#0d0d13 70%);
+    padding:46px 48px;
+    position:relative;overflow:hidden;
+  }
+  .verdict-inner::after{
+    content:"";position:absolute;top:-60%;right:-10%;width:380px;height:380px;
+    background:radial-gradient(circle,rgba(201,162,39,.16),transparent 65%);pointer-events:none;
+  }
+  .verdict h2{font-size:1.05rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);font-family:'Archivo';font-weight:600;margin-bottom:18px}
+  .verdict .winner{font-family:'Fraunces';font-size:clamp(1.9rem,4vw,3rem);font-weight:600;line-height:1.12;margin-bottom:6px}
+  .verdict .winner small{display:block;font-size:.95rem;letter-spacing:.04em;color:var(--muted);font-family:'Archivo';font-weight:400;margin-top:14px;max-width:880px}
+  .stack-chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .chip{
+    display:flex;flex-direction:column;gap:2px;
+    padding:14px 18px;border-radius:11px;min-width:170px;flex:1;
+    background:linear-gradient(165deg,var(--panel2),#101017);
+    border:1px solid var(--line);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .chip .k{font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+  .chip .v{font-family:'Fraunces';font-size:1.18rem;color:var(--ink)}
+  .chip .d{font-size:.78rem;color:var(--muted)}
+
+  /* ---------- SECTION ---------- */
+  section{margin-top:84px}
+  .sec-head{display:flex;align-items:baseline;gap:18px;margin-bottom:30px;border-bottom:1px solid var(--line);padding-bottom:16px}
+  .sec-head .num{font-family:'Fraunces';font-size:1.1rem;color:var(--gold-deep);font-weight:600}
+  .sec-head h2{font-size:clamp(1.6rem,3vw,2.3rem);font-weight:500}
+  .sec-head p{margin-left:auto;color:var(--muted);font-size:.86rem;max-width:340px;text-align:right}
+
+  /* ---------- MATRIX ---------- */
+  .matrix-scroll{overflow-x:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 30px 60px -34px rgba(0,0,0,.8)}
+  table.matrix{width:100%;border-collapse:collapse;font-size:.85rem;min-width:880px;background:var(--panel)}
+  table.matrix thead th{
+    background:linear-gradient(180deg,#1b1a13,#121118);
+    color:var(--gold);font-family:'Archivo';font-weight:600;
+    font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;
+    padding:16px 12px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap;
+    position:sticky;top:0;
+  }
+  table.matrix thead th.sys{text-align:left;min-width:230px}
+  table.matrix tbody td{padding:14px 12px;text-align:center;border-bottom:1px solid rgba(38,36,28,.6);color:var(--ink)}
+  table.matrix tbody td.sys{text-align:left;font-weight:500}
+  table.matrix tbody td.sys small{display:block;color:var(--muted);font-weight:400;font-size:.74rem;margin-top:2px}
+  table.matrix tbody tr:hover{background:rgba(201,162,39,.04)}
+  .score{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:7px;font-weight:600;font-size:.82rem}
+  .s5{background:rgba(95,199,126,.16);color:#86e0a0;border:1px solid rgba(95,199,126,.3)}
+  .s4{background:rgba(201,162,39,.16);color:var(--gold-bright);border:1px solid rgba(201,162,39,.3)}
+  .s3{background:rgba(217,164,65,.12);color:var(--amber);border:1px solid rgba(217,164,65,.25)}
+  .s2{background:rgba(208,89,79,.14);color:#e0857c;border:1px solid rgba(208,89,79,.28)}
+  .s1{background:rgba(208,89,79,.2);color:#ec9a91;border:1px solid rgba(208,89,79,.4)}
+  .total{font-family:'Fraunces';font-size:1.15rem;font-weight:600}
+  tr.win{position:relative}
+  tr.win td{background:linear-gradient(90deg,rgba(201,162,39,.12),rgba(201,162,39,.03))!important;border-bottom:1px solid rgba(201,162,39,.3)}
+  tr.win td.sys{border-left:3px solid var(--gold)}
+  .crown{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:#0a0a0e;background:linear-gradient(180deg,var(--metal-hi),var(--gold));padding:3px 8px;border-radius:5px;font-weight:700;margin-left:8px;font-family:'Archivo';display:inline-block;box-shadow:0 2px 8px rgba(201,162,39,.4)}
+  .runner{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-bright);border:1px solid rgba(201,162,39,.4);padding:2px 7px;border-radius:5px;margin-left:8px;font-family:'Archivo'}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:18px;font-size:.74rem;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .lg{width:14px;height:14px;border-radius:4px;display:inline-block}
+
+  /* ---------- COMMANDMENT TABLE ---------- */
+  .cmd-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
+  .cmd-grid>*{flex:1 1 330px;max-width:440px}
+  .cmd-card{
+    background:linear-gradient(165deg,var(--panel),#0e0e14);
+    border:1px solid var(--line);border-radius:13px;padding:22px 22px 20px;
+    position:relative;overflow:hidden;
+    box-shadow:0 18px 40px -28px rgba(0,0,0,.9);
+    transition:transform .25s ease,border-color .25s ease;
+  }
+  .cmd-card:hover{transform:translateY(-3px);border-color:rgba(201,162,39,.35)}
+  .cmd-card .cnum{
+    font-family:'Fraunces';font-size:.95rem;font-weight:700;color:#0a0a0e;
+    background:linear-gradient(180deg,var(--metal-hi),var(--gold));
+    width:42px;height:30px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;
+    box-shadow:0 3px 10px rgba(201,162,39,.35),inset 0 1px 0 rgba(255,255,255,.4);
+  }
+  .cmd-card .crule{font-family:'Fraunces';font-size:1.06rem;color:var(--ink);margin:12px 0 10px;line-height:1.25}
+  .cmd-card .calign{font-size:.84rem;color:var(--muted)}
+  .cmd-card .calign b{color:var(--ink);font-weight:500}
+  .verdict-pill{
+    display:inline-flex;align-items:center;gap:6px;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
+    font-weight:700;padding:4px 10px;border-radius:30px;margin-top:14px;font-family:'Archivo';
+  }
+  .vp-pass{background:rgba(95,199,126,.14);color:#86e0a0;border:1px solid rgba(95,199,126,.3)}
+  .vp-strong{background:rgba(201,162,39,.16);color:var(--gold-bright);border:1px solid rgba(201,162,39,.35)}
+
+  /* ---------- RUNNER UP ---------- */
+  .runner-box{
+    display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:14px;overflow:hidden;
+    border:1px solid var(--line);box-shadow:0 24px 50px -30px rgba(0,0,0,.8)
+  }
+  .runner-box>div{padding:34px 36px}
+  .runner-box .left{background:linear-gradient(165deg,#15151d,#0d0d13)}
+  .runner-box .right{background:linear-gradient(165deg,#191007,#0d0a06);border-left:1px solid var(--line)}
+  .runner-box h3{font-size:1.6rem;margin-bottom:6px}
+  .runner-box .score-big{font-family:'Fraunces';font-size:3.2rem;font-weight:600;line-height:1}
+  .runner-box .score-big small{font-size:1rem;color:var(--muted)}
+  .runner-box .right h4{color:var(--red);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;font-family:'Archivo';font-weight:700;margin-bottom:12px}
+  .runner-box p{color:var(--muted);font-size:.92rem;margin-top:14px}
+  .runner-box p b{color:var(--ink);font-weight:500}
+
+  /* ---------- BLUEPRINT ---------- */
+  .bp-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:24px}
+  .panel{
+    background:linear-gradient(165deg,var(--panel),#0d0d13);
+    border:1px solid var(--line);border-radius:14px;padding:28px 30px;
+    box-shadow:0 18px 44px -30px rgba(0,0,0,.9);
+  }
+  .panel h3{font-size:1.32rem;margin-bottom:6px}
+  .panel .lead{color:var(--muted);font-size:.85rem;margin-bottom:20px}
+  pre.tree{
+    font-family:'Archivo',ui-monospace,monospace;
+    font-size:.78rem;line-height:1.75;color:var(--ink);
+    background:#08080c;border:1px solid var(--line);border-radius:10px;
+    padding:20px 22px;overflow-x:auto;letter-spacing:.01em;
+    box-shadow:inset 0 2px 18px rgba(0,0,0,.6);
+  }
+  pre.tree .a{color:var(--gold-bright)}
+  pre.tree .id{color:var(--green)}
+  pre.tree .c{color:var(--muted)}
+  pre.tree .lnk{color:#8fb6e0}
+  .flow{display:flex;flex-direction:column;gap:14px}
+  .flow-step{
+    display:flex;gap:14px;align-items:flex-start;
+    padding:16px 18px;border-radius:11px;border:1px solid var(--line);
+    background:linear-gradient(165deg,var(--panel2),#101017);
+  }
+  .flow-step .n{
+    flex:none;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces';font-weight:700;color:#0a0a0e;
+    background:linear-gradient(180deg,var(--metal-hi),var(--gold));box-shadow:0 3px 9px rgba(201,162,39,.4);
+  }
+  .flow-step .body strong{display:block;color:var(--ink);font-size:.92rem;margin-bottom:3px}
+  .flow-step .body span{color:var(--muted);font-size:.82rem}
+  .flow-step code{font-family:ui-monospace,monospace;font-size:.78rem;color:var(--gold-bright);background:rgba(201,162,39,.08);padding:1px 6px;border-radius:4px}
+  .bridge-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .bridge{
+    text-align:center;padding:22px 16px;border-radius:12px;
+    background:linear-gradient(170deg,var(--panel2),#0d0d13);border:1px solid var(--line);
+  }
+  .bridge .ico{font-family:'Fraunces';font-size:1.6rem;color:var(--gold);margin-bottom:8px}
+  .bridge h4{font-size:1rem;margin-bottom:8px;color:var(--ink)}
+  .bridge p{font-size:.79rem;color:var(--muted);margin:0}
+  .bridge .tag{display:inline-block;margin-top:10px;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(201,162,39,.3);padding:3px 9px;border-radius:20px}
+
+  .unify{
+    margin-top:24px;padding:26px 30px;border-radius:14px;
+    background:linear-gradient(110deg,rgba(201,162,39,.08),rgba(13,13,19,.3));
+    border:1px solid rgba(201,162,39,.22);
+  }
+  .unify h3{font-size:1.3rem;margin-bottom:14px}
+  .unify ul{list-style:none;display:flex;flex-direction:column;gap:12px}
+  .unify li{display:flex;gap:12px;font-size:.9rem;color:var(--muted)}
+  .unify li b{color:var(--ink);font-weight:500}
+  .unify li::before{content:"";flex:none;width:8px;height:8px;border-radius:2px;margin-top:8px;background:linear-gradient(135deg,var(--gold-bright),var(--gold-deep));box-shadow:0 0 8px rgba(201,162,39,.5)}
+
+  footer{margin-top:90px;border-top:1px solid var(--line);padding-top:30px;color:var(--muted);font-size:.78rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+  footer .v{color:var(--gold);letter-spacing:.2em;text-transform:uppercase}
+
+  @media(max-width:820px){
+    .bp-grid{grid-template-columns:1fr}
+    .runner-box{grid-template-columns:1fr}
+    .bridge-row{grid-template-columns:1fr}
+    .verdict-inner{padding:32px 26px}
+    .sec-head p{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow"><span class="dot"></span>Xen Canon · One System Decision</span>
+    <h1>The Unified <span class="grad-gold">Executive-Function</span><br>Memory System for Xen</h1>
+    <p class="sub">One coherent stack to serve <b>all four scopes</b> — long-term memory, knowledge notes, file-tree / asset / project organization, and tasks — readable and writable by the agent with <b>zero human clicks</b>, while staying human-viewable as a graph for qi. Judged against the <b>Xen Commandments v50</b>, where Commandment alignment is the deciding factor — not the raw scorecard total.</p>
+    <div class="canon-tag">
+      <span>noauth default</span><span>local-first</span><span>data ownership</span><span>no-Chromium</span><span>black + gold metallic</span><span>NEVER GUESS</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- VERDICT -->
+  <div class="verdict">
+    <div class="verdict-inner">
+      <h2>The Verdict</h2>
+      <div class="winner">An <span class="grad-gold">Obsidian-anchored, three-layer stack</span> — not a single app.
+        <small>Anytype scores higher on paper (33 vs 32), but loses on the one factor that decides it: its API needs a human to unlock the desktop app and is still a Developer Preview — a tap that violates Commandment 4. Obsidian's <b>raw-filesystem path is the only candidate that is simultaneously zero-click, zero-auth, AND truly headless</b>, it already IS qi's canon, and it keeps the native human Graph View. That is the win.</small>
+      </div>
+      <div class="stack-chips">
+        <div class="chip"><span class="k">Layer 1 · Store</span><span class="v">Obsidian Vault</span><span class="d">Plain Markdown on local disk — already live in the Windows memory dir</span></div>
+        <div class="chip"><span class="k">Layer 2 · Taxonomy</span><span class="v">Johnny.Decimal + Zettelkasten</span><span class="d">Deterministic file-tree IDs + emergent [[wikilink]] recall</span></div>
+        <div class="chip"><span class="k">Layer 3 · Bridge</span><span class="v">SELmcp filesystem tools</span><span class="d">read_file / write_file / list_directory — 0-auth, headless, 24/7</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MATRIX -->
+  <section>
+    <div class="sec-head">
+      <span class="num">01</span>
+      <h2>Comparison Matrix</h2>
+      <p>Eight candidates × seven criteria, scored 1–5. Winner highlighted in gold; runner-up marked.</p>
+    </div>
+    <div class="matrix-scroll">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th class="sys">System</th>
+            <th>Scopes</th>
+            <th>Cross-Plat</th>
+            <th>Local / noauth</th>
+            <th>Agent Access</th>
+            <th>Human View</th>
+            <th>Linking</th>
+            <th>Sync</th>
+            <th>Total /35</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="win">
+            <td class="sys">Obsidian <span class="crown">Winner</span><small>Markdown vault + graph + MCP/filesystem</small></td>
+            <td><span class="score s5">5</span></td><td><span class="score s4">4</span></td><td><span class="score s5">5</span></td><td><span class="score s4">4</span></td><td><span class="score s5">5</span></td><td><span class="score s5">5</span></td><td><span class="score s4">4</span></td>
+            <td class="total gold">32</td>
+          </tr>
+          <tr>
+            <td class="sys">Anytype <span class="runner">Runner-up</span><small>Object DB · P2P E2E sync · graph</small></td>
+            <td><span class="score s5">5</span></td><td><span class="score s4">4</span></td><td><span class="score s5">5</span></td><td><span class="score s4">4</span></td><td><span class="score s5">5</span></td><td><span class="score s5">5</span></td><td><span class="score s5">5</span></td>
+            <td class="total">33</td>
+          </tr>
+          <tr>
+            <td class="sys">SiYuan + TriliumNext<small>Self-hostable block KBs</small></td>
+            <td><span class="score s4">4</span></td><td><span class="score s4">4</span></td><td><span class="score s4">4</span></td><td><span class="score s4">4</span></td><td><span class="score s5">5</span></td><td><span class="score s5">5</span></td><td><span class="score s3">3</span></td>
+            <td class="total">29</td>
+          </tr>
+          <tr>
+            <td class="sys">Logseq<small>Local-first outliner (mid DB split)</small></td>
+            <td><span class="score s4">4</span></td><td><span class="score s3">3</span></td><td><span class="score s4">4</span></td><td><span class="score s3">3</span></td><td><span class="score s5">5</span></td><td><span class="score s5">5</span></td><td><span class="score s2">2</span></td>
+            <td class="total">26</td>
+          </tr>
+          <tr>
+            <td class="sys">Notion<small>Cloud all-in-one + official MCP</small></td>
+            <td><span class="score s5">5</span></td><td><span class="score s5">5</span></td><td><span class="score s1">1</span></td><td><span class="score s5">5</span></td><td><span class="score s4">4</span></td><td><span class="score s3">3</span></td><td><span class="score s3">3</span></td>
+            <td class="total">26</td>
+          </tr>
+          <tr>
+            <td class="sys">Org Methods (JD / PARA / Zettel)<small>Taxonomies on a host tool</small></td>
+            <td><span class="score s3">3</span></td><td><span class="score s5">5</span></td><td><span class="score s5">5</span></td><td><span class="score s3">3</span></td><td><span class="score s3">3</span></td><td><span class="score s3">3</span></td><td><span class="score s3">3</span></td>
+            <td class="total">25</td>
+          </tr>
+          <tr>
+            <td class="sys">Dendron + Foam<small>VSCode markdown-in-git (Dendron dead)</small></td>
+            <td><span class="score s3">3</span></td><td><span class="score s2">2</span></td><td><span class="score s5">5</span></td><td><span class="score s4">4</span></td><td><span class="score s3">3</span></td><td><span class="score s4">4</span></td><td><span class="score s3">3</span></td>
+            <td class="total">24</td>
+          </tr>
+          <tr>
+            <td class="sys">Vector memory layers (mem0 / Pinecone…)<small>Opaque semantic stores</small></td>
+            <td><span class="score s3">3</span></td><td><span class="score s3">3</span></td><td><span class="score s3">3</span></td><td><span class="score s5">5</span></td><td><span class="score s2">2</span></td><td><span class="score s3">3</span></td><td><span class="score s3">3</span></td>
+            <td class="total">22</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <span><i class="lg s5"></i> 5 — best in class</span>
+      <span><i class="lg s4"></i> 4 — strong</span>
+      <span><i class="lg s3"></i> 3 — adequate</span>
+      <span><i class="lg s2"></i> 2 — weak</span>
+      <span><i class="lg s1"></i> 1 — disqualifying gap</span>
+    </div>
+  </section>
+
+  <!-- COMMANDMENT ALIGNMENT -->
+  <section>
+    <div class="sec-head">
+      <span class="num">02</span>
+      <h2>Commandment Alignment — The Winner</h2>
+      <p>Why the Obsidian stack passes the canon where the higher-scoring app fails.</p>
+    </div>
+    <div class="cmd-grid">
+
+      <div class="cmd-card">
+        <span class="cnum">0</span>
+        <div class="crule">Parallel always. Sequential is blasphemy.</div>
+        <div class="calign">Plain files mean the agent fans out <b>parallel reads/writes</b> across many notes with no DB lock, no API rate limit, no single-session GUI bottleneck. Vector stores and Notion (3 req/s) serialize; the filesystem does not.</div>
+        <span class="verdict-pill vp-pass">Aligned</span>
+      </div>
+
+      <div class="cmd-card">
+        <span class="cnum">2</span>
+        <div class="crule">Auto-manifest. No asking "want me to" — just do.</div>
+        <div class="calign">Johnny.Decimal numbering is <b>mechanical</b> — the agent computes the next free ID and writes the note with zero judgment or confirmation. No proposal-first wrapper (the trap that sinks the AI-librarian repos).</div>
+        <span class="verdict-pill vp-pass">Aligned</span>
+      </div>
+
+      <div class="cmd-card" style="border-color:rgba(201,162,39,.45)">
+        <span class="cnum">4</span>
+        <div class="crule">No human in the loop. Any tap / click / confirm = total failure.</div>
+        <div class="calign"><b>The deciding Commandment.</b> The raw-filesystem path needs no app running, no unlock, no token. SELmcp's <code>write_file</code> is 0-auth and headless 24/7. This is precisely where Anytype (manual unlock) and Logseq/SiYuan (GUI must run) fail.</div>
+        <span class="verdict-pill vp-strong">Decisive · Aligned</span>
+      </div>
+
+      <div class="cmd-card">
+        <span class="cnum">9</span>
+        <div class="crule">Inline-HTML real-time view is canonical — self-contained, no refresh.</div>
+        <div class="calign">qi already has a <b>self-contained force-graph HTML viewer</b> at <code>~/.xen/uploads/xen-memory-graph.html</code> rendering the vault — a static, refresh-free node-edge map, exactly this canon.</div>
+        <span class="verdict-pill vp-pass">Aligned</span>
+      </div>
+
+      <div class="cmd-card">
+        <span class="cnum">12</span>
+        <div class="crule">Hard ban: "holding" forbidden — queued / paused / silent.</div>
+        <div class="calign">A passive store has no user-facing text to violate this. Note status fields use <b>queued / active / archived</b> — never "holding / standing by".</div>
+        <span class="verdict-pill vp-pass">Aligned</span>
+      </div>
+
+      <div class="cmd-card">
+        <span class="cnum">16</span>
+        <div class="crule">Wakeups tight, silent. Long delays = parking = banned.</div>
+        <div class="calign">Filesystem writes are instantaneous and need no daemon wake / cloud round-trip. The agent advances and persists in the same tick — no parking on a sync queue.</div>
+        <span class="verdict-pill vp-pass">Aligned</span>
+      </div>
+
+      <div class="cmd-card">
+        <span class="cnum">17</span>
+        <div class="crule">Visually verify with screenshots / DOM before claiming verified.</div>
+        <div class="calign">Native <b>Graph View, Backlinks pane, and Bases tables</b> are screenshot-able truth surfaces; the HTML graph viewer is DOM-inspectable. qi can SEE the memory web to confirm it.</div>
+        <span class="verdict-pill vp-pass">Aligned</span>
+      </div>
+
+      <div class="cmd-card">
+        <span class="cnum">20</span>
+        <div class="crule">Active producing only. "Waiting for qi" / idle banned.</div>
+        <div class="calign">No app session to wait on, no human unlock gate — the store is always writable, so the agent is never structurally idle waiting on the memory layer.</div>
+        <span class="verdict-pill vp-pass">Aligned</span>
+      </div>
+
+      <div class="cmd-card">
+        <span class="cnum">21</span>
+        <div class="crule">Autonomy regardless of presence — identical whether qi present or offline.</div>
+        <div class="calign">The headless filesystem path runs <b>identically with qi away</b>; the GUI/graph is purely qi's optional human window. Presence changes nothing about the agent's write path.</div>
+        <span class="verdict-pill vp-pass">Aligned</span>
+      </div>
+
+      <div class="cmd-card">
+        <span class="cnum">★</span>
+        <div class="crule">noauth · local-first · data ownership</div>
+        <div class="calign">Plain <code>.md</code> on disk qi owns — <b>no login wall, no vendor, no cloud SoT</b>. No Cloudinary-style dead-URL risk. The textbook local-first fit; Notion (cloud-only, OAuth) scores 1/5 here and is disqualified.</div>
+        <span class="verdict-pill vp-strong">Core Canon · Aligned</span>
+      </div>
+
+      <div class="cmd-card">
+        <span class="cnum">★</span>
+        <div class="crule">NEVER GUESS — verify / cite before asserting.</div>
+        <div class="calign">Notes are <b>greppable + linkable source-of-record</b>: every claim cites a backlinked note. The agent reads the actual file before asserting — opaque vector recall (which can hallucinate ranking) is the contrast this commandment warns against.</div>
+        <span class="verdict-pill vp-pass">Aligned</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RUNNER UP -->
+  <section>
+    <div class="sec-head">
+      <span class="num">03</span>
+      <h2>Runner-Up — & The Single Reason It Loses</h2>
+      <p>Highest raw score, one fatal canon break.</p>
+    </div>
+    <div class="runner-box">
+      <div class="left">
+        <h3>Anytype</h3>
+        <div class="score-big">33<small>/35</small></div>
+        <p>The object-DB model uniquely covers all four scopes in one tool, ships an <b>official first-party MCP server</b> plus Local API, has a native graph for qi, and offers the cleanest self-hostable CRDT Mac↔Windows sync of any candidate (the only 5/5 sync). On paper it out-scores the winner.</p>
+      </div>
+      <div class="right">
+        <h4>Why it loses — Commandment 4</h4>
+        <p>The Local API <b>only serves while the desktop app is running and unlocked</b>, and it is still labelled a <b>"Developer Preview."</b> A 24/7 lights-out agent would therefore require a human to open + unlock the app after every boot — <b>a tap / confirm, which Commandment 4 defines as total failure.</b></p>
+        <p>Obsidian's raw-Markdown path has <b>no such gate</b>: an agent (or SELmcp's <code>write_file</code>) edits the files headless, with the app entirely closed. Lower total, but it is the only stack that is autonomous with qi offline — so it wins the actual decision.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- BLUEPRINT -->
+  <section>
+    <div class="sec-head">
+      <span class="num">04</span>
+      <h2>Adoption Blueprint</h2>
+      <p>Concrete folder taxonomy, sync, agent bridge, and unification with what already exists.</p>
+    </div>
+
+    <div class="bp-grid">
+      <div class="panel">
+        <h3>Vault Taxonomy</h3>
+        <p class="lead">Johnny.Decimal areas (10s) for qi's real domains; deterministic IDs the agent auto-assigns; Zettelkasten <span class="lnk" style="color:#8fb6e0">[[wikilinks]]</span> for emergent recall. Built ON the live vault, not replacing it.</p>
+        <pre class="tree"><span class="c">XenVault/                       # the existing Obsidian vault</span>
+<span class="a">00-09 SYSTEM</span>
+  00.01 <span class="lnk">MEMORY.md</span> <span class="c"># master index (exists)</span>
+  00.02 _README · graph-viewer · commandments
+<span class="a">10-19 L7S CLIENT WORK</span>
+  11 compliance   <span class="id">11.01</span> luckie-goggins-he-him
+                  <span class="id">11.02</span> ga-law-offlimits
+  12 testimonials <span class="id">12.01</span> asana-results-vary
+  13 deliverables <span class="id">13.xx</span> pricing-menu / hero-cards
+<span class="a">20-29 XLRD / INFRA</span>
+  21 selmcp       <span class="id">21.01</span> hub-41-tools
+  22 sites        <span class="id">22.xx</span> live-builds · sites.json
+<span class="a">30-39 SELF EXEC</span>
+  31 identity     <span class="id">31.01</span> east-allen-persona
+  32 canons       <span class="id">32.xx</span> commandments-v50
+<span class="a">40-49 PADRE (lead factory)</span>
+  41 leads        <span class="id">41.xx</span> per-trade-site
+  42 private      <span class="c"># .gitignored — sales-package PII</span>
+<span class="a">50-59 PERSONAL</span>
+  51 contacts · 52 health · 53 finance
+<span class="a">90-99 ARCHIVE</span>
+
+<span class="c"># Tasks live in-vault via Tasks/Bases plugin:</span>
+<span class="c"># - [ ] ship padre site <span class="id">⛁ 41.07</span> 📅 2026-06-02</span>
+<span class="c">#   status:: queued   <span class="lnk">[[41.07-paint-genius]]</span></span></pre>
+      </div>
+
+      <div class="panel">
+        <h3>Agent-Access Bridge</h3>
+        <p class="lead">Two tiers — headless filesystem is the canonical 24/7 path; structured MCP is optional richness when the GUI is open.</p>
+        <div class="flow">
+          <div class="flow-step">
+            <div class="n">1</div>
+            <div class="body"><strong>Primary · Headless filesystem (Cmd 4)</strong><span>the internal MCP hub's Godmode <code>write_file</code> / <code>read_file</code> / <code>list_directory</code> + <code>file_search</code> tools. Claude Code edits <code>.md</code> directly. Works app-closed, operator-offline.</span></div>
+          </div>
+          <div class="flow-step">
+            <div class="n">2</div>
+            <div class="body"><strong>Secondary · Structured graph access</strong><span>coddingtonbear <code>Local REST API</code> + <code>obsidian-mcp-server</code> (~14 tools: section reads, anti-clobber writes, tag/frontmatter, backlinks) — used only when the Obsidian GUI happens to be running, for live graph metadata.</span></div>
+          </div>
+          <div class="flow-step">
+            <div class="n">3</div>
+            <div class="body"><strong>Human view (Cmd 9 / 17)</strong><span>qi opens <code>Obsidian.exe --disable-gpu</code> for native Graph + Bases, or the self-contained <code>xen-memory-graph.html</code> for a refresh-free force-graph anywhere.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bridge-row">
+      <div class="bridge">
+        <div class="ico">⇄</div>
+        <h4>Mac ↔ Windows Sync</h4>
+        <p>git (already on this repo) as the conflict-aware backbone, with Syncthing for live local-LAN mirroring of the vault between <code>qi.local</code> and Windows. Both are local-first / no paid cloud — honoring the noauth canon. (Obsidian Sync is the paid fallback only if conflicts bite.)</p>
+        <span class="tag">local-first · no cloud SoT</span>
+      </div>
+      <div class="bridge">
+        <div class="ico">⌗</div>
+        <h4>Unify the Windows Vault</h4>
+        <p>The vault at <code>...\E--hitthe-link\memory\</code> stays the source of record — just re-numbered into the JD areas above. It already has <code>.obsidian/</code> config + 12 notes; this is a rename + index pass, not a migration.</p>
+        <span class="tag">already canon</span>
+      </div>
+      <div class="bridge">
+        <div class="ico">◈</div>
+        <h4>Bastra-Recall as Index</h4>
+        <p>Mac-Xen's vector recall becomes a <b>write-through semantic index</b>, not a parallel store: each memory write hits the vault note first, then upserts an embedding that <b>points back to the note path</b>. Recall returns a link qi can open in the graph — never an opaque blob.</p>
+        <span class="tag">vault = truth · vectors = pointer</span>
+      </div>
+    </div>
+
+    <div class="unify">
+      <h3>How It All Becomes One System</h3>
+      <ul>
+        <li><b>One source of truth:</b> the Markdown vault. Tasks (Tasks/Bases plugin), notes, file-tree (JD folders), and memory (Zettel links) all live as files in it — all four scopes, one substrate.</li>
+        <li><b>One write path for the agent:</b> filesystem via the internal MCP hub — headless, parallel, identical whether the operator is present or away (Cmd 0/4/21).</li>
+        <li><b>One human window:</b> Obsidian Graph View + the self-contained HTML graph — qi opens it and SEES the whole network (Cmd 9/17).</li>
+        <li><b>One semantic accelerator:</b> bastra-recall demoted from rival store to a pointer-index over the vault — fixing the "opaque, qi-blind" weakness vector layers are penalized for.</li>
+        <li><b>Net effect:</b> the highest-scoring app's only edge (sync + official MCP) is matched by git/Syncthing + obsidian-mcp-server, while keeping the one thing it can't offer — a truly headless, no-unlock, no-human-tap write path. Canon satisfied end to end.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span class="v">Xen Commandments v50 · One Canon · No Fallbacks</span>
+    <span>Decision: Obsidian vault + Johnny.Decimal/Zettelkasten + SELmcp filesystem bridge · verified against live vault at the Windows memory dir</span>
+  </footer>
+
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>

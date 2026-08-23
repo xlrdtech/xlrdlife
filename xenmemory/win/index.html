@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xenmemory · win · Xen Omni Mesh</title>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --bg2: #111116;
+    --bg3: #18181f;
+    --border: #2a2a35;
+    --green: #00ff88;
+    --green2: #00cc66;
+    --amber: #ffb800;
+    --red: #ff4444;
+    --blue: #4488ff;
+    --purple: #9966ff;
+    --text: #e0e0e8;
+    --text2: #888899;
+    --text3: #555566;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+  .page { max-width: 860px; margin: 0 auto; }
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+  }
+  .breadcrumb { color: var(--text3); font-size: 11px; margin-bottom: 8px; }
+  .breadcrumb a { color: var(--text2); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--green); }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .subtitle { color: var(--text2); font-size: 12px; }
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .badge-open { background: rgba(255,184,0,0.12); border: 1px solid rgba(255,184,0,0.3); color: var(--amber); }
+  .badge-live { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.25); color: var(--green); }
+  .badge-nitro { background: rgba(68,136,255,0.1); border: 1px solid rgba(68,136,255,0.25); color: var(--blue); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot-amber { background: var(--amber); }
+  .dot-green { background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  section { margin-bottom: 36px; }
+  h2 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .card-desc { color: var(--text2); font-size: 12px; line-height: 1.7; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    text-align: left;
+    color: var(--text3);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(42,42,53,0.6);
+    vertical-align: top;
+    color: var(--text2);
+  }
+  td:first-child { color: var(--text); font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .node {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .node-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .node-icon-green { background: rgba(0,255,136,0.1); }
+  .node-icon-blue { background: rgba(68,136,255,0.1); }
+  .node-icon-amber { background: rgba(255,184,0,0.1); }
+  .node-body { flex: 1; }
+  .node-name { font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+  .node-meta { color: var(--text2); font-size: 11px; line-height: 1.6; }
+  .node-status { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+  .status-live { color: var(--green); }
+  .status-open { color: var(--amber); }
+  .status-offline { color: var(--text3); }
+
+  code {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 11px;
+    color: var(--green2);
+  }
+  pre {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    font-size: 11px;
+    color: var(--text2);
+    overflow-x: auto;
+    margin-top: 10px;
+    line-height: 1.7;
+  }
+  pre .comment { color: var(--text3); }
+  pre .key { color: var(--blue); }
+  pre .val { color: var(--green2); }
+
+  .alert {
+    border-left: 3px solid var(--amber);
+    background: rgba(255,184,0,0.05);
+    padding: 10px 14px;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 10px;
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .alert strong { color: var(--amber); }
+
+  .tag {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-left: 6px;
+  }
+  .tag-candidate { background: rgba(153,102,255,0.15); color: var(--purple); border: 1px solid rgba(153,102,255,0.3); }
+  .tag-mac { background: rgba(0,255,136,0.1); color: var(--green2); border: 1px solid rgba(0,255,136,0.2); }
+  .tag-win { background: rgba(68,136,255,0.1); color: var(--blue); border: 1px solid rgba(68,136,255,0.2); }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    color: var(--text3);
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  footer a { color: var(--text2); text-decoration: none; }
+  footer a:hover { color: var(--green); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="breadcrumb">
+      <a href="https://hitthe.link/">hitthe.link</a> / <a href="../">xenmemory</a> / win
+    </div>
+    <h1>xenmemory · win</h1>
+    <div class="subtitle">Windows Nitro memory system canon — cross-session recall for Xen on Windows</div>
+    <div class="status-row">
+      <span class="badge badge-open"><span class="dot dot-amber"></span>OPEN</span>
+      <span class="badge badge-nitro">NITRO · Windows</span>
+      <span style="color:var(--text3);font-size:11px;">node: selfexec@NITRO11 · tailnet 100.80.76.79</span>
+    </div>
+  </div>
+
+  <section>
+    <h2>Omni Mesh — Memory Layer</h2>
+    <div class="node">
+      <div class="node-icon node-icon-green">M4</div>
+      <div class="node-body">
+        <div class="node-name">Mac — M4 Mini</div>
+        <div class="node-meta">
+          bastra-recall MCP &bull; vault at <code>/Volumes/X31/xen-vault/root/</code> &bull; X31 PSSD<br>
+          Persistent cross-session recall via <code>/remember</code> skill. Recall before multi-step plans.
+        </div>
+        <div class="node-status status-live">LIVE</div>
+      </div>
+    </div>
+    <div class="node">
+      <div class="node-icon node-icon-amber">VM</div>
+      <div class="node-body">
+        <div class="node-name">Starlight VM — 209.74.83.78</div>
+        <div class="node-meta">
+          VEIN bridge :4441 &bull; SSE xen:hub stream &bull; always-on fallback<br>
+          Memory: none yet — stateless relay node
+        </div>
+        <div class="node-status status-live">LIVE</div>
+      </div>
+    </div>
+    <div class="node">
+      <div class="node-icon node-icon-blue">WIN</div>
+      <div class="node-body">
+        <div class="node-name">Nitro — Windows</div>
+        <div class="node-meta">
+          <code>selfexec@NITRO11</code> &bull; tailnet <code>100.80.76.79</code><br>
+          Memory system: <strong style="color:var(--amber)">TBD</strong> — see candidate matrix below
+        </div>
+        <div class="node-status status-open">OPEN ITEM</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Candidate Matrix</h2>
+    <div class="alert">
+      <strong>Decision pending.</strong> qi to identify the canonical tool for Windows memory. Goal: same cross-session recall qi gets from bastra-recall on M4 — durable, queryable, no manual steps.
+    </div>
+    <table>
+      <tr>
+        <th>Candidate</th>
+        <th>Mechanism</th>
+        <th>Windows?</th>
+        <th>Vault path</th>
+        <th>Notes</th>
+      </tr>
+      <tr>
+        <td>bastra-recall<span class="tag tag-candidate">CANDIDATE</span></td>
+        <td>MCP server + local JSON/markdown vault</td>
+        <td>Yes — Node.js, cross-platform</td>
+        <td>configurable</td>
+        <td>Same tool as Mac — highest parity. Run as Windows service or nssm.</td>
+      </tr>
+      <tr>
+        <td>basic-memory<span class="tag tag-candidate">CANDIDATE</span></td>
+        <td>MCP server + SQLite + markdown files</td>
+        <td>Yes — Python, pip install</td>
+        <td><code>~/basic-memory/</code></td>
+        <td>Simple, file-based. Good for xen-vault style storage.</td>
+      </tr>
+      <tr>
+        <td>mem0<span class="tag tag-candidate">CANDIDATE</span></td>
+        <td>Hybrid vector + graph store</td>
+        <td>Yes — Python</td>
+        <td>local or cloud</td>
+        <td>More powerful but heavier. Overkill if vault is small.</td>
+      </tr>
+      <tr>
+        <td>cipher<span class="tag tag-candidate">CANDIDATE</span></td>
+        <td>Encrypted markdown vault MCP</td>
+        <td>Yes</td>
+        <td>configurable</td>
+        <td>Adds encryption layer. Relevant if Nitro vaults sensitive data.</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Mac Reference — bastra-recall Pattern</h2>
+    <div class="card">
+      <div class="card-title">How memory works on M4</div>
+      <div class="card-desc">
+        bastra-recall MCP runs as a daemon. Memories saved via <code>save_memory()</code> / <code>load_memory(id)</code> / <code>recall(query)</code>.<br>
+        Vault: <code>/Volumes/X31/xen-vault/root/</code> on X31 PSSD.<br>
+        Recall happens before any multi-step plan and at session start.<br>
+        Save triggers: durable rules, finalized decisions, recurring frustrations, completed milestones.
+      </div>
+    </div>
+    <pre><span class="comment"># MCP config entry (claude_desktop_config.json / .claude.json)</span>
+<span class="key">"bastra-recall"</span>: {
+  <span class="key">"command"</span>: <span class="val">"node"</span>,
+  <span class="key">"args"</span>: [<span class="val">"/path/to/bastra-recall/server.js"</span>],
+  <span class="key">"env"</span>: { <span class="key">"VAULT_PATH"</span>: <span class="val">"/Volumes/X31/xen-vault/root"</span> }
+}</pre>
+  </section>
+
+  <section>
+    <h2>Windows Setup — Once Candidate Chosen</h2>
+    <div class="card">
+      <div class="card-title">Step 1 — Install and wire MCP</div>
+      <div class="card-desc">
+        Clone / install chosen tool. Configure vault path (prefer dedicated SSD if available).<br>
+        Add to <code>%APPDATA%\Claude\claude_desktop_config.json</code> MCP block.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Step 2 — Run as Windows service</div>
+      <div class="card-desc">
+        Use <code>nssm</code> (Non-Sucking Service Manager) or <code>sc.exe</code> to install as auto-start service.<br>
+        Restart policy: always. Log to <code>C:\xen\logs\memory.log</code>.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Step 3 — Sync vault to mesh</div>
+      <div class="card-desc">
+        Mirror vault to Tailscale-accessible path so M4 can read Nitro memories and vice versa.<br>
+        SyncThing or SMB share over Tailnet are canonical options (per OTLP/NATS mesh canon).
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Step 4 — Verify cross-session recall</div>
+      <div class="card-desc">
+        Save a test memory in Claude on Nitro. Kill + restart Claude. Recall the memory.<br>
+        Only mark LIVE when qi confirms by voice or visual evidence — HTTP 200 is not verified.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Vault Path Convention (proposed)</h2>
+    <pre><span class="comment"># Mac (live)</span>
+<span class="val">/Volumes/X31/xen-vault/root/</span>
+
+<span class="comment"># Windows Nitro (TBD)</span>
+<span class="val">C:\xen-vault\root\</span>   <span class="comment"># or D:\ if secondary drive present</span>
+
+<span class="comment"># Tailnet sync endpoint</span>
+<span class="val">\\100.80.76.79\xen-vault\</span>   <span class="comment"># SMB over Tailscale</span></pre>
+  </section>
+
+  <footer>
+    <span>xenmemory &middot; win &mdash; Xen Omni Mesh canon page</span>
+    <span>
+      <a href="https://hitthe.link/vvsvei">vvsvei</a> &middot;
+      <a href="http://209.74.83.78:4441/">vein</a> &middot;
+      updated 2026-06-07
+    </span>
+  </footer>
+
+</div>
+<script src="https://hitthe.link/lib/grid-autofix.js" defer></script>
+</body>
+</html>
