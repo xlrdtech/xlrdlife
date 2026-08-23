@@ -1127,7 +1127,9 @@ void main(){
     // A vec3(1.0) highlight is a white blowout no matter how the body is scaled
     // afterwards, because the clamp is proportional. Tint it to what the orb is
     // actually reflecting, keep it broad and low, and it reads as sheen not a lamp.
-    c += mir * pow(max(dot(n, normalize(L+v)),0.0), 34.0) * 0.16;
+    c += mir * pow(max(dot(n, normalize(L+v)),0.0), 96.0) * 0.30;
+    // a second, wider lobe so the highlight has falloff instead of a hard dot
+    c += mir * pow(max(dot(n, normalize(L+v)),0.0), 18.0) * 0.14;
 
     // ⭐⭐ IT WAS BRIGHTER THAN ITS OWN WORLD — qi 2026-08-23 08:56:
     //   "the reason the avatar is standing out more than it's supposed to is because
@@ -1178,6 +1180,9 @@ void main(){
     // background, plus a fraction.
     float presence = 0.34 + 0.66*voice;
     c = mix(world(rd), c, presence);
+    // chrome contrast: pivot on the orb's own mean so the MEAN is preserved
+    float pivot = max(orbHere, 0.004);
+    c = max(vec3(0.0), vec3(pivot) + (c - vec3(pivot)) * (1.28 + 0.42*voice));
     col = c;
     // ⭐⭐⭐ THE BODY ITSELF IS SEE-THROUGH — qi 2026-08-23 08:46-08:47:
     //   "the sphere is TOO PROMINENT… I need to be able to see DIRECTLY THROUGH it.
