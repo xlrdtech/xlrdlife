@@ -1,0 +1,265 @@
+<title>Glass Upgrade</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- XEN GLASS UPGRADE PREVIEW — built 2026-08-22 from qi's Pinterest ref
+     "Home Button Liquid ui Web3" (pin 1029776271063482829).
+
+     WHY A PREVIEW AND NOT A DIRECT EDIT: `.dock.dock-swipe` is canon-protected —
+     the swipe drawer IS the product and must never be restyled to try an idea.
+     So the treatment gets proven on a public surface first, in qi's OWN green
+     colorway, and only moves into the drawer once he has seen it on his handset.
+
+     THE TECHNIQUE, read off the reference image (not guessed):
+       1. CHROMATIC DISPERSION RING — a conic-gradient with SPECTRAL stops, blurred.
+          This is the signature. It is NOT a rainbow fill; it is light splitting at
+          a lens edge, so it must live on a ring (mask), never on a face.
+       2. BLOOM SPILL — the ring's light bleeds outward onto surrounding surfaces.
+          Reference shows blue-white bloom top-left, warm amber-red bottom.
+       3. METALLIC GLYPH — linear-gradient fill on the icon. Flat white reads as
+          a sticker; a vertical gradient reads as machined metal.
+       4. RECESSED CAPSULE + RIM LIGHT — inner shadow for depth, plus a 1px top
+          highlight so the edge catches light.
+       5. MONOCHROME BASE, COLOR ONLY FROM LIGHT — which is exactly why this
+          transplants onto a green UI without fighting it.
+
+     Single self-contained inline HTML, all CSS embedded, no framework, no bundler,
+     no iframe (canon 9 + the iframe ban that cost _SelfOwn 18 months).
+-->
+<style>
+  /* ── qi's measured colorway, read off the live vvsvei page, not invented ──
+     text  rgb(168,192,164)      rim  rgba(176,255,200,0.12)
+     Kept EXACTLY so this preview is comparable to the real surface. */
+  :root{
+    --ink:#a8c0a4;
+    --ink-bright:#d8f0d4;
+    --rim:rgba(176,255,200,.12);
+    --rim-lit:rgba(176,255,200,.34);
+    --bg:#060b07;
+    --glass-1:#0e1711;
+    --glass-2:#0a110c;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--mono);
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;
+    padding:34px 18px 64px;gap:34px;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{
+    font-size:11px;font-weight:600;letter-spacing:2.4px;text-transform:uppercase;
+    color:var(--ink);margin:0;text-align:center;opacity:.75;
+  }
+  .sub{
+    font-size:10px;letter-spacing:.6px;line-height:1.7;text-align:center;
+    max-width:34em;margin:-22px 0 0;opacity:.5;
+  }
+  .stage{
+    width:100%;max-width:520px;
+    display:flex;flex-direction:column;gap:14px;align-items:center;
+  }
+  .label{
+    font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+    opacity:.42;align-self:flex-start;
+  }
+
+  /* ═══ THE CAPSULE ═══════════════════════════════════════════════════
+     Recessed dark pill. The inset shadow does the sinking; the top-edge
+     highlight (last shadow) is what makes the rim catch light. Without
+     that highlight the pill reads flat no matter how dark the fill is. */
+  .capsule{
+    position:relative;
+    width:100%;
+    display:flex;align-items:center;gap:16px;
+    padding:13px 26px 13px 13px;
+    border-radius:9999px;
+    background:linear-gradient(180deg,var(--glass-1),var(--glass-2));
+    border:1px solid var(--rim);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.055),      /* rim light, top edge */
+      inset 0 -10px 24px rgba(0,0,0,.55),        /* recess */
+      0 18px 44px -12px rgba(0,0,0,.9);          /* lift off the page */
+    overflow:visible;
+  }
+
+  /* ═══ THE DISPERSION RING ═══════════════════════════════════════════
+     Two stacked layers on the SAME conic gradient:
+       ::before = the sharp ring, masked to an annulus
+       ::after  = the same gradient blurred + scaled = the bloom spill
+     Spectral stop order is taken from the reference: blue/cyan at top-left,
+     white at top, amber->red on the right, green->magenta at the bottom. */
+  .orb{
+    position:relative;
+    width:74px;height:74px;flex:0 0 74px;
+    border-radius:50%;
+    background:radial-gradient(circle at 38% 32%,#1b241d 0%,#0c130e 74%);
+    display:grid;place-items:center;
+    isolation:isolate;
+  }
+  /* ⚠️ CORRECTED after looking at the first render (2026-08-22, same session).
+     v1 ran the spectrum EVENLY around all 360deg. Masked correctly, so it was a
+     ring and not a disc — but it read as an RGB LED, not refraction. Comparing
+     the render against the reference side by side: the reference is ~80% DARKNESS
+     with colour appearing only where light catches, peaking at two or three arcs.
+     Evenly-lit is its own failure mode, distinct from the filled-disc mistake,
+     and avoiding one does not avoid the other.
+     THE FIX IS DARK STOPS. Interleaving near-black between the spectral arcs is
+     what turns a rainbow into dispersion. */
+  .orb::before,.orb::after{
+    content:"";position:absolute;inset:-2px;border-radius:50%;
+    background:conic-gradient(from 196deg,
+      #0a0f0b 0deg,                                  /* dark arc — the rim mostly */
+      #2f6bff 26deg, #6fe8ff 44deg, #f4ffff 58deg,   /* cool peak, top-left */
+      #6fe8ff 70deg, #0a0f0b 104deg,                 /* fall back to dark */
+      #0a0f0b 150deg,
+      #ffc247 176deg, #ff6b35 196deg, #ff2d55 214deg,/* warm peak, right */
+      #2a0f14 240deg, #0a0f0b 268deg,
+      #26e07f 300deg, #7c4dff 326deg,                /* small cool peak, bottom */
+      #0a0f0b 348deg, #0a0f0b 360deg);
+  }
+  /* the sharp ring — mask carves the centre out so it is a RING, not a disc.
+     A filled disc reads as a rainbow button instead of light refracting at an edge.
+     Annulus narrowed 63%→71%: v1's band was too thick against a 74px orb. */
+  /* ⚠️ v3, chosen by a 5-variant LOCAL SWEEP rather than a third publish cycle.
+     ANNULUS WIDTH IS THE DOMINANT VARIABLE — not brightness, not saturation.
+     Measured: at 71–73% on a 74px orb the visible band is only 1–2px and the
+     ring DISAPPEARS however bright it is. The sweep's variant C isolated this
+     cleanly: brightest setting tested (1.35) at 73% width, still invisible.
+     So the v2 regression was caused by narrowing 63%→71%; the saturation and
+     opacity cuts I made alongside it were noise. 66% is the value that reads.
+     Keep the dark stops (correct), restore the arc brightness (v2's mistake). */
+  .orb::before{
+    -webkit-mask:radial-gradient(circle,transparent 0 66%,#000 67.5% 100%);
+            mask:radial-gradient(circle,transparent 0 66%,#000 67.5% 100%);
+    filter:saturate(1.5) brightness(1.15);
+    opacity:1;
+    z-index:1;
+  }
+  /* the bloom — same gradient, heavily blurred, pushed behind everything.
+     0.5 with the dark stops in place: the stops already cut total light, so
+     this no longer smears into the continuous halo v1 produced at 0.62. */
+  .orb::after{
+    filter:blur(12px) saturate(1.5);
+    opacity:.5;
+    transform:scale(1.14);
+    z-index:-1;
+  }
+  /* glass face over the ring: a faint dark disc so the ring reads as an EDGE
+     around a surface, rather than a floating hoop */
+  .face{
+    position:absolute;inset:5px;border-radius:50%;
+    background:
+      radial-gradient(circle at 40% 30%,rgba(255,255,255,.09),transparent 58%),
+      linear-gradient(180deg,#131c16,#0b120d);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
+    z-index:2;
+  }
+
+  /* ═══ METALLIC GLYPH ════════════════════════════════════════════════
+     The gradient IS the metal. Flat currentColor here loses the effect
+     entirely — that difference is visible in the reference at full size. */
+  .glyph{
+    position:relative;z-index:3;
+    width:31px;height:31px;
+    background:linear-gradient(176deg,#ffffff 0%,#dfeadc 38%,#93a790 74%,#c9d8c5 100%);
+    -webkit-background-clip:text;background-clip:text;
+    display:grid;place-items:center;
+  }
+  .glyph svg{width:31px;height:31px;display:block}
+  .glyph svg path{fill:url(#metal)}
+
+  .cap-text{
+    font-size:15px;letter-spacing:.5px;font-weight:500;
+    color:var(--ink-bright);
+    text-shadow:0 1px 0 rgba(0,0,0,.6);
+  }
+  .cap-sub{
+    font-size:8.5px;letter-spacing:1.4px;text-transform:uppercase;
+    opacity:.4;margin-top:3px;
+  }
+  .txtwrap{display:flex;flex-direction:column;min-width:0}
+
+  /* ── SIDE-BY-SIDE: current flat treatment vs the upgrade ──
+     A before/after in one view, because "it looks better" is unfalsifiable
+     without the old one sitting next to it. */
+  .flat .orb::before,.flat .orb::after{display:none}
+  .flat .orb{border:1px solid var(--rim)}
+  .flat .glyph svg path{fill:var(--ink)}
+
+  .row{display:flex;flex-direction:column;gap:26px;width:100%}
+  .note{
+    font-size:9.5px;line-height:1.85;opacity:.44;letter-spacing:.3px;
+    max-width:46em;border-left:1px solid var(--rim);padding-left:13px;
+  }
+  .note b{color:var(--ink-bright);font-weight:600}
+  @media(min-width:560px){ .row{flex-direction:row} .row>*{flex:1} }
+</style>
+
+<h1>Glass Upgrade · Dispersion Ring</h1>
+<p class="sub">Reference treatment rebuilt in the existing green colorway. Nothing here touches the swipe drawer.</p>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- ⚠️ WIDENED after the first render: at 31px the original ramp
+         (#fff → #e4efe1 → #93a790) was too narrow in value to read as metal —
+         it looked flat white. Real brushed metal needs a hard bright-to-dark
+         swing plus a bounce-light kick at the bottom edge, which is what sells
+         the material. Darkest stop pulled to #5f7360 and the bottom lifted. -->
+    <linearGradient id="metal" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="26%"  stop-color="#eef7ec"/>
+      <stop offset="52%"  stop-color="#a9bda6"/>
+      <stop offset="78%"  stop-color="#5f7360"/>
+      <stop offset="100%" stop-color="#d4e3d0"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="stage">
+  <div class="label">Upgraded — dispersion + bloom + metal glyph</div>
+  <div class="capsule">
+    <div class="orb">
+      <div class="face"></div>
+      <div class="glyph">
+        <svg viewBox="0 0 24 24"><path d="M12 3 2.6 11.1c-.3.3-.1.9.4.9H5v8c0 .6.4 1 1 1h4v-6h4v6h4c.6 0 1-.4 1-1v-8h2c.5 0 .7-.6.4-.9L12 3z"/></svg>
+      </div>
+    </div>
+    <div class="txtwrap">
+      <div class="cap-text">Home</div>
+      <div class="cap-sub">dispersion ring</div>
+    </div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="label">Current — flat ring, flat glyph</div>
+  <div class="capsule flat">
+    <div class="orb">
+      <div class="face"></div>
+      <div class="glyph">
+        <svg viewBox="0 0 24 24"><path d="M12 3 2.6 11.1c-.3.3-.1.9.4.9H5v8c0 .6.4 1 1 1h4v-6h4v6h4c.6 0 1-.4 1-1v-8h2c.5 0 .7-.6.4-.9L12 3z"/></svg>
+      </div>
+    </div>
+    <div class="txtwrap">
+      <div class="cap-text">Home</div>
+      <div class="cap-sub">no dispersion</div>
+    </div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="label">What makes it read as glass</div>
+  <div class="note">
+    <b>Ring, never a disc.</b> The spectrum is masked to a 1.5%-wide annulus. Filled in, it
+    reads as a rainbow button instead of light refracting at an edge.<br><br>
+    <b>Bloom is the same gradient, blurred.</b> One conic gradient painted twice — sharp on
+    top, blurred and scaled behind. A separate glow colour never matches and looks pasted on.<br><br>
+    <b>The glyph carries a gradient.</b> Flat fill reads as a sticker; a vertical ramp reads
+    as machined metal. Visible at real size, invisible in a thumbnail.<br><br>
+    <b>Colour comes only from light.</b> Base stays monochrome, which is why this transplants
+    onto the green UI without fighting the palette.<br><br>
+    <b>Rim light does the depth.</b> One inset top highlight plus an inset bottom shadow. Without
+    the highlight the capsule stays flat however dark the fill gets.
+  </div>
+</div>
