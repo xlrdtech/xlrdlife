@@ -1797,7 +1797,57 @@ function useVideo(url, label){
   v.addEventListener('error', () => fail('<b>That video could not be read.</b>'), {once:true});
 }
 
+// ⭐⭐⭐ DECODE THE FRAMES MYSELF - qi's own 500x500 / 30-frame GIF, 2026-08-23 19:04:
+// label read "Animated environment (500 by 500)", kind was 'gif', every presence check
+// PASSED - and the canvas pixel signature was byte-identical across three samples 900ms
+// apart (3933269 three times). Frames were not advancing at all.
+// ⭐ MY EARLIER FIX WAS INCOMPLETE, NOT WRONG. Attaching the <img> was necessary but
+// not sufficient: at 1px and 0.01 opacity the browser STILL treats it as not rendered
+// and suspends the animation. I fixed the instance I understood (display:none) and left
+// the RULE unhandled - the rule is that animation depends on a heuristic I do not
+// control, so it must not be depended on at all.
+// ✅ ImageDecoder (WebCodecs) decodes GIF frames EXPLICITLY, with real per-frame
+// durations, and steps on my own clock. No heuristic, no hidden-element gamble.
+// ⛔ Falls back to the <img> path when ImageDecoder is absent - never leave a browser
+// with no path at all.
+async function useGifDecoded(url, label){
+  if(typeof ImageDecoder === 'undefined') return false;
+  try{
+    const resp = await fetch(url);
+    const buf  = await resp.arrayBuffer();
+    const dec  = new ImageDecoder({data: buf, type: 'image/gif'});
+    await dec.tracks.ready;
+    const track = dec.tracks.selectedTrack;
+    const count = track && track.frameCount ? track.frameCount : 1;
+    if(count < 2) return false;                 // a single frame cannot animate
+    const frames = [];
+    for(let i = 0; i < count; i++){
+      const {image} = await dec.decode({frameIndex: i});
+      // duration is microseconds; GIFs commonly report 0 for "use default"
+      const ms = image.duration ? image.duration / 1000 : 100;
+      frames.push({bmp: image, ms: Math.max(20, ms)});
+    }
+    const cv2 = document.getElementById('gifCv');
+    cv2.width = frames[0].bmp.displayWidth;
+    cv2.height = frames[0].bmp.displayHeight;
+    const ctx = cv2.getContext('2d');
+    const ar = cv2.width / Math.max(cv2.height, 1);
+    envMode = (ar > 1.88 && ar < 2.18) ? 0 : 1;
+    envMotion = {kind:'gif', cv:cv2, ctx:ctx, frames:frames, idx:0, acc:0, decoded:true};
+    envLoaded = true;
+    const n = document.getElementById('envNote');
+    if(n) n.textContent = 'Animated environment (' + cv2.width + ' by ' + cv2.height +
+                          ', ' + count + ' frames). ' + (label||'');
+    closeSheet();
+    return true;
+  }catch(e){ return false; }
+}
+
 function useGif(url, label){
+  useGifDecoded(url, label).then(ok => { if(!ok) useGifImgFallback(url, label); });
+}
+
+function useGifImgFallback(url, label){
   // ⭐⭐ A DETACHED GIF DOES NOT ANIMATE — qi 2026-08-23 08:59: "the GIF images
   // aren't doing the motion." Not a cache problem, a real bug of mine.
   // Browsers PAUSE animated-image playback for an <img> that is not being rendered:
@@ -1842,7 +1892,18 @@ function pumpMotion(){
       if(v.readyState < 2) return;                  // nothing decoded yet
       src = v;
     } else {
-      envMotion.ctx.drawImage(envMotion.el, 0, 0);  // the GIF has advanced by itself
+      if(envMotion.decoded){
+        // step on my own clock: no reliance on the browser animating anything
+        envMotion.acc += 16.7;
+        const cur = envMotion.frames[envMotion.idx];
+        if(envMotion.acc >= cur.ms){
+          envMotion.acc = 0;
+          envMotion.idx = (envMotion.idx + 1) % envMotion.frames.length;
+        }
+        envMotion.ctx.drawImage(envMotion.frames[envMotion.idx].bmp, 0, 0);
+      } else {
+        envMotion.ctx.drawImage(envMotion.el, 0, 0);  // the GIF has advanced by itself
+      }
       src = envMotion.cv;
     }
     gl.activeTexture(gl.TEXTURE2);
