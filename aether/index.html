@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>AETHER</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b0812">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AETHER">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -462,7 +470,17 @@ void main(){
   // front camera survives only as a faint layer inside the REFLECTION, which is
   // the part he called hard — you appear in the glass, not in the world.
   float rad = length(uv);
-  vec3 col = dusk(rd);
+  // ⭐⭐ THE WHOLE WORLD, NOT JUST THE ORB — qi 2026-08-23 07:58, verbatim:
+  //   "when I uploaded an image, it didn't change the world"
+  //   "it only changed the orb. that's not what it's supposed to do"
+  //   "it's supposed to change the WHOLE ENTIRE WORLD"
+  // This line was dusk(rd) — the SECOND hardcode of the same mistake in one file.
+  // Every reflection path routes through env() -> world(), which I had already
+  // fixed; the surrounding world did not, so an uploaded photo landed inside the
+  // glass and nowhere else. world() is the only function allowed to decide what
+  // place this is. ⛔ Never call dusk() from a render path again — it is the
+  // DEFAULT, reachable only through world()'s else branch.
+  vec3 col = world(rd);
   // the light the orb throws into its own scene, brighter when he speaks
   col += vec3(0.085,0.062,0.145) * (0.30 + amp*0.9) * exp(-rad*2.9);
 
