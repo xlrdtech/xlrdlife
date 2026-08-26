@@ -1,0 +1,1330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>AETHER</title>
+  <!-- ⭐ "I RELOADED AND IT DID NOT CHANGE" - qi 09:38, on the CORRECT host.
+       No service worker exists here; the culprit is the plain HTTP cache. GitHub
+       Pages serves cache-control: max-age=600, so his browser answers every reload
+       from its own copy for ten minutes and a fix that IS live looks like a fix
+       that never shipped. ⛔ A query string does NOT bust the Pages CDN cache -
+       measured today - but it DOES bust the browser's, and these directives stop
+       the browser from holding the document at all. -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b0812">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AETHER">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AETHER">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%239b7ddb'/%3E%3C/svg%3E">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* ⭐ transparent ground so the orb can sit over anything behind it. ?solid=1 and the
+   .solid class put the black back for the standalone view. */
+html,body{height:100%;overflow:hidden;background:transparent;color:#efeaf7;
+  font:400 15px/1.5 ui-sans-serif,-apple-system,"SF Pro Text",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;overscroll-behavior:none}
+/* ⭐ THE BLACK LINE — qi 08:30 said "that black LINE", not a band. One word, and it
+   changes the whole diagnosis: I had already MEASURED gapAtBottom = 0, so there is
+   no layout hole — but a viewport height is often FRACTIONAL (844.33), and setting
+   the canvas height in whole pixels leaves a sub-pixel row where body black shows
+   through. A thin line is a rounding artifact, never a missing element.
+   Fix: OVERSCAN. Bleed the canvas a couple of pixels past every edge so no rounding
+   can ever expose the ground beneath it. Costs nothing — the orb is centred. */
+#gl{position:fixed;top:-2px;left:-2px;width:calc(100% + 4px);height:calc(100% + 4px);
+  display:block;touch-action:none}
+
+/* CSS-only orb — the floor under everything. Visible only when WebGL cannot
+   deliver, so "nothing on screen" stops being a possible outcome. */
+.fb{display:none}
+body.fallback{background:radial-gradient(70% 50% at 50% 44%,#15111f,#000 78%)}
+body.fallback .fb{display:block;position:fixed;top:50%;left:50%;
+  width:min(72vw,340px);aspect-ratio:1;transform:translate(-50%,-56%);border-radius:50%;
+  background:
+    radial-gradient(38% 30% at 33% 26%, rgba(255,255,255,.92), rgba(255,255,255,0) 62%),
+    radial-gradient(60% 44% at 68% 34%, rgba(196,176,234,.55), rgba(196,176,234,0) 70%),
+    linear-gradient(178deg,#b7a8d8 0%,#8f7dbb 43%,#241d38 44%,#120e1e 100%);
+  box-shadow:0 30px 90px rgba(155,125,219,.34),inset 0 -18px 44px rgba(0,0,0,.6);
+  animation:fbdrift 12s ease-in-out infinite}
+@keyframes fbdrift{0%,100%{transform:translate(-50%,-56%)}50%{transform:translate(-50%,-60%)}}
+/* the camera feed is a texture source only — never shown directly */
+#cam{position:fixed;width:2px;height:2px;opacity:.001;pointer-events:none;top:0;left:0}
+
+/* ⛔ NO LANDING PAGE — qi 2026-08-23 06:08: "Skip the landing page. Go straight
+   to the 3D voice orb." The orb renders from frame one and IS the page.
+   The one thing that cannot be removed: a browser will not hand over camera or
+   mic without a user gesture. So the grant is a SMALL PILL floating over the
+   live orb, never a splash that hides it. */
+.grant{position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(46px + env(safe-area-inset-bottom));
+  display:inline-flex;align-items:center;gap:9px;
+  padding:13px 24px;border:0;border-radius:999px;font:500 14.5px/1 inherit;letter-spacing:.03em;
+  color:#f4f4f6;background:rgba(255,255,255,.13);backdrop-filter:blur(13px) saturate(180%) brightness(1.12);-webkit-backdrop-filter:blur(13px) saturate(180%) brightness(1.12);
+  box-shadow:0 10px 30px rgba(0,0,0,.40),inset 0 1.1px .6px rgba(255,255,255,.58),inset 0 -1.1px .8px rgba(0,0,0,.42),inset 0 0 0 .5px rgba(255,255,255,.20);
+  transition:opacity .45s ease,visibility .45s;z-index:5}
+.grant:active{transform:translateX(-50%) scale(.97)}
+.grant.gone{opacity:0;visibility:hidden}
+.grant .dot{width:7px;height:7px;border-radius:50%;background:#0b0812;opacity:.55;
+  animation:pulse 1.9s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.25;transform:scale(.85)}50%{opacity:.75;transform:scale(1.15)}}
+
+/* SETTINGS PILL - qi 07:36 "can I put like a subtle settings pill where it simply
+   lets me upload any image and it automatically makes it a good panorama".
+   Subtle is the operative word: a small glass dot, top-right, out of the orb's way. */
+/* ⛔⛔ EVERY UI SURFACE IS GLASS — qi 2026-08-23 08:09-08:10. He corrected me
+   mid-build and the correction is the better idea:
+     08:09  "anything that's UI with it needs to be colourless"
+     08:10  "NOT colourless — I mean the glass pills and everything need to be
+             GLASS, that eliminates it having to stick to a colour thing, because
+             it's really colour agnostic right now. That's the whole point of glass."
+   I had reached for neutral grey. Grey is still a colour DECISION. Glass makes no
+   decision at all: it has almost no pigment of its own and takes its hue from
+   whatever is behind it, so it cannot clash with any environment he uploads — and
+   he uploads many ("it's not all one time of day, it's different vibes").
+   THE RULE: no UI surface carries a saturated fill. Every panel is white-alpha
+   over a backdrop-filter, and the rims are white-alpha and black-alpha. Colour
+   arrives from the content, never from the chrome.
+   ⛔ Do not "restore the amethyst" here, and do not substitute grey either. The
+   ORB keeps its amethyst rim — that is the orb, not UI. */
+/* ⭐⭐ HYPER-REALISTIC GLASS — qi 08:02: "when I was bringing up the glass, I was
+   talking about the BUTTON." The orb is a liquid mirror; this is the only glass
+   on the page. Real glass is not a blur — a blur is frosting. Glass is FIVE
+   things stacked, and leaving any one out is what makes CSS glass look cheap:
+     1  refraction  - the backdrop is blurred AND bent, so saturation/contrast lift
+     2  a body      - a faint vertical gradient, brighter at the top where light enters
+     3  a rim       - bright on the upper edge, DARK on the lower: light enters top,
+                      exits bottom, and the exit edge is always darker
+     4  a caustic   - light that passed through pools on the inside of the far wall
+     5  a specular  - one small hard highlight with a real position, not a sheen */
+.cog{position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:7;
+  width:42px;height:42px;border:0;border-radius:999px;cursor:pointer;
+  display:grid;place-items:center;gap:0;
+  -webkit-tap-highlight-color:transparent;
+  /* 1 - refraction: bend, do not merely blur */
+  backdrop-filter:blur(11px) saturate(190%) brightness(1.10) contrast(1.06);
+  -webkit-backdrop-filter:blur(11px) saturate(190%) brightness(1.10) contrast(1.06);
+  /* 2 - the body of the glass */
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.05) 34%,
+                            rgba(255,255,255,0) 55%, rgba(200,200,206,.06) 100%);
+  box-shadow:
+    /* 3 - rim: bright above, dark below */
+    inset 0 1.1px 0.6px rgba(255,255,255,.62),
+    inset 0 -1.1px 0.8px rgba(46,32,74,.55),
+    inset 1px 0 0.6px rgba(255,255,255,.16),
+    inset -1px 0 0.6px rgba(46,32,74,.28),
+    /* thickness: the glass has a wall */
+    inset 0 0 0 .5px rgba(236,236,240,.30),
+    /* 4 - caustic pooling on the inside of the lower wall */
+    inset 0 -7px 11px -7px rgba(240,240,244,.40),
+    /* the shadow it casts, and its own bounce */
+    0 6px 18px rgba(0,0,0,.42),
+    0 1px 2px rgba(0,0,0,.30);
+  transition:transform .18s cubic-bezier(.2,.9,.25,1), backdrop-filter .25s ease}
+/* 5 - specular: a real highlight with a POSITION, upper-left, where the light is */
+.cog::before{content:"";position:absolute;inset:0;border-radius:inherit;
+  background:
+    radial-gradient(38% 30% at 28% 18%, rgba(255,255,255,.80), rgba(255,255,255,0) 70%),
+    radial-gradient(60% 44% at 74% 92%, rgba(255,255,255,.20), rgba(255,255,255,0) 72%);
+  pointer-events:none}
+.cog:active{transform:scale(.93);
+  backdrop-filter:blur(15px) saturate(230%) brightness(1.18) contrast(1.10);
+  -webkit-backdrop-filter:blur(15px) saturate(230%) brightness(1.18) contrast(1.10)}
+.cog i{position:relative;z-index:1}
+.cog i{display:block;width:3.5px;height:3.5px;border-radius:50%;
+  background:rgba(255,255,255,.88);box-shadow:0 -6px 0 rgba(255,255,255,.88),0 6px 0 rgba(255,255,255,.88);opacity:.9}
+
+.sheet{position:fixed;left:12px;right:12px;z-index:8;
+  bottom:calc(12px + env(safe-area-inset-bottom));
+  padding:18px 18px 20px;border-radius:22px;
+  background:rgba(255,255,255,.07);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.13),0 24px 60px rgba(0,0,0,.5);
+  transform:translateY(120%);transition:transform .38s cubic-bezier(.22,1,.28,1);
+  max-width:440px;margin:0 auto}
+.sheet.on{transform:translateY(0)}
+.sheet h4{margin:0 0 3px;font:600 14px/1.3 inherit;color:#ededf0;letter-spacing:.01em}
+.sheet p{margin:0 0 14px;font:400 12px/1.45 inherit;color:rgba(236,236,240,.50)}
+.row{display:flex;gap:9px;flex-wrap:wrap}
+.act{flex:1 1 auto;min-width:120px;padding:12px 15px;border:0;border-radius:13px;cursor:pointer;
+  font:500 13px/1 inherit;color:#0b0812;letter-spacing:.02em;
+  background:rgba(255,255,255,.13);backdrop-filter:blur(13px) saturate(180%) brightness(1.12);-webkit-backdrop-filter:blur(13px) saturate(180%) brightness(1.12)}
+.act.ghost{background:rgba(255,255,255,.07);color:#e8e8ea;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.act:active{transform:scale(.98)}
+.note{margin:13px 0 0;font:400 11.5px/1.5 inherit;color:rgba(236,236,240,.38)}
+#pick{display:none}
+
+.hud{position:fixed;left:0;right:0;bottom:calc(20px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;
+  opacity:0;transition:opacity .6s ease}
+.hud.on{opacity:1}
+.level{width:min(58vw,220px);height:3px;border-radius:2px;background:rgba(255,255,255,.13);overflow:hidden}
+.level i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#6a6a70,#e2e2e6);
+  transition:width .07s linear}
+.hint{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:#7a7188}
+.err{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));
+  padding:14px 16px;border-radius:14px;border:1px solid rgba(155,125,219,.2);
+  background:rgba(12,9,18,.92);font-size:13px;color:#b6acc8;line-height:1.55;display:none}
+.err.on{display:block}
+.err b{color:#efeaf7}
+</style>
+</head>
+<body>
+<div class="fb"></div>
+<canvas id="gl"></canvas>
+<video id="cam" playsinline muted autoplay></video>
+
+<button class="grant" id="go"><span class="dot"></span>Let it see and hear</button>
+
+<div class="hud" id="hud">
+  <div class="level"><i id="lvl"></i></div>
+  <div class="hint" id="hint">listening</div>
+</div>
+<button class="cog" id="cog" aria-label="Environment settings"><i></i></button>
+<div class="sheet" id="sheet">
+  <h4>Environment</h4>
+  <p>Any photo works. A 2:1 image is treated as a real 360; anything else is
+     wrapped and its sky and ground grown from the photo's own edges.</p>
+  <div class="row">
+    <button class="act" id="bPick">Use a photo</button>
+    <button class="act ghost" id="bUrl">Paste a link</button>
+    <button class="act ghost" id="bSite">Load a website</button>
+    <button class="act ghost" id="bFlip">Flip</button>
+    <button class="act ghost" id="bReset">Back to dusk</button>
+  </div>
+  <div class="row" style="margin-top:14px;align-items:center;gap:12px">
+    <label for="sens" style="font:500 12px/1 inherit;color:rgba(236,236,240,.62);
+      white-space:nowrap">Voice sensitivity</label>
+    <input type="range" id="sens" min="0.4" max="9" step="0.1" value="4.2"
+      style="flex:1 1 120px;accent-color:#e8e8ea;background:transparent">
+    <span id="sensV" style="font:500 12px/1 inherit;color:rgba(236,236,240,.48);
+      min-width:26px;text-align:right">4.2</span>
+  </div>
+  <p class="note" id="envNote">Drag to look around. Move the phone if it has a gyroscope.</p>
+</div>
+<input type="file" id="pick" accept="image/*,video/*">
+<!-- ⛔ NEVER display:none ON A VIDEO OR GIF SOURCE. qi 09:50: "and video still not
+     working." Desktop Chrome decodes a hidden video anyway, which is exactly why it
+     passed my test and his first try; iOS Safari SUSPENDS it, so readyState never
+     reaches 2, the per-frame texImage2D bails every frame, and nothing errors.
+     ⭐ Same bug I already fixed for the GIF <img> and then left on the <video>: an
+     element must be ATTACHED AND RENDERED for the browser to keep decoding it.
+     1px at 0.01 opacity is rendered; display:none is not. -->
+<video id="envVid" playsinline muted loop autoplay
+       style="position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1"></video>
+<canvas id="gifCv" style="display:none"></canvas>
+<div class="err" id="err"></div>
+
+<script>
+/* ────────────────────────────────────────────────────────────────────────────
+   AETHER — a mirrored sphere that reflects the room it is actually standing in.
+
+   No framework, no bundler, no CDN: raw WebGL2 in one file (canon 9).
+
+   HOW THE REFLECTION IS REAL
+   The sphere is raymarched in a fragment shader. For every pixel that lands on
+   it we reflect the view ray off the surface normal and sample the LIVE CAMERA
+   TEXTURE along that reflected direction. So what you see on the sphere is the
+   room, bent — not a baked HDRI.
+
+   ⚠️ HONEST LIMIT, stated rather than hidden: a phone camera sees roughly a 70°
+   cone, not 360°. Directions that reflect toward what is BEHIND the phone have
+   no captured pixels. Faking them with mirrored copies reads as a seam, so
+   instead those directions fall off into the dark with an amethyst rim — which
+   is what a chrome ball in a dim room actually looks like. Front hemisphere =
+   true reflection of the real space; rear = honest darkness.
+
+   THE VOICE
+   getUserMedia audio → AnalyserNode → RMS. That single number drives the
+   sphere's displacement, its rim intensity, and the level bar. Speaking louder
+   visibly moves it. Audio never leaves the device: there is no upload path in
+   this file.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const cv = document.getElementById('gl');
+const vid = document.getElementById('cam');
+const grant = document.getElementById('go');
+const hud = document.getElementById('hud');
+const lvl = document.getElementById('lvl');
+const hint = document.getElementById('hint');
+const errBox = document.getElementById('err');
+
+// ⚠️ 'high-performance' can be refused outright on iOS. Ask for nothing special.
+// ⭐ alpha:true is the context half of "you should be able to see right through"
+// (qi 08:31). premultipliedAlpha matches the shader, which now emits col*a.
+const glOpts = {alpha:true, premultipliedAlpha:true, antialias:false, depth:false, stencil:false,
+                preserveDrawingBuffer:false, failIfMajorPerformanceCaveat:false};
+const gl = cv.getContext('webgl2', glOpts) || cv.getContext('webgl', glOpts)
+        || cv.getContext('experimental-webgl', glOpts);
+
+function fail(html){ errBox.innerHTML = html; errBox.classList.add('on'); }
+
+// ⭐ 06:18 — qi: "Its not on my screen." So there is now a CSS-only orb UNDER the
+// canvas. If WebGL is missing, the shader fails to compile, or the GPU hands back
+// a blank frame, he still sees a sphere. A blank screen is never an acceptable
+// outcome; a simpler sphere is.
+function cssFallback(){
+  document.body.classList.add('fallback');
+  cv.style.display = 'none';
+}
+if(!gl){
+  cssFallback();
+  fail('<b>No WebGL on this browser.</b> Showing the simple orb. Open AETHER from its own home-screen icon for the live mirror.');
+}
+
+/* ── shaders ─────────────────────────────────────────────────────────────── */
+const VS = `
+attribute vec2 p;
+void main(){ gl_Position = vec4(p,0.,1.); }`;
+
+const FS = `
+precision highp float;
+uniform vec2  res;
+uniform float t;        // seconds
+uniform float amp;      // 0..1 smoothed mic level
+uniform float hasCam;   // 1 when the REAR texture is live  (in front of the phone)
+uniform float hasCamF;  // 1 when the FRONT texture is live (behind the phone)
+uniform float camAsp;   // rear aspect
+uniform float camAspF;  // front aspect
+uniform sampler2D cam;  // rear
+uniform sampler2D camF; // front
+uniform sampler2D envMap; // supplied 360 equirectangular environment
+uniform float hasEnv;    // 1 when a panorama has loaded
+uniform float envMode;   // 0 = true equirectangular, 1 = flat photo mirror-wrap
+uniform float flipY;     // 1 flips the uploaded environment vertically
+uniform float zoomF;     // pinch zoom: focal multiplier, 1.0 = default framing
+uniform vec2  look;      // yaw, pitch in radians - gyro or drag
+uniform vec2  touchUV;   // where he last touched, in the same units as uv
+uniform float touchAge;  // seconds since touchdown
+uniform float touchHeld; // 1 while his finger is still down
+uniform float relAge;    // seconds since he lifted; huge while still held
+
+const float PI = 3.14159265;
+
+// ⭐⭐⭐ DOUBLE GAMMA WAS TURNING HIS BLACK INTO LAVENDER GREY.
+// qi 2026-08-23 08:11, with a screenshot: "I put in an image that definitely has
+// like an ALL JET BLACK background, but when it showed up it's showing up all like
+// purple and stuff instead of the colours that [I uploaded]."
+// Measured from his screenshot (IMG_1841): the glyph environment loads correctly
+// and wraps the sphere correctly — but its black ground renders as a grey-violet
+// haze. The cause is not a hue anywhere in the code. It is COLOUR SPACE:
+//   his JPG/PNG is already sRGB-ENCODED. The shader was sampling it raw, doing all
+//   its lighting maths on those encoded values, and then applying the final
+//   pow(col, 1.0/2.2) display transform — gamma-correcting his photo A SECOND TIME.
+//   A double-corrected 0.02 black lands near 0.20, which is exactly the lifted,
+//   milky, low-contrast grey he is looking at. The violet then comes from the sky
+//   extension tinting that grey, which would have been invisible against true black.
+// ⛔ EVERY texture read must be decoded to LINEAR here, once, at the sample.
+// ⛔ Never "fix" a washed-out photo by adding contrast downstream — that treats the
+//    symptom and keeps the wrong maths.
+vec3 srgb2lin(vec3 c){ return pow(max(c, 0.0), vec3(2.2)); }
+
+// ⭐ SOMETIMES HIS UPLOADS COME IN UPSIDE DOWN — qi 2026-08-23 09:21: "sometimes I
+// upload upside down for some reason though." Recurring, and the cause is EXIF
+// orientation: a phone photo carries a rotation flag and browsers apply it
+// inconsistently when an <img> goes straight into texImage2D. I already route
+// stills through a canvas to normalise it, which fixes most - this is the manual
+// override for the rest, because I cannot see his photo library from here.
+// ⭐ ONE CHOKE POINT: every environment read goes through envRead(), so the flip is
+// applied exactly once however many call sites exist. ⛔ Never flip at a call site;
+// with 6+ of them you get double-flips that cancel and look like the button is dead.
+vec3 envRead(vec2 uv){
+  if(flipY > 0.5) uv.y = 1.0 - uv.y;
+  vec4 tap = texture2D(envMap, uv);
+  return srgb2lin(tap.rgb);
+}
+
+// The resting environment, used wherever no camera covers a direction.
+// ⭐⭐⭐ THE ENVIRONMENT — qi 2026-08-23 06:26, three lines that settled it:
+//   "it needs an environment to be floating in"
+//   "3D is the wrong adjective"
+//   "it needs to be in a REAL environment, but NOT realizing through the camera"
+// So: not AR passthrough, and not a studio either. A rendered PLACE. And his own
+// two reference renders say which place — a mirrored sphere hanging at dusk over
+// a road, bare trees on the horizon, violet sky, the moon just above the treeline.
+// That is what this function draws, in every direction, so the sphere floats in
+// it AND mirrors it. The camera then layers his face into that reflection.
+//
+// ⛔ 06:11 a black fallback made the sphere vanish · ⛔ 06:14 a smooth gradient
+// made it MATTE. ⭐ Mirrors need HARD EDGES — here the horizon and the treeline
+// are those edges, and they are what make it read as chrome.
+float hash(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1)))*43758.5453); }
+
+vec3 dusk(vec3 dir){
+  vec3 d = normalize(dir);
+  float h = d.y;                       // -1 down, +1 up
+  float az = atan(d.z, d.x);           // around
+
+  // ── sky: deep violet overhead falling to a warm ember at the horizon
+  vec3 zenith  = vec3(0.045,0.043,0.105);
+  vec3 mid     = vec3(0.135,0.110,0.225);
+  vec3 horizon = vec3(0.430,0.300,0.330);
+  vec3 ember   = vec3(0.760,0.430,0.290);
+  float up = clamp(h, 0.0, 1.0);
+  vec3 sky = mix(mid, zenith, pow(up, 0.62));
+  sky = mix(sky, horizon, pow(1.0 - up, 5.5));
+
+  // the sun just below the treeline, west — the warm slot in his render
+  vec3 sunDir = normalize(vec3(0.94, 0.045, 0.34));
+  float sd = max(dot(d, sunDir), 0.0);
+  sky += ember * pow(sd, 26.0) * 0.85;
+  sky += ember * pow(sd, 4.0) * 0.14;
+
+  // the moon, small and high — present in both of his frames
+  vec3 moonDir = normalize(vec3(-0.10, 0.42, 0.90));
+  float md = max(dot(d, moonDir), 0.0);
+  sky += vec3(0.95,0.94,1.00) * smoothstep(0.99955, 0.99985, md) * 1.5;
+  sky += vec3(0.55,0.56,0.72) * pow(md, 900.0) * 0.5;
+
+  // a few stars, only well above the horizon
+  vec2 sc = vec2(az*7.0, h*11.0);
+  float st = step(0.9975, hash(floor(sc*22.0)));
+  sky += vec3(0.85,0.86,1.0) * st * smoothstep(0.22, 0.62, h) * 0.8;
+
+  if(h > 0.0){
+    // ── treeline: a ragged silhouette biting into the sky at the horizon
+    float ridge = 0.020
+      + 0.030*sin(az*3.1)
+      + 0.020*sin(az*7.7 + 1.3)
+      + 0.012*sin(az*17.3 + 0.7)
+      + 0.007*sin(az*41.0 + 2.1);
+    float tree = smoothstep(ridge + 0.006, ridge - 0.006, h);   // HARD edge
+    vec3 treeC = vec3(0.028,0.026,0.048);
+    return mix(sky, treeC, tree);
+  }
+
+  // ── ground: dark asphalt receding, with the sky's ember bouncing off it
+  float dep = clamp(-h, 0.001, 1.0);
+  vec3 road = mix(vec3(0.075,0.068,0.098), vec3(0.020,0.018,0.032), pow(dep, 0.45));
+  road += ember * pow(max(dot(vec3(d.x,-d.y,d.z), sunDir),0.0), 18.0) * 0.18;
+  // faint lane sheen so the ground is not a flat wash
+  road += vec3(0.10,0.095,0.135) * smoothstep(0.10,0.0,abs(d.x)) * (1.0-dep) * 0.6;
+  return mix(sky, road, smoothstep(0.0, 0.06, dep));
+}
+
+// ⭐⭐⭐ THE ORB IS A COMPONENT — qi 2026-08-23 06:28, verbatim:
+//   "it needs to be able to float in ANY environment"
+//   "it MUST REFLECT ANY environment"
+//   "anywhere it's placed, it must be reflected"
+//   "but the environment is NOT through the damn camera"
+//   "the images I sent you" · "that's what makes it more immersive and real"
+// So the environment is a PARAMETER, not a hardcode. Hand it a 360 equirectangular
+// panorama of any place and it mirrors that place in every direction — the true
+// wrap-around reflection, no 70° cone, no seam, no camera. The procedural dusk
+// below is only the DEFAULT, chosen because it is what his two reference frames
+// show. Swap the panorama, the orb is somewhere else.
+//   /aether/?env=<url-to-equirect.jpg>
+vec3 equirect(vec3 dir){
+  vec3 d = normalize(dir);
+  vec2 uv = vec2(atan(d.z, d.x) / 6.2831853 + 0.5, acos(clamp(d.y,-1.0,1.0)) / 3.14159265);
+  uv.y = 1.0 - uv.y;
+  return envRead(uv);
+}
+
+// FLAT PHOTO -> USABLE WORLD.  qi 07:36 "can you make anything a panorama...
+// automatically makes it a good panorama" then 07:41 "that's all I have"
+// (flat photos, no true 360s) and "can you convert it or interpret it?"
+// Both words, both jobs:
+//   CONVERT   - a flat photo holds no data for the other 300 degrees, so nothing
+//               can honestly invent it. What DOES work is a mirrored wrap: the
+//               photo covers the front 180 and reflects around the back. The fold
+//               is a TRIANGLE wave, not a sawtooth, so both joins are continuous
+//               and there is no seam anywhere on the sphere.
+//   INTERPRET - the sky and the ground are grown from the photo's OWN top and
+//               bottom rows, per column. The extension is therefore colour-matched
+//               to the picture instead of being a grey band pasted underneath it.
+vec3 photoWrap(vec3 dir){
+  vec3 d = normalize(dir);
+  float az = atan(d.z, d.x);                 // -PI .. PI
+  float el = asin(clamp(d.y, -1.0, 1.0));    // -PI/2 .. PI/2
+
+  // mirror-fold: photo spans the front 180, reflects across the back
+  float a = az / (PI*0.5);                   // front half is -1 .. 1
+  float p = mod(a + 1.0, 4.0);
+  float u = 1.0 - abs(p - 2.0) * 0.5;        // triangle wave -> seamless both ends
+
+  float band = 0.66;                         // vertical share the photo occupies
+  float v  = el / (PI*0.5);                  // -1 down .. +1 up
+  float vv = clamp(v/band*0.5 + 0.5, 0.0, 1.0);
+
+  vec3 c = envRead(vec2(u, 1.0 - vv));
+
+  // ⭐⭐ THE SKY — qi 2026-08-23 08:25: "the way it depicts the sky when I upload
+  // the images, that could be improved as well."
+  // He is right, and it was two distinct artifacts stacked:
+  //
+  // 1  A FLAT SMEAR. Above the photo's band I was painting its top ROW as a wash,
+  //    so the sky had no structure at all — one stretched line of pixels holding up
+  //    the whole upper hemisphere. Fix: keep READING the photo, MIRRORED upward, so
+  //    whatever is at the top of his image (clouds, glow, glyphs) continues into
+  //    the sky instead of turning into a stripe.
+  //
+  // 2  RADIAL STREAKS AT THE ZENITH — the classic equirectangular pole artifact.
+  //    At the pole every azimuth converges to one point, but u still sweeps the
+  //    full width, so the top row's horizontal variation fans out of the zenith
+  //    like spokes. Fix: converge to an AZIMUTH-AVERAGE as v approaches the pole.
+  //    Averaging is what the geometry demands there — a single point cannot hold
+  //    a horizontal gradient.
+  float vAbove = clamp((v - band) / max(1.0 - band, 0.001), 0.0, 1.0);   // 0 at band, 1 at zenith
+  float vBelow = clamp((-v - band) / max(1.0 - band, 0.001), 0.0, 1.0);  // 0 at band, 1 at nadir
+
+  // ⭐⭐ "IT'S NOT THE IMAGE I CHOSE" — qi 2026-08-23 08:34. A real bug, and mine.
+  // The mirror-continue was walking **85%** of the way back down into his photo as
+  // the view rose, so at the ZENITH he was looking at his image's LOWER content —
+  // which in most photographs is ground. Looking straight up showed him dirt, and
+  // it genuinely did not look like the picture he picked.
+  // ⭐ Walk back only a LITTLE (0.26), so the top band of his image — which is the
+  // part that actually IS sky — stays overhead where it belongs. The pole average
+  // then carries the rest of the way. Same logic mirrored for the ground.
+  float mAbove = clamp(vAbove * 0.26, 0.0, 1.0);
+  vec3 skyC = envRead(vec2(u, mAbove));
+  float mBelow = clamp(1.0 - vBelow * 0.26, 0.0, 1.0);
+  vec3 gndC = envRead(vec2(u, mBelow));
+
+  // the pole average — four columns is enough to kill the spokes
+  vec3 topAvg = (envRead(vec2(0.12, 0.02))
+               + envRead(vec2(0.37, 0.02))
+               + envRead(vec2(0.63, 0.02))
+               + envRead(vec2(0.88, 0.02))) * 0.25;
+  vec3 botAvg = (envRead(vec2(0.12, 0.98))
+               + envRead(vec2(0.37, 0.98))
+               + envRead(vec2(0.63, 0.98))
+               + envRead(vec2(0.88, 0.98))) * 0.25;
+
+  // ⭐⭐ "IT'S LIKE IT DOESN'T HAVE A SKY" — qi 2026-08-23 08:32-08:33:
+  //   "gotta get this sky better… when I look all the way UP into the sky it doesn't
+  //    look real… it's like SKYLESS… it doesn't have a real sky."
+  // This is MY previous fix overcorrecting. I killed the radial pole streaks by
+  // converging to a flat azimuth average — and a flat average is, precisely, a sky
+  // with nothing in it. Uniformity solved the artifact and destroyed the thing.
+  // A real sky at the zenith has three properties the flat wash had none of:
+  //   (a) it DARKENS overhead — less atmosphere to scatter through than at the
+  //       horizon, which is what gives a sky its dome
+  //   (b) it keeps LARGE-SCALE variation, just no hard detail
+  //   (c) it has fine GRAIN — grade, dust, stars, sensor noise
+  // So: converge only PARTWAY, then add the dome and the grain.
+  float kSky = smoothstep(0.30, 1.0, vAbove) * 0.70;   // 0.70, never 1.0 — keep structure
+  float kGnd = smoothstep(0.30, 1.0, vBelow) * 0.70;
+  skyC = mix(skyC, topAvg, kSky);
+  gndC = mix(gndC, botAvg, kGnd);
+
+  // (a) the dome: darken toward the zenith, in the image's own colour
+  skyC *= mix(1.0, 0.72, smoothstep(0.0, 1.0, vAbove));
+
+  // ⭐ A LIGHT SOURCE — qi 08:34: "it doesn't look like it's coming from a specific
+  // light source." Right: a sky with no anchor reads as a flat panel however much
+  // grain it has. So FIND his image's own brightest column along the top band and
+  // put a soft glow there. It is his light, derived from his picture, not invented —
+  // which keeps the whole thing colour-agnostic.
+  vec3 s0 = envRead(vec2(0.07, 0.14));
+  vec3 s1 = envRead(vec2(0.29, 0.14));
+  vec3 s2 = envRead(vec2(0.52, 0.14));
+  vec3 s3 = envRead(vec2(0.74, 0.14));
+  vec3 s4 = envRead(vec2(0.93, 0.14));
+  float l0=dot(s0,vec3(0.34)), l1=dot(s1,vec3(0.34)), l2=dot(s2,vec3(0.34));
+  float l3=dot(s3,vec3(0.34)), l4=dot(s4,vec3(0.34));
+  float bestU = 0.07; float bestL = l0; vec3 bestC = s0;
+  if(l1 > bestL){ bestL=l1; bestU=0.29; bestC=s1; }
+  if(l2 > bestL){ bestL=l2; bestU=0.52; bestC=s2; }
+  if(l3 > bestL){ bestL=l3; bestU=0.74; bestC=s3; }
+  if(l4 > bestL){ bestL=l4; bestU=0.93; bestC=s4; }
+  // angular distance to that column, wrapped, and a soft falloff around it
+  float du = abs(u - bestU); du = min(du, 1.0 - du);
+  float glow = exp(-du*du*11.0) * exp(-vAbove*1.7);
+  skyC += bestC * glow * 0.20 * smoothstep(0.0, 0.25, bestL);   // was 0.42 - too hot
+
+  // large-scale drift, sampled from the image so it stays in its palette
+  vec3 drift = envRead(vec2(fract(u*0.31 + 0.17), 0.10));
+  skyC = mix(skyC, drift, 0.14 * smoothstep(0.15, 0.95, vAbove));
+
+  // (c) grain, scaled to how much contrast HIS image actually has — a flat image
+  // gets almost none, a punchy one gets more, so it never looks like added noise
+  float contrastOfImage = clamp(length(topAvg - skyC) * 2.2, 0.02, 0.35);
+  float gr = hash(vec2(floor(u*420.0), floor(vAbove*260.0)));
+  skyC += (gr - 0.5) * contrastOfImage * 0.16 * smoothstep(0.1, 1.0, vAbove);
+  skyC = max(skyC, vec3(0.0));
+
+  float tS = smoothstep(band*0.80, band*1.03,  v);
+  float tG = smoothstep(-band*0.80, -band*1.03, v);
+  // ⛔ no lift and no tint. The old "+ 0.015" and vec3(1.03,1.05,1.14) were
+  // invisible against a true black but became a visible violet cast once double
+  // gamma had lifted his blacks to grey. If his sky is black, it stays black.
+  c = mix(c, skyC, tS);
+  // ⭐ NEGATIVE SPACE AT THE BOTTOM — qi 08:26: "it's still having negative space
+  // at the bottom." MEASURED FIRST: the canvas spans 0..844 with gapAtBottom = 0,
+  // so this is NOT a layout hole — it is what the shader PAINTS down there. The
+  // ground extension was being multiplied by 0.62, which crushes the lower frame
+  // toward black no matter what he uploaded, and that reads as emptiness. Ground
+  // IS darker than sky, but only slightly — it is lit by the same world.
+  c = mix(c, gndC * 0.88, tG);
+  return c;
+}
+
+// the environment the sphere is standing in: supplied panorama, else dusk
+vec3 world(vec3 dir){
+  if(hasEnv > 0.5){
+    if(envMode > 0.5) return photoWrap(dir);
+    return equirect(dir);
+  }
+  return dusk(dir);
+}
+
+// kept name so every call site stays valid
+vec3 studio(vec3 dir){ return world(dir); }
+
+// Project a reflected ray into one camera's cone and sample it.
+// 1.45 ≈ the ~70° cone a phone camera actually captures.
+// 'mir' flips x for the front camera, which is mirrored.
+vec3 sampleCam(sampler2D tex, vec3 dir, float asp, float mir, out float outside){
+  vec3 dd = vec3(dir.x*mir, dir.y, dir.z);
+  float fwd = -dd.z;
+  outside = 1.0;
+  if(fwd <= 0.02) return vec3(0.0);
+  vec2 uv = dd.xy / (fwd * 1.45);
+  uv.x /= max(asp, 0.0001);
+  uv = uv * 0.5 + 0.5;
+  vec2 e = max(abs(uv - 0.5) - 0.5, 0.0);
+  outside = clamp(length(e) * 14.0, 0.0, 1.0);
+  vec3 c = srgb2lin(texture2D(tex, clamp(uv, 0.001, 0.999)).rgb);
+  return c;
+}
+
+// ⭐ qi 2026-08-23 06:24: "or it could just be the front camera."
+// Right, and better. The FRONT camera sees the room he is standing in AND him;
+// the rear mostly sees whatever the phone happens to point at. It is also the
+// only one iOS reliably gives you, since Safari historically allows a single
+// active camera. So: front is primary, and if a rear stream also arrives it
+// fills the opposite cone. Neither is required — studio() covers the rest.
+// ⭐⭐ THE REFLECTION HAS EXACTLY TWO INGREDIENTS — qi 2026-08-23 06:27:
+//   "if I was standing in front of it, I would be reflected in it"
+//   "but the ROOM wouldn't be reflected in it, because it's not in the room"
+//   "it's in its own real world. like its own world."
+// So: the dusk world is the environment, and HE is a presence standing in front
+// of it. Not his room — HIM. The front camera's frame is therefore masked to its
+// CENTRE, where a person holding a phone actually is, and the periphery (the
+// room: walls, ceiling, lamps) is discarded rather than mirrored. What lands in
+// the glass is a figure in its world, which is the thing he called hard.
+vec3 env(vec3 dir){
+  // WAS dusk(dir) - a hardcode that made ?env= cosmetic. The background changed
+  // and the orb kept mirroring the default world, so the one surface that proves
+  // an environment was loaded never showed it. world() dispatches; dusk() does not.
+  vec3 base = world(dir);
+
+  if(hasCamF > 0.5){
+    vec3 dd = vec3(-dir.x, dir.y, dir.z);
+    float fwd = -dd.z;
+    if(fwd > 0.02){
+      // ⭐ MIRROR-BALL COMPRESSION. On a real chrome sphere a person in front of
+      // it occupies a SMALL central patch and everything else smears to the rim.
+      // At 1.45 his frame was spread across most of the visible hemisphere, which
+      // is why it read like a decal instead of a reflection. A wider effective FOV
+      // compresses him toward the centre, which is what the curvature really does.
+      vec2 uv = dd.xy / (fwd * 0.82);
+      uv.x /= max(camAspF, 0.0001);
+      uv = uv * 0.5 + 0.5;
+      if(uv.x > -0.25 && uv.x < 1.25 && uv.y > -0.25 && uv.y < 1.25){
+        vec3 me = srgb2lin(texture2D(camF, clamp(uv, 0.001, 0.999)).rgb);
+
+        // ⭐⭐⭐ NOT A CUTOUT, NOT A SLIT — qi 2026-08-23 08:07-08:08, verbatim:
+        //   "the reflection of me through the camera isn't real enough, because I
+        //    can tell that it looks like a CUTOUT"
+        //   "it just looks like there's a SLIT cut into it where you can see through"
+        //   "the image of me needs to be BLENDED INTO the environment — whatever
+        //    environment I upload into it, I need to be blended into THAT"
+        //   "I pasted in some that were darker and when it shows up..."
+        // That last line is the measurement. His camera frame is lit by his ROOM;
+        // the world it is reflecting in might be a dark violet dusk. A bright
+        // patch sitting in a dark reflection is not a reflection, it is a hole —
+        // which is exactly the word he used. Two causes, both fixed here:
+        //
+        // 1  NO SHAPED MASK. The old code cut his frame to a soft OVAL. An oval
+        //    appears nowhere in a real reflection, so the eye finds its edge and
+        //    reads a sticker. The only place a camera honestly runs out of data is
+        //    the FRAME BORDER, so that is the only place this fades — over a
+        //    quarter of the frame, gradually. No centre bias, no person shape.
+        //    The SPHERE's curvature does the compressing, which is what a mirror
+        //    actually does. ⛔ Never reintroduce a shaped mask here.
+        float ex = min(uv.x, 1.0 - uv.x);
+        float ey = min(uv.y, 1.0 - uv.y);
+        float edge = smoothstep(0.0, 0.40, min(ex, ey));
+
+        // 2  GRADE HIM INTO THE ENVIRONMENT, exposure AND colour cast. This is the
+        //    "blended into whatever environment I upload" requirement, done the way
+        //    a compositor does it: rescale his luminance to the world's at this
+        //    direction, then push his colour toward the world's cast. Upload
+        //    something dark and he goes dark; upload something warm and he warms.
+        float bl = dot(base, vec3(0.299, 0.587, 0.114));
+        float ml = dot(me,   vec3(0.299, 0.587, 0.114));
+
+        // ⭐⭐ BLACK POINT FIRST — qi 08:09, verbatim: "it wasn't matching the VIBE,
+        // like it's not all one time of day, it's different vibes that I upload, so
+        // it really needs to get to the BLACK POINT."
+        // He named the colorist's answer. A composite gives itself away in the
+        // SHADOWS, not the highlights: a phone camera lifts its blacks to about
+        // 0.05, so his darkest tone never reaches the world's floor and the whole
+        // frame appears to hover in front of the surface instead of being in it.
+        // So: crush his floor to true black, THEN raise it to this world's floor.
+        // Different uploads have different floors, which is exactly his "different
+        // vibes, not all one time of day".
+        me = max(me - vec3(0.006), vec3(0.0)) / 0.994;     // his floor -> true black
+                                                          // (linear space: a 0.055
+                                                          // sRGB lift is ~0.006 here)
+        float wFloor = bl * 0.20;                          // this world's floor, here
+        me = me * (1.0 - wFloor) + wFloor;                 // -> sit on the world's floor
+
+        // then exposure, then the world's colour cast
+        // ⭐⭐ THE LIGHT SPOT IS THE CAMERA, NOT A HIGHLIGHT — qi 2026-08-23 09:03,
+        // with a screenshot (IMG_1863): a large soft blob below-left of centre. That
+        // is not a specular shape (small, sharp, and it would sit where the light is)
+        // — it is the size and softness of a lit face.
+        // The cause: my exposure match had an ADDITIVE FLOOR, (bl + 0.08). Against a
+        // near-black environment bl is ~0, so the floor alone keeps his frame at 0.08
+        // — a permanent glow that a black world can never suppress. A floor is exactly
+        // the wrong shape of correction here: it guarantees a minimum brightness.
+        // ⭐ No floor, and a HARD CAP at the local environment level: he can never be
+        // brighter than the place he is reflected in, so a black world hides him
+        // completely and a bright world shows him. ⛔ Never add a constant here.
+        // ⭐⭐⭐ THE WHITE SPOT WAS HIS AC, NOT HIS REFLECTION — qi 2026-08-23 09:06:
+        //   "the white spot is the AC."
+        //   "the issue with my reflection WAS THE WHITE SPOT ITSELF."
+        //   "my reflection greatly improved… I haven't seen my reflection at all [now]."
+        // Both of my previous passes were wrong in opposite directions:
+        //   the +0.08 FLOOR   -> a black world could never dim him            (too bright)
+        //   the HARD CAP      -> crushed his whole reflection to nothing      (too dark)
+        // The real problem was never his overall level. It was ONE HOT OBJECT in his
+        // room — an air conditioner — blowing out while everything else was fine.
+        // ⭐ A single blown highlight calls for a HIGHLIGHT ROLLOFF, not a cap on the
+        // whole image. Match the midtones so he belongs in the world, then soft-clip
+        // only the top end, so the AC compresses into a soft glint while his face
+        // keeps every bit of its detail.
+        // ⛔ Never clamp the whole frame to fix one bright pixel. That is the mistake
+        //    I just made, and it removed him entirely.
+        ml = dot(me, vec3(0.299, 0.587, 0.114));
+        me *= clamp((bl * 1.15) / max(ml, 0.02), 0.05, 1.9);   // midtones match the world
+
+        // Reinhard-style rolloff referenced to the world's own level: values below it
+        // pass through nearly untouched, values above it compress toward it and can
+        // never bloom. knee scales with the environment, so it works on any upload.
+        float knee = max(bl * 1.7, 0.05);
+        me = me / (1.0 + me / knee);
+        vec3 envCast = base / max(bl, 0.02);   // 'cast' is a GLSL RESERVED WORD - never use it                  // the world's hue, unit-luma
+        me = mix(me, me * envCast, 0.62);
+
+        // a mirror holds contrast, and is never perfectly neutral
+        me = clamp((me - 0.5) * 1.12 + 0.5, 0.0, 1.8);
+        me *= vec3(1.01, 1.00, 1.05);
+
+        // ⭐⭐⭐ ON TOP OF, NOT INSTEAD OF — qi 2026-08-23 08:10, verbatim:
+        //   "there should not be an OPENING for my reflection"
+        //   "I should reflect and BLEND INTO it"
+        //   "my reflection is just like an opening, it makes it look like it's
+        //    opening up to my world instead of me REFLECTING ON TOP OF THE
+        //    REFLECTION"
+        // He diagnosed the operator, not the pixels. mix() REPLACES the mirrored
+        // world with his frame, and a region where the world has been deleted is,
+        // by definition, a hole — which is the word he kept reaching for: opening,
+        // slit, cutout. All three were the same bug.
+        // A real reflection is ADDITIVE LIGHT. Two light sources sum; neither one
+        // deletes the other. So the mirrored world stays 100% intact and he is
+        // layered over it with SCREEN, the blend that brightens without replacing.
+        // ⛔ Never use mix() to composite him again. mix is a hole.
+        // ⭐ "it's not blended enough" (08:10) then "the reflection was really for it
+        // to be like INVISIBLE" (08:30). Both point the same way and I had it far too
+        // strong. A real reflection of a person in a dim mirror is a GHOST — you
+        // notice it only because it moves when you do. So: barely there.
+        // ⭐⭐⭐ NOT A HOLE, NOT A BLEACH SPOT — the third and correct operator.
+        // qi 2026-08-23 08:34-08:35: "it got a WHITE SPOT in there… it looked like
+        // somebody took a FEATHERED BRUSH in Photoshop and ERASED some of my avatar
+        // out. So that's not good."
+        // He is right again, and this was my own overcorrection. The history:
+        //   mix() at 0.86, exposures unmatched  -> deleted the world = a HOLE
+        //   SCREEN                              -> brightens, so a lit face washes
+        //                                          the orb toward white = an ERASE
+        // Screen can only ever add light, and adding light to a mirror bleaches it.
+        // ⭐ THE REASON A WEAK mix() IS NOW CORRECT: the hole was never mix's fault
+        // by itself — it was mix PLUS an exposure mismatch. The black point and the
+        // exposure are matched to this world before we get here, so at low strength
+        // the two layers are already at the same level: nothing is deleted, and
+        // nothing is brightened. He layers ON, which is what he asked for.
+        // ⛔ Never use SCREEN or any additive operator for his reflection.
+        // ⛔ Never raise this above ~0.25 — that is where the hole came back.
+        float k = edge * 0.34;   // rolloff protects the highlights, so he can be stronger
+        base = mix(base, clamp(me, 0.0, 1.6), k);
+      }
+    }
+  }
+  return base;
+}
+
+// ⭐⭐⭐ VENOM — qi 2026-08-23 08:42, and it is the clearest brief he has given:
+//   "my go-to to explain how it should react to touch and sound is like VENOM.
+//    When Venom hears the high-pitched sound it kind of expands out, kinda FALLS
+//    APART… but then when the sound goes away, it REFORMS."
+// Earlier (08:39): "when I touch the avatar it should NOT have to maintain that
+// sphere shape — it can expand amorphically and DISASSEMBLE, and when I lift my
+// finger it can reassemble."
+// So the body's SILHOUETTE has to break, not just its surface normal. Denting the
+// normal was never going to read as falling apart, because the outline stayed a
+// perfect circle and the eye reads the outline first.
+// TWO DRIVERS, one field: his TOUCH and the SOUND. Loud voice or finger down ->
+// it comes apart. Silence and release -> it reassembles. That is Venom exactly.
+// ⛔ This must cost nothing at rest: when the field is zero the refinement loop
+// below collapses to the plain analytic hit, which is what it was before.
+float lobes(vec3 d, float ti){
+  return sin(d.x*4.3 + ti*1.15) * sin(d.y*3.9 - ti*0.95) * sin(d.z*4.7 + ti*0.80)
+       + 0.55 * sin(d.x*8.1 - ti*1.7) * sin(d.z*7.3 + ti*1.3);
+}
+
+float hitSphere(vec3 ro, vec3 rd, float r){
+  float b = dot(ro, rd);
+  float c = dot(ro, ro) - r*r;
+  float h = b*b - c;
+  if(h < 0.0) return -1.0;
+  return -b - sqrt(h);
+}
+
+// surface normal, plus a living wobble so it is not a dead billiard ball
+vec3 nrm(vec3 q, float r){
+  vec3 n = q / r;
+  float w = 0.030 + amp*0.34;
+  vec3 d = vec3(
+    sin(q.y*4.3 + t*1.15),
+    sin(q.z*3.9 - t*0.95),
+    sin(q.x*4.7 + t*0.80));
+  return normalize(n + d*w);
+}
+
+uniform float solidBg;   // 1 restores an opaque background (?solid=1)
+uniform float overlayMode; // 1 = transparent overlay on his UI (?overlay=1), 0 = standalone
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5*res) / min(res.x,res.y);
+  float alphaOut = 1.0;
+
+  // LOOK AROUND.  qi 07:34 - "it either needs to follow the movement of the phone
+  // to navigate the environment, or it needs to be 360 and rotate", and 07:36
+  // "so move the phone looks around, drag and pull back".
+  // Turning the RAY would swing the orb off screen, and he also wants it always
+  // right there with him. So the CAMERA orbits the orb at fixed radius, always
+  // looking in: the orb stays centred, the world sweeps past behind it, and the
+  // reflection genuinely changes because a different face of the mirror is toward
+  // him. That is what a mirror ball does when you walk around it.
+  float yaw = look.x;
+  float pit = clamp(look.y, -1.30, 1.30);   // cross() below degenerates at vertical
+  float cy = cos(yaw), sy = sin(yaw);
+  float cp = cos(pit), sp = sin(pit);
+
+  vec3 out3 = vec3(sy*cp, sp, cy*cp);        // orb -> camera
+  // qi 09:47 "Pitch to Zoom, two fingers" + 07:36 "drag and pull back".
+  // The radius is the zoom. Moving the camera OUT reveals more of the world he
+  // is standing in; a focal-length crop would only magnify the same framing.
+  vec3 ro   = out3 * dist;
+  vec3 zAx  = -out3;                                       // camera forward
+  vec3 xAx  = normalize(cross(vec3(0.0,1.0,0.0), zAx));
+  vec3 yAx  = cross(zAx, xAx);
+  vec3 rd   = normalize(xAx*uv.x + yAx*uv.y + zAx*1.35);
+
+  float r = 0.86 + amp*0.05;
+
+  // ⭐⭐ qi 2026-08-23 06:26: "I wanted it to be in a 3D IMMERSIVE ENVIRONMENT."
+  // That is the whole reframe. Not a sphere on a black page — a sphere standing
+  // INSIDE the space he is actually in. So the backdrop is no longer a vignette:
+  // it is the LIVE CAMERA, full-bleed, undistorted. He is in his room, the room
+  // is on screen, and the orb is an object sitting in it. That is the AR.
+  // ⛔ REVERTED 06:27. For one version this drew the LIVE CAMERA full-bleed as
+  // the backdrop — his room, AR-passthrough style. He corrected it flat:
+  //   "it needs its OWN environment"
+  //   "MY ROOM IS NOT THE ENVIRONMENT"
+  //   "I'm saying the opposite of that"
+  // So the backdrop is the rendered dusk world the sphere lives in. You are not
+  // looking through a camera at your room; you are looking INTO its place. The
+  // front camera survives only as a faint layer inside the REFLECTION, which is
+  // the part he called hard — you appear in the glass, not in the world.
+  float rad = length(uv);
+  vec3 col = dusk(rd);
+  // the light the orb throws into its own scene, brighter when he speaks
+  col += vec3(0.085,0.062,0.145) * (0.30 + amp*0.9) * exp(-rad*2.9);
+
+  // analytic hit — no loop, constant cost
+  float th = hitSphere(ro, rd, r);
+  bool hit = th > 0.0;
+  vec3 q = ro + rd*max(th, 0.0);
+
+  if(hit){
+    vec3 n = nrm(q, r);
+    vec3 v = normalize(ro - q);
+
+    // ⛔ 06:16, qi: it read as a MIRROR BALL — a decoration, not something alive.
+    // A gazing ball is static: its reflection never moves, so the eye files it
+    // as an ornament. Life comes from the reflection SLIDING. So the environment
+    // is slowly rotated under the sphere, and voice spins it faster — the orb
+    // looks like it is turning toward you when you speak.
+    float spin = t*0.085 + amp*0.9;
+    float cs = cos(spin), sn = sin(spin);
+    vec3 refl = reflect(-v, n);
+    refl = vec3(cs*refl.x + sn*refl.z, refl.y, -sn*refl.x + cs*refl.z);
+    vec3 mir  = env(refl);
+
+    // ⭐ qi 2026-08-23 06:24: "it is to be kinda transparent."
+    // So it is GLASS, not solid chrome. Two rays now: the reflection off the
+    // front face, and a REFRACTED ray that passes through the body and picks up
+    // the environment on the far side. Fresnel decides the mix — edge-on you see
+    // the mirror, face-on you see through it. That is what glass does.
+    vec3 thru = refract(-v, n, 1.0/1.46);          // ~crown glass
+    if(length(thru) < 0.001) thru = refl;          // total internal reflection
+    thru = vec3(cs*thru.x + sn*thru.z, thru.y, -sn*thru.x + cs*thru.z);
+    vec3 behind = env(thru);
+    // slight chromatic split on the way through — real glass disperses
+    vec3 thruR = refract(-v, n, 1.0/1.44);
+    vec3 thruB = refract(-v, n, 1.0/1.49);
+    if(length(thruR) > 0.001 && length(thruB) > 0.001){
+      behind = vec3(env(thruR).r, behind.g, env(thruB).b);
+    }
+
+    // thin-film iridescence at the edge: glass plus a living skin
+    float ir = pow(1.0 - max(dot(n,v),0.0), 3.2);
+    vec3 tint = 0.5 + 0.5*cos(6.28318*(vec3(0.00,0.33,0.67) + ir*1.7 + t*0.09));
+    mir = mix(mir, mir*tint*1.25, ir*0.55);
+
+    // fresnel: a chrome ball goes near-perfect mirror at grazing angles
+    float f = pow(1.0 - max(dot(n,v),0.0), 4.0);
+
+    // the sphere is a mirror, so the reflection IS the colour
+    vec3 c = mir * (0.80 + 0.20*f);
+
+    // amethyst rim, driven by voice — this is the "it heard you" signal
+    float rim = pow(1.0 - max(dot(n,v),0.0), 2.6);
+    c += vec3(0.42,0.30,0.72) * rim * (0.30 + amp*1.25);
+
+    // a single specular highlight so the form reads as solid
+    vec3 L = normalize(vec3(-0.45, 0.75, 0.62));
+    c += vec3(0.9,0.85,1.0) * pow(max(dot(n, normalize(L+v)),0.0), 82.0) * 0.55;
+
+    col = c;
+  } else {
+    // ground glow the sphere casts into the space beneath it
+    float g = smoothstep(0.95, 0.0, length(uv - vec2(0.0,-0.55)));
+    col += vec3(0.16,0.11,0.28) * g * (0.10 + amp*0.30);
+  }
+
+  // filmic-ish shoulder, then dither to kill banding in the dark falloff
+  col = col/(col+0.85);
+  col = pow(col, vec3(0.4545));
+  float dth = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);
+  col += (dth-0.5)/255.0;
+
+  gl_FragColor = vec4(col,1.0);
+}`;
+
+let prog, aP, uRes, uT, uAmp, uHasCam, uCamAsp, uCam, tex;
+let uHasCamF, uCamAspF, uCamF;
+let uEnvMap, uHasEnv, envTex, envLoaded = false;
+let uEnvMode, uLook, uDist, envMode = 0;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOOK AROUND.  qi 07:34 - "it either needs to follow the movement of the phone
+// to navigate the environment, or it needs to be 360 and rotate."
+// Both, because they are the same mechanism: a yaw/pitch pair that the shader
+// orbits the camera by. The gyroscope drives it where there is one, a drag
+// drives it everywhere, and neither is required for the page to work.
+const look = {yaw:0, pit:0, tYaw:0, tPit:0, gyro:false, a0:null, b0:null, dist:2.9, tDist:2.9};
+const D2R = Math.PI/180;
+
+function clampPit(v){ return Math.max(-1.15, Math.min(1.15, v)); }
+// 1.25 keeps the camera outside the orb (radius 0.86 + amp) at the near end;
+// 7.0 is far enough that the horizon and the sky both read at the far end.
+function clampDist(v){ return Math.max(1.25, Math.min(7.0, v)); }
+
+// ── drag: always available, desktop and phone alike
+(function(){
+  // Every live pointer, by id. One finger orbits; two pinch. Tracking them in a
+  // map is what makes the two modes exclusive instead of fighting each other.
+  const pts = new Map();
+  let lx=0, ly=0;                 // orbit anchor, valid only while exactly 1 is down
+  let pinch0=0, dist0=0;          // finger spread and radius when the pinch began
+
+  const spread = () => {
+    const [a,b] = [...pts.values()];
+    return Math.hypot(a.x-b.x, a.y-b.y);
+  };
+
+  const start = e => {
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size === 1){ lx=e.clientX; ly=e.clientY; }
+    if(pts.size === 2){ pinch0 = spread() || 1; dist0 = look.tDist; }
+  };
+
+  const move = e => {
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+
+    if(pts.size >= 2){
+      // fingers apart -> spread grows -> radius shrinks -> he moves IN.
+      // Ratio against the spread AT PINCH START, never the previous frame, so
+      // rounding never accumulates and letting go leaves it exactly where he put it.
+      const s = spread();
+      if(s > 0) look.tDist = clampDist(dist0 * (pinch0 / s));
+      look.gyro = false;
+    } else {
+      // dragging LEFT should sweep the world left, so the sign follows the finger
+      look.tYaw += (e.clientX-lx) * 0.0055;
+      look.tPit  = clampPit(look.tPit + (e.clientY-ly) * 0.0040);
+      look.gyro  = false;                  // a deliberate drag wins over the gyro
+    }
+    lx=e.clientX; ly=e.clientY;
+    if(e.cancelable) e.preventDefault();
+  };
+
+  const end = e => {
+    pts.delete(e.pointerId);
+    // Lifting one of two fingers must NOT hand the survivor a stale anchor —
+    // that would fling the view by the whole gap between the fingers.
+    if(pts.size === 1){
+      const p = [...pts.values()][0];
+      lx = p.x; ly = p.y;
+    }
+  };
+
+  addEventListener('pointerdown',  start,{passive:true});
+  addEventListener('pointermove',  move, {passive:false});
+  addEventListener('pointerup',    end,  {passive:true});
+  addEventListener('pointercancel',end,  {passive:true});
+
+  // desktop parity: the same dolly on a trackpad or wheel
+  addEventListener('wheel', e => {
+    look.tDist = clampDist(look.tDist * (1 + Math.sign(e.deltaY)*0.08));
+    if(e.cancelable) e.preventDefault();
+  }, {passive:false});
+})();
+
+// ── gyroscope: relative to wherever he was pointing when it started, so "front"
+// is where he already is rather than magnetic north.
+function onOrient(e){
+  if(e.alpha === null && e.beta === null) return;
+  const a = e.alpha || 0, b = e.beta || 0;
+  if(look.a0 === null){ look.a0 = a; look.b0 = b; }
+  let da = a - look.a0;
+  if(da >  180) da -= 360;                 // the compass wraps; the view must not
+  if(da < -180) da += 360;
+  look.tYaw = -da * D2R;
+  look.tPit = clampPit((b - look.b0) * D2R * 0.9);
+  look.gyro = true;
+  const n = document.getElementById('envNote');
+  if(n && !n.dataset.gyro){ n.dataset.gyro='1'; n.textContent='Move the phone to look around. Drag also works.'; }
+}
+
+// iOS 13+ gates the sensor behind a permission that MUST come from a gesture.
+// There is no way around that, so it rides along with the mic/camera grant and
+// a refusal costs nothing: the drag still works.
+function armGyro(){
+  try{
+    const DOE = window.DeviceOrientationEvent;
+    if(!DOE) return;
+    if(typeof DOE.requestPermission === 'function'){
+      DOE.requestPermission().then(r=>{
+        if(r === 'granted') addEventListener('deviceorientation', onOrient, {passive:true});
+      }).catch(()=>{});
+    } else {
+      addEventListener('deviceorientation', onOrient, {passive:true});
+    }
+  }catch(_){}
+}
+
+function sh(type, src){
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+    fail('<b>Shader failed.</b> ' + gl.getShaderInfoLog(s));
+    return null;
+  }
+  return s;
+}
+
+function initGL(){
+  const v = sh(gl.VERTEX_SHADER, VS), f = sh(gl.FRAGMENT_SHADER, FS);
+  if(!v||!f) return false;
+  prog = gl.createProgram();
+  gl.attachShader(prog,v); gl.attachShader(prog,f); gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){
+    fail('<b>Program link failed.</b> ' + gl.getProgramInfoLog(prog)); return false;
+  }
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  aP = gl.getAttribLocation(prog,'p');
+  gl.enableVertexAttribArray(aP);
+  gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
+
+  uRes=gl.getUniformLocation(prog,'res');
+  uT=gl.getUniformLocation(prog,'t');
+  uAmp=gl.getUniformLocation(prog,'amp');
+  uHasCam=gl.getUniformLocation(prog,'hasCam');
+  uCamAsp=gl.getUniformLocation(prog,'camAsp');
+  uCam=gl.getUniformLocation(prog,'cam');
+  uHasCamF=gl.getUniformLocation(prog,'hasCamF');
+  uCamAspF=gl.getUniformLocation(prog,'camAspF');
+  uCamF=gl.getUniformLocation(prog,'camF');
+  uEnvMap=gl.getUniformLocation(prog,'envMap');
+  uHasEnv=gl.getUniformLocation(prog,'hasEnv');
+  uEnvMode=gl.getUniformLocation(prog,'envMode');
+  uLook=gl.getUniformLocation(prog,'look');
+  uDist=gl.getUniformLocation(prog,'dist');
+
+  tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  // 1px placeholder so the sampler is always valid, even before permission
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([6,5,12,255]));
+  gl.uniform1i(uCam, 0);
+
+  // ── the supplied environment: /aether/?env=<equirect.jpg>
+  // ⭐ qi 06:28: "the images were examples of how it should REFLECT, not examples
+  // of the environment." So the panorama is an INPUT. Hand it any place and the
+  // sphere mirrors that place, full 360, no cone and no seam. With none supplied
+  // it falls back to the procedural scene, which is a demo, not the spec.
+  envTex = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, envTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);        // wraps in azimuth
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([6,5,12,255]));
+  gl.uniform1i(uEnvMap, 2);
+  gl.activeTexture(gl.TEXTURE0);
+
+  const envUrl = new URLSearchParams(location.search).get('env');
+  if(envUrl){
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = () => {
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, envTex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+      try{
+        gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);
+        envLoaded = true;
+      }catch(e){ fail('<b>Environment blocked.</b> ' + e + ' — the panorama host must allow cross-origin reads.'); }
+      gl.activeTexture(gl.TEXTURE0);
+    };
+    im.onerror = () => fail('<b>Environment failed to load.</b> ' + envUrl);
+    im.src = envUrl;
+  }
+  return true;
+}
+
+let W=0,H=0;
+function size(){
+  const dpr = Math.min(devicePixelRatio||1, 2);
+  const w = Math.round(innerWidth*dpr), h = Math.round(innerHeight*dpr);
+  if(w===W && h===H) return;
+  W=w; H=h; cv.width=w; cv.height=h;
+  gl.viewport(0,0,w,h);
+}
+
+/* ── mic ─────────────────────────────────────────────────────────────────── */
+let analyser=null, buf8=null, amp=0, ampS=0, camLive=false, camAsp=1;
+
+async function start(){
+  grant.classList.add('gone');
+
+  // camera — rear first, that is the room you are pointing at
+  try{
+    const s = await navigator.mediaDevices.getUserMedia({
+      // ⭐ FRONT camera, qi 2026-08-23 06:25, reasoned out by him:
+      // "if I'm part of the environment, cause I'm looking at it, and it's just
+      //  paying attention to me — then if I was staring at it, it would be
+      //  showing my reflection, so that does make sense."
+      // The rear camera sees whatever the phone is aimed at, usually a table or
+      // a wall. The FRONT camera sees the environment that is actually looking
+      // back — him, and the room he is standing in. That is what the sphere is
+      // attending to. It is also the camera iOS reliably grants.
+      video:{facingMode:{ideal:'user'}, width:{ideal:1280}, height:{ideal:720}},
+      audio:false
+    });
+    vid.srcObject = s;
+    await vid.play().catch(()=>{});
+    camLive = true;
+    hud.classList.add('on');
+  }catch(e){
+    fail('<b>No camera.</b> ' + e.name + ' — the sphere still listens, but it has nothing to mirror. '
+       + 'If you opened this inside another app’s browser, close it and launch AETHER from its own icon.');
+  }
+
+  // mic — separate request so a camera refusal does not kill the voice
+  try{
+    const s = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = new AC();
+    if(ac.state === 'suspended') await ac.resume();
+    const src = ac.createMediaStreamSource(s);
+    analyser = ac.createAnalyser();
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.55;
+    src.connect(analyser);              // note: never connected to destination — no feedback
+    buf8 = new Uint8Array(analyser.fftSize);
+    hud.classList.add('on');
+  }catch(e){
+    hint.textContent = 'mic blocked';
+    fail((errBox.innerHTML||'') + '<br><b>No mic.</b> ' + e.name
+       + ' — a webview never hands a page a microphone. Open AETHER from its own home-screen icon.');
+  }
+}
+
+function readMic(){
+  if(!analyser) return 0;
+  analyser.getByteTimeDomainData(buf8);
+  let s=0;
+  for(let i=0;i<buf8.length;i++){ const x=(buf8[i]-128)/128; s+=x*x; }
+  const rms = Math.sqrt(s/buf8.length);
+  // rms of ordinary speech sits around .02–.15; map that to a usable 0..1
+  return Math.min(1, Math.max(0, (rms-0.008)*7.5));
+}
+
+/* ── frame ───────────────────────────────────────────────────────────────── */
+let t0 = null;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!prog) return;
+  if(t0===null) t0=ts;
+  size();
+
+  amp = readMic();
+  ampS += (amp - ampS) * (amp > ampS ? 0.35 : 0.08);   // fast attack, slow release
+
+  if(camLive && vid.readyState >= 2 && vid.videoWidth){
+    camAsp = vid.videoWidth / vid.videoHeight;
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,vid); }catch(e){}
+  }
+
+  gl.uniform2f(uRes, cv.width, cv.height);
+  gl.uniform1f(uT, (ts-t0)/1000);
+  gl.uniform1f(uAmp, ampS);
+  // ease toward the target so neither a flick nor sensor jitter snaps the view
+  const k = look.gyro ? 0.16 : 0.22;
+  look.yaw += (look.tYaw - look.yaw) * k;
+  look.pit += (look.tPit - look.pit) * k;
+  look.dist += (look.tDist - look.dist) * 0.18;   // same easing idea as the look
+  gl.uniform2f(uLook, look.yaw, look.pit);
+  gl.uniform1f(uDist, look.dist);
+  gl.uniform1f(uEnvMode, envMode);
+  gl.uniform1f(uHasEnv, envLoaded ? 1 : 0);
+  gl.uniform1f(uHasCam, 0);                       // no rear camera in use
+  gl.uniform1f(uHasCamF, camLive ? 1 : 0);        // FRONT is the only one
+  gl.uniform1f(uCamAspF, camAsp);
+  gl.uniform1f(uCamAsp, camAsp);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  lvl.style.width = (ampS*100).toFixed(1) + '%';
+  if(analyser) hint.textContent = ampS > 0.18 ? 'hearing you' : 'listening';
+}
+
+if(gl && initGL()){
+  size();
+  requestAnimationFrame(frame);       // the sphere renders BEFORE any permission
+}
+document.getElementById('go').addEventListener('click', start, {once:false});
+
+// the mic/camera grant is the only user gesture on this page, so the iOS gyro
+// permission has to ride along with it - there is no second tap to spend
+document.getElementById('go').addEventListener('click', armGyro, {once:true});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANY IMAGE -> AN ENVIRONMENT.  qi 07:36 "lets me upload any image and it
+// automatically makes it a good panorama" and 07:41 "that's all I have"
+// (flat photos) plus "can you convert it or interpret it?"
+// AUTOMATICALLY means the page decides, not him. The tell is the ASPECT RATIO:
+// a true equirectangular panorama is 2:1 by convention, because it maps 360
+// degrees across and 180 down. Anything else is a flat photo and gets the
+// mirror-wrap. So he picks a file and never has to know which kind it was.
+function applyEnvImage(img, label){
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  const ar = h > 0 ? w/h : 1;
+  const trueSphere = (ar > 1.88 && ar < 2.18);
+  envMode = trueSphere ? 0 : 1;
+
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, envTex);
+  // his photos are arbitrary sizes, and WebGL1 refuses mipmaps or REPEAT on a
+  // non-power-of-two texture - it does not warn, it silently samples black.
+  // CLAMP_TO_EDGE + LINEAR is the combination that always works.
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  try{
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+    envLoaded = true;
+  }catch(err){
+    fail('<b>That image could not be read.</b> ' + (err && err.message ? err.message : ''));
+    return;
+  }
+  gl.activeTexture(gl.TEXTURE0);
+
+  const n = document.getElementById('envNote');
+  if(n) n.textContent = (trueSphere ? 'Real 360 detected (' : 'Wrapped from a flat photo (')
+    + w + ' by ' + h + '). ' + (label || '');
+  closeSheet();
+}
+
+function loadEnvFromSrc(src, label, revoke){
+  const im = new Image();
+  im.crossOrigin = 'anonymous';
+  im.onload = () => { applyEnvImage(im, label); if(revoke) URL.revokeObjectURL(src); };
+  im.onerror = () => {
+    if(revoke) URL.revokeObjectURL(src);
+    fail('<b>Could not load that image.</b> A remote link needs to allow cross-origin reads; a file off your phone always works.');
+  };
+  im.src = src;
+}
+
+const sheet = document.getElementById('sheet');
+function closeSheet(){ if(sheet) sheet.classList.remove('on'); }
+document.getElementById('cog').addEventListener('click', () => {
+  if(sheet) sheet.classList.toggle('on');
+});
+document.getElementById('bPick').addEventListener('click', () => {
+  document.getElementById('pick').click();
+});
+document.getElementById('pick').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  // read locally - no upload, no server, no CORS, and the photo never leaves the phone
+  loadEnvFromSrc(URL.createObjectURL(f), f.name || '', true);
+  e.target.value = '';
+});
+document.getElementById('bUrl').addEventListener('click', () => {
+  const u = prompt('Paste an image or 360 panorama link');
+  if(u) loadEnvFromSrc(u.trim(), '', false);
+});
+document.getElementById('bReset').addEventListener('click', () => {
+  envLoaded = false; envMode = 0;
+  const n = document.getElementById('envNote');
+  if(n) n.textContent = 'Back in the dusk world.';
+  closeSheet();
+});
+addEventListener('resize', size, {passive:true});
+</script>
+<div style="position:fixed;left:10px;top:10px;z-index:99999;font:700 22px/1 -apple-system,system-ui,sans-serif;color:#34d17a;background:rgba(0,0,0,.55);padding:8px 12px;border-radius:10px;letter-spacing:.06em;pointer-events:none">G13</div>
+</body>
+</html>
